@@ -37,53 +37,26 @@ app.use(express.urlencoded({ extended: true }));
 // Database connection
 const connectDB = async () => {
   try {
-    console.log('Attempting to connect to MongoDB...');
-    console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
-    
-    // Ensure we have a valid MongoDB URI
     if (!process.env.MONGODB_URI) {
       throw new Error('MONGODB_URI environment variable is not set');
     }
     
-    // Parse the URI to ensure it's valid
-    const uri = process.env.MONGODB_URI;
-    console.log('MongoDB URI format:', uri.includes('mongodb+srv://') ? 'SRV' : 'Standard');
-    
-    await mongoose.connect(uri, {
+    await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 30000, // 30 seconds
-      socketTimeoutMS: 45000, // 45 seconds
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      bufferCommands: false, // Disable mongoose buffering
-      bufferMaxEntries: 0, // Disable mongoose buffering
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      bufferCommands: false,
+      bufferMaxEntries: 0,
     });
     
-    console.log('✅ Connected to MongoDB successfully');
-    console.log('Database name:', mongoose.connection.db.databaseName);
-    
-    // Test the connection with a simple query
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    console.log('Available collections:', collections.map(c => c.name));
+    console.log('Connected to MongoDB successfully');
     
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
-    console.error('Full error:', error);
-    
-    // Try to connect with a simpler configuration
-    try {
-      console.log('Trying with simplified configuration...');
-      await mongoose.connect(process.env.MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 10000,
-        socketTimeoutMS: 20000,
-      });
-      console.log('✅ Connected with simplified configuration');
-    } catch (retryError) {
-      console.error('❌ Retry also failed:', retryError.message);
-      console.log('Starting server without database connection...');
-    }
+    console.error('MongoDB connection error:', error.message);
+    console.error('Server cannot start without MongoDB connection');
+    process.exit(1);
   }
 };
 
@@ -104,7 +77,6 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/profile', require('./routes/profile'));
-app.use('/api/test', require('./routes/test'));
 
 
 
