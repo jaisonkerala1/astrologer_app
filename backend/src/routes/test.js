@@ -1,6 +1,54 @@
 const express = require('express');
 const router = express.Router();
 const Astrologer = require('../models/Astrologer');
+const twilioService = require('../services/twilioService');
+
+// Test MongoDB connection
+router.get('/test-mongodb', async (req, res) => {
+  try {
+    const count = await Astrologer.countDocuments();
+    res.json({
+      success: true,
+      message: 'MongoDB connection successful',
+      userCount: count
+    });
+  } catch (error) {
+    console.error('MongoDB test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'MongoDB connection failed',
+      error: error.message
+    });
+  }
+});
+
+// Test Twilio directly (bypass MongoDB)
+router.post('/test-twilio', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    console.log('Testing Twilio with phone:', phone);
+    console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID ? 'SET' : 'NOT SET');
+    console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'SET' : 'NOT SET');
+    console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER);
+    
+    // Test Twilio service directly
+    const result = await twilioService.sendOTP(phone, '123456');
+    
+    res.json({
+      success: true,
+      message: 'Twilio test successful',
+      result: result
+    });
+  } catch (error) {
+    console.error('Twilio test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Twilio test failed',
+      error: error.message
+    });
+  }
+});
 
 // Test MongoDB connection and create a test user
 router.post('/create-test-user', async (req, res) => {
@@ -42,25 +90,6 @@ router.post('/create-test-user', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create test user',
-      error: error.message
-    });
-  }
-});
-
-// Test MongoDB connection
-router.get('/test-mongodb', async (req, res) => {
-  try {
-    const count = await Astrologer.countDocuments();
-    res.json({
-      success: true,
-      message: 'MongoDB connection successful',
-      userCount: count
-    });
-  } catch (error) {
-    console.error('MongoDB test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'MongoDB connection failed',
       error: error.message
     });
   }
