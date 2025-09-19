@@ -87,15 +87,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.backgroundColor,
         body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
             
-            // Profile Header
+            // Profile Header - Full width
             _buildProfileHeader(context, _currentUser),
             const SizedBox(height: 32),
+            
+            // Content with padding
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
             
             // Profile Stats
             _buildProfileStats(),
@@ -150,6 +156,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Action Buttons
             _buildActionButtons(context),
             const SizedBox(height: 32),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -159,10 +168,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileHeader(BuildContext context, AstrologerModel? user) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
       ),
       child: Column(
