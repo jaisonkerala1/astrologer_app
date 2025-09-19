@@ -276,22 +276,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('DeleteAccount: API response status: ${response.statusCode}');
       print('DeleteAccount: API response data: ${response.data}');
       
+      // Always clear local data regardless of API response
+      // This ensures user is logged out even if backend fails
+      await _storageService.clearAuthData();
+      _apiService.clearAuthToken();
+      
       if (response.statusCode == 200) {
-        // Clear local storage
-        await _storageService.clearAuthData();
-        
-        // Clear API token
-        _apiService.clearAuthToken();
-        
         print('DeleteAccount: Account deleted successfully');
         emit(AccountDeletedState(message: 'Account has been permanently deleted'));
       } else {
         print('DeleteAccount: API returned error status: ${response.statusCode}');
-        emit(AuthErrorState('Failed to delete account. Please try again.'));
+        // Still log out user even if API failed
+        emit(AccountDeletedState(message: 'Account deletion requested. You have been logged out.'));
       }
     } catch (e) {
       print('Delete account API Error: $e');
-      emit(AuthErrorState('Failed to delete account. Please check your internet connection and try again.'));
+      
+      // Even if API call fails, clear local data and log out user
+      await _storageService.clearAuthData();
+      _apiService.clearAuthToken();
+      
+      emit(AccountDeletedState(message: 'Account deletion requested. You have been logged out.'));
     }
   }
 }
