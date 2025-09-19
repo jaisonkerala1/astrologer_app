@@ -1,23 +1,35 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Astrologer = require('../models/Astrologer');
 const twilioService = require('../services/twilioService');
 
 // Test MongoDB connection
 router.get('/test-mongodb', async (req, res) => {
   try {
+    // Check if mongoose is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({
+        success: false,
+        message: 'MongoDB not connected',
+        readyState: mongoose.connection.readyState
+      });
+    }
+    
     const count = await Astrologer.countDocuments();
     res.json({
       success: true,
       message: 'MongoDB connection successful',
-      userCount: count
+      userCount: count,
+      readyState: mongoose.connection.readyState
     });
   } catch (error) {
     console.error('MongoDB test error:', error);
     res.status(500).json({
       success: false,
       message: 'MongoDB connection failed',
-      error: error.message
+      error: error.message,
+      readyState: mongoose.connection.readyState
     });
   }
 });
