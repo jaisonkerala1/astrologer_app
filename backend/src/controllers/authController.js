@@ -20,9 +20,10 @@ const sendOTP = async (req, res) => {
 
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-      return res.status(500).json({ 
+      console.log('MongoDB not connected, readyState:', mongoose.connection.readyState);
+      return res.status(503).json({ 
         success: false, 
-        message: 'Database connection not available. Please try again later.' 
+        message: 'Service temporarily unavailable. Please try again in a moment.' 
       });
     }
 

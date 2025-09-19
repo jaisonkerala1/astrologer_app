@@ -42,7 +42,6 @@ const connectDB = async () => {
     }
     
     console.log('Attempting to connect to MongoDB...');
-    console.log('MONGODB_URI present:', !!process.env.MONGODB_URI);
     
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
@@ -58,9 +57,24 @@ const connectDB = async () => {
     
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
-    console.error('Error details:', error);
-    console.error('Starting server without MongoDB for debugging...');
-    // Don't exit - let server start for debugging
+    console.error('Server will retry MongoDB connection in background...');
+    
+    // Retry connection every 30 seconds
+    setInterval(async () => {
+      try {
+        if (mongoose.connection.readyState !== 1) {
+          await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 10000,
+            socketTimeoutMS: 20000,
+          });
+          console.log('MongoDB reconnected successfully');
+        }
+      } catch (retryError) {
+        console.log('MongoDB retry failed, will try again in 30 seconds...');
+      }
+    }, 30000);
   }
 };
 
