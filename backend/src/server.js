@@ -41,6 +41,9 @@ const connectDB = async () => {
       throw new Error('MONGODB_URI environment variable is not set');
     }
     
+    console.log('Attempting to connect to MongoDB...');
+    console.log('MONGODB_URI present:', !!process.env.MONGODB_URI);
+    
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -55,6 +58,7 @@ const connectDB = async () => {
     
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
+    console.error('Error details:', error);
     console.error('Server cannot start without MongoDB connection');
     process.exit(1);
   }
