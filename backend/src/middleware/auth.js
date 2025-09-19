@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Astrologer = require('../models/Astrologer');
+const memoryStorage = require('../services/memoryStorage');
 
 const auth = async (req, res, next) => {
   try {
@@ -13,7 +13,7 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const astrologer = await Astrologer.findById(decoded.astrologerId);
+    const astrologer = memoryStorage.findAstrologerById(decoded.astrologerId);
 
     if (!astrologer) {
       return res.status(401).json({
@@ -22,14 +22,7 @@ const auth = async (req, res, next) => {
       });
     }
 
-    if (!astrologer.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated.'
-      });
-    }
-
-    req.user = { astrologerId: astrologer._id };
+    req.user = { astrologerId: astrologer.id };
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
