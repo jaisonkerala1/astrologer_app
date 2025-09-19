@@ -5,29 +5,9 @@ class MemoryStorage {
     this.astrologers = new Map();
     this.sessions = new Map();
     
-    // Pre-populate with test user for demo
-    this.createTestUser();
+    // No test user in production
   }
 
-  createTestUser() {
-    const testUser = {
-      id: 'test_user_1',
-      phone: '+918050381803',
-      name: 'Demo Astrologer',
-      email: 'demo@astrologer.com',
-      profilePicture: null,
-      specializations: ['Vedic Astrology', 'Tarot Reading'],
-      languages: ['English', 'Hindi'],
-      experience: 5,
-      ratePerMinute: 75,
-      isOnline: false,
-      totalEarnings: 12500.0,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date()
-    };
-    this.astrologers.set(testUser.id, testUser);
-    console.log('MemoryStorage: Created test user for phone:', testUser.phone);
-  }
 
   // OTP methods
   createOTP(phone, otp) {
