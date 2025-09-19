@@ -37,6 +37,7 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
   late Animation<double> _rotationAnimation;
   late Animation<double> _opacityAnimation;
   bool _isHovered = false;
+  bool _imageLoadError = false;
 
   @override
   void initState() {
@@ -119,6 +120,14 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
     }
   }
 
+  void _onImageError() {
+    if (mounted) {
+      setState(() {
+        _imageLoadError = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -138,20 +147,36 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
                 angle: _rotationAnimation.value,
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: widget.radius,
-                      backgroundColor: widget.backgroundColor ?? Theme.of(context).primaryColor,
-                      backgroundImage: widget.imagePath != null
-                          ? _getImageProvider(widget.imagePath!)
-                          : null,
-                      child: widget.imagePath == null
-                          ? Icon(
+                    (widget.imagePath != null && !_imageLoadError)
+                        ? ClipOval(
+                            child: Image(
+                              image: _getImageProvider(widget.imagePath!)!,
+                              width: widget.radius * 2,
+                              height: widget.radius * 2,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                _onImageError();
+                                return CircleAvatar(
+                                  radius: widget.radius,
+                                  backgroundColor: widget.backgroundColor ?? Theme.of(context).primaryColor,
+                                  child: Icon(
+                                    widget.fallbackIcon ?? Icons.person,
+                                    size: widget.radius,
+                                    color: widget.textColor ?? Colors.white,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : CircleAvatar(
+                            radius: widget.radius,
+                            backgroundColor: widget.backgroundColor ?? Theme.of(context).primaryColor,
+                            child: Icon(
                               widget.fallbackIcon ?? Icons.person,
                               size: widget.radius,
                               color: widget.textColor ?? Colors.white,
-                            )
-                          : null,
-                    ),
+                            ),
+                          ),
                     if (widget.showEditIcon && _isHovered)
                       Positioned(
                         bottom: 0,

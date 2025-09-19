@@ -19,6 +19,8 @@ import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../../heal/screens/heal_screen.dart';
+import '../../heal/screens/discussion_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_avatar.dart';
@@ -72,6 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           _buildDashboardContent(),
           const ConsultationsScreen(),
+          const HealScreen(),
           const EarningsScreen(),
           ProfileScreen(onProfileUpdated: refreshUserData),
         ],
@@ -112,6 +115,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               BottomNavigationBarItem(
                 icon: const Icon(Icons.chat_bubble_outline),
                 label: l10n.consultations,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.healing),
+                label: l10n.heal,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.trending_up_outlined),
@@ -225,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onTap: () {
                 // Navigate to earnings screen
                 setState(() {
-                  _selectedIndex = 2; // Earnings tab
+                  _selectedIndex = 3; // Earnings tab (updated index)
                 });
               },
             ),
@@ -276,6 +283,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            
+            // Discussion Card
+            _buildDiscussionCard(),
           ],
         ),
       ),
@@ -303,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: () {
               // Navigate to profile
               setState(() {
-                _selectedIndex = 3; // Profile tab
+                _selectedIndex = 4; // Profile tab (updated index)
               });
             },
           ),
@@ -330,6 +341,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDiscussionCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)], // Purple to blue-purple gradient
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withOpacity(0.3),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SimpleTouchFeedback(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DiscussionScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Discussion',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Discuss topics of interest with loved ones',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              // 3D Illustration placeholder - you can replace this with an actual illustration
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.forum,
+                  size: 40,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

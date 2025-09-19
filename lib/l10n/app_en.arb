@@ -439,6 +439,202 @@
   "pullToRefresh": "Pull to refresh",
   "@pullToRefresh": {
     "description": "Pull to refresh instruction"
+  },
+  "heal": "Heal",
+  "@heal": {
+    "description": "Heal tab label"
+  },
+  "services": "Services",
+  "@services": {
+    "description": "Services section title"
+  },
+  "discussion": "Discussion",
+  "@discussion": {
+    "description": "Discussion section title"
+  },
+  "manageServices": "Manage E-Pooja, Reiki Healing, Evil Eye Removal, Vastu Shastra, Gemstone Consultation, Yantra",
+  "@manageServices": {
+    "description": "Services description"
+  },
+  "healingDiscussions": "Healing & spiritual discussions (combined astrologer + user posts)",
+  "@healingDiscussions": {
+    "description": "Discussion description"
+  },
+  "createPost": "Create Post",
+  "@createPost": {
+    "description": "Create post button text"
+  },
+  "writeSomething": "Write something...",
+  "@writeSomething": {
+    "description": "Post input placeholder"
+  },
+  "post": "Post",
+  "@post": {
+    "description": "Post button text"
+  },
+  "like": "Like",
+  "@like": {
+    "description": "Like button text"
+  },
+  "comment": "Comment",
+  "@comment": {
+    "description": "Comment button text"
+  },
+  "share": "Share",
+  "@share": {
+    "description": "Share button text"
+  },
+  "noPostsYet": "No posts yet",
+  "@noPostsYet": {
+    "description": "No posts message"
+  },
+  "beTheFirstToPost": "Be the first to share your thoughts!",
+  "@beTheFirstToPost": {
+    "description": "No posts encouragement message"
+  },
+  "manageServices": "Manage Services",
+  "@manageServices": {
+    "description": "Manage services button text"
+  },
+  "addService": "Add Service",
+  "@addService": {
+    "description": "Add service button text"
+  },
+  "editService": "Edit Service",
+  "@editService": {
+    "description": "Edit service button text"
+  },
+  "serviceName": "Service Name",
+  "@serviceName": {
+    "description": "Service name field label"
+  },
+  "serviceDescription": "Description",
+  "@serviceDescription": {
+    "description": "Service description field label"
+  },
+  "servicePrice": "Price (₹)",
+  "@servicePrice": {
+    "description": "Service price field label"
+  },
+  "serviceDuration": "Duration",
+  "@serviceDuration": {
+    "description": "Service duration field label"
+  },
+  "serviceRequirements": "Requirements",
+  "@serviceRequirements": {
+    "description": "Service requirements field label"
+  },
+  "serviceBenefits": "Benefits (comma separated)",
+  "@serviceBenefits": {
+    "description": "Service benefits field label"
+  },
+  "serviceCategory": "Category",
+  "@serviceCategory": {
+    "description": "Service category field label"
+  },
+  "serviceActive": "Service is active",
+  "@serviceActive": {
+    "description": "Service active status label"
+  },
+  "active": "Active",
+  "@active": {
+    "description": "Active status"
+  },
+  "inactive": "Inactive",
+  "@inactive": {
+    "description": "Inactive status"
+  },
+  "pause": "Pause",
+  "@pause": {
+    "description": "Pause button text"
+  },
+  "activate": "Activate",
+  "@activate": {
+    "description": "Activate button text"
+  },
+  "benefits": "Benefits",
+  "@benefits": {
+    "description": "Benefits label"
+  },
+  "noServicesFound": "No services found",
+  "@noServicesFound": {
+    "description": "No services found message"
+  },
+  "addYourFirstService": "Add your first service to get started",
+  "@addYourFirstService": {
+    "description": "Add first service message"
+  },
+  "noServicesInCategory": "No services in this category",
+  "@noServicesInCategory": {
+    "description": "No services in category message"
+  },
+  "deleteService": "Delete Service",
+  "@deleteService": {
+    "description": "Delete service dialog title"
+  },
+  "deleteServiceConfirm": "Are you sure you want to delete this service?",
+  "@deleteServiceConfirm": {
+    "description": "Delete service confirmation message"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button text"
+  },
+  "serviceRequests": "Service Requests",
+  "@serviceRequests": {
+    "description": "Service requests tab label"
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "Pending status"
+  },
+  "confirmed": "Confirmed",
+  "@confirmed": {
+    "description": "Confirmed status"
+  },
+  "inProgress": "In Progress",
+  "@inProgress": {
+    "description": "In progress status"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed status"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "accept": "Accept",
+  "@accept": {
+    "description": "Accept button text"
+  },
+  "reject": "Reject",
+  "@reject": {
+    "description": "Reject button text"
+  },
+  "startService": "Start Service",
+  "@startService": {
+    "description": "Start service button text"
+  },
+  "markComplete": "Mark Complete",
+  "@markComplete": {
+    "description": "Mark complete button text"
+  },
+  "specialInstructions": "Special Instructions",
+  "@specialInstructions": {
+    "description": "Special instructions label"
+  },
+  "noServiceRequests": "No service requests found",
+  "@noServiceRequests": {
+    "description": "No service requests message"
+  },
+  "noRequestsYet": "No service requests yet",
+  "@noRequestsYet": {
+    "description": "No requests yet message"
+  },
+  "noRequestsInCategory": "No requests in this category",
+  "@noRequestsInCategory": {
+    "description": "No requests in category message"
   }
 }
 

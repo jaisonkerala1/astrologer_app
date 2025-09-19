@@ -120,9 +120,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
                   // Stats section
                   ConsultationStatsWidget(
                     todayCount: state.todayCount,
-                    totalCount: state.totalConsultations,
                     todayEarnings: state.todayEarnings,
-                    totalEarnings: state.totalEarnings,
                     nextConsultation: state.nextConsultation,
                   ),
                   

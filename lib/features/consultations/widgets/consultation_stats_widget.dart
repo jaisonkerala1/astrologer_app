@@ -4,18 +4,14 @@ import '../models/consultation_model.dart';
 
 class ConsultationStatsWidget extends StatelessWidget {
   final int todayCount;
-  final int totalCount;
   final double todayEarnings;
-  final double totalEarnings;
   final ConsultationModel? nextConsultation;
 
   const ConsultationStatsWidget({
     super.key,
     required this.todayCount,
-    required this.totalCount,
     required this.todayEarnings,
-    required this.totalEarnings,
-    this.nextConsultation,
+    required this.nextConsultation,
   });
 
   @override
@@ -24,6 +20,7 @@ class ConsultationStatsWidget extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // Today's stats row
           Row(
             children: [
               Expanded(
@@ -40,37 +37,11 @@ class ConsultationStatsWidget extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   context,
-                  'Total',
-                  totalCount.toString(),
-                  'Consultations',
-                  Icons.bar_chart,
-                  Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
                   'Today',
                   '₹${todayEarnings.toStringAsFixed(0)}',
                   'Earnings',
                   Icons.currency_rupee,
                   Colors.green,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Total',
-                  '₹${totalEarnings.toStringAsFixed(0)}',
-                  'Earnings',
-                  Icons.account_balance_wallet,
-                  Colors.orange,
                 ),
               ),
             ],

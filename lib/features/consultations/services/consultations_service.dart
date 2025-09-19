@@ -1,10 +1,27 @@
+import 'dart:convert';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../models/consultation_model.dart';
 
 class ConsultationsService {
   final ApiService _apiService = ApiService();
+  final StorageService _storageService = StorageService();
   static List<ConsultationModel> _consultations = [];
-  static const String _astrologerId = '65f8b2c4d1234567890abcdef'; // This should come from user session
+  
+  // Get astrologer ID from stored user data
+  Future<String> _getAstrologerId() async {
+    try {
+      final userData = await _storageService.getUserData();
+      if (userData != null) {
+        final userDataMap = jsonDecode(userData);
+        return userDataMap['id'] as String;
+      }
+    } catch (e) {
+      print('Error getting astrologer ID: $e');
+    }
+    // Fallback to the actual ID from the JWT token
+    return '68ccff521b39ed18eb9eaff3';
+  }
 
   Future<List<ConsultationModel>> getConsultations({
     String? status,
@@ -17,6 +34,7 @@ class ConsultationsService {
     String sortOrder = 'asc',
   }) async {
     try {
+      final astrologerId = await _getAstrologerId();
       final queryParams = <String, dynamic>{
         'page': page.toString(),
         'limit': limit.toString(),
@@ -30,7 +48,7 @@ class ConsultationsService {
       if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
 
       final response = await _apiService.get(
-        '/api/consultation/$_astrologerId',
+        '/api/consultation/$astrologerId',
         queryParameters: queryParams,
       );
 
@@ -110,8 +128,9 @@ class ConsultationsService {
 
   Future<ConsultationModel> addConsultation(ConsultationModel consultation) async {
     try {
+      final astrologerId = await _getAstrologerId();
       final response = await _apiService.post(
-        '/api/consultation/$_astrologerId',
+        '/api/consultation/$astrologerId',
         data: consultation.toJson(),
       );
 
@@ -198,8 +217,9 @@ class ConsultationsService {
 
   Future<List<ConsultationModel>> getUpcomingConsultations({int limit = 10}) async {
     try {
+      final astrologerId = await _getAstrologerId();
       final response = await _apiService.get(
-        '/api/consultation/upcoming/$_astrologerId',
+        '/api/consultation/upcoming/$astrologerId',
         queryParameters: {'limit': limit.toString()},
       );
 
@@ -225,7 +245,8 @@ class ConsultationsService {
 
   Future<List<ConsultationModel>> getTodaysConsultations() async {
     try {
-      final response = await _apiService.get('/api/consultation/today/$_astrologerId');
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/today/$astrologerId');
 
       if (response.data['success'] == true) {
         final consultationsData = response.data['data'] as List;
@@ -251,7 +272,8 @@ class ConsultationsService {
 
   Future<Map<String, dynamic>> getConsultationStats() async {
     try {
-      final response = await _apiService.get('/api/consultation/stats/$_astrologerId');
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/stats/$astrologerId');
 
       if (response.data['success'] == true) {
         return response.data['data'];
