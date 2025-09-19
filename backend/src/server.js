@@ -59,8 +59,8 @@ const connectDB = async () => {
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
     console.error('Error details:', error);
-    console.error('Server cannot start without MongoDB connection');
-    process.exit(1);
+    console.error('Starting server without MongoDB for debugging...');
+    // Don't exit - let server start for debugging
   }
 };
 

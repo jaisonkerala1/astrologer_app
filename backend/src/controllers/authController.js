@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const Astrologer = require('../models/Astrologer');
 const Otp = require('../models/Otp');
 const twilioService = require('../services/twilioService');
@@ -16,6 +17,14 @@ const generateToken = (astrologerId) => {
 const sendOTP = async (req, res) => {
   try {
     const { phone } = req.body;
+
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database connection not available. Please try again later.' 
+      });
+    }
 
     // Validate phone number
     if (!phone || phone.length < 10) {
