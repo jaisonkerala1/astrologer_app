@@ -28,6 +28,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _initializeStorage() async {
     await _storageService.initialize();
+    _apiService.initialize();
   }
 
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AuthState> emit) async {
@@ -255,8 +256,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
+      print('DeleteAccount: Starting account deletion...');
+      
+      // Get current auth token
+      final token = await _storageService.getAuthToken();
+      print('DeleteAccount: Auth token: ${token != null ? "Present" : "Missing"}');
+      
+      if (token == null) {
+        emit(AuthErrorState('You must be logged in to delete your account.'));
+        return;
+      }
+      
+      // Set auth token for API calls
+      _apiService.setAuthToken(token);
+      
       // Call the delete account API
+      print('DeleteAccount: Calling API endpoint: ${ApiConstants.deleteAccount}');
       final response = await _apiService.delete(ApiConstants.deleteAccount);
+      print('DeleteAccount: API response status: ${response.statusCode}');
+      print('DeleteAccount: API response data: ${response.data}');
       
       if (response.statusCode == 200) {
         // Clear local storage
@@ -265,8 +283,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Clear API token
         _apiService.clearAuthToken();
         
+        print('DeleteAccount: Account deleted successfully');
         emit(AccountDeletedState(message: 'Account has been permanently deleted'));
       } else {
+        print('DeleteAccount: API returned error status: ${response.statusCode}');
         emit(AuthErrorState('Failed to delete account. Please try again.'));
       }
     } catch (e) {
