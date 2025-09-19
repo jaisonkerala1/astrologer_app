@@ -1,4 +1,4 @@
-const Astrologer = require('../models/Astrologer');
+const memoryStorage = require('../services/memoryStorage');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -37,7 +37,7 @@ const getProfile = async (req, res) => {
   try {
     const { astrologerId } = req.user;
 
-    const astrologer = await Astrologer.findById(astrologerId);
+    const astrologer = memoryStorage.findAstrologerById(astrologerId);
     if (!astrologer) {
       return res.status(404).json({
         success: false,
@@ -48,7 +48,7 @@ const getProfile = async (req, res) => {
     res.json({
       success: true,
       data: {
-        id: astrologer._id,
+        id: astrologer.id,
         phone: astrologer.phone,
         name: astrologer.name,
         email: astrologer.email,
@@ -78,18 +78,8 @@ const updateProfile = async (req, res) => {
     const { astrologerId } = req.user;
     const updates = req.body;
 
-    // Remove fields that shouldn't be updated directly
-    delete updates.phone;
-    delete updates.totalEarnings;
-    delete updates.createdAt;
-    delete updates.updatedAt;
-
-    const astrologer = await Astrologer.findByIdAndUpdate(
-      astrologerId,
-      { ...updates, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    );
-
+    // Find the astrologer
+    const astrologer = memoryStorage.findAstrologerById(astrologerId);
     if (!astrologer) {
       return res.status(404).json({
         success: false,
@@ -97,11 +87,25 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    // Remove fields that shouldn't be updated directly
+    delete updates.phone;
+    delete updates.totalEarnings;
+    delete updates.createdAt;
+    delete updates.id;
+
+    // Update the astrologer data
+    Object.assign(astrologer, updates, { updatedAt: new Date() });
+
+    // Update in memory storage
+    memoryStorage.astrologers.set(astrologerId, astrologer);
+
+    console.log(`Profile updated for astrologer ID: ${astrologerId}`);
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
       data: {
-        id: astrologer._id,
+        id: astrologer.id,
         phone: astrologer.phone,
         name: astrologer.name,
         email: astrologer.email,

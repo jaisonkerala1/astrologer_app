@@ -16,7 +16,9 @@ import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_avatar.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onProfileUpdated;
+  
+  const ProfileScreen({super.key, this.onProfileUpdated});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -44,6 +46,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       print('Error loading user data: $e');
     }
+  }
+
+  void _onProfileUpdated() {
+    _loadUserData();
+    // Call the parent callback if provided
+    widget.onProfileUpdated?.call();
   }
 
   @override
@@ -166,9 +174,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(
                   builder: (context) => EditProfileScreen(
                     currentUser: _currentUser,
-                    onProfileUpdated: () {
-                      _loadUserData();
-                    },
+                    onProfileUpdated: _onProfileUpdated,
                   ),
                 ),
               );
@@ -452,9 +458,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     MaterialPageRoute(
                       builder: (context) => EditProfileScreen(
                         currentUser: _currentUser,
-                        onProfileUpdated: () {
-                          _loadUserData();
-                        },
+                        onProfileUpdated: _onProfileUpdated,
                       ),
                     ),
                   );

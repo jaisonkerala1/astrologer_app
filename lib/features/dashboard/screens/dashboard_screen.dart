@@ -52,6 +52,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // Method to refresh user data when profile is updated
+  void refreshUserData() {
+    _loadUserData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildDashboardContent(),
           const ConsultationsScreen(),
           const EarningsScreen(),
-          const ProfileScreen(),
+          ProfileScreen(onProfileUpdated: refreshUserData),
         ],
       ),
       bottomNavigationBar: Container(

@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/animated_button.dart';
@@ -33,6 +35,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _rateController = TextEditingController();
   
   final StorageService _storageService = StorageService();
+  final ApiService _apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
   
   File? _selectedImage;
@@ -433,40 +436,57 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      // Create updated user model
-      final updatedUser = AstrologerModel(
-        id: widget.currentUser?.id ?? '',
-        phone: _phoneController.text.trim(),
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        profilePicture: _selectedImage?.path, // Store image path
-        specializations: _selectedSpecializations,
-        languages: _selectedLanguages,
-        experience: int.parse(_experienceController.text.trim()),
-        ratePerMinute: double.parse(_rateController.text.trim()),
-        isOnline: widget.currentUser?.isOnline ?? false,
-        totalEarnings: widget.currentUser?.totalEarnings ?? 0.0,
-        createdAt: widget.currentUser?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      // Get auth token
+      final token = await _storageService.getAuthToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
 
-      // Save to storage
-      await _storageService.setUserData(jsonEncode(updatedUser.toJson()));
+      // Set auth token for API calls
+      _apiService.setAuthToken(token);
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully!'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
+      // Prepare update data
+      final updateData = {
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'specializations': _selectedSpecializations,
+        'languages': _selectedLanguages,
+        'experience': int.parse(_experienceController.text.trim()),
+        'ratePerMinute': double.parse(_rateController.text.trim()),
+        'profilePicture': _selectedImage?.path, // Store image path
+      };
 
-      // Callback to refresh parent screen
-      widget.onProfileUpdated();
+      print('Updating profile with data: $updateData');
 
-      // Navigate back
-      Navigator.pop(context);
+      // Call API to update profile
+      final response = await _apiService.put(ApiConstants.updateProfile, updateData);
+      
+      if (response.statusCode == 200) {
+        // Parse the updated user data from API response
+        final updatedUserData = response.data['data'];
+        final updatedUser = AstrologerModel.fromJson(updatedUserData);
+
+        // Save to local storage
+        await _storageService.setUserData(jsonEncode(updatedUser.toJson()));
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+
+        // Callback to refresh parent screen
+        widget.onProfileUpdated();
+
+        // Navigate back
+        Navigator.pop(context);
+      } else {
+        throw Exception('Failed to update profile: ${response.data['message'] ?? 'Unknown error'}');
+      }
     } catch (e) {
+      print('Error updating profile: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating profile: $e'),
