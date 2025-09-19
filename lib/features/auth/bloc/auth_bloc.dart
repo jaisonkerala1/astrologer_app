@@ -109,7 +109,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       print('Verify OTP API Error: $e');
-      emit(AuthErrorState('Failed to verify OTP. Please check your internet connection and try again.'));
+      
+      // Check if it's a 404 error (account not found)
+      if (e.toString().contains('Server Error 404')) {
+        emit(AuthErrorState('Account not found. Please sign up first.'));
+      } else {
+        emit(AuthErrorState('Failed to verify OTP. Please check your internet connection and try again.'));
+      }
     }
   }
 
