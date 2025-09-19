@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_event.dart';
@@ -12,6 +15,7 @@ import '../../auth/bloc/auth_state.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import 'edit_profile_screen.dart';
+import '../../settings/screens/language_selection_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_avatar.dart';
@@ -133,12 +137,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             // Settings Section
             _buildProfileSection(
-              'Settings',
+              AppLocalizations.of(context)!.settings,
               [
-                _buildSettingsTile(Icons.notifications_outlined, 'Notifications', 'Manage your notifications', () {}),
-                _buildSettingsTile(Icons.language_outlined, 'Language', 'Change app language', () {}),
+                _buildSettingsTile(Icons.notifications_outlined, AppLocalizations.of(context)!.notifications, 'Manage your notifications', () {}),
+                _buildSettingsTile(Icons.language_outlined, AppLocalizations.of(context)!.language, 'Change app language', () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LanguageSelectionScreen(),
+                    ),
+                  );
+                }),
                 _buildSettingsTile(Icons.dark_mode_outlined, 'Theme', 'Switch between light and dark mode', () {}),
-                _buildSettingsTile(Icons.security_outlined, 'Privacy & Security', 'Manage your privacy settings', () {}),
+                _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {}),
               ],
             ),
             const SizedBox(height: 24),
@@ -147,8 +158,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildProfileSection(
               'Support',
               [
-                _buildSettingsTile(Icons.help_outline, 'Help & Support', 'Get help and support', () {}),
-                _buildSettingsTile(Icons.info_outline, 'About', 'App version and information', () {}),
+                _buildSettingsTile(Icons.help_outline, AppLocalizations.of(context)!.help, 'Get help and support', () {}),
+                _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {}),
                 _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {}),
               ],
             ),
@@ -236,35 +247,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.green.withOpacity(0.3), width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
+          Consumer<StatusService>(
+            builder: (context, statusService, child) {
+              final l10n = AppLocalizations.of(context)!;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusService.statusColorLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: statusService.statusColor.withOpacity(0.3), width: 1),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'Online',
-                  style: TextStyle(
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: statusService.statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusService.isOnline ? l10n.onlineStatus : l10n.offlineStatus,
+                      style: TextStyle(
+                        color: statusService.statusColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),

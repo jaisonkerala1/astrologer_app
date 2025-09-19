@@ -8,6 +8,7 @@ import '../models/consultation_model.dart';
 import '../widgets/consultation_card_widget.dart';
 import '../widgets/consultation_stats_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
+import '../widgets/add_consultation_form.dart';
 
 class ConsultationsScreen extends StatefulWidget {
   const ConsultationsScreen({super.key});
@@ -368,19 +369,18 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
   }
 
   void _showAddConsultationDialog(BuildContext context) {
-    // For MVP, we'll show a simple message
-    // In a full implementation, this would show a form to add new consultations
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Consultation'),
-        content: const Text('Consultation booking feature will be available in the next update.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddConsultationForm(
+        onSubmit: (consultation) {
+          Navigator.pop(context);
+          context.read<ConsultationsBloc>().add(
+            AddConsultationEvent(consultation: consultation),
+          );
+        },
+        onCancel: () => Navigator.pop(context),
       ),
     );
   }

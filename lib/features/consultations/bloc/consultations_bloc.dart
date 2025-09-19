@@ -12,10 +12,14 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     on<RefreshConsultationsEvent>(_onRefreshConsultations);
     on<UpdateConsultationStatusEvent>(_onUpdateConsultationStatus);
     on<AddConsultationEvent>(_onAddConsultation);
+    on<UpdateConsultationEvent>(_onUpdateConsultation);
+    on<DeleteConsultationEvent>(_onDeleteConsultation);
     on<CancelConsultationEvent>(_onCancelConsultation);
     on<StartConsultationEvent>(_onStartConsultation);
     on<CompleteConsultationEvent>(_onCompleteConsultation);
     on<FilterConsultationsEvent>(_onFilterConsultations);
+    on<AddConsultationNotesEvent>(_onAddConsultationNotes);
+    on<AddConsultationRatingEvent>(_onAddConsultationRating);
   }
 
   Future<void> _onLoadConsultations(
@@ -65,6 +69,9 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
       final updatedConsultation = await _consultationsService.updateConsultationStatus(
         event.consultationId,
         event.newStatus,
+        notes: event.notes,
+        cancelledBy: event.cancelledBy,
+        cancellationReason: event.cancellationReason,
       );
       
       emit(ConsultationUpdated(consultation: updatedConsultation));
@@ -155,7 +162,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
       final currentState = state as ConsultationsLoaded;
       
       emit(_buildLoadedState(
-        currentState.consultations,
+        currentState.allConsultations, // Use original data for filtering
         activeFilter: event.statusFilter,
         dateFilter: event.dateFilter,
       ));
@@ -216,12 +223,94 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     completedConsultations.sort((a, b) => b.scheduledTime.compareTo(a.scheduledTime));
 
     return ConsultationsLoaded(
-      consultations: filteredConsultations,
+      allConsultations: allConsultations, // Store original data
+      consultations: filteredConsultations, // Filtered data for display
       todayConsultations: todayConsultations,
       upcomingConsultations: upcomingConsultations,
       completedConsultations: completedConsultations,
       activeFilter: activeFilter,
       dateFilter: dateFilter,
     );
+  }
+
+  Future<void> _onUpdateConsultation(
+    UpdateConsultationEvent event,
+    Emitter<ConsultationsState> emit,
+  ) async {
+    try {
+      emit(ConsultationUpdating(consultationId: event.consultation.id));
+      
+      final updatedConsultation = await _consultationsService.updateConsultation(
+        event.consultation,
+      );
+      
+      emit(ConsultationUpdated(consultation: updatedConsultation));
+      
+      // Reload consultations to get updated state
+      add(const RefreshConsultationsEvent());
+    } catch (e) {
+      emit(ConsultationsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteConsultation(
+    DeleteConsultationEvent event,
+    Emitter<ConsultationsState> emit,
+  ) async {
+    try {
+      emit(ConsultationUpdating(consultationId: event.consultationId));
+      
+      await _consultationsService.deleteConsultation(event.consultationId);
+      
+      emit(const ConsultationDeleted());
+      
+      // Reload consultations to get updated state
+      add(const RefreshConsultationsEvent());
+    } catch (e) {
+      emit(ConsultationsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onAddConsultationNotes(
+    AddConsultationNotesEvent event,
+    Emitter<ConsultationsState> emit,
+  ) async {
+    try {
+      emit(ConsultationUpdating(consultationId: event.consultationId));
+      
+      final updatedConsultation = await _consultationsService.addConsultationNotes(
+        event.consultationId,
+        event.notes,
+      );
+      
+      emit(ConsultationUpdated(consultation: updatedConsultation));
+      
+      // Reload consultations to get updated state
+      add(const RefreshConsultationsEvent());
+    } catch (e) {
+      emit(ConsultationsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onAddConsultationRating(
+    AddConsultationRatingEvent event,
+    Emitter<ConsultationsState> emit,
+  ) async {
+    try {
+      emit(ConsultationUpdating(consultationId: event.consultationId));
+      
+      final updatedConsultation = await _consultationsService.addConsultationRating(
+        event.consultationId,
+        event.rating,
+        event.feedback,
+      );
+      
+      emit(ConsultationUpdated(consultation: updatedConsultation));
+      
+      // Reload consultations to get updated state
+      add(const RefreshConsultationsEvent());
+    } catch (e) {
+      emit(ConsultationsError(message: e.toString()));
+    }
   }
 }

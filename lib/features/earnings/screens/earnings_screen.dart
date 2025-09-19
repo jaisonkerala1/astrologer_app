@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../widgets/earnings_chart_widget.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -27,6 +29,8 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Column(
@@ -37,10 +41,10 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           _buildHeader(),
           
           // Earnings Overview
-          _buildEarningsOverview(),
+                _buildEarningsOverview(l10n),
           
           // Tab Bar
-          _buildTabBar(),
+          _buildTabBar(l10n),
           
           // Tab Content
           Expanded(
@@ -106,7 +110,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildEarningsOverview() {
+  Widget _buildEarningsOverview(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
       child: Column(
@@ -126,7 +130,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
             child: Column(
               children: [
                 Text(
-                  'Total Earnings',
+                  l10n.totalEarnings,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 16,
@@ -238,7 +242,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -249,14 +253,47 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
         controller: _tabController,
         labelColor: Colors.white,
         unselectedLabelColor: AppTheme.textColor.withOpacity(0.7),
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
         indicator: BoxDecoration(
           color: AppTheme.primaryColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        tabs: const [
-          Tab(text: 'Transactions'),
-          Tab(text: 'Analytics'),
-          Tab(text: 'Withdrawals'),
+        indicatorPadding: const EdgeInsets.all(4),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        tabs: [
+          Tab(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(l10n.transactions),
+            ),
+          ),
+          Tab(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(l10n.analytics),
+            ),
+          ),
+          Tab(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(l10n.withdrawals),
+            ),
+          ),
         ],
       ),
     );
@@ -342,56 +379,42 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
   }
 
   Widget _buildAnalyticsTab() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Chart placeholder
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bar_chart, size: 60, color: AppTheme.primaryColor),
-                  SizedBox(height: 16),
-                  Text(
-                    'Earnings Chart',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textColor,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Chart visualization will be implemented here',
-                    style: TextStyle(
-                      color: AppTheme.textColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // Weekly Earnings Trend
+          EarningsChartWidget(
+            data: _weeklyEarningsData,
+            title: 'Weekly Earnings Trend',
+            primaryColor: AppTheme.primaryColor,
+            secondaryColor: AppTheme.infoColor,
           ),
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          
+          // Daily Earnings Bar Chart
+          EarningsBarChartWidget(
+            data: _dailyEarningsData,
+            title: 'Daily Earnings (This Week)',
+            primaryColor: AppTheme.successColor,
+          ),
+          
+          const SizedBox(height: 20),
           
           // Performance metrics
           _buildMetricsGrid(),
+          
+          const SizedBox(height: 20),
+          
+          // Earnings by Consultation Type
+          _buildConsultationTypeAnalysis(),
+          
+          const SizedBox(height: 20),
+          
+          // Peak Hours Analysis
+          _buildPeakHoursAnalysis(),
         ],
       ),
     );
@@ -623,6 +646,182 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
       ),
     );
   }
+
+  Widget _buildConsultationTypeAnalysis() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Earnings by Consultation Type',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ..._consultationTypeData.map((item) => _buildTypeAnalysisItem(item)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeAnalysisItem(Map<String, dynamic> item) {
+    final percentage = item['percentage'] as double;
+    final color = item['color'] as Color;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              item['type'] as String,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.textColor,
+              ),
+            ),
+          ),
+          Text(
+            '₹${(item['amount'] as double).toStringAsFixed(0)}',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${percentage.toStringAsFixed(1)}%',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textColor.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeakHoursAnalysis() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Peak Hours Analysis',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPeakHourItem('Morning', '6 AM - 12 PM', '₹2,450', Colors.orange),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPeakHourItem('Afternoon', '12 PM - 6 PM', '₹1,850', Colors.blue),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPeakHourItem('Evening', '6 PM - 12 AM', '₹4,200', Colors.green),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPeakHourItem('Night', '12 AM - 6 AM', '₹750', Colors.purple),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeakHourItem(String period, String time, String amount, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            period,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textColor.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // Mock data
@@ -674,5 +873,53 @@ final List<Map<String, dynamic>> _mockWithdrawals = [
     'amount': '2500',
     'date': '5 Sep, 2024',
     'status': 'completed',
+  },
+];
+
+// Analytics mock data
+final List<Map<String, dynamic>> _weeklyEarningsData = [
+  {'label': 'Mon', 'value': 1200.0},
+  {'label': 'Tue', 'value': 1850.0},
+  {'label': 'Wed', 'value': 2100.0},
+  {'label': 'Thu', 'value': 1650.0},
+  {'label': 'Fri', 'value': 2400.0},
+  {'label': 'Sat', 'value': 3200.0},
+  {'label': 'Sun', 'value': 2800.0},
+];
+
+final List<Map<String, dynamic>> _dailyEarningsData = [
+  {'label': 'Mon', 'value': 1200.0},
+  {'label': 'Tue', 'value': 1850.0},
+  {'label': 'Wed', 'value': 2100.0},
+  {'label': 'Thu', 'value': 1650.0},
+  {'label': 'Fri', 'value': 2400.0},
+  {'label': 'Sat', 'value': 3200.0},
+  {'label': 'Sun', 'value': 2800.0},
+];
+
+final List<Map<String, dynamic>> _consultationTypeData = [
+  {
+    'type': 'Phone Calls',
+    'amount': 8500.0,
+    'percentage': 55.7,
+    'color': AppTheme.primaryColor,
+  },
+  {
+    'type': 'Video Calls',
+    'amount': 4200.0,
+    'percentage': 27.5,
+    'color': AppTheme.infoColor,
+  },
+  {
+    'type': 'In-Person',
+    'amount': 1800.0,
+    'percentage': 11.8,
+    'color': AppTheme.successColor,
+  },
+  {
+    'type': 'Chat',
+    'amount': 747.0,
+    'percentage': 4.9,
+    'color': AppTheme.warningColor,
   },
 ];

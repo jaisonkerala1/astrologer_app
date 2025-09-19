@@ -445,6 +445,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // Set auth token for API calls
       _apiService.setAuthToken(token);
 
+      String? profilePictureUrl;
+
+      // Upload image first if selected
+      if (_selectedImage != null) {
+        print('Uploading profile picture...');
+        final imageResponse = await _apiService.uploadFile(
+          ApiConstants.uploadImage,
+          _selectedImage!.path,
+          fieldName: 'profilePicture',
+        );
+        
+        if (imageResponse.statusCode == 200) {
+          profilePictureUrl = imageResponse.data['data']['profilePicture'];
+          print('Image uploaded successfully: $profilePictureUrl');
+        } else {
+          throw Exception('Failed to upload profile picture: ${imageResponse.data['message']}');
+        }
+      }
+
       // Prepare update data
       final updateData = {
         'name': _nameController.text.trim(),
@@ -453,7 +472,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'languages': _selectedLanguages,
         'experience': int.parse(_experienceController.text.trim()),
         'ratePerMinute': double.parse(_rateController.text.trim()),
-        'profilePicture': _selectedImage?.path, // Store image path
+        if (profilePictureUrl != null) 'profilePicture': profilePictureUrl,
       };
 
       print('Updating profile with data: $updateData');

@@ -1,0 +1,444 @@
+{
+  "@@locale": "en",
+  "appTitle": "Astrologer App",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  "login": "Login",
+  "@login": {
+    "description": "Login button text"
+  },
+  "signup": "Sign Up",
+  "@signup": {
+    "description": "Sign up button text"
+  },
+  "phoneNumber": "Phone Number",
+  "@phoneNumber": {
+    "description": "Phone number field label"
+  },
+  "enterPhoneNumber": "Enter your phone number",
+  "@enterPhoneNumber": {
+    "description": "Phone number field placeholder"
+  },
+  "sendOtp": "Send OTP",
+  "@sendOtp": {
+    "description": "Send OTP button text"
+  },
+  "verifyOtp": "Verify OTP",
+  "@verifyOtp": {
+    "description": "Verify OTP button text"
+  },
+  "enterOtp": "Enter OTP",
+  "@enterOtp": {
+    "description": "OTP field placeholder"
+  },
+  "otpSent": "OTP sent to your phone number",
+  "@otpSent": {
+    "description": "OTP sent confirmation message"
+  },
+  "invalidOtp": "Invalid OTP. Please try again.",
+  "@invalidOtp": {
+    "description": "Invalid OTP error message"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Name field label"
+  },
+  "enterName": "Enter your full name",
+  "@enterName": {
+    "description": "Name field placeholder"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  "enterEmail": "Enter your email address",
+  "@enterEmail": {
+    "description": "Email field placeholder"
+  },
+  "experience": "Experience (Years)",
+  "@experience": {
+    "description": "Experience field label"
+  },
+  "enterExperience": "Enter years of experience",
+  "@enterExperience": {
+    "description": "Experience field placeholder"
+  },
+  "specializations": "Specializations",
+  "@specializations": {
+    "description": "Specializations field label"
+  },
+  "selectSpecializations": "Select your specializations",
+  "@selectSpecializations": {
+    "description": "Specializations field placeholder"
+  },
+  "languages": "Languages",
+  "@languages": {
+    "description": "Languages field label"
+  },
+  "selectLanguages": "Select languages you speak",
+  "@selectLanguages": {
+    "description": "Languages field placeholder"
+  },
+  "createAccount": "Create Account & Send OTP",
+  "@createAccount": {
+    "description": "Create account button text"
+  },
+  "alreadyHaveAccount": "Already have an account?",
+  "@alreadyHaveAccount": {
+    "description": "Already have account text"
+  },
+  "dashboard": "Dashboard",
+  "@dashboard": {
+    "description": "Dashboard tab label"
+  },
+  "consultations": "Consultations",
+  "@consultations": {
+    "description": "Consultations tab label"
+  },
+  "earnings": "Earnings",
+  "@earnings": {
+    "description": "Earnings tab label"
+  },
+  "profile": "Profile",
+  "@profile": {
+    "description": "Profile tab label"
+  },
+  "totalEarnings": "Total Earnings",
+  "@totalEarnings": {
+    "description": "Total earnings label"
+  },
+  "thisMonth": "This Month",
+  "@thisMonth": {
+    "description": "This month label"
+  },
+  "totalConsultations": "Total Consultations",
+  "@totalConsultations": {
+    "description": "Total consultations label"
+  },
+  "averageRating": "Average Rating",
+  "@averageRating": {
+    "description": "Average rating label"
+  },
+  "onlineStatus": "Online",
+  "@onlineStatus": {
+    "description": "Online status label"
+  },
+  "offlineStatus": "Offline",
+  "@offlineStatus": {
+    "description": "Offline status label"
+  },
+  "editProfile": "Edit Profile",
+  "@editProfile": {
+    "description": "Edit profile button text"
+  },
+  "share": "Share",
+  "@share": {
+    "description": "Share button text"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout button text"
+  },
+  "deleteAccount": "Delete Account",
+  "@deleteAccount": {
+    "description": "Delete account button text"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings label"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language label"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications label"
+  },
+  "privacy": "Privacy",
+  "@privacy": {
+    "description": "Privacy label"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About label"
+  },
+  "help": "Help & Support",
+  "@help": {
+    "description": "Help and support label"
+  },
+  "personalInfo": "Personal Information",
+  "@personalInfo": {
+    "description": "Personal information section title"
+  },
+  "professionalInfo": "Professional Information",
+  "@professionalInfo": {
+    "description": "Professional information section title"
+  },
+  "accountSettings": "Account Settings",
+  "@accountSettings": {
+    "description": "Account settings section title"
+  },
+  "appSettings": "App Settings",
+  "@appSettings": {
+    "description": "App settings section title"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button text"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Update button text"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  "no": "No",
+  "@no": {
+    "description": "No button text"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error title"
+  },
+  "success": "Success",
+  "@success": {
+    "description": "Success title"
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Warning title"
+  },
+  "info": "Information",
+  "@info": {
+    "description": "Information title"
+  },
+  "noInternetConnection": "No internet connection",
+  "@noInternetConnection": {
+    "description": "No internet connection error"
+  },
+  "somethingWentWrong": "Something went wrong",
+  "@somethingWentWrong": {
+    "description": "Generic error message"
+  },
+  "tryAgain": "Try again",
+  "@tryAgain": {
+    "description": "Try again button text"
+  },
+  "accountNotFound": "Account not found. Please sign up first.",
+  "@accountNotFound": {
+    "description": "Account not found error message"
+  },
+  "accountDeleted": "Account has been permanently deleted",
+  "@accountDeleted": {
+    "description": "Account deleted success message"
+  },
+  "profileUpdated": "Profile updated successfully",
+  "@profileUpdated": {
+    "description": "Profile updated success message"
+  },
+  "imageUploaded": "Image uploaded successfully",
+  "@imageUploaded": {
+    "description": "Image uploaded success message"
+  },
+  "logoutConfirm": "Are you sure you want to logout?",
+  "@logoutConfirm": {
+    "description": "Logout confirmation message"
+  },
+  "deleteAccountConfirm": "Are you sure you want to permanently delete your account? This action cannot be undone.",
+  "@deleteAccountConfirm": {
+    "description": "Delete account confirmation message"
+  },
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Select language title"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  "hindi": "हिन्दी",
+  "@hindi": {
+    "description": "Hindi language option"
+  },
+  "currentLanguage": "Current Language",
+  "@currentLanguage": {
+    "description": "Current language label"
+  },
+  "availableLanguages": "Available Languages",
+  "@availableLanguages": {
+    "description": "Available languages label"
+  },
+  "languageChanged": "Language changed successfully",
+  "@languageChanged": {
+    "description": "Language changed success message"
+  },
+  "transactions": "Transactions",
+  "@transactions": {
+    "description": "Transactions tab label"
+  },
+  "analytics": "Analytics",
+  "@analytics": {
+    "description": "Analytics tab label"
+  },
+  "withdrawals": "Withdrawals",
+  "@withdrawals": {
+    "description": "Withdrawals tab label"
+  },
+  "weeklyEarningsTrend": "Weekly Earnings Trend",
+  "@weeklyEarningsTrend": {
+    "description": "Weekly earnings trend chart title"
+  },
+  "dailyEarnings": "Daily Earnings (This Week)",
+  "@dailyEarnings": {
+    "description": "Daily earnings chart title"
+  },
+  "earningsByType": "Earnings by Consultation Type",
+  "@earningsByType": {
+    "description": "Earnings by consultation type title"
+  },
+  "peakHoursAnalysis": "Peak Hours Analysis",
+  "@peakHoursAnalysis": {
+    "description": "Peak hours analysis title"
+  },
+  "phoneCalls": "Phone Calls",
+  "@phoneCalls": {
+    "description": "Phone calls consultation type"
+  },
+  "videoCalls": "Video Calls",
+  "@videoCalls": {
+    "description": "Video calls consultation type"
+  },
+  "inPerson": "In-Person",
+  "@inPerson": {
+    "description": "In-person consultation type"
+  },
+  "chat": "Chat",
+  "@chat": {
+    "description": "Chat consultation type"
+  },
+  "morning": "Morning",
+  "@morning": {
+    "description": "Morning time period"
+  },
+  "afternoon": "Afternoon",
+  "@afternoon": {
+    "description": "Afternoon time period"
+  },
+  "evening": "Evening",
+  "@evening": {
+    "description": "Evening time period"
+  },
+  "night": "Night",
+  "@night": {
+    "description": "Night time period"
+  },
+  "addConsultation": "Add Consultation",
+  "@addConsultation": {
+    "description": "Add consultation button text"
+  },
+  "clientName": "Client Name",
+  "@clientName": {
+    "description": "Client name field label"
+  },
+  "consultationType": "Consultation Type",
+  "@consultationType": {
+    "description": "Consultation type field label"
+  },
+  "date": "Date",
+  "@date": {
+    "description": "Date field label"
+  },
+  "time": "Time",
+  "@time": {
+    "description": "Time field label"
+  },
+  "duration": "Duration (minutes)",
+  "@duration": {
+    "description": "Duration field label"
+  },
+  "amount": "Amount (₹)",
+  "@amount": {
+    "description": "Amount field label"
+  },
+  "notes": "Notes",
+  "@notes": {
+    "description": "Notes field label"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add button text"
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "Pending status"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed status"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "all": "All",
+  "@all": {
+    "description": "All filter option"
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Clear filter button text"
+  },
+  "filter": "Filter",
+  "@filter": {
+    "description": "Filter label"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search placeholder"
+  },
+  "noDataFound": "No data found",
+  "@noDataFound": {
+    "description": "No data found message"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Refresh button text"
+  },
+  "pullToRefresh": "Pull to refresh",
+  "@pullToRefresh": {
+    "description": "Pull to refresh instruction"
+  }
+}
+

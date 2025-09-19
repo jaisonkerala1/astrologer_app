@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
+import '../core/services/language_service.dart';
+import '../core/services/status_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/auth/bloc/auth_event.dart';
 import '../features/auth/bloc/auth_state.dart';
@@ -15,32 +19,85 @@ import '../features/auth/screens/auth_gate_screen.dart';
 import '../shared/theme/app_theme.dart';
 import 'routes.dart';
 
-class App extends StatelessWidget {
-  const App({super.key});
+class App extends StatefulWidget {
+  final LanguageService languageService;
+  final StatusService statusService;
+  
+  const App({super.key, required this.languageService, required this.statusService});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  @override
+  void initState() {
+    super.initState();
+    // Listen to language changes
+    widget.languageService.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.languageService.removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    print('App: Language changed to ${widget.languageService.currentLocale}');
+    setState(() {
+      // This will trigger a rebuild with the new language
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    return MultiProvider(
       providers: [
-        BlocProvider<AuthBloc>(
-          create: (context) => AuthBloc(),
+        ChangeNotifierProvider<LanguageService>(
+          create: (context) => widget.languageService,
         ),
-        BlocProvider<DashboardBloc>(
-          create: (context) => DashboardBloc(),
-        ),
-        BlocProvider<ProfileBloc>(
-          create: (context) => ProfileBloc(),
-        ),
-        BlocProvider<ConsultationsBloc>(
-          create: (context) => ConsultationsBloc(),
+        ChangeNotifierProvider<StatusService>(
+          create: (context) => widget.statusService,
         ),
       ],
-      child: MaterialApp(
-        title: 'Astrologer App',
-        theme: AppTheme.lightTheme,
-        debugShowCheckedModeBanner: false,
-        home: const AuthGateScreen(),
-        onGenerateRoute: AppRoutes.generateRoute,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(
+            create: (context) => AuthBloc(),
+          ),
+          BlocProvider<DashboardBloc>(
+            create: (context) => DashboardBloc(),
+          ),
+          BlocProvider<ProfileBloc>(
+            create: (context) => ProfileBloc(),
+          ),
+          BlocProvider<ConsultationsBloc>(
+            create: (context) => ConsultationsBloc(),
+          ),
+        ],
+        child: MaterialApp(
+          key: ValueKey(widget.languageService.currentLocale.languageCode),
+          title: 'Astrologer App',
+          theme: AppTheme.lightTheme,
+          debugShowCheckedModeBanner: false,
+          locale: widget.languageService.currentLocale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', ''), // English
+            Locale('hi', ''), // Hindi
+          ],
+          home: const AuthGateScreen(),
+          onGenerateRoute: AppRoutes.generateRoute,
+          builder: (context, child) {
+            return child!;
+          },
+        ),
       ),
     );
   }

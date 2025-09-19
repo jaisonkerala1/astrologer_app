@@ -106,6 +106,19 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
     }
   }
 
+  ImageProvider? _getImageProvider(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
+      // Network URL - construct full URL for Railway backend
+      if (imagePath.startsWith('/uploads/')) {
+        return NetworkImage('https://astrologerapp-production.up.railway.app$imagePath');
+      }
+      return NetworkImage(imagePath);
+    } else {
+      // Local file path
+      return FileImage(File(imagePath));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -129,7 +142,7 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
                       radius: widget.radius,
                       backgroundColor: widget.backgroundColor ?? Theme.of(context).primaryColor,
                       backgroundImage: widget.imagePath != null
-                          ? FileImage(File(widget.imagePath!))
+                          ? _getImageProvider(widget.imagePath!)
                           : null,
                       child: widget.imagePath == null
                           ? Icon(

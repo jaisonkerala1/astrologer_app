@@ -17,8 +17,8 @@ class ConsultationFilterWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      height: 50, // Reduced height for better proportions
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -47,30 +47,44 @@ class ConsultationFilterWidget extends StatelessWidget {
             GestureDetector(
               onTap: onClearFilters,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                height: 36, // Match other chips
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                 decoration: BoxDecoration(
                   color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.clear,
-                      size: 16,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Clear',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
+                  borderRadius: BorderRadius.circular(18), // Match other chips
+                  border: Border.all(
+                    color: Colors.red.withOpacity(0.3),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
                   ],
+                ),
+                child: Center( // Center the content
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.clear,
+                        size: 16,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Clear',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13, // Match other chips
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -91,29 +105,41 @@ class ConsultationFilterWidget extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        height: 36, // Fixed height for consistent alignment
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         decoration: BoxDecoration(
           color: isSelected ? chipColor : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18), // More rounded
           border: Border.all(
-            color: isSelected ? chipColor : AppTheme.textColor.withOpacity(0.3),
+            color: isSelected ? chipColor : AppTheme.textColor.withOpacity(0.2),
+            width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: chipColor.withOpacity(0.3),
-                    blurRadius: 4,
+                    color: chipColor.withOpacity(0.2),
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppTheme.textColor,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: 12,
+        child: Center( // Center the text vertically and horizontally
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppTheme.textColor,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 13, // Slightly larger for better readability
+              height: 1.2, // Better line height
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
       ),

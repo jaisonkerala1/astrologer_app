@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
@@ -59,6 +63,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: IndexedStack(
@@ -84,6 +90,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: (index) {
+            // Add soft haptic feedback
+            HapticFeedback.lightImpact();
             setState(() {
               _selectedIndex = index;
             });
@@ -96,24 +104,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           selectedFontSize: 11,
           unselectedFontSize: 10,
           iconSize: 22, // Slightly larger icons for better visibility
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.event_note_outlined),
-              label: 'Consultations',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.trending_up_outlined),
-              label: 'Earnings',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: 'Profile',
-            ),
-          ],
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.dashboard_outlined),
+                label: l10n.dashboard,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: l10n.consultations,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.trending_up_outlined),
+                label: l10n.earnings,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.account_circle_outlined),
+                label: l10n.profile,
+              ),
+            ],
         ),
       ),
     );
@@ -131,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           } else if (state is DashboardLoadedState) {
             return _buildDashboardBody(state.stats);
-        } else if (state is DashboardErrorState) {
+          } else if (state is DashboardErrorState) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -164,8 +172,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           );
-        }
-        return const SizedBox.shrink();
+          } else {
+            // Fallback for any unhandled states (like StatusUpdatedState)
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.primaryColor,
+              ),
+            );
+          }
       },
       ),
     );
@@ -187,10 +201,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
             
             // Status Toggle
-            StatusToggleWidget(
-              isOnline: stats.isOnline,
-              onToggle: (isOnline) {
-                context.read<DashboardBloc>().add(UpdateOnlineStatusEvent(isOnline));
+            Consumer<StatusService>(
+              builder: (context, statusService, child) {
+                return StatusToggleWidget(
+                  isOnline: statusService.isOnline,
+                  onToggle: (isOnline) {
+                    HapticFeedback.lightImpact();
+                    statusService.setOnlineStatus(isOnline);
+                    // No need to update DashboardBloc since StatusService handles the state
+                  },
+                );
               },
             ),
             const SizedBox(height: 24),

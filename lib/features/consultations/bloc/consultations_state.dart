@@ -17,7 +17,8 @@ class ConsultationsLoading extends ConsultationsState {
 }
 
 class ConsultationsLoaded extends ConsultationsState {
-  final List<ConsultationModel> consultations;
+  final List<ConsultationModel> allConsultations; // Original data
+  final List<ConsultationModel> consultations; // Filtered data
   final List<ConsultationModel> todayConsultations;
   final List<ConsultationModel> upcomingConsultations;
   final List<ConsultationModel> completedConsultations;
@@ -25,6 +26,7 @@ class ConsultationsLoaded extends ConsultationsState {
   final DateTime? dateFilter;
 
   const ConsultationsLoaded({
+    required this.allConsultations,
     required this.consultations,
     required this.todayConsultations,
     required this.upcomingConsultations,
@@ -35,6 +37,7 @@ class ConsultationsLoaded extends ConsultationsState {
 
   @override
   List<Object?> get props => [
+        allConsultations,
         consultations,
         todayConsultations,
         upcomingConsultations,
@@ -44,6 +47,7 @@ class ConsultationsLoaded extends ConsultationsState {
       ];
 
   ConsultationsLoaded copyWith({
+    List<ConsultationModel>? allConsultations,
     List<ConsultationModel>? consultations,
     List<ConsultationModel>? todayConsultations,
     List<ConsultationModel>? upcomingConsultations,
@@ -53,6 +57,7 @@ class ConsultationsLoaded extends ConsultationsState {
     bool clearFilters = false,
   }) {
     return ConsultationsLoaded(
+      allConsultations: allConsultations ?? this.allConsultations,
       consultations: consultations ?? this.consultations,
       todayConsultations: todayConsultations ?? this.todayConsultations,
       upcomingConsultations: upcomingConsultations ?? this.upcomingConsultations,
@@ -119,4 +124,8 @@ class ConsultationUpdated extends ConsultationsState {
 
   @override
   List<Object?> get props => [consultation];
+}
+
+class ConsultationDeleted extends ConsultationsState {
+  const ConsultationDeleted();
 }

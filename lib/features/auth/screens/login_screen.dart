@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../bloc/auth_bloc.dart';
@@ -28,6 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
@@ -81,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Welcome to\nAstrologer App',
+                    '${l10n.welcome}\n${l10n.appTitle}',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: AppTheme.primaryColor,
@@ -102,10 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
+                    decoration: InputDecoration(
+                      labelText: l10n.phoneNumber,
                       hintText: '+91 9876543210',
-                      prefixIcon: Icon(Icons.phone),
+                      prefixIcon: const Icon(Icons.phone),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -136,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Send OTP'),
+                        : Text(l10n.sendOtp),
                   ),
                   const SizedBox(height: 16),
                   
@@ -159,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           children: [
                             TextSpan(
-                              text: 'Create Account',
+                              text: l10n.signup,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppTheme.primaryColor,
                                 fontWeight: FontWeight.w600,
