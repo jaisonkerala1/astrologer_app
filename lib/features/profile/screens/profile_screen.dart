@@ -427,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 12),
         AnimatedButton(
-          text: 'Delete Profile',
+          text: 'Delete Account',
           icon: Icons.delete_forever,
           width: double.infinity,
           height: 56,
@@ -435,21 +435,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           foregroundColor: Colors.white,
           isOutlined: true,
           onPressed: () {
-            _showDeleteProfileDialog(context);
+            _showDeleteAccountDialog(context);
           },
         ),
       ],
     );
   }
 
-  void _showDeleteProfileDialog(BuildContext context) {
+  void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Profile'),
+          title: const Text('Delete Account'),
           content: const Text(
-            'Are you sure you want to delete your profile? This action cannot be undone and all your data will be permanently removed.',
+            'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be permanently removed.',
           ),
           actions: [
             TextButton(
@@ -461,7 +461,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                context.read<AuthBloc>().add(DeleteProfileEvent());
+                context.read<AuthBloc>().add(DeleteAccountEvent());
               },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,

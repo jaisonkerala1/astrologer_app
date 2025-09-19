@@ -20,6 +20,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
     on<RefreshTokenEvent>(_onRefreshToken);
     on<DeleteProfileEvent>(_onDeleteProfile);
+    on<DeleteAccountEvent>(_onDeleteAccount);
     
     // Initialize storage service
     _initializeStorage();
@@ -98,6 +99,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } else {
           emit(AuthErrorState(authResponse.message));
         }
+      } else if (response.statusCode == 404) {
+        // Handle account not found - user needs to sign up first
+        final authResponse = AuthResponseModel.fromJson(response.data);
+        emit(AuthErrorState(authResponse.message));
       } else {
         emit(AuthErrorState('Failed to verify OTP. Please try again.'));
       }
@@ -243,6 +248,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _storageService.clearAuthData();
       _apiService.clearAuthToken();
       emit(AuthLoggedOutState());
+    }
+  }
+
+  Future<void> _onDeleteAccount(DeleteAccountEvent event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    
+    try {
+      // Call the delete account API
+      final response = await _apiService.delete(ApiConstants.deleteAccount);
+      
+      if (response.statusCode == 200) {
+        // Clear local storage
+        await _storageService.clearAuthData();
+        
+        // Clear API token
+        _apiService.clearAuthToken();
+        
+        emit(AccountDeletedState(message: 'Account has been permanently deleted'));
+      } else {
+        emit(AuthErrorState('Failed to delete account. Please try again.'));
+      }
+    } catch (e) {
+      print('Delete account API Error: $e');
+      emit(AuthErrorState('Failed to delete account. Please check your internet connection and try again.'));
     }
   }
 }

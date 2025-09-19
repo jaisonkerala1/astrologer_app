@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL - Update this with your actual server URL
-  static const String baseUrl = 'http://192.168.29.99:7566/api';
+  static const String baseUrl = 'https://astrologerapp-production.up.railway.app/api';
   
   // Authentication endpoints
   static const String sendOtp = '/auth/send-otp';
@@ -8,6 +8,7 @@ class ApiConstants {
   static const String signup = '/auth/signup';
   static const String refreshToken = '/auth/refresh-token';
   static const String logout = '/auth/logout';
+  static const String deleteAccount = '/auth/delete-account';
   
   // Dashboard endpoints
   static const String dashboardStats = '/dashboard/stats';

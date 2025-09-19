@@ -241,12 +241,53 @@ const logout = async (req, res) => {
   }
 };
 
+// Delete account permanently
+const deleteAccount = async (req, res) => {
+  try {
+    const { astrologerId } = req.user;
+    
+    // Find the astrologer
+    const astrologer = memoryStorage.findAstrologerById(astrologerId);
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found'
+      });
+    }
+
+    // Delete the astrologer from memory storage
+    memoryStorage.astrologers.delete(astrologerId);
+    
+    // Also delete any associated OTP records for this phone
+    const phone = astrologer.phone;
+    for (const [otpId, otpRecord] of memoryStorage.otpRecords.entries()) {
+      if (otpRecord.phone === phone) {
+        memoryStorage.otpRecords.delete(otpId);
+      }
+    }
+
+    console.log(`Account permanently deleted for astrologer ID: ${astrologerId}`);
+
+    res.json({
+      success: true,
+      message: 'Account has been permanently deleted'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete account'
+    });
+  }
+};
+
 module.exports = {
   sendOTP,
   verifyOTP,
   signup,
   refreshToken,
-  logout
+  logout,
+  deleteAccount
 };
 
 

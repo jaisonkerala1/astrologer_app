@@ -36,6 +36,12 @@ class AuthLoggedOutState extends AuthState {}
 
 class AuthUnauthenticatedState extends AuthState {}
 
+class AccountDeletedState extends AuthState {
+  final String message;
+  
+  AccountDeletedState({required this.message});
+}
+
 
 
 

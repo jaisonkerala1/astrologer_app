@@ -8,6 +8,7 @@ import '../bloc/auth_state.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../../dashboard/bloc/dashboard_bloc.dart';
 import '../../profile/bloc/profile_bloc.dart';
+import 'signup_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -99,12 +100,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             setState(() {
               _isLoading = false;
             });
+            
+            // Show error message
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
                 backgroundColor: AppTheme.errorColor,
+                duration: const Duration(seconds: 4),
               ),
             );
+            
+            // If account not found, show dialog with sign up option
+            if (state.message.contains('Account not found') || state.message.contains('Please sign up first')) {
+              _showSignupDialog();
+            }
           }
         },
         child: SafeArea(
@@ -244,5 +253,39 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _resendOtp() {
     context.read<AuthBloc>().add(SendOtpEvent(widget.phoneNumber));
     _startResendTimer();
+  }
+
+  void _showSignupDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Account Not Found'),
+        content: const Text(
+          'No account found with this phone number. Would you like to create a new account?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Go back to login screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SignupScreen(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+            ),
+            child: const Text('Create Account'),
+          ),
+        ],
+      ),
+    );
   }
 }

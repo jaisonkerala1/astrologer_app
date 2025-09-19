@@ -27,6 +27,11 @@ router.post('/refresh-token', require('../middleware/auth'), authController.refr
 // @access  Private
 router.post('/logout', require('../middleware/auth'), authController.logout);
 
+// @route   DELETE /api/auth/delete-account
+// @desc    Permanently delete user account
+// @access  Private
+router.delete('/delete-account', require('../middleware/auth'), authController.deleteAccount);
+
 module.exports = router;
 
 

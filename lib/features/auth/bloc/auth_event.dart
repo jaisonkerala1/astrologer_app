@@ -48,6 +48,8 @@ class RefreshTokenEvent extends AuthEvent {}
 
 class DeleteProfileEvent extends AuthEvent {}
 
+class DeleteAccountEvent extends AuthEvent {}
+
 
 
 
