@@ -260,9 +260,9 @@ const deleteAccount = async (req, res) => {
     
     // Also delete any associated OTP records for this phone
     const phone = astrologer.phone;
-    for (const [otpId, otpRecord] of memoryStorage.otpRecords.entries()) {
+    for (const [otpId, otpRecord] of memoryStorage.otps.entries()) {
       if (otpRecord.phone === phone) {
-        memoryStorage.otpRecords.delete(otpId);
+        memoryStorage.otps.delete(otpId);
       }
     }
 
