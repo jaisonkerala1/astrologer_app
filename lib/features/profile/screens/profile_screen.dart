@@ -422,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           foregroundColor: Colors.white,
           isOutlined: true,
           onPressed: () {
-            context.read<AuthBloc>().add(LogoutEvent());
+            _showLogoutDialog(context);
           },
         ),
         const SizedBox(height: 12),
@@ -439,6 +439,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
       ],
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text(
+            'Are you sure you want to logout? You will need to login again to access your account.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<AuthBloc>().add(LogoutEvent());
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.errorColor,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
     );
   }
 
