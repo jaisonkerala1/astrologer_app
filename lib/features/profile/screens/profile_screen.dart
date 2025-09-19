@@ -59,6 +59,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             (route) => false,
           );
+        } else if (state is AccountDeletedState) {
+          // Show success message and navigate to login screen
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginScreen(),
+            ),
+            (route) => false,
+          );
         }
       },
       child: Scaffold(
