@@ -41,6 +41,7 @@ dependencies:
   shared_preferences: ^2.0.15
   image_picker: ^1.0.4
   animations: ^2.0.8
+  share_plus: ^7.2.1
   
   # UI & Media
   # image_picker: ^0.8.6  # Temporarily disabled due to SDK 35 compatibility issues

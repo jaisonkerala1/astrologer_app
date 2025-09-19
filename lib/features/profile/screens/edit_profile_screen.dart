@@ -459,7 +459,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       print('Updating profile with data: $updateData');
 
       // Call API to update profile
-      final response = await _apiService.put(ApiConstants.updateProfile, updateData);
+      final response = await _apiService.put(ApiConstants.updateProfile, data: updateData);
       
       if (response.statusCode == 200) {
         // Parse the updated user data from API response

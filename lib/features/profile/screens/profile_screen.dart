@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -481,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.share_outlined,
                 color: AppTheme.infoColor,
                 onPressed: () {
-                  // TODO: Share profile
+                  _showShareOptions(context);
                 },
               ),
             ),
@@ -627,5 +628,222 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  void _showShareOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Text(
+                  'Share Profile',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.infoColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.text_fields,
+                    color: AppTheme.infoColor,
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'Share as Text',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Share profile details as text message',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareProfileAsText();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.image,
+                    color: AppTheme.primaryColor,
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'Share with Image',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Share profile with profile picture',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareProfileWithImage();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.link,
+                    color: AppTheme.successColor,
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'Share Profile Link',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Share a link to your profile',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareProfileLink();
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _shareProfileAsText() {
+    if (_currentUser == null) return;
+
+    final profileText = _generateProfileText();
+    
+    Share.share(
+      profileText,
+      subject: '${_currentUser!.name} - Professional Astrologer Profile',
+    );
+  }
+
+  void _shareProfileWithImage() {
+    if (_currentUser == null) return;
+
+    final profileText = _generateProfileText();
+    
+    if (_currentUser!.profilePicture != null && 
+        _currentUser!.profilePicture!.isNotEmpty) {
+      // Share with image
+      Share.shareXFiles(
+        [XFile(_currentUser!.profilePicture!)],
+        text: profileText,
+        subject: '${_currentUser!.name} - Professional Astrologer Profile',
+      );
+    } else {
+      // Fallback to text only if no image
+      _shareProfileAsText();
+    }
+  }
+
+  void _shareProfileLink() {
+    if (_currentUser == null) return;
+
+    final profileText = _generateProfileText();
+    final profileLink = 'https://astrologerapp.com/profile/${_currentUser!.id}';
+    
+    final linkText = '''
+$profileText
+
+🔗 View my full profile: $profileLink
+
+Download the Astrologer App to connect with me and get personalized astrological guidance!
+''';
+
+    Share.share(
+      linkText,
+      subject: '${_currentUser!.name} - Professional Astrologer Profile',
+    );
+  }
+
+  String _generateProfileText() {
+    if (_currentUser == null) return '';
+
+    final user = _currentUser!;
+    final specializations = user.specializations.join(', ');
+    final languages = user.languages.join(', ');
+    
+    return '''
+🌟 ${user.name} - Professional Astrologer
+
+📱 Phone: ${user.phone}
+📧 Email: ${user.email}
+
+🔮 Specializations: $specializations
+🗣️ Languages: $languages
+⭐ Experience: ${user.experience} years
+💰 Rate: ₹${user.ratePerMinute}/minute
+
+📊 Profile Stats:
+• Total Consultations: 127
+• Average Rating: 4.8/5
+• This Month: 23 sessions
+
+✨ Get personalized astrological guidance and insights from a professional astrologer with ${user.experience} years of experience!
+
+#Astrology #ProfessionalAstrologer #${user.specializations.first.replaceAll(' ', '')} #SpiritualGuidance
+''';
   }
 }
