@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const memoryStorage = require('../services/memoryStorage');
+const Astrologer = require('../models/Astrologer');
 
 const auth = async (req, res, next) => {
   try {
@@ -13,7 +13,7 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const astrologer = memoryStorage.findAstrologerById(decoded.astrologerId);
+    const astrologer = await Astrologer.findById(decoded.astrologerId);
 
     if (!astrologer) {
       return res.status(401).json({
@@ -22,7 +22,7 @@ const auth = async (req, res, next) => {
       });
     }
 
-    req.user = { astrologerId: astrologer.id };
+    req.user = { astrologerId: astrologer._id };
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

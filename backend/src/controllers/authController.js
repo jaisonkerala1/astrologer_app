@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const memoryStorage = require('../services/memoryStorage');
+const Astrologer = require('../models/Astrologer');
+const Otp = require('../models/Otp');
 const twilioService = require('../services/twilioService');
 
 // Generate JWT token
@@ -26,7 +27,14 @@ const sendOTP = async (req, res) => {
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpRecord = memoryStorage.createOTP(phone, otp);
+    
+    // Create OTP record in MongoDB
+    const otpRecord = new Otp({
+      phone,
+      otp,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+    });
+    await otpRecord.save();
     
     // Send OTP via Twilio
     try {
@@ -68,7 +76,14 @@ const verifyOTP = async (req, res) => {
     }
 
     // Verify OTP
-    const otpRecord = memoryStorage.verifyOTP(phone, otp, otpId);
+    const otpRecord = await Otp.findOne({
+      phone,
+      otp,
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+      attempts: { $lt: 3 }
+    }).sort({ createdAt: -1 });
+
     if (!otpRecord) {
       return res.status(400).json({
         success: false,
@@ -76,8 +91,12 @@ const verifyOTP = async (req, res) => {
       });
     }
 
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+
     // Find existing astrologer (don't create new ones in login)
-    let astrologer = memoryStorage.findAstrologerByPhone(phone);
+    let astrologer = await Astrologer.findOne({ phone });
     
     if (!astrologer) {
       return res.status(404).json({
@@ -124,7 +143,14 @@ const signup = async (req, res) => {
     const { phone, otp, otpId, name, email, experience, specializations, languages } = req.body;
 
     // Verify OTP first
-    const otpRecord = memoryStorage.verifyOTP(phone, otp, otpId);
+    const otpRecord = await Otp.findOne({
+      phone,
+      otp,
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+      attempts: { $lt: 3 }
+    }).sort({ createdAt: -1 });
+
     if (!otpRecord) {
       return res.status(400).json({
         success: false,
@@ -132,8 +158,12 @@ const signup = async (req, res) => {
       });
     }
 
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+
     // Check if astrologer already exists
-    let astrologer = memoryStorage.findAstrologerByPhone(phone);
+    let astrologer = await Astrologer.findOne({ phone });
     
     if (astrologer) {
       return res.status(400).json({
@@ -143,8 +173,7 @@ const signup = async (req, res) => {
     }
 
     // Create new astrologer with provided data
-    astrologer = {
-      id: Date.now().toString(),
+    astrologer = new Astrologer({
       phone,
       name: name || 'Astrologer',
       email: email || `${phone}@astrologer.com`,
@@ -154,13 +183,11 @@ const signup = async (req, res) => {
       experience: experience || 0,
       ratePerMinute: 50,
       isOnline: false,
-      totalEarnings: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      totalEarnings: 0
+    });
 
-    // Save astrologer
-    memoryStorage.astrologers.set(astrologer.id, astrologer);
+    // Save astrologer to MongoDB
+    await astrologer.save();
 
     // Generate token
     const token = generateToken(astrologer.id);
@@ -199,7 +226,7 @@ const refreshToken = async (req, res) => {
   try {
     const { astrologerId } = req.user;
     
-    const astrologer = memoryStorage.findAstrologerById(astrologerId);
+    const astrologer = await Astrologer.findById(astrologerId);
     if (!astrologer) {
       return res.status(401).json({
         success: false,
@@ -247,7 +274,7 @@ const deleteAccount = async (req, res) => {
     const { astrologerId } = req.user;
     
     // Find the astrologer
-    const astrologer = memoryStorage.findAstrologerById(astrologerId);
+    const astrologer = await Astrologer.findById(astrologerId);
     if (!astrologer) {
       return res.status(404).json({
         success: false,
@@ -255,18 +282,13 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    // Delete the astrologer from memory storage
-    memoryStorage.astrologers.delete(astrologerId);
+    // Delete the astrologer from MongoDB
+    await Astrologer.findByIdAndDelete(astrologerId);
     
     // Also delete any associated OTP records for this phone
-    const phone = astrologer.phone;
-    for (const [otpId, otpRecord] of memoryStorage.otps.entries()) {
-      if (otpRecord.phone === phone) {
-        memoryStorage.otps.delete(otpId);
-      }
-    }
+    await Otp.deleteMany({ phone: astrologer.phone });
 
-    console.log(`Account permanently deleted for astrologer ID: ${astrologerId} - Railway deployment test`);
+    console.log(`Account permanently deleted for astrologer ID: ${astrologerId} - MongoDB persistent storage`);
 
     res.json({
       success: true,
