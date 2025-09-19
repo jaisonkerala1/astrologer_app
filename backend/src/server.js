@@ -40,24 +40,50 @@ const connectDB = async () => {
     console.log('Attempting to connect to MongoDB...');
     console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
     
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/astrologer_app', {
+    // Ensure we have a valid MongoDB URI
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is not set');
+    }
+    
+    // Parse the URI to ensure it's valid
+    const uri = process.env.MONGODB_URI;
+    console.log('MongoDB URI format:', uri.includes('mongodb+srv://') ? 'SRV' : 'Standard');
+    
+    await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 30000, // 30 seconds
       socketTimeoutMS: 45000, // 45 seconds
       maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverApi: {
-        version: '1',
-        strict: true,
-        deprecationErrors: true,
-      }
+      bufferCommands: false, // Disable mongoose buffering
+      bufferMaxEntries: 0, // Disable mongoose buffering
     });
     
     console.log('✅ Connected to MongoDB successfully');
+    console.log('Database name:', mongoose.connection.db.databaseName);
+    
+    // Test the connection with a simple query
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('Available collections:', collections.map(c => c.name));
+    
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
-    console.log('Starting server without database connection for testing...');
-    // Don't exit, continue without database for testing
+    console.error('Full error:', error);
+    
+    // Try to connect with a simpler configuration
+    try {
+      console.log('Trying with simplified configuration...');
+      await mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 20000,
+      });
+      console.log('✅ Connected with simplified configuration');
+    } catch (retryError) {
+      console.error('❌ Retry also failed:', retryError.message);
+      console.log('Starting server without database connection...');
+    }
   }
 };
 
