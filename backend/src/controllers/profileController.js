@@ -1,36 +1,6 @@
 const Astrologer = require('../models/Astrologer');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = process.env.UPLOAD_PATH || 'uploads/';
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 // 5MB
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'), false);
-    }
-  }
-});
 
 // Get profile
 const getProfile = async (req, res) => {
@@ -122,23 +92,27 @@ const uploadProfilePicture = async (req, res) => {
 
     // Delete old profile picture if exists
     if (astrologer.profilePicture) {
-      const oldImagePath = path.join(process.cwd(), astrologer.profilePicture);
+      const oldImagePath = path.join(process.cwd(), 'uploads', path.basename(astrologer.profilePicture));
       if (fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath);
+        console.log(`Deleted old profile picture: ${oldImagePath}`);
       }
     }
 
     // Update profile picture path
     const imagePath = req.file.path;
-    astrologer.profilePicture = imagePath;
+    const imageUrl = `/uploads/${req.file.filename}`;
+    astrologer.profilePicture = imageUrl;
     astrologer.updatedAt = new Date();
     await astrologer.save();
+
+    console.log(`Profile picture uploaded for astrologer ID: ${astrologerId}, URL: ${imageUrl}`);
 
     res.json({
       success: true,
       message: 'Profile picture uploaded successfully',
       data: {
-        profilePicture: imagePath
+        profilePicture: imageUrl
       }
     });
   } catch (error) {
@@ -279,7 +253,7 @@ const updateRate = async (req, res) => {
 module.exports = {
   getProfile,
   updateProfile,
-  uploadProfilePicture: [upload.single('image'), uploadProfilePicture],
+  uploadProfilePicture,
   updateSpecializations,
   updateLanguages,
   updateRate
