@@ -266,7 +266,7 @@ const deleteAccount = async (req, res) => {
       }
     }
 
-    console.log(`Account permanently deleted for astrologer ID: ${astrologerId}`);
+    console.log(`Account permanently deleted for astrologer ID: ${astrologerId} - Railway deployment test`);
 
     res.json({
       success: true,
