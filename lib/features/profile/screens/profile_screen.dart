@@ -151,76 +151,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileHeader(BuildContext context, AstrologerModel? user) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primaryColor, AppTheme.infoColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: AnimatedAvatar(
-              imagePath: _currentUser?.profilePicture,
-              radius: 50,
-              backgroundColor: AppTheme.primaryColor,
-              textColor: Colors.white,
-              showEditIcon: true,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditProfileScreen(
-                      currentUser: _currentUser,
-                      onProfileUpdated: () {
-                        _loadUserData();
-                      },
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProfileScreen(
+                    currentUser: _currentUser,
+                    onProfileUpdated: () {
+                      _loadUserData();
+                    },
+                  ),
+                ),
+              );
+            },
+            child: Stack(
+              children: [
+                AnimatedAvatar(
+                  imagePath: _currentUser?.profilePicture,
+                  radius: 45,
+                  backgroundColor: AppTheme.primaryColor,
+                  textColor: Colors.white,
+                  showEditIcon: false,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 16,
                     ),
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           Text(
             user?.name ?? 'Loading...',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textColor,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             'Professional Astrologer',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withOpacity(0.9),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textColor.withOpacity(0.7),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.green.withOpacity(0.3), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.circle, color: Colors.white, size: 8),
-                const SizedBox(width: 4),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Text(
                   'Online',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Colors.green.shade700,
                     fontWeight: FontWeight.w500,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -251,37 +275,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
               color: AppTheme.textColor,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             title,
             style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textColor.withOpacity(0.7),
+              fontSize: 11,
+              color: AppTheme.textColor.withOpacity(0.6),
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
@@ -294,27 +319,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textColor,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textColor,
+            ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
           ),
           child: Column(children: children),
         ),
@@ -324,11 +345,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildInfoTile(IconData icon, String title, String subtitle) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Icon(icon, color: AppTheme.primaryColor, size: 24),
-          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 18),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,13 +366,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textColor,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: AppTheme.textColor.withOpacity(0.7),
+                    color: AppTheme.textColor.withOpacity(0.6),
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -356,36 +386,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSettingsTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
-    return SimpleTouchFeedback(
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: AppTheme.primaryColor, size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textColor,
-                  ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppTheme.textColor.withOpacity(0.7),
-                  ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textColor,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: AppTheme.textColor.withOpacity(0.6),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Icon(Icons.chevron_right, color: AppTheme.textColor.withOpacity(0.4), size: 20),
+            ],
           ),
-          const Icon(Icons.chevron_right, color: AppTheme.primaryColor),
-        ],
+        ),
       ),
     );
   }
@@ -393,67 +438,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
-        AnimatedButton(
-          text: 'Edit Profile',
-          icon: Icons.edit,
-          width: double.infinity,
-          height: 56,
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EditProfileScreen(
-                  currentUser: _currentUser,
-                  onProfileUpdated: () {
-                    _loadUserData(); // Refresh user data
-                  },
-                ),
+        // Primary Actions Row
+        Row(
+          children: [
+            Expanded(
+              child: _buildCompactButton(
+                text: 'Edit Profile',
+                icon: Icons.edit_outlined,
+                color: AppTheme.primaryColor,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfileScreen(
+                        currentUser: _currentUser,
+                        onProfileUpdated: () {
+                          _loadUserData();
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildCompactButton(
+                text: 'Share',
+                icon: Icons.share_outlined,
+                color: AppTheme.infoColor,
+                onPressed: () {
+                  // TODO: Share profile
+                },
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        AnimatedButton(
-          text: 'Share Profile',
-          icon: Icons.share,
-          width: double.infinity,
-          height: 56,
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-          isOutlined: true,
-          onPressed: () {
-            // TODO: Share profile
-          },
-        ),
-        const SizedBox(height: 12),
-        AnimatedButton(
-          text: 'Logout',
-          icon: Icons.logout,
-          width: double.infinity,
-          height: 56,
-          backgroundColor: AppTheme.errorColor,
-          foregroundColor: Colors.white,
-          isOutlined: true,
-          onPressed: () {
-            _showLogoutDialog(context);
-          },
-        ),
-        const SizedBox(height: 12),
-        AnimatedButton(
-          text: 'Delete Account',
-          icon: Icons.delete_forever,
-          width: double.infinity,
-          height: 56,
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-          isOutlined: true,
-          onPressed: () {
-            _showDeleteAccountDialog(context);
-          },
+        const SizedBox(height: 16),
+        
+        // Secondary Actions Row
+        Row(
+          children: [
+            Expanded(
+              child: _buildCompactButton(
+                text: 'Logout',
+                icon: Icons.logout_outlined,
+                color: AppTheme.warningColor,
+                isOutlined: true,
+                onPressed: () {
+                  _showLogoutDialog(context);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildCompactButton(
+                text: 'Delete Account',
+                icon: Icons.delete_outline,
+                color: AppTheme.errorColor,
+                isOutlined: true,
+                onPressed: () {
+                  _showDeleteAccountDialog(context);
+                },
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildCompactButton({
+    required String text,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    bool isOutlined = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isOutlined ? Colors.transparent : color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: isOutlined ? Border.all(color: color.withOpacity(0.3), width: 1) : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isOutlined ? color : color,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isOutlined ? color : color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
