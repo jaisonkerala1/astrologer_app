@@ -135,16 +135,16 @@ const getReviews = async (req, res) => {
           clientName: {
             $switch: {
               branches: [
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123456')] }, then: 'Sarah Johnson' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123457')] }, then: 'Michael Chen' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123458')] }, then: 'Emily Rodriguez' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123459')] }, then: 'David Kim' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123460')] }, then: 'Lisa Thompson' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123461')] }, then: 'James Wilson' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123462')] }, then: 'Maria Garcia' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123463')] }, then: 'Robert Brown' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123464')] }, then: 'Jennifer Davis' },
-                { case: { $eq: ['$clientId', new mongoose.Types.ObjectId('64a123456789abcdef123465')] }, then: 'Christopher Miller' }
+                { case: { $eq: ['$clientId', '64a123456789abcdef123456'] }, then: 'Sarah Johnson' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123457'] }, then: 'Michael Chen' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123458'] }, then: 'Emily Rodriguez' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123459'] }, then: 'David Kim' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123460'] }, then: 'Lisa Thompson' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123461'] }, then: 'James Wilson' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123462'] }, then: 'Maria Garcia' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123463'] }, then: 'Robert Brown' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123464'] }, then: 'Jennifer Davis' },
+                { case: { $eq: ['$clientId', '64a123456789abcdef123465'] }, then: 'Christopher Miller' }
               ],
               default: 'Anonymous'
             }
