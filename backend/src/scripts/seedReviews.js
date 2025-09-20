@@ -67,6 +67,13 @@ const mockClients = [
 
 // Function to seed reviews for a specific astrologer
 const seedReviewsForAstrologer = async (astrologerId) => {
+  // Ensure mongoose connection is ready
+  if (mongoose.connection.readyState !== 1) {
+    console.log('MongoDB not connected, waiting for connection...');
+    await new Promise((resolve) => {
+      mongoose.connection.once('open', resolve);
+    });
+  }
   const reviewsData = [
     {
       clientId: mockClients[0]._id,
