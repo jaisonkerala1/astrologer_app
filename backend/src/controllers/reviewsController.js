@@ -11,22 +11,21 @@ const getRatingStats = async (req, res) => {
 
     // Try to fetch from MongoDB first
     try {
-      // Try different query formats to find reviews
-      let reviews = await Review.find({ astrologerId: astrologerId });
+      console.log(`Looking for reviews with astrologerId: ${astrologerId}`);
       
+      // Simple query first
+      let reviews = await Review.find({ astrologerId: astrologerId });
+      console.log(`Found ${reviews.length} reviews with string astrologerId`);
+
       if (reviews.length === 0) {
         // Try with ObjectId conversion
-        reviews = await Review.find({ astrologerId: new mongoose.Types.ObjectId(astrologerId) });
+        const reviewsWithObjectId = await Review.find({ astrologerId: new mongoose.Types.ObjectId(astrologerId) });
+        console.log(`Found ${reviewsWithObjectId.length} reviews with ObjectId astrologerId`);
+        
+        if (reviewsWithObjectId.length > 0) {
+          reviews = reviewsWithObjectId;
+        }
       }
-      
-      if (reviews.length === 0) {
-        // Try without any filters to see if there are any reviews at all
-        const allReviews = await Review.find({}).limit(5);
-        console.log(`Found ${allReviews.length} total reviews in database`);
-        console.log('Sample review:', allReviews[0]);
-      }
-
-      console.log(`Found ${reviews.length} reviews in database`);
 
       if (reviews.length > 0) {
         // Calculate real stats from database
