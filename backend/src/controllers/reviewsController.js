@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 
 // Function to create sample reviews
 const createSampleReviews = async (astrologerId) => {
+  console.log('Creating reviews for astrologerId:', astrologerId);
+  
+  // Clear any existing reviews for this astrologer first
+  await Review.deleteMany({ astrologerId: new mongoose.Types.ObjectId(astrologerId) });
+  
   const mockClientIds = [
     new mongoose.Types.ObjectId('64a123456789abcdef123456'),
     new mongoose.Types.ObjectId('64a123456789abcdef123457'),
@@ -148,15 +153,8 @@ const getRatingStats = async (req, res) => {
   try {
     const astrologerId = req.user.id;
     
-    // First check if any reviews exist, if not create sample data
-    const existingReviews = await Review.countDocuments({
-      astrologerId: new mongoose.Types.ObjectId(astrologerId)
-    });
-
-    if (existingReviews === 0) {
-      console.log('No reviews found, creating sample data...');
-      await createSampleReviews(astrologerId);
-    }
+    // Bypass auto-seeding to avoid mongoose connection issues
+    console.log(`Querying reviews for astrologerId: ${astrologerId}`);
 
     // Professional MongoDB aggregation pipeline for statistics
     const stats = await Review.aggregate([
@@ -221,15 +219,8 @@ const getReviews = async (req, res) => {
     const astrologerId = req.user.id;
     const { rating, needsReply, sortBy, page = 1, limit = 20 } = req.query;
 
-    // First check if any reviews exist, if not create sample data
-    const existingReviews = await Review.countDocuments({
-      astrologerId: new mongoose.Types.ObjectId(astrologerId)
-    });
-
-    if (existingReviews === 0) {
-      console.log('No reviews found, creating sample data...');
-      await createSampleReviews(astrologerId);
-    }
+    // Bypass auto-seeding to avoid mongoose connection issues
+    console.log(`Querying reviews for astrologerId: ${astrologerId}`);
     
     // Build MongoDB query filters
     const filter = {
