@@ -63,6 +63,8 @@ class StatsCardWidget extends StatelessWidget {
               color: AppTheme.textColor,
               fontWeight: FontWeight.bold,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
           const SizedBox(height: 4),
           Text(
@@ -70,6 +72,8 @@ class StatsCardWidget extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppTheme.textColor.withOpacity(0.7),
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ),

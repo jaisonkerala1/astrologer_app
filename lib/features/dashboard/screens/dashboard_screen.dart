@@ -43,14 +43,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
-    _loadUserData();
+    // Load user data first, then load dashboard stats
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    // Load user data first
+    await _loadUserData();
+    
+    // Then load dashboard stats
+    if (mounted) {
+      context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
+    }
   }
 
   Future<void> _loadUserData() async {
     try {
       final userData = await _storageService.getUserData();
-      if (userData != null) {
+      if (userData != null && mounted) {
         final userDataMap = jsonDecode(userData);
         setState(() {
           _currentUser = AstrologerModel.fromJson(userDataMap);
@@ -58,6 +68,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } catch (e) {
       print('Error loading user data: $e');
+      // Set a fallback user to prevent null issues
+      if (mounted) {
+        setState(() {
+          _currentUser = AstrologerModel(
+            id: 'unknown',
+            name: 'User',
+            email: '',
+            phone: '',
+            specializations: [],
+            languages: [],
+            experience: 0,
+            ratePerMinute: 0.0,
+            isOnline: false,
+            totalEarnings: 0.0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        });
+      }
     }
   }
 
@@ -163,58 +192,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDashboardContent() {
     return SafeArea(
-      child: BlocBuilder<DashboardBloc, DashboardState>(
-        builder: (context, state) {
-          if (state is DashboardLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryColor,
-              ),
-            );
-          } else if (state is DashboardLoadedState) {
-            return _buildDashboardBody(state.stats);
-          } else if (state is DashboardErrorState) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: AppTheme.errorColor,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        child: BlocBuilder<DashboardBloc, DashboardState>(
+          builder: (context, state) {
+            // Always show loading if user data is not ready yet
+            if (_currentUser == null) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading dashboard',
-                  style: Theme.of(context).textTheme.headlineSmall,
+              );
+            }
+            
+            if (state is DashboardLoading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  state.message,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColor.withOpacity(0.7),
+              );
+            } else if (state is DashboardLoadedState) {
+              return _buildDashboardBody(state.stats);
+            } else if (state is DashboardErrorState) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppTheme.errorColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading dashboard',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textColor.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
-                  },
-                  child: const Text('Retry'),
+              );
+            } else {
+              // Fallback for any unhandled states (like StatusUpdatedState)
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
                 ),
-              ],
-            ),
-          );
-          } else {
-            // Fallback for any unhandled states (like StatusUpdatedState)
-            return const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryColor,
-              ),
-            );
-          }
-      },
+              );
+            }
+          },
+        ),
       ),
     );
   }
@@ -224,12 +271,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onRefresh: () async {
         context.read<DashboardBloc>().add(RefreshDashboardEvent());
       },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - AppConstants.defaultPadding * 2,
+                maxWidth: constraints.maxWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
             // Header
             _buildHeader(_currentUser),
             const SizedBox(height: 24),
@@ -237,26 +292,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Status Toggle
             Consumer<StatusService>(
               builder: (context, statusService, child) {
-                try {
-                  return StatusToggleWidget(
-                    isOnline: statusService.isOnline,
-                    onToggle: (isOnline) {
-                      HapticFeedback.lightImpact();
-                      statusService.setOnlineStatus(isOnline);
-                      // No need to update DashboardBloc since StatusService handles the state
-                    },
-                  );
-                } catch (e) {
-                  print('Dashboard: Error in StatusService Consumer: $e');
-                  // Return a fallback widget
-                  return StatusToggleWidget(
-                    isOnline: false,
-                    onToggle: (isOnline) {
-                      // Try to recreate the service or handle gracefully
-                      print('Dashboard: StatusService not available, skipping status update');
-                    },
+                if (statusService == null) {
+                  // Fallback widget if service is not available
+                  return Container(
+                    height: 60,
+                    child: const Center(
+                      child: Text('Status service unavailable'),
+                    ),
                   );
                 }
+                
+                return StatusToggleWidget(
+                  isOnline: statusService.isOnline,
+                  onToggle: (isOnline) {
+                    try {
+                      HapticFeedback.lightImpact();
+                      statusService.setOnlineStatus(isOnline);
+                    } catch (e) {
+                      print('Error toggling status: $e');
+                    }
+                  },
+                );
               },
             ),
             const SizedBox(height: 24),
@@ -359,14 +415,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-          ],
-        ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildHeader(AstrologerModel? user) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -377,29 +437,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          AnimatedAvatar(
-            imagePath: user?.profilePicture,
-            radius: 30,
-            backgroundColor: Colors.white,
-            textColor: AppTheme.primaryColor,
-            onTap: () {
-              // Navigate to profile
-              setState(() {
-                _selectedIndex = 4; // Profile tab (updated index)
-              });
-            },
+          Container(
+            width: 60,
+            height: 60,
+            child: AnimatedAvatar(
+              imagePath: user?.profilePicture,
+              radius: 30,
+              backgroundColor: Colors.white,
+              textColor: AppTheme.primaryColor,
+              onTap: () {
+                // Navigate to profile
+                setState(() {
+                  _selectedIndex = 4; // Profile tab (updated index)
+                });
+              },
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Welcome back!',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -408,6 +475,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
