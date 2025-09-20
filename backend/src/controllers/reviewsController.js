@@ -1,4 +1,10 @@
-// ULTRA MINIMAL CONTROLLER - NO IMPORTS, NO DEPENDENCIES
+// CONTROLLER WITH MONGODB CONNECTION FOR DELETION
+let Review;
+try {
+  Review = require('../models/Review');
+} catch (error) {
+  console.error('Failed to load Review model:', error);
+}
 
 const getRatingStats = async (req, res) => {
   try {
@@ -89,8 +95,39 @@ const replyToReview = async (req, res) => {
   }
 };
 
+// DELETE ALL REVIEWS - ACTUAL MONGODB DELETION
+const deleteAllReviews = async (req, res) => {
+  try {
+    console.log('🗑️ Attempting to delete all reviews from database...');
+    
+    if (!Review) {
+      return res.status(500).json({
+        success: false,
+        message: 'Review model not available'
+      });
+    }
+    
+    // Delete ALL reviews from the database
+    const deleteResult = await Review.deleteMany({});
+    console.log(`✅ Deleted ${deleteResult.deletedCount} reviews from database`);
+    
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deleteResult.deletedCount} reviews from database`,
+      deletedCount: deleteResult.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ Error deleting reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting reviews: ' + error.message
+    });
+  }
+};
+
 module.exports = {
   getRatingStats,
   getReviews,
   replyToReview,
+  deleteAllReviews,
 };
