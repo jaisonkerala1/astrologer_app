@@ -19,6 +19,7 @@ import '../../settings/screens/language_selection_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_avatar.dart';
+import '../../chat/widgets/floating_chat_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -91,8 +92,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
       child: Scaffold(
         backgroundColor: AppTheme.backgroundColor,
+        floatingActionButton: FloatingChatButton(userProfile: _currentUser),
         body: SingleChildScrollView(
-        child: Column(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
@@ -173,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-      ),
+        ),
       ),
     );
   }

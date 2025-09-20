@@ -19,6 +19,15 @@ class ApiConstants {
   static const String updateProfile = '/api/profile';
   static const String uploadImage = '/api/profile/upload-image';
   
+  // Chat endpoints
+  static const String chatConversations = '/api/chat/conversations';
+  static const String chatActiveConversation = '/api/chat/active';
+  static const String chatCreateConversation = '/api/chat/conversations';
+  static const String chatAddMessage = '/api/chat/conversations';
+  static const String chatUpdateSettings = '/api/chat/conversations';
+  static const String chatClearHistory = '/api/chat/history';
+  static const String chatDeleteConversation = '/api/chat/conversations';
+  
   // Headers
   static const Map<String, String> defaultHeaders = {
     'Content-Type': 'application/json',

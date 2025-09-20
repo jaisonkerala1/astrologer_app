@@ -117,14 +117,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           }
         },
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             child: Form(
               key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 
+                    MediaQuery.of(context).padding.top - 
+                    MediaQuery.of(context).padding.bottom - 
+                    kToolbarHeight - 
+                    (AppConstants.defaultPadding * 2),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   // OTP Icon
                   const Icon(
                     Icons.message,
@@ -152,7 +160,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                   const SizedBox(height: 48),
                   
-                  // OTP Input
+                  // OTP Input - Simple and Clean
                   TextFormField(
                     controller: _otpController,
                     keyboardType: TextInputType.number,
@@ -160,12 +168,39 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       letterSpacing: 8,
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Enter OTP',
+                    decoration: InputDecoration(
+                      labelText: 'Enter 6-digit OTP',
                       hintText: '000000',
                       counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.withOpacity(0.05),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     ),
+                    onChanged: (value) {
+                      if (value.length == AppConstants.otpLength) {
+                        // Auto-verify when OTP is complete
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (mounted) {
+                            _verifyOtp();
+                          }
+                        });
+                      }
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter the OTP';
@@ -216,7 +251,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         ),
                     ],
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

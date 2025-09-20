@@ -13,6 +13,8 @@ import '../features/auth/bloc/auth_state.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
 import '../features/consultations/bloc/consultations_bloc.dart';
+import '../features/reviews/bloc/reviews_bloc.dart';
+import '../features/reviews/repository/reviews_repository.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/auth_gate_screen.dart';
@@ -74,6 +76,13 @@ class _AppState extends State<App> {
           ),
           BlocProvider<ConsultationsBloc>(
             create: (context) => ConsultationsBloc(),
+          ),
+          BlocProvider<ReviewsBloc>(
+            create: (context) => ReviewsBloc(
+              reviewsRepository: ReviewsRepository(
+                apiService: ApiService(),
+              ),
+            ),
           ),
         ],
         child: MaterialApp(

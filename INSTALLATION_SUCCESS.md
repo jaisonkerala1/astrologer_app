@@ -90,3 +90,7 @@ Your astrologer app with complete manual consultation database integration is no
 
 The complete manual consultation database integration is now live and ready for testing! 🎯
 
+
+
+
+

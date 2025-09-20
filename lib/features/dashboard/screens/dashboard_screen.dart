@@ -21,6 +21,9 @@ import '../../earnings/screens/earnings_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../heal/screens/heal_screen.dart';
 import '../../heal/screens/discussion_screen.dart';
+import '../../communication/screens/communication_screen.dart';
+import '../../communication/screens/incoming_call_screen.dart';
+import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_avatar.dart';
@@ -61,6 +64,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Method to refresh user data when profile is updated
   void refreshUserData() {
     _loadUserData();
+  }
+
+  // Method to open communication screen with specific tab
+  void _openCommunicationScreen(String tab) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommunicationScreen(initialTab: tab),
+      ),
+    );
+  }
+
+  // Method to simulate incoming call
+  void _simulateIncomingCall() {
+    print('📞 [DASHBOARD] Simulating incoming call');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const IncomingCallScreen(
+          phoneNumber: '+91 98765 43210',
+          contactName: 'Sarah Miller',
+        ),
+      ),
+    );
   }
 
   @override
@@ -117,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: l10n.consultations,
               ),
               BottomNavigationBarItem(
-                icon: const Icon(Icons.healing),
+                icon: const Icon(Icons.auto_awesome),
                 label: l10n.heal,
               ),
               BottomNavigationBarItem(
@@ -210,14 +237,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Status Toggle
             Consumer<StatusService>(
               builder: (context, statusService, child) {
-                return StatusToggleWidget(
-                  isOnline: statusService.isOnline,
-                  onToggle: (isOnline) {
-                    HapticFeedback.lightImpact();
-                    statusService.setOnlineStatus(isOnline);
-                    // No need to update DashboardBloc since StatusService handles the state
-                  },
-                );
+                try {
+                  return StatusToggleWidget(
+                    isOnline: statusService.isOnline,
+                    onToggle: (isOnline) {
+                      HapticFeedback.lightImpact();
+                      statusService.setOnlineStatus(isOnline);
+                      // No need to update DashboardBloc since StatusService handles the state
+                    },
+                  );
+                } catch (e) {
+                  print('Dashboard: Error in StatusService Consumer: $e');
+                  // Return a fallback widget
+                  return StatusToggleWidget(
+                    isOnline: false,
+                    onToggle: (isOnline) {
+                      // Try to recreate the service or handle gracefully
+                      print('Dashboard: StatusService not available, skipping status update');
+                    },
+                  );
+                }
               },
             ),
             const SizedBox(height: 24),
@@ -238,24 +277,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Stats Cards
+            // Communication Cards
             Row(
               children: [
                 Expanded(
-                  child: StatsCardWidget(
-                    title: 'Calls Today',
-                    value: stats.callsToday.toString(),
-                    icon: Icons.phone,
-                    color: AppTheme.callsColor,
+                  child: GestureDetector(
+                    onTap: () => _openCommunicationScreen('calls'),
+                    child: StatsCardWidget(
+                      title: 'Calls Today',
+                      value: stats.callsToday.toString(),
+                      icon: Icons.phone,
+                      color: AppTheme.callsColor,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: StatsCardWidget(
-                    title: 'Total Calls',
-                    value: stats.totalCalls.toString(),
-                    icon: Icons.call_made,
-                    color: AppTheme.infoColor,
+                  child: GestureDetector(
+                    onTap: () => _openCommunicationScreen('messages'),
+                    child: StatsCardWidget(
+                      title: 'Messages Today',
+                      value: '12', // Mock data - replace with actual messages today
+                      icon: Icons.message,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                 ),
               ],
@@ -265,11 +310,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: StatsCardWidget(
-                    title: 'Avg Rating',
-                    value: stats.averageRating.toStringAsFixed(1),
-                    icon: Icons.star,
-                    color: AppTheme.ratingColor,
+                  child: GestureDetector(
+                    onTap: () => _openReviewsScreen(),
+                    child: StatsCardWidget(
+                      title: 'Avg Rating',
+                      value: stats.averageRating.toStringAsFixed(1),
+                      icon: Icons.star,
+                      color: AppTheme.ratingColor,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -287,6 +335,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             // Discussion Card
             _buildDiscussionCard(),
+            
+            const SizedBox(height: 16),
+            
+            // Temporary Test Button for Incoming Call
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              child: ElevatedButton.icon(
+                onPressed: _simulateIncomingCall,
+                icon: const Icon(Icons.call_received, color: Colors.white),
+                label: const Text(
+                  'Test Incoming Call',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -435,6 +507,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _openReviewsScreen() {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReviewsOverviewScreen(),
       ),
     );
   }
