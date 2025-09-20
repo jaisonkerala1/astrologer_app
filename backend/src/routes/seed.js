@@ -394,4 +394,117 @@ router.post('/reviews', async (req, res) => {
   }
 });
 
+// POST /api/seed/direct - Create reviews directly without auth checks (for testing)
+router.post('/direct', async (req, res) => {
+  try {
+    // Allow direct seeding for testing
+    const allowSeeding = process.env.NODE_ENV !== 'production' || 
+                         req.headers['x-seed-key'] === 'dev-seed-reviews-2025';
+    
+    if (!allowSeeding) {
+      return res.status(403).json({
+        success: false,
+        message: 'Direct seeding not allowed in production without proper authorization'
+      });
+    }
+
+    console.log('🎯 Direct seeding reviews...');
+    
+    const correctAstrologerId = '68ccff521b39ed18eb9eaff3';
+    
+    // Clear existing reviews for this astrologer
+    await Review.deleteMany({ astrologerId: new mongoose.Types.ObjectId(correctAstrologerId) });
+    
+    const mockClientIds = [
+      new mongoose.Types.ObjectId('64a123456789abcdef123456'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123457'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123458'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123459'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123460')
+    ];
+
+    const reviewsData = [
+      {
+        clientId: mockClientIds[0],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Amazing consultation! Very insightful and helpful.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[1],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 4,
+        reviewText: 'Good session with valuable insights.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: 'Thank you for your feedback!',
+        repliedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[2],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Exceptional service! Highly recommended.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[3],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 4,
+        reviewText: 'Very helpful and professional.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: 'I appreciate your kind words!',
+        repliedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[4],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Outstanding consultation! Will book again.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+      }
+    ];
+
+    const createdReviews = await Review.insertMany(reviewsData);
+    console.log(`✅ Created ${createdReviews.length} reviews for astrologer ${correctAstrologerId}`);
+
+    res.json({
+      success: true,
+      message: `Successfully created ${createdReviews.length} reviews with correct astrologer ID.`,
+      createdCount: createdReviews.length,
+      astrologerId: correctAstrologerId,
+      reviewIds: createdReviews.map(r => r._id)
+    });
+
+  } catch (error) {
+    console.error('Error in direct seeding:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create reviews directly',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
