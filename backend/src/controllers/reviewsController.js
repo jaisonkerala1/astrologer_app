@@ -111,15 +111,18 @@ const getReviews = async (req, res) => {
     const astrologerId = req.user.astrologerId;
     console.log('Getting reviews for astrologer:', astrologerId);
     
-    // Get all reviews for this astrologer, sorted by newest first
-    const reviews = await Review.find({ astrologerId: astrologerId })
-      .sort({ createdAt: -1 })
-      .limit(50); // Limit to 50 most recent reviews
+    // Simple query first - just get all reviews without filters
+    const reviews = await Review.find({});
+    console.log('Found total reviews in DB:', reviews.length);
     
-    console.log('Found reviews:', reviews.length);
+    // Filter for this astrologer
+    const astrologerReviews = reviews.filter(review => 
+      review.astrologerId && review.astrologerId.toString() === astrologerId
+    );
+    console.log('Found reviews for this astrologer:', astrologerReviews.length);
     
     // Transform reviews to match frontend format
-    const transformedReviews = reviews.map(review => ({
+    const transformedReviews = astrologerReviews.map(review => ({
       _id: review._id.toString(),
       clientName: `Client ${review._id.toString().slice(-4)}`, // Use last 4 chars of ID as client name
       rating: review.rating,
