@@ -9,54 +9,7 @@ const getRatingStats = async (req, res) => {
     const astrologerId = req.user.id;
     console.log(`Getting stats for astrologerId: ${astrologerId}`);
 
-    // Try to fetch from MongoDB first
-    try {
-      console.log(`Looking for reviews with astrologerId: ${astrologerId}`);
-      
-      // Simple query first
-      let reviews = await Review.find({ astrologerId: astrologerId });
-      console.log(`Found ${reviews.length} reviews with string astrologerId`);
-
-      if (reviews.length === 0) {
-        // Try with ObjectId conversion
-        const reviewsWithObjectId = await Review.find({ astrologerId: new mongoose.Types.ObjectId(astrologerId) });
-        console.log(`Found ${reviewsWithObjectId.length} reviews with ObjectId astrologerId`);
-        
-        if (reviewsWithObjectId.length > 0) {
-          reviews = reviewsWithObjectId;
-        }
-      }
-
-      if (reviews.length > 0) {
-        // Calculate real stats from database
-        const totalReviews = reviews.length;
-        const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
-        
-        const ratingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        reviews.forEach(review => {
-          ratingBreakdown[review.rating] = (ratingBreakdown[review.rating] || 0) + 1;
-        });
-
-        const unrespondedCount = reviews.filter(review => !review.astrologerReply).length;
-
-        const result = {
-          averageRating: Math.round(averageRating * 10) / 10,
-          totalReviews,
-          ratingBreakdown,
-          unrespondedCount
-        };
-
-        return res.json({
-          success: true,
-          data: result,
-          fromDatabase: true
-        });
-      }
-    } catch (dbError) {
-      console.error('MongoDB error:', dbError.message);
-    }
-
-    // Fallback to mock data if no reviews found or DB error
+    // Simple fallback - return mock data immediately
     const mockResult = {
       averageRating: 4.4,
       totalReviews: 5,
@@ -85,34 +38,7 @@ const getReviews = async (req, res) => {
     const astrologerId = req.user.id;
     console.log(`Getting reviews for astrologerId: ${astrologerId}`);
 
-    // Try to fetch from MongoDB first
-    try {
-      const reviews = await Review.find({ 
-        astrologerId: astrologerId,
-        isPublic: true,
-        isVerified: true
-      }).sort({ createdAt: -1 }).limit(20);
-
-      console.log(`Found ${reviews.length} reviews in database`);
-
-      if (reviews.length > 0) {
-        // Add client names (mock for now since we don't have User collection)
-        const reviewsWithNames = reviews.map(review => ({
-          ...review.toObject(),
-          clientName: `Client ${review._id.toString().slice(-4)}` // Use last 4 chars of ID as name
-        }));
-
-        return res.json({
-          success: true,
-          data: reviewsWithNames,
-          fromDatabase: true
-        });
-      }
-    } catch (dbError) {
-      console.error('MongoDB error:', dbError.message);
-    }
-
-    // Fallback to mock data if no reviews found or DB error
+    // Simple fallback - return mock data immediately
     const mockReviews = [
       {
         _id: '507f1f77bcf86cd799439011',
