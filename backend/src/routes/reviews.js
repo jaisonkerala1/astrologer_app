@@ -15,7 +15,4 @@ router.get('/', reviewsController.getReviews);
 // POST /api/reviews/:id/reply - Reply to a review
 router.post('/:id/reply', reviewsController.replyToReview);
 
-// DELETE /api/reviews/delete-all - Delete all reviews (for testing)
-router.delete('/delete-all', reviewsController.deleteAllReviews);
-
 module.exports = router;
