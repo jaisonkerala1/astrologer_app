@@ -1,7 +1,7 @@
 const Review = require('../models/Review');
 const mongoose = require('mongoose');
 
-// Removed unnecessary seeding function - using fallback data instead
+// FORCE REDEPLOY - Fallback system activated
 
 // GET /api/reviews/stats - Get rating statistics
 const getRatingStats = async (req, res) => {
