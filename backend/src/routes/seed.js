@@ -5,11 +5,14 @@ const { seedReviewsForAstrologer } = require('../scripts/seedReviews');
 // POST /api/seed/reviews - Seed reviews for the authenticated astrologer
 router.post('/reviews', async (req, res) => {
   try {
-    // For development only - remove in production
-    if (process.env.NODE_ENV === 'production') {
+    // Allow seeding in development or with special header for Railway testing
+    const allowSeeding = process.env.NODE_ENV !== 'production' || 
+                         req.headers['x-seed-key'] === 'dev-seed-reviews-2025';
+    
+    if (!allowSeeding) {
       return res.status(403).json({
         success: false,
-        message: 'Seeding not allowed in production'
+        message: 'Seeding not allowed in production without proper authorization'
       });
     }
 
