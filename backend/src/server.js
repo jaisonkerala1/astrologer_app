@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = 7566; // Force port 7566
-console.log('🚀 Server starting - force redeploy 2025-09-20');
+console.log('🚀 Server starting - force redeploy 2025-09-20 v2');
 
 // Security middleware
 app.use(helmet());
