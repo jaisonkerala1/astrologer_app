@@ -11,11 +11,20 @@ const getRatingStats = async (req, res) => {
 
     // Try to fetch from MongoDB first
     try {
-      const reviews = await Review.find({ 
-        astrologerId: astrologerId,
-        isPublic: true,
-        isVerified: true
-      });
+      // Try different query formats to find reviews
+      let reviews = await Review.find({ astrologerId: astrologerId });
+      
+      if (reviews.length === 0) {
+        // Try with ObjectId conversion
+        reviews = await Review.find({ astrologerId: new mongoose.Types.ObjectId(astrologerId) });
+      }
+      
+      if (reviews.length === 0) {
+        // Try without any filters to see if there are any reviews at all
+        const allReviews = await Review.find({}).limit(5);
+        console.log(`Found ${allReviews.length} total reviews in database`);
+        console.log('Sample review:', allReviews[0]);
+      }
 
       console.log(`Found ${reviews.length} reviews in database`);
 
