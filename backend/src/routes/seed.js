@@ -20,6 +20,27 @@ router.post('/reviews', async (req, res) => {
     const astrologerId = '68ccff521b39ed18eb9eaff3'; // Your astrologer ID
     
     console.log('🌱 Seeding reviews for astrologer:', astrologerId);
+    console.log('MongoDB connection state:', mongoose.connection.readyState);
+    
+    // Ensure mongoose connection is ready
+    if (mongoose.connection.readyState !== 1) {
+      console.log('MongoDB not connected, waiting for connection...');
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('MongoDB connection timeout'));
+        }, 10000);
+        
+        if (mongoose.connection.readyState === 1) {
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          mongoose.connection.once('open', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+        }
+      });
+    }
     
     // Clear existing reviews for this astrologer
     await Review.deleteMany({ astrologerId: new mongoose.Types.ObjectId(astrologerId) });
