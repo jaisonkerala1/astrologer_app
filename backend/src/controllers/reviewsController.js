@@ -16,7 +16,7 @@ const getRatingStats = async (req, res) => {
       const stats = await Review.aggregate([
       {
         $match: { 
-          astrologerId: new mongoose.Types.ObjectId(astrologerId),
+          astrologerId: astrologerId, // Try without ObjectId conversion first
           isPublic: true,
           isVerified: true
         }
@@ -99,7 +99,7 @@ const getReviews = async (req, res) => {
     try {
       // Build MongoDB query filters
       const filter = {
-      astrologerId: new mongoose.Types.ObjectId(astrologerId),
+      astrologerId: astrologerId, // Try without ObjectId conversion first
       isPublic: true,
       isVerified: true
     };
