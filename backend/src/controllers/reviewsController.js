@@ -49,7 +49,7 @@ const getRatingStats = async (req, res) => {
       });
     }
 
-      const result = {
+    const result = {
         averageRating: stats.length > 0 ? Math.round(stats[0].averageRating * 10) / 10 : 0,
         totalReviews: stats.length > 0 ? stats[0].totalReviews : 0,
         ratingBreakdown,
