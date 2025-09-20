@@ -3,6 +3,41 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Review = require('../models/Review');
 
+// POST /api/seed/cleanup - Clean up and recreate reviews for authenticated astrologer
+router.post('/cleanup', async (req, res) => {
+  try {
+    // Allow cleanup in development or with special header for Railway testing
+    const allowSeeding = process.env.NODE_ENV !== 'production' || 
+                         req.headers['x-seed-key'] === 'dev-seed-reviews-2025';
+    
+    if (!allowSeeding) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cleanup not allowed in production without proper authorization'
+      });
+    }
+
+    console.log('🧹 Cleaning up and recreating reviews...');
+    
+    // Delete ALL reviews in the collection (for cleanup)
+    const deleteResult = await Review.deleteMany({});
+    console.log(`Deleted ${deleteResult.deletedCount} existing reviews`);
+
+    res.json({
+      success: true,
+      message: `Cleanup complete. Deleted ${deleteResult.deletedCount} reviews. Now access the reviews page in the app to recreate them properly.`,
+      deletedCount: deleteResult.deletedCount
+    });
+  } catch (error) {
+    console.error('Error during cleanup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cleanup reviews',
+      error: error.message
+    });
+  }
+});
+
 // POST /api/seed/reviews - Seed reviews for the authenticated astrologer
 router.post('/reviews', async (req, res) => {
   try {
