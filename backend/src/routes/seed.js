@@ -22,11 +22,156 @@ router.post('/cleanup', async (req, res) => {
     // Delete ALL reviews in the collection (for cleanup)
     const deleteResult = await Review.deleteMany({});
     console.log(`Deleted ${deleteResult.deletedCount} existing reviews`);
+    
+    // Now create new reviews with the correct astrologer ID
+    const correctAstrologerId = '68ccff521b39ed18eb9eaff3'; // From JWT token
+    
+    const mockClientIds = [
+      new mongoose.Types.ObjectId('64a123456789abcdef123456'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123457'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123458'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123459'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123460'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123461'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123462'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123463'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123464'),
+      new mongoose.Types.ObjectId('64a123456789abcdef123465')
+    ];
+
+    const reviewsData = [
+      {
+        clientId: mockClientIds[0],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Amazing consultation! The astrologer was very insightful and helped me understand my situation better. Highly recommended!',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[1],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 4,
+        reviewText: 'Good session, got some valuable insights. The astrologer was professional and answered all my questions.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: 'Thank you for your feedback, Michael! I\'m glad I could help you gain clarity.',
+        repliedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[2],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Exceptional service! The reading was spot on and the guidance provided was exactly what I needed.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[3],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 3,
+        reviewText: 'The session was okay, but I expected more detailed explanations. Some points were unclear.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[4],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Outstanding consultation! The astrologer was very knowledgeable and provided clear guidance. Will definitely book again.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: 'Thank you so much, Lisa! I look forward to our next session.',
+        repliedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000),
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[5],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 4,
+        reviewText: 'Good experience overall. The astrologer was patient and explained things well.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[6],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Incredible accuracy in predictions! The astrologer understood my concerns perfectly and provided solutions.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: 'I\'m happy I could help guide you, Maria. Wishing you all the best!',
+        repliedAt: new Date(Date.now() - 17 * 24 * 60 * 60 * 1000),
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[7],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 4,
+        reviewText: 'Very insightful session. The astrologer helped me understand my career path better.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[8],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 5,
+        reviewText: 'Absolutely wonderful! The guidance I received has been life-changing. Thank you so much!',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: null,
+        repliedAt: null,
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000)
+      },
+      {
+        clientId: mockClientIds[9],
+        astrologerId: new mongoose.Types.ObjectId(correctAstrologerId),
+        rating: 4,
+        reviewText: 'Great consultation with helpful advice. The astrologer was very professional and knowledgeable.',
+        sessionId: new mongoose.Types.ObjectId(),
+        astrologerReply: 'Thank you for your kind words, Christopher! Best wishes to you.',
+        repliedAt: new Date(Date.now() - 27 * 24 * 60 * 60 * 1000),
+        isPublic: true,
+        isVerified: true,
+        createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)
+      }
+    ];
+
+    // Insert the corrected reviews
+    const createdReviews = await Review.insertMany(reviewsData);
+    console.log(`Created ${createdReviews.length} reviews with correct astrologer ID: ${correctAstrologerId}`);
 
     res.json({
       success: true,
-      message: `Cleanup complete. Deleted ${deleteResult.deletedCount} reviews. Now access the reviews page in the app to recreate them properly.`,
-      deletedCount: deleteResult.deletedCount
+      message: `Cleanup complete! Deleted ${deleteResult.deletedCount} old reviews and created ${createdReviews.length} new reviews with correct astrologer ID.`,
+      deletedCount: deleteResult.deletedCount,
+      createdCount: createdReviews.length,
+      correctAstrologerId: correctAstrologerId
     });
   } catch (error) {
     console.error('Error during cleanup:', error);
@@ -52,7 +197,7 @@ router.post('/reviews', async (req, res) => {
       });
     }
 
-    const astrologerId = '68ccff521b39ed18eb9eaff3'; // Your astrologer ID
+    const astrologerId = '68ccff521b39ed18eb9eaff3'; // Your correct astrologer ID
     
     console.log('🌱 Seeding reviews for astrologer:', astrologerId);
     console.log('MongoDB connection state:', mongoose.connection.readyState);
