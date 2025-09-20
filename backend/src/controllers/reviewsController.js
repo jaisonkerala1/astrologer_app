@@ -1,5 +1,5 @@
 // const Review = require('../models/Review'); // Using mock data for now
-const { validationResult } = require('express-validator');
+// const { validationResult } = require('express-validator'); // Not using validation for mock data
 
 // GET /api/reviews/stats - Get rating statistics
 const getRatingStats = async (req, res) => {
