@@ -507,4 +507,53 @@ router.post('/direct', async (req, res) => {
   }
 });
 
+// GET /api/seed/debug - Debug what's in the database
+router.get('/debug', async (req, res) => {
+  try {
+    console.log('🔍 Debugging database state...');
+    
+    // Get ALL reviews in the database
+    const allReviews = await Review.find({}).select('astrologerId clientId rating reviewText createdAt').limit(50);
+    console.log(`Found ${allReviews.length} total reviews in database`);
+    
+    // Get reviews for the specific astrologer ID
+    const targetAstrologerId = '68ccff521b39ed18eb9eaff3';
+    const userReviews = await Review.find({ 
+      astrologerId: new mongoose.Types.ObjectId(targetAstrologerId)
+    }).select('astrologerId clientId rating reviewText createdAt');
+    
+    console.log(`Found ${userReviews.length} reviews for target astrologer ${targetAstrologerId}`);
+    
+    // Get reviews with all filters like the controller uses
+    const filteredReviews = await Review.find({ 
+      astrologerId: new mongoose.Types.ObjectId(targetAstrologerId),
+      isPublic: true,
+      isVerified: true
+    }).select('astrologerId clientId rating reviewText createdAt isPublic isVerified');
+    
+    console.log(`Found ${filteredReviews.length} reviews after applying filters`);
+
+    res.json({
+      success: true,
+      debug: {
+        targetAstrologerId,
+        totalReviewsInDB: allReviews.length,
+        reviewsForUser: userReviews.length,
+        reviewsAfterFilters: filteredReviews.length,
+        sampleReviews: allReviews.slice(0, 5),
+        userReviews: userReviews.slice(0, 5),
+        filteredReviews: filteredReviews.slice(0, 5)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in debug:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to debug database',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
