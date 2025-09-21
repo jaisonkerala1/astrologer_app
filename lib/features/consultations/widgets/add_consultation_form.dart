@@ -410,6 +410,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
         createdAt: DateTime.now(),
       );
 
+      print('Form submitted with consultation: ${consultation.clientName}');
       widget.onSubmit(consultation);
     }
   }

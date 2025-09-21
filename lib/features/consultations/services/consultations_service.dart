@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../models/consultation_model.dart';
@@ -8,19 +9,59 @@ class ConsultationsService {
   final StorageService _storageService = StorageService();
   static List<ConsultationModel> _consultations = [];
   
-  // Get astrologer ID from stored user data
+  // Get astrologer ID from stored user data or JWT token
   Future<String> _getAstrologerId() async {
     try {
+      // First try to get from stored user data
       final userData = await _storageService.getUserData();
       if (userData != null) {
         final userDataMap = jsonDecode(userData);
-        return userDataMap['id'] as String;
+        final astrologerId = userDataMap['id'] as String;
+        print('Using astrologer ID from storage: $astrologerId');
+        return astrologerId;
+      }
+      
+      // If no user data, try to get from JWT token
+      final token = await _storageService.getAuthToken();
+      if (token != null) {
+        final astrologerId = _extractAstrologerIdFromToken(token);
+        if (astrologerId != null) {
+          print('Using astrologer ID from JWT token: $astrologerId');
+          return astrologerId;
+        }
       }
     } catch (e) {
       print('Error getting astrologer ID: $e');
     }
-    // Fallback to the actual ID from the JWT token
-    return '68ccff521b39ed18eb9eaff3';
+    throw Exception('No user data found. Please login again.');
+  }
+  
+  // Extract astrologer ID from JWT token
+  String? _extractAstrologerIdFromToken(String token) {
+    try {
+      // JWT tokens have 3 parts separated by dots: header.payload.signature
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      
+      // Decode the payload (middle part)
+      final payload = parts[1];
+      
+      // Add padding if needed
+      final paddedPayload = payload.padRight(payload.length + (4 - payload.length % 4) % 4, '=');
+      
+      // Decode base64
+      final decodedBytes = base64Url.decode(paddedPayload);
+      final decodedString = utf8.decode(decodedBytes);
+      
+      // Parse JSON
+      final payloadMap = jsonDecode(decodedString);
+      
+      // Extract astrologer ID
+      return payloadMap['astrologerId'] as String?;
+    } catch (e) {
+      print('Error extracting astrologer ID from token: $e');
+      return null;
+    }
   }
 
   Future<List<ConsultationModel>> getConsultations({
@@ -79,15 +120,27 @@ class ConsultationsService {
     String? cancellationReason,
   }) async {
     try {
-      final response = await _apiService.put(
+      print('Updating consultation $consultationId to status: ${newStatus.toString().split('.').last}');
+      
+      final updateData = {
+        'status': newStatus.toString().split('.').last,
+        if (notes != null) 'notes': notes,
+        if (cancelledBy != null) 'cancelledBy': cancelledBy,
+        if (cancellationReason != null) 'cancellationReason': cancellationReason,
+      };
+
+      // Add startedAt timestamp when starting consultation
+      if (newStatus == ConsultationStatus.inProgress) {
+        updateData['startedAt'] = DateTime.now().toIso8601String();
+        print('Adding startedAt timestamp: ${updateData['startedAt']}');
+      }
+      
+      final response = await _apiService.patch(
         '/api/consultation/status/$consultationId',
-        data: {
-          'status': newStatus.toString().split('.').last,
-          if (notes != null) 'notes': notes,
-          if (cancelledBy != null) 'cancelledBy': cancelledBy,
-          if (cancellationReason != null) 'cancellationReason': cancellationReason,
-        },
+        data: updateData,
       );
+
+      print('API Response: ${response.data}');
 
       if (response.data['success'] == true) {
         final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
@@ -98,6 +151,7 @@ class ConsultationsService {
         );
         if (consultationIndex != -1) {
           _consultations[consultationIndex] = updatedConsultation;
+          print('Updated consultation in local cache: ${updatedConsultation.status.displayName}');
         }
         
         return updatedConsultation;
@@ -107,36 +161,46 @@ class ConsultationsService {
     } catch (e) {
       print('Error updating consultation status: $e');
       // Fallback to local update for development
-    final consultationIndex = _consultations.indexWhere(
-      (c) => c.id == consultationId,
-    );
-    
-    if (consultationIndex == -1) {
-      throw Exception('Consultation not found');
-    }
-    
-    final updatedConsultation = _consultations[consultationIndex].copyWith(
-      status: newStatus,
-      completedAt: newStatus == ConsultationStatus.completed ? DateTime.now() : null,
+      final consultationIndex = _consultations.indexWhere(
+        (c) => c.id == consultationId,
+      );
+      
+      if (consultationIndex == -1) {
+        throw Exception('Consultation not found');
+      }
+      
+      final updatedConsultation = _consultations[consultationIndex].copyWith(
+        status: newStatus,
+        startedAt: newStatus == ConsultationStatus.inProgress ? DateTime.now() : _consultations[consultationIndex].startedAt,
+        completedAt: newStatus == ConsultationStatus.completed ? DateTime.now() : null,
+        cancelledAt: newStatus == ConsultationStatus.cancelled ? DateTime.now() : null,
         notes: notes ?? _consultations[consultationIndex].notes,
       );
       
       _consultations[consultationIndex] = updatedConsultation;
+      print('Updated consultation locally: ${updatedConsultation.status.displayName}');
       return updatedConsultation;
     }
   }
 
   Future<ConsultationModel> addConsultation(ConsultationModel consultation) async {
     try {
+      print('Creating consultation for: ${consultation.clientName}');
       final astrologerId = await _getAstrologerId();
+      print('Astrologer ID: $astrologerId');
+      print('Consultation data: ${consultation.toJson()}');
+      
       final response = await _apiService.post(
         '/api/consultation/$astrologerId',
         data: consultation.toJson(),
       );
 
+      print('API Response: ${response.data}');
+
       if (response.data['success'] == true) {
         final createdConsultation = ConsultationModel.fromJson(response.data['data']);
         _consultations.add(createdConsultation);
+        print('Consultation added to local cache: ${createdConsultation.clientName}');
         return createdConsultation;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to create consultation');
@@ -149,6 +213,7 @@ class ConsultationsService {
         createdAt: DateTime.now(),
       );
       _consultations.add(newConsultation);
+      print('Added consultation locally as fallback: ${newConsultation.clientName}');
       return newConsultation;
     }
   }

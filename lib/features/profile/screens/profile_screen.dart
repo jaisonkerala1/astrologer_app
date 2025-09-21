@@ -16,10 +16,8 @@ import '../../auth/screens/login_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import 'edit_profile_screen.dart';
 import '../../settings/screens/language_selection_screen.dart';
-import '../../../shared/widgets/animated_button.dart';
-import '../../../shared/widgets/simple_touch_feedback.dart';
-import '../../../shared/widgets/animated_avatar.dart';
 import '../../chat/widgets/floating_chat_button.dart';
+import '../../reviews/screens/reviews_overview_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -60,6 +58,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     widget.onProfileUpdated?.call();
   }
 
+  ImageProvider? _getImageProvider(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
+      // Network URL - construct full URL for Railway backend
+      if (imagePath.startsWith('/uploads/')) {
+        return NetworkImage('https://astrologerapp-production.up.railway.app$imagePath');
+      }
+      return NetworkImage(imagePath);
+    } else {
+      // Local file path
+      return FileImage(File(imagePath));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -96,86 +107,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 40),
-            
-            // Profile Header - Full width
-            _buildProfileHeader(context, _currentUser),
-            const SizedBox(height: 32),
-            
-            // Content with padding
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-            
-            // Profile Stats
-            _buildProfileStats(),
-            const SizedBox(height: 24),
-            
-            // Profile Sections
-            _buildProfileSection(
-              'Personal Information',
-              [
-                _buildInfoTile(Icons.person, 'Full Name', _currentUser?.name ?? 'Loading...'),
-                _buildInfoTile(Icons.phone, 'Phone', _currentUser?.phone ?? 'Loading...'),
-                _buildInfoTile(Icons.email, 'Email', _currentUser?.email ?? 'Loading...'),
-                _buildInfoTile(Icons.cake, 'Date of Birth', '15 Aug, 1985'),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            _buildProfileSection(
-              'Professional Details',
-              [
-                _buildInfoTile(Icons.school, 'Experience', '${_currentUser?.experience ?? 0} Years'),
-                _buildInfoTile(Icons.star, 'Specializations', _currentUser?.specializations.join(', ') ?? 'Loading...'),
-                _buildInfoTile(Icons.language, 'Languages', _currentUser?.languages.join(', ') ?? 'Loading...'),
-                _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${_currentUser?.ratePerMinute ?? 0}'),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Settings Section
-            _buildProfileSection(
-              AppLocalizations.of(context)!.settings,
-              [
-                _buildSettingsTile(Icons.notifications_outlined, AppLocalizations.of(context)!.notifications, 'Manage your notifications', () {}),
-                _buildSettingsTile(Icons.language_outlined, AppLocalizations.of(context)!.language, 'Change app language', () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LanguageSelectionScreen(),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 40),
+              
+              // Profile Header - Full width
+              _buildProfileHeader(context, _currentUser),
+              const SizedBox(height: 32),
+              
+              // Content with padding
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Profile Stats
+                    _buildProfileStats(),
+                    const SizedBox(height: 24),
+                    
+                    // Profile Sections
+                    _buildProfileSection(
+                      'Personal Information',
+                      [
+                        _buildInfoTile(Icons.person, 'Full Name', _currentUser?.name ?? 'Loading...'),
+                        _buildInfoTile(Icons.phone, 'Phone', _currentUser?.phone ?? 'Loading...'),
+                        _buildInfoTile(Icons.email, 'Email', _currentUser?.email ?? 'Loading...'),
+                        _buildInfoTile(Icons.cake, 'Date of Birth', '15 Aug, 1985'),
+                      ],
                     ),
-                  );
-                }),
-                _buildSettingsTile(Icons.dark_mode_outlined, 'Theme', 'Switch between light and dark mode', () {}),
-                _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {}),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Support Section
-            _buildProfileSection(
-              'Support',
-              [
-                _buildSettingsTile(Icons.help_outline, AppLocalizations.of(context)!.help, 'Get help and support', () {}),
-                _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {}),
-                _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {}),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Action Buttons
-            _buildActionButtons(context),
-            const SizedBox(height: 32),
-                ],
+                    const SizedBox(height: 24),
+                    
+                    _buildProfileSection(
+                      'Professional Details',
+                      [
+                        _buildInfoTile(Icons.school, 'Experience', '${_currentUser?.experience ?? 0} Years'),
+                        _buildInfoTile(Icons.star, 'Specializations', _currentUser?.specializations.join(', ') ?? 'Loading...'),
+                        _buildInfoTile(Icons.language, 'Languages', _currentUser?.languages.join(', ') ?? 'Loading...'),
+                        _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${_currentUser?.ratePerMinute ?? 0}'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Settings Section
+                    _buildProfileSection(
+                      AppLocalizations.of(context)!.settings,
+                      [
+                        _buildSettingsTile(Icons.notifications_outlined, AppLocalizations.of(context)!.notifications, 'Manage your notifications', () {}),
+                        _buildSettingsTile(Icons.language_outlined, AppLocalizations.of(context)!.language, 'Change app language', () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LanguageSelectionScreen(),
+                            ),
+                          );
+                        }),
+                        _buildSettingsTile(Icons.dark_mode_outlined, 'Theme', 'Switch between light and dark mode', () {}),
+                        _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {}),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Support Section
+                    _buildProfileSection(
+                      'Support',
+                      [
+                        _buildSettingsTile(Icons.help_outline, AppLocalizations.of(context)!.help, 'Get help and support', () {}),
+                        _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {}),
+                        _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {}),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Action Buttons
+                    _buildActionButtons(context),
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -205,12 +215,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: Stack(
               children: [
-                AnimatedAvatar(
-                  imagePath: _currentUser?.profilePicture,
+                CircleAvatar(
                   radius: 45,
                   backgroundColor: AppTheme.primaryColor,
-                  textColor: Colors.white,
-                  showEditIcon: false,
+                  backgroundImage: _currentUser?.profilePicture != null && _currentUser!.profilePicture!.isNotEmpty
+                      ? _getImageProvider(_currentUser!.profilePicture!)
+                      : null,
+                  child: _currentUser?.profilePicture == null || _currentUser!.profilePicture!.isEmpty
+                      ? Text(
+                          _currentUser?.name?.isNotEmpty == true 
+                              ? _currentUser!.name!.substring(0, 1).toUpperCase()
+                              : 'J',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
                 ),
                 Positioned(
                   bottom: 0,
@@ -252,6 +274,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 12),
           Consumer<StatusService>(
             builder: (context, statusService, child) {
+              if (statusService == null) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.withOpacity(0.3), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Status',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
               final l10n = AppLocalizations.of(context)!;
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -298,7 +352,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildStatCard('Average Rating', '4.8', Icons.star, AppTheme.ratingColor),
+          child: GestureDetector(
+            onTap: () => _navigateToReviews(),
+            child: _buildStatCard('Average Rating', '4.8', Icons.star, AppTheme.ratingColor),
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -834,6 +891,15 @@ Download the Astrologer App to connect with me and get personalized astrological
     Share.share(
       linkText,
       subject: '${_currentUser!.name} - Professional Astrologer Profile',
+    );
+  }
+
+  void _navigateToReviews() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReviewsOverviewScreen(),
+      ),
     );
   }
 

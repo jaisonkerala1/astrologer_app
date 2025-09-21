@@ -72,9 +72,17 @@ const getConsultations = async (req, res) => {
     // Convert to plain objects and ensure all fields are included
     const consultationsWithAllFields = consultations.map(consultation => {
       const consultationObj = consultation.toObject ? consultation.toObject() : consultation;
+      
+      // For in-progress consultations without startedAt, set it to updatedAt
+      let startedAt = consultationObj.startedAt;
+      if (consultationObj.status === 'inProgress' && !startedAt) {
+        startedAt = consultationObj.updatedAt;
+        console.log(`Setting startedAt to updatedAt for consultation ${consultationObj._id}: ${startedAt}`);
+      }
+      
       return {
         ...consultationObj,
-        startedAt: consultationObj.startedAt || null,
+        startedAt: startedAt || null,
         completedAt: consultationObj.completedAt || null,
         cancelledAt: consultationObj.cancelledAt || null
       };
@@ -490,6 +498,47 @@ const getTodaysConsultations = async (req, res) => {
   }
 };
 
+// Fix startedAt for existing in-progress consultations
+const fixStartedAt = async (req, res) => {
+  try {
+    console.log('Fixing startedAt for existing in-progress consultations...');
+    
+    // Find all consultations with status 'inProgress' that don't have startedAt
+    const consultations = await Consultation.find({
+      status: 'inProgress',
+      startedAt: { $exists: false }
+    });
+    
+    console.log(`Found ${consultations.length} in-progress consultations without startedAt`);
+    
+    // Update each consultation with a startedAt timestamp
+    for (const consultation of consultations) {
+      // Set startedAt to the updatedAt time (when status was changed to inProgress)
+      const startedAt = consultation.updatedAt || new Date();
+      
+      await Consultation.findByIdAndUpdate(consultation._id, {
+        startedAt: startedAt
+      });
+      
+      console.log(`Updated consultation ${consultation._id} with startedAt: ${startedAt}`);
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully updated ${consultations.length} consultations with startedAt`,
+      updatedCount: consultations.length
+    });
+    
+  } catch (error) {
+    console.error('Error fixing startedAt fields:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix startedAt fields',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 // Get consultation statistics
 const getConsultationStats = async (req, res) => {
   try {
@@ -641,5 +690,6 @@ module.exports = {
   getTodaysConsultations,
   getConsultationStats,
   addConsultationNotes,
-  addConsultationRating
+  addConsultationRating,
+  fixStartedAt
 };

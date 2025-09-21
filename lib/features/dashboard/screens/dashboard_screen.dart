@@ -26,7 +26,6 @@ import '../../communication/screens/incoming_call_screen.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
-import '../../../shared/widgets/animated_avatar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -93,6 +92,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Method to refresh user data when profile is updated
   void refreshUserData() {
     _loadUserData();
+  }
+
+  ImageProvider? _getImageProvider(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
+      // Network URL - construct full URL for Railway backend
+      if (imagePath.startsWith('/uploads/')) {
+        return NetworkImage('https://astrologerapp-production.up.railway.app$imagePath');
+      }
+      return NetworkImage(imagePath);
+    } else {
+      // Local file path
+      return FileImage(File(imagePath));
+    }
   }
 
   // Method to open communication screen with specific tab
@@ -439,20 +451,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            child: AnimatedAvatar(
-              imagePath: user?.profilePicture,
-              radius: 30,
-              backgroundColor: Colors.white,
-              textColor: AppTheme.primaryColor,
-              onTap: () {
-                // Navigate to profile
-                setState(() {
-                  _selectedIndex = 4; // Profile tab (updated index)
-                });
-              },
+          GestureDetector(
+            onTap: () {
+              // Navigate to profile
+              setState(() {
+                _selectedIndex = 4; // Profile tab (updated index)
+              });
+            },
+            child: Container(
+              width: 60,
+              height: 60,
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.white,
+                backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
+                    ? _getImageProvider(user!.profilePicture!)
+                    : null,
+                child: user?.profilePicture == null || user!.profilePicture!.isEmpty
+                    ? Text(
+                        user?.name?.isNotEmpty == true 
+                            ? user!.name!.substring(0, 1).toUpperCase()
+                            : 'J',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                        ),
+                      )
+                    : null,
+              ),
             ),
           ),
           const SizedBox(width: 16),

@@ -27,12 +27,19 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     Emitter<ConsultationsState> emit,
   ) async {
     try {
+      print('Loading consultations...');
       emit(const ConsultationsLoading());
       
       final consultations = await _consultationsService.getConsultations();
+      print('Loaded ${consultations.length} consultations');
+      
+      for (var consultation in consultations) {
+        print('Consultation ${consultation.id}: ${consultation.clientName} - ${consultation.status.displayName}');
+      }
       
       emit(_buildLoadedState(consultations));
     } catch (e) {
+      print('Error loading consultations: $e');
       emit(ConsultationsError(message: e.toString()));
     }
   }
@@ -42,7 +49,23 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     Emitter<ConsultationsState> emit,
   ) async {
     try {
+      print('Refreshing consultations...');
       final consultations = await _consultationsService.getConsultations();
+      print('Refreshed ${consultations.length} consultations');
+      
+      // Log server response for debugging
+      for (var consultation in consultations) {
+        if (consultation.status == ConsultationStatus.inProgress) {
+          print('Server returned inProgress consultation ${consultation.id}: startedAt = ${consultation.startedAt}');
+        }
+      }
+      
+      for (var consultation in consultations) {
+        print('Refreshed consultation ${consultation.id}: ${consultation.clientName} - ${consultation.status.displayName}');
+        if (consultation.status == ConsultationStatus.inProgress) {
+          print('  - In Progress consultation startedAt: ${consultation.startedAt}');
+        }
+      }
       
       if (state is ConsultationsLoaded) {
         final currentState = state as ConsultationsLoaded;
@@ -55,6 +78,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
         emit(_buildLoadedState(consultations));
       }
     } catch (e) {
+      print('Error refreshing consultations: $e');
       emit(ConsultationsError(message: e.toString()));
     }
   }
@@ -87,13 +111,57 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     AddConsultationEvent event,
     Emitter<ConsultationsState> emit,
   ) async {
-    try {
-      await _consultationsService.addConsultation(event.consultation);
+    // Optimistic update: immediately update UI
+    final currentState = state;
+    if (currentState is ConsultationsLoaded) {
+      final consultations = List<ConsultationModel>.from(currentState.allConsultations);
+      final newConsultation = event.consultation.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        createdAt: DateTime.now(),
+      );
+      consultations.add(newConsultation);
       
-      // Reload consultations to include the new one
-      add(const RefreshConsultationsEvent());
+      // Emit updated state immediately
+      emit(_buildLoadedState(
+        consultations,
+        activeFilter: currentState.activeFilter,
+        dateFilter: currentState.dateFilter,
+      ));
+      
+      print('Optimistically added consultation: ${newConsultation.clientName}');
+    }
+    
+    try {
+      print('Adding consultation: ${event.consultation.clientName}');
+      final createdConsultation = await _consultationsService.addConsultation(event.consultation);
+      print('Consultation added successfully: ${createdConsultation.clientName}');
+      
+      // Update the optimistic consultation with the real one from server
+      if (currentState is ConsultationsLoaded) {
+        final consultations = List<ConsultationModel>.from(currentState.allConsultations);
+        final consultationIndex = consultations.indexWhere(
+          (c) => c.id == event.consultation.id || c.clientName == event.consultation.clientName,
+        );
+        
+        if (consultationIndex != -1) {
+          consultations[consultationIndex] = createdConsultation;
+        } else {
+          consultations.add(createdConsultation);
+        }
+        
+        emit(_buildLoadedState(
+          consultations,
+          activeFilter: currentState.activeFilter,
+          dateFilter: currentState.dateFilter,
+        ));
+      }
     } catch (e) {
-      emit(ConsultationsError(message: e.toString()));
+      print('Error adding consultation: $e');
+      // Revert optimistic update on error
+      if (currentState is ConsultationsLoaded) {
+        add(const RefreshConsultationsEvent());
+      }
+      emit(ConsultationsError(message: 'Failed to add consultation: ${e.toString()}'));
     }
   }
 
@@ -101,18 +169,45 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     CancelConsultationEvent event,
     Emitter<ConsultationsState> emit,
   ) async {
+    // Optimistic update: immediately update UI
+    final currentState = state;
+    if (currentState is ConsultationsLoaded) {
+      final consultations = List<ConsultationModel>.from(currentState.consultations);
+      final consultationIndex = consultations.indexWhere((c) => c.id == event.consultationId);
+      
+      if (consultationIndex != -1) {
+        // Update consultation optimistically
+        consultations[consultationIndex] = consultations[consultationIndex].copyWith(
+          status: ConsultationStatus.cancelled,
+          cancelledAt: DateTime.now(),
+        );
+        
+        // Emit updated state immediately
+        emit(currentState.copyWith(
+          consultations: consultations,
+          allConsultations: consultations,
+        ));
+        
+        print('Optimistically updated consultation to Cancelled');
+      }
+    }
+    
     try {
-      emit(ConsultationUpdating(consultationId: event.consultationId));
+      print('Cancelling consultation API call: ${event.consultationId}');
       
       await _consultationsService.updateConsultationStatus(
         event.consultationId,
         ConsultationStatus.cancelled,
       );
       
-      // Reload consultations
+      print('Consultation cancelled successfully, refreshing data...');
+      // Reload consultations to sync with server
       add(const RefreshConsultationsEvent());
     } catch (e) {
-      emit(ConsultationsError(message: e.toString()));
+      print('Error cancelling consultation: $e');
+      // Revert optimistic update on error
+      add(const RefreshConsultationsEvent());
+      emit(ConsultationsError(message: 'Failed to cancel consultation: ${e.toString()}'));
     }
   }
 
@@ -120,18 +215,48 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     StartConsultationEvent event,
     Emitter<ConsultationsState> emit,
   ) async {
+    // Optimistic update: immediately update UI
+    final currentState = state;
+    if (currentState is ConsultationsLoaded) {
+      final consultations = List<ConsultationModel>.from(currentState.consultations);
+      final consultationIndex = consultations.indexWhere((c) => c.id == event.consultationId);
+      
+      if (consultationIndex != -1) {
+        // Update consultation optimistically and store the optimistic startedAt
+        final optimisticStartTime = DateTime.now();
+        print('Setting optimistic startedAt to: $optimisticStartTime');
+        
+        consultations[consultationIndex] = consultations[consultationIndex].copyWith(
+          status: ConsultationStatus.inProgress,
+          startedAt: optimisticStartTime,
+        );
+        
+        // Emit updated state immediately
+        emit(currentState.copyWith(
+          consultations: consultations,
+          allConsultations: consultations,
+        ));
+        
+        print('Optimistically updated consultation to In Progress with startedAt: ${consultations[consultationIndex].startedAt}');
+      }
+    }
+    
     try {
-      emit(ConsultationUpdating(consultationId: event.consultationId));
+      print('Starting consultation API call: ${event.consultationId}');
       
       await _consultationsService.updateConsultationStatus(
         event.consultationId,
         ConsultationStatus.inProgress,
       );
       
-      // Reload consultations
+      print('Consultation started successfully, refreshing data...');
+      // Reload consultations to sync with server
       add(const RefreshConsultationsEvent());
     } catch (e) {
-      emit(ConsultationsError(message: e.toString()));
+      print('Error starting consultation: $e');
+      // Revert optimistic update on error
+      add(const RefreshConsultationsEvent());
+      emit(ConsultationsError(message: 'Failed to start consultation: ${e.toString()}'));
     }
   }
 
@@ -139,18 +264,46 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     CompleteConsultationEvent event,
     Emitter<ConsultationsState> emit,
   ) async {
+    // Optimistic update: immediately update UI
+    final currentState = state;
+    if (currentState is ConsultationsLoaded) {
+      final consultations = List<ConsultationModel>.from(currentState.consultations);
+      final consultationIndex = consultations.indexWhere((c) => c.id == event.consultationId);
+      
+      if (consultationIndex != -1) {
+        // Update consultation optimistically
+        consultations[consultationIndex] = consultations[consultationIndex].copyWith(
+          status: ConsultationStatus.completed,
+          completedAt: DateTime.now(),
+          notes: event.notes,
+        );
+        
+        // Emit updated state immediately
+        emit(currentState.copyWith(
+          consultations: consultations,
+          allConsultations: consultations,
+        ));
+        
+        print('Optimistically updated consultation to Completed');
+      }
+    }
+    
     try {
-      emit(ConsultationUpdating(consultationId: event.consultationId));
+      print('Completing consultation API call: ${event.consultationId}');
       
       await _consultationsService.completeConsultation(
         event.consultationId,
         event.notes,
       );
       
-      // Reload consultations
+      print('Consultation completed successfully, refreshing data...');
+      // Reload consultations to sync with server
       add(const RefreshConsultationsEvent());
     } catch (e) {
-      emit(ConsultationsError(message: e.toString()));
+      print('Error completing consultation: $e');
+      // Revert optimistic update on error
+      add(const RefreshConsultationsEvent());
+      emit(ConsultationsError(message: 'Failed to complete consultation: ${e.toString()}'));
     }
   }
 

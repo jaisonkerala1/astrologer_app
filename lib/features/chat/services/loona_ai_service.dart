@@ -17,8 +17,8 @@ class LoonaAIService {
   final ChatApiService _chatApiService = ChatApiService();
   
   static const String _openRouterApiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  static const String _apiKey = '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';
-  static const String _model = 'microsoft/phi-3-mini-128k-instruct';
+  static const String _apiKey = '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';
+  static const String _model = 'anthropic/claude-3-haiku';
 
   void initialize() {
     _dio.options.baseUrl = _openRouterApiUrl;
@@ -66,11 +66,11 @@ class LoonaAIService {
       final response = await _dio.post('', data: {
         'model': _model,
         'messages': messages,
-        'max_tokens': 500,
-        'temperature': 0.7,
-        'top_p': 0.9,
-        'frequency_penalty': 0.1,
-        'presence_penalty': 0.1,
+        'max_tokens': 800,
+        'temperature': 0.3,
+        'top_p': 0.8,
+        'frequency_penalty': 0.0,
+        'presence_penalty': 0.0,
       });
 
       if (response.statusCode == 200) {
@@ -94,28 +94,40 @@ class LoonaAIService {
   String _buildContext(AstrologerModel? userProfile, ChatSettings? settings) {
     final buffer = StringBuffer();
     
-    // Loona's personality and role
-    buffer.writeln("You are Loona, a friendly and knowledgeable AI companion for astrologers. You're here to help with astrology questions, app guidance, and provide emotional support.");
+    // Loona's professional identity and role
+    buffer.writeln("You are Loona, a professional AI assistant specialized in astrology and designed to support professional astrologers. You provide accurate, insightful, and helpful guidance while maintaining the highest standards of professionalism.");
+    buffer.writeln();
+    
+    // Core expertise areas
+    buffer.writeln("Your Expertise:");
+    buffer.writeln("- Advanced astrological knowledge including natal charts, transits, progressions, and synastry");
+    buffer.writeln("- Professional astrology practice guidance and business advice");
+    buffer.writeln("- App features and functionality support");
+    buffer.writeln("- Client consultation best practices");
+    buffer.writeln("- Astrological software and tools guidance");
     buffer.writeln();
     
     // User context if available and sharing is enabled
     if (userProfile != null && (settings?.shareUserInfo ?? true)) {
-      buffer.writeln("User Information:");
+      buffer.writeln("Astrologer Profile:");
       buffer.writeln("- Name: ${userProfile.name}");
-      buffer.writeln("- Experience: ${userProfile.experience} years");
+      buffer.writeln("- Professional Experience: ${userProfile.experience} years");
       buffer.writeln("- Specializations: ${userProfile.specializations.join(', ')}");
       buffer.writeln("- Languages: ${userProfile.languages.join(', ')}");
       buffer.writeln();
     }
     
-    // Guidelines for responses
-    buffer.writeln("Guidelines:");
-    buffer.writeln("- Be warm, supportive, and encouraging");
-    buffer.writeln("- Provide helpful astrology guidance and app tips");
-    buffer.writeln("- Keep responses concise but informative");
-    buffer.writeln("- Use a friendly, conversational tone");
-    buffer.writeln("- If you don't know something, admit it and suggest alternatives");
-    buffer.writeln("- Always be respectful and professional");
+    // Professional guidelines for responses
+    buffer.writeln("Professional Guidelines:");
+    buffer.writeln("- Maintain a professional yet approachable tone");
+    buffer.writeln("- Provide accurate, evidence-based astrological information");
+    buffer.writeln("- Offer practical solutions and actionable advice");
+    buffer.writeln("- Respect the astrologer's expertise and experience level");
+    buffer.writeln("- Keep responses focused, informative, and relevant");
+    buffer.writeln("- Acknowledge limitations and suggest professional resources when appropriate");
+    buffer.writeln("- Support the astrologer's professional growth and client service quality");
+    buffer.writeln("- Never make medical, legal, or financial advice outside astrological context");
+    buffer.writeln("- Encourage ethical and responsible astrological practice");
     
     return buffer.toString();
   }
@@ -133,8 +145,8 @@ class LoonaAIService {
       'content': context,
     });
     
-    // Add conversation history (last 10 messages to keep context manageable)
-    final recentHistory = conversationHistory.take(10).toList();
+    // Add conversation history (last 8 messages to keep context manageable but comprehensive)
+    final recentHistory = conversationHistory.take(8).toList();
     for (final message in recentHistory) {
       messages.add({
         'role': message.isFromUser ? 'user' : 'assistant',
@@ -152,17 +164,17 @@ class LoonaAIService {
   }
 
   String _getFallbackResponse(AstrologerModel? userProfile) {
-    final greetings = [
-      "Hello! I'm Loona, your AI companion. I'm here to help with astrology questions and app guidance!",
-      "Hi there! I'm Loona, ready to assist you with your astrology journey!",
-      "Greetings! I'm Loona, your friendly AI helper for all things astrology!",
+    final professionalGreetings = [
+      "Hello! I'm Loona, your professional AI assistant. I'm here to support your astrological practice with expert guidance and app assistance.",
+      "Greetings! I'm Loona, specializing in professional astrology support. How may I assist you with your practice today?",
+      "Welcome! I'm Loona, your dedicated AI assistant for professional astrology guidance and app support.",
     ];
     
     if (userProfile != null) {
-      return "Hello ${userProfile.name}! I'm Loona, your AI companion. I'm here to help with astrology questions and guide you through the app. How can I assist you today?";
+      return "Hello ${userProfile.name}! I'm Loona, your professional AI assistant. I'm here to support your astrological practice with expert guidance, app assistance, and professional insights. How may I help you today?";
     }
     
-    return greetings[DateTime.now().millisecond % greetings.length];
+    return professionalGreetings[DateTime.now().millisecond % professionalGreetings.length];
   }
 
   // Save conversation to both local and API storage

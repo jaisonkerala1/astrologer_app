@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/consultation_model.dart';
 
-class ConsultationCardWidget extends StatelessWidget {
+class ConsultationCardWidget extends StatefulWidget {
   final ConsultationModel consultation;
   final VoidCallback? onTap;
   final VoidCallback? onStart;
@@ -20,6 +21,106 @@ class ConsultationCardWidget extends StatelessWidget {
   });
 
   @override
+  State<ConsultationCardWidget> createState() => _ConsultationCardWidgetState();
+}
+
+class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
+  bool _isStarting = false;
+  bool _isCompleting = false;
+  bool _isCancelling = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimerIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(ConsultationCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _startTimerIfNeeded();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimerIfNeeded() {
+    _timer?.cancel();
+    if (widget.consultation.status == ConsultationStatus.inProgress && 
+        widget.consultation.startedAt != null) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
+  }
+
+  Future<void> _handleStart() async {
+    if (widget.onStart == null) return;
+    
+    setState(() {
+      _isStarting = true;
+    });
+    
+    try {
+      widget.onStart!();
+      // Wait a bit for the optimistic update to show
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isStarting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleComplete() async {
+    if (widget.onComplete == null) return;
+    
+    setState(() {
+      _isCompleting = true;
+    });
+    
+    try {
+      widget.onComplete!();
+      // Wait a bit for the optimistic update to show
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCompleting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleCancel() async {
+    if (widget.onCancel == null) return;
+    
+    setState(() {
+      _isCancelling = true;
+    });
+    
+    try {
+      widget.onCancel!();
+      // Wait a bit for the optimistic update to show
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCancelling = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -28,7 +129,7 @@ class ConsultationCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -42,14 +143,14 @@ class ConsultationCardWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          consultation.clientName,
+                          widget.consultation.clientName,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          consultation.clientPhone,
+                          widget.consultation.clientPhone,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.textColor.withOpacity(0.7),
                           ),
@@ -65,12 +166,12 @@ class ConsultationCardWidget extends StatelessWidget {
                 children: [
                   _buildInfoItem(
                     Icons.access_time,
-                    DateFormat('MMM dd, yyyy - HH:mm').format(consultation.scheduledTime),
+                    DateFormat('MMM dd, yyyy - HH:mm').format(widget.consultation.scheduledTime),
                   ),
                   const SizedBox(width: 16),
                   _buildInfoItem(
                     _getTypeIcon(),
-                    consultation.type.displayName,
+                    widget.consultation.type.displayName,
                   ),
                 ],
               ),
@@ -79,16 +180,20 @@ class ConsultationCardWidget extends StatelessWidget {
                 children: [
                   _buildInfoItem(
                     Icons.schedule,
-                    '${consultation.duration} min',
+                    '${widget.consultation.duration} min',
                   ),
                   const SizedBox(width: 16),
                   _buildInfoItem(
                     Icons.currency_rupee,
-                    '₹${consultation.amount.toStringAsFixed(0)}',
+                    '₹${widget.consultation.amount.toStringAsFixed(0)}',
                   ),
                 ],
               ),
-              if (consultation.notes != null && consultation.notes!.isNotEmpty) ...[
+              if (widget.consultation.status == ConsultationStatus.inProgress && widget.consultation.startedAt != null) ...[
+                const SizedBox(height: 8),
+                _buildElapsedTime(),
+              ],
+              if (widget.consultation.notes != null && widget.consultation.notes!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -106,7 +211,7 @@ class ConsultationCardWidget extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          consultation.notes!,
+                          widget.consultation.notes!,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -124,7 +229,7 @@ class ConsultationCardWidget extends StatelessWidget {
   }
 
   Widget _buildStatusChip() {
-    final color = Color(int.parse(consultation.status.colorCode.substring(1), radix: 16) + 0xFF000000);
+    final color = Color(int.parse(widget.consultation.status.colorCode.substring(1), radix: 16) + 0xFF000000);
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -133,15 +238,41 @@ class ConsultationCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Text(
-        consultation.status.displayName,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getStatusIcon(),
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            widget.consultation.status.displayName,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  IconData _getStatusIcon() {
+    switch (widget.consultation.status) {
+      case ConsultationStatus.scheduled:
+        return Icons.schedule;
+      case ConsultationStatus.inProgress:
+        return Icons.play_circle_fill;
+      case ConsultationStatus.completed:
+        return Icons.check_circle;
+      case ConsultationStatus.cancelled:
+        return Icons.cancel;
+      case ConsultationStatus.noShow:
+        return Icons.block;
+    }
   }
 
   Widget _buildInfoItem(IconData icon, String text) {
@@ -166,7 +297,7 @@ class ConsultationCardWidget extends StatelessWidget {
   }
 
   IconData _getTypeIcon() {
-    switch (consultation.type) {
+    switch (widget.consultation.type) {
       case ConsultationType.phone:
         return Icons.phone;
       case ConsultationType.video:
@@ -178,19 +309,121 @@ class ConsultationCardWidget extends StatelessWidget {
     }
   }
 
+  Widget _buildElapsedTime() {
+    if (widget.consultation.startedAt != null) {
+      final now = DateTime.now();
+      final startedAt = widget.consultation.startedAt!;
+      final elapsed = now.difference(startedAt);
+      
+      // Debug logging
+      print('Timer Debug - Now: $now, StartedAt: $startedAt, Elapsed: ${elapsed.inSeconds}s');
+      
+      // If elapsed time is negative, it means startedAt is in the future
+      if (elapsed.isNegative) {
+        print('Warning: startedAt is in the future! Difference: ${elapsed.inSeconds}s');
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning,
+                size: 16,
+                color: Colors.red.shade700,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Time sync issue',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      
+      final minutes = elapsed.inMinutes;
+      final seconds = elapsed.inSeconds % 60;
+      
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timer,
+              size: 16,
+              color: Colors.orange.shade700,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Elapsed: ${minutes}m ${seconds.toString().padLeft(2, '0')}s',
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timer,
+              size: 16,
+              color: Colors.orange.shade700,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Started recently',
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Widget _buildActionButtons() {
     final now = DateTime.now();
-    final isToday = consultation.scheduledTime.day == now.day &&
-        consultation.scheduledTime.month == now.month &&
-        consultation.scheduledTime.year == now.year;
+    final isToday = widget.consultation.scheduledTime.day == now.day &&
+        widget.consultation.scheduledTime.month == now.month &&
+        widget.consultation.scheduledTime.year == now.year;
     
-    final canStart = consultation.status == ConsultationStatus.scheduled &&
-        isToday &&
-        consultation.scheduledTime.isBefore(now.add(const Duration(minutes: 15)));
+    // For testing: Can start if scheduled and within last 7 days or future
+    final isRecentOrFuture = widget.consultation.scheduledTime.isAfter(now.subtract(const Duration(days: 7)));
+    final canStart = widget.consultation.status == ConsultationStatus.scheduled && isRecentOrFuture;
     
-    final canComplete = consultation.status == ConsultationStatus.inProgress;
+    final canComplete = widget.consultation.status == ConsultationStatus.inProgress;
     
-    final canCancel = consultation.status == ConsultationStatus.scheduled;
+    final canCancel = widget.consultation.status == ConsultationStatus.scheduled;
 
     if (!canStart && !canComplete && !canCancel) {
       return const SizedBox.shrink();
@@ -201,9 +434,18 @@ class ConsultationCardWidget extends StatelessWidget {
         if (canStart) ...[
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: onStart,
-              icon: const Icon(Icons.play_arrow, size: 18),
-              label: const Text('Start'),
+              onPressed: _isStarting ? null : _handleStart,
+              icon: _isStarting 
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.play_arrow, size: 18),
+              label: Text(_isStarting ? 'Starting...' : 'Start'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
@@ -216,9 +458,18 @@ class ConsultationCardWidget extends StatelessWidget {
         if (canComplete) ...[
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: onComplete,
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Complete'),
+              onPressed: _isCompleting ? null : _handleComplete,
+              icon: _isCompleting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.check, size: 18),
+              label: Text(_isCompleting ? 'Completing...' : 'Mark as Complete'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -231,9 +482,18 @@ class ConsultationCardWidget extends StatelessWidget {
         if (canCancel) ...[
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: onCancel,
-              icon: const Icon(Icons.cancel, size: 18),
-              label: const Text('Cancel'),
+              onPressed: _isCancelling ? null : _handleCancel,
+              icon: _isCancelling
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    ),
+                  )
+                : const Icon(Icons.cancel, size: 18),
+              label: Text(_isCancelling ? 'Cancelling...' : 'Cancel'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red),
@@ -246,3 +506,4 @@ class ConsultationCardWidget extends StatelessWidget {
     );
   }
 }
+

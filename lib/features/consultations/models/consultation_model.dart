@@ -9,7 +9,9 @@ class ConsultationModel {
   final ConsultationType type;
   final String? notes;
   final DateTime createdAt;
+  final DateTime? startedAt;
   final DateTime? completedAt;
+  final DateTime? cancelledAt;
 
   const ConsultationModel({
     required this.id,
@@ -22,29 +24,41 @@ class ConsultationModel {
     required this.type,
     this.notes,
     required this.createdAt,
+    this.startedAt,
     this.completedAt,
+    this.cancelledAt,
   });
 
   factory ConsultationModel.fromJson(Map<String, dynamic> json) {
+    final status = ConsultationStatus.values.firstWhere(
+      (e) => e.toString().split('.').last == json['status'],
+      orElse: () => ConsultationStatus.scheduled,
+    );
+    
+    print('ConsultationModel.fromJson: Parsing status "${json['status']}" to ${status.displayName}');
+    
     return ConsultationModel(
-      id: json['id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       clientName: json['clientName'] ?? '',
       clientPhone: json['clientPhone'] ?? '',
       scheduledTime: DateTime.parse(json['scheduledTime']),
       duration: json['duration'] ?? 30,
       amount: (json['amount'] ?? 0).toDouble(),
-      status: ConsultationStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
-        orElse: () => ConsultationStatus.scheduled,
-      ),
+      status: status,
       type: ConsultationType.values.firstWhere(
         (e) => e.toString().split('.').last == json['type'],
         orElse: () => ConsultationType.phone,
       ),
       notes: json['notes'],
       createdAt: DateTime.parse(json['createdAt']),
+      startedAt: json['startedAt'] != null 
+          ? DateTime.parse(json['startedAt'])
+          : null,
       completedAt: json['completedAt'] != null 
           ? DateTime.parse(json['completedAt'])
+          : null,
+      cancelledAt: json['cancelledAt'] != null 
+          ? DateTime.parse(json['cancelledAt'])
           : null,
     );
   }
@@ -61,7 +75,9 @@ class ConsultationModel {
       'type': type.toString().split('.').last,
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
+      'startedAt': startedAt?.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
+      'cancelledAt': cancelledAt?.toIso8601String(),
     };
   }
 
@@ -76,7 +92,9 @@ class ConsultationModel {
     ConsultationType? type,
     String? notes,
     DateTime? createdAt,
+    DateTime? startedAt,
     DateTime? completedAt,
+    DateTime? cancelledAt,
   }) {
     return ConsultationModel(
       id: id ?? this.id,
@@ -89,7 +107,9 @@ class ConsultationModel {
       type: type ?? this.type,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
     );
   }
 }
@@ -128,15 +148,15 @@ extension ConsultationStatusExtension on ConsultationStatus {
   String get colorCode {
     switch (this) {
       case ConsultationStatus.scheduled:
-        return '#2563EB'; // Blue
+        return '#3B82F6'; // Blue
       case ConsultationStatus.inProgress:
-        return '#16A34A'; // Green
+        return '#F59E0B'; // Amber/Orange
       case ConsultationStatus.completed:
-        return '#059669'; // Emerald
+        return '#10B981'; // Emerald/Green
       case ConsultationStatus.cancelled:
-        return '#DC2626'; // Red
-      case ConsultationStatus.noShow:
         return '#EF4444'; // Red
+      case ConsultationStatus.noShow:
+        return '#6B7280'; // Gray
     }
   }
 }

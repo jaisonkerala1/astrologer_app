@@ -10,7 +10,6 @@ import '../../../shared/theme/app_theme.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../../shared/widgets/animated_card.dart';
-import '../../../shared/widgets/animated_avatar.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final AstrologerModel? currentUser;
@@ -92,6 +91,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _experienceController.dispose();
     _rateController.dispose();
     super.dispose();
+  }
+
+  ImageProvider? _getImageProvider(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
+      // Network URL - construct full URL for Railway backend
+      if (imagePath.startsWith('/uploads/')) {
+        return NetworkImage('https://astrologerapp-production.up.railway.app$imagePath');
+      }
+      return NetworkImage(imagePath);
+    } else {
+      // Local file path
+      return FileImage(File(imagePath));
+    }
   }
 
   @override
@@ -261,13 +273,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Center(
       child: Column(
         children: [
-          AnimatedAvatar(
-            imagePath: _selectedImage?.path,
-            radius: 60,
-            backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-            textColor: AppTheme.primaryColor,
-            showEditIcon: true,
+          GestureDetector(
             onTap: _pickImage,
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                  backgroundImage: _selectedImage?.path != null
+                      ? FileImage(File(_selectedImage!.path))
+                      : (widget.currentUser?.profilePicture != null && widget.currentUser!.profilePicture!.isNotEmpty
+                          ? _getImageProvider(widget.currentUser!.profilePicture!)
+                          : null),
+                  child: _selectedImage?.path == null && (widget.currentUser?.profilePicture == null || widget.currentUser!.profilePicture!.isEmpty)
+                      ? Icon(
+                          Icons.person,
+                          size: 60,
+                          color: AppTheme.primaryColor,
+                        )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           Text(

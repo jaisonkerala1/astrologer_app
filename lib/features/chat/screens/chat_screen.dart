@@ -23,7 +23,7 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
+class _ChatScreenState extends State<ChatScreen> {
   final LoonaAIService _loonaService = LoonaAIService();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
@@ -33,28 +33,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   bool _isLoading = false;
   bool _isInitialized = false;
 
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
-
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
     _initializeChat();
-  }
-
-  void _initializeAnimations() {
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
   }
 
   Future<void> _initializeChat() async {
@@ -84,7 +66,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _isInitialized = true;
       });
       
-      _slideController.forward();
       _scrollToBottom();
     } catch (e) {
       print('Error initializing chat: $e');
@@ -277,9 +258,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: Container(
+    return Container(
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -413,13 +392,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   @override
   void dispose() {
-    _slideController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
