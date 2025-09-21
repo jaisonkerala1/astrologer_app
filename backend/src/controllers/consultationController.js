@@ -17,6 +17,9 @@ const getConsultations = async (req, res) => {
       sortOrder = 'asc'
     } = req.query;
 
+    console.log(`Getting consultations for astrologer: ${astrologerId}`);
+    console.log('Query parameters:', req.query);
+
     // Validate astrologerId
     if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
       return res.status(400).json({
@@ -42,6 +45,8 @@ const getConsultations = async (req, res) => {
       if (endDate) filter.scheduledTime.$lte = new Date(endDate);
     }
 
+    console.log('Filter criteria:', filter);
+
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -49,8 +54,9 @@ const getConsultations = async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    // Execute query
+    // Execute query - explicitly select all fields including startedAt
     const consultations = await Consultation.find(filter)
+      .select('+startedAt +completedAt +cancelledAt')
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
@@ -58,10 +64,32 @@ const getConsultations = async (req, res) => {
 
     const total = await Consultation.countDocuments(filter);
 
+    console.log(`Found ${consultations.length} consultations out of ${total} total`);
+    consultations.forEach(consultation => {
+      console.log(`Consultation ${consultation._id}: ${consultation.clientName} - Status: ${consultation.status} - StartedAt: ${consultation.startedAt}`);
+    });
+
+    // Convert to plain objects and ensure all fields are included
+    const consultationsWithAllFields = consultations.map(consultation => {
+      const consultationObj = consultation.toObject ? consultation.toObject() : consultation;
+      return {
+        ...consultationObj,
+        startedAt: consultationObj.startedAt || null,
+        completedAt: consultationObj.completedAt || null,
+        cancelledAt: consultationObj.cancelledAt || null
+      };
+    });
+
+    console.log('Final consultations with startedAt:', consultationsWithAllFields.map(c => ({
+      id: c._id,
+      status: c.status,
+      startedAt: c.startedAt
+    })));
+
     res.status(200).json({
       success: true,
       data: {
-        consultations,
+        consultations: consultationsWithAllFields,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / parseInt(limit)),
@@ -285,6 +313,9 @@ const updateConsultationStatus = async (req, res) => {
     const { consultationId } = req.params;
     const { status, notes, cancelledBy, cancellationReason } = req.body;
 
+    console.log(`Updating consultation ${consultationId} to status: ${status}`);
+    console.log('Request body:', req.body);
+
     if (!mongoose.Types.ObjectId.isValid(consultationId)) {
       return res.status(400).json({
         success: false,
@@ -309,10 +340,14 @@ const updateConsultationStatus = async (req, res) => {
       });
     }
 
+    console.log(`Current consultation status: ${consultation.status}`);
+
     // Update status with additional data
     const updateData = { status };
     
-    if (status === 'completed') {
+    if (status === 'inProgress') {
+      updateData.startedAt = new Date();
+    } else if (status === 'completed') {
       updateData.completedAt = new Date();
       if (notes) updateData.notes = notes;
     } else if (status === 'cancelled') {
@@ -321,11 +356,16 @@ const updateConsultationStatus = async (req, res) => {
       if (cancellationReason) updateData.cancellationReason = cancellationReason;
     }
 
+    console.log('Update data:', updateData);
+
     const updatedConsultation = await Consultation.findByIdAndUpdate(
       consultationId,
       updateData,
       { new: true, runValidators: true }
     ).populate('astrologerId', 'name phone email');
+
+    console.log(`Updated consultation status to: ${updatedConsultation.status}`);
+    console.log(`Updated consultation startedAt: ${updatedConsultation.startedAt}`);
 
     res.status(200).json({
       success: true,

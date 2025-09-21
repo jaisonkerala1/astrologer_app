@@ -197,7 +197,7 @@ router.post('/reviews', async (req, res) => {
       });
     }
 
-    const astrologerId = '68ccff521b39ed18eb9eaff3'; // Your correct astrologer ID
+    const astrologerId = '68ceb0073c0f0c8b41a412c4'; // Second astrologer ID for testing
     
     console.log('🌱 Seeding reviews for astrologer:', astrologerId);
     console.log('MongoDB connection state:', mongoose.connection.readyState);

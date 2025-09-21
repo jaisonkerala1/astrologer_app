@@ -80,6 +80,9 @@ const consultationSchema = new mongoose.Schema({
   }],
   
   // Timestamps
+  startedAt: {
+    type: Date
+  },
   completedAt: {
     type: Date
   },
@@ -189,7 +192,9 @@ consultationSchema.virtual('statusDisplay').get(function() {
 consultationSchema.methods.updateStatus = function(newStatus, additionalData = {}) {
   this.status = newStatus;
   
-  if (newStatus === 'completed') {
+  if (newStatus === 'inProgress') {
+    this.startedAt = new Date();
+  } else if (newStatus === 'completed') {
     this.completedAt = new Date();
   } else if (newStatus === 'cancelled') {
     this.cancelledAt = new Date();
@@ -305,6 +310,10 @@ consultationSchema.pre('save', function(next) {
 // Pre-update middleware to handle status changes
 consultationSchema.pre('findOneAndUpdate', function(next) {
   const update = this.getUpdate();
+  
+  if (update.status === 'inProgress' && !update.startedAt) {
+    update.startedAt = new Date();
+  }
   
   if (update.status === 'completed' && !update.completedAt) {
     update.completedAt = new Date();
