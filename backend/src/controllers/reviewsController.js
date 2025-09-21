@@ -33,15 +33,13 @@ const getReviews = async (req, res) => {
     
     // Get all reviews from database
     const reviews = await Review.find({ isPublic: true })
-      .populate('clientId', 'name')
-      .populate('astrologerId', 'name')
       .sort({ createdAt: -1 })
       .lean();
     
     // Format the response
     const formattedReviews = reviews.map(review => ({
       _id: review._id,
-      clientName: review.clientId?.name || 'Anonymous',
+      clientName: 'Client ' + review.clientId.toString().slice(-4), // Use last 4 chars of ID
       rating: review.rating,
       reviewText: review.reviewText,
       createdAt: review.createdAt,
