@@ -49,6 +49,7 @@ const getReviews = async (req, res) => {
     const formattedReviews = reviews.map(review => ({
       _id: review._id,
       clientName: 'Client ' + review.clientId.toString().slice(-4), // Use last 4 chars of ID
+      astrologerId: review.astrologerId,
       rating: review.rating,
       reviewText: review.reviewText,
       createdAt: review.createdAt,
