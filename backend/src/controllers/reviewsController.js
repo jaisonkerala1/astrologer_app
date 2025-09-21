@@ -1,5 +1,8 @@
 // MINIMAL WORKING CONTROLLER - GUARANTEED TO WORK
 
+const mongoose = require('mongoose');
+const Review = require('../models/Review');
+
 const getRatingStats = async (req, res) => {
   try {
     console.log('Getting rating stats - minimal version');
@@ -26,34 +29,30 @@ const getRatingStats = async (req, res) => {
 
 const getReviews = async (req, res) => {
   try {
-    console.log('Getting reviews - minimal version');
+    console.log('Getting reviews from database');
     
-    const reviews = [
-      {
-        _id: '507f1f77bcf86cd799439011',
-        clientName: 'Sarah Johnson',
-        rating: 5,
-        reviewText: 'Amazing consultation! The astrologer was very insightful and helped me understand my situation better. Highly recommended!',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        astrologerReply: null,
-        repliedAt: null,
-        isPublic: true
-      },
-      {
-        _id: '507f1f77bcf86cd799439012',
-        clientName: 'Michael Chen',
-        rating: 4,
-        reviewText: 'Good session, got some valuable insights. The astrologer was professional and answered all my questions.',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        astrologerReply: 'Thank you for your feedback, Michael! I\'m glad I could help you gain clarity.',
-        repliedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-        isPublic: true
-      }
-    ];
+    // Get all reviews from database
+    const reviews = await Review.find({ isPublic: true })
+      .populate('clientId', 'name')
+      .populate('astrologerId', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // Format the response
+    const formattedReviews = reviews.map(review => ({
+      _id: review._id,
+      clientName: review.clientId?.name || 'Anonymous',
+      rating: review.rating,
+      reviewText: review.reviewText,
+      createdAt: review.createdAt,
+      astrologerReply: review.astrologerReply,
+      repliedAt: review.repliedAt,
+      isPublic: review.isPublic
+    }));
     
     res.json({
       success: true,
-      data: reviews
+      data: formattedReviews
     });
   } catch (error) {
     console.error('Error:', error);

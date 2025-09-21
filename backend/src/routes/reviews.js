@@ -3,7 +3,10 @@ const router = express.Router();
 const reviewsController = require('../controllers/reviewsController');
 const auth = require('../middleware/auth');
 
-// Apply authentication middleware to all routes
+// Public endpoint for testing (no auth required)
+router.get('/public', reviewsController.getReviews);
+
+// Apply authentication middleware to all other routes
 router.use(auth);
 
 // GET /api/reviews/stats - Get rating statistics
