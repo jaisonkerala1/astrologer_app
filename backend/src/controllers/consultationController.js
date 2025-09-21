@@ -75,7 +75,7 @@ const getConsultations = async (req, res) => {
       
       // For in-progress consultations without startedAt, set it to updatedAt
       let startedAt = consultationObj.startedAt;
-      if (consultationObj.status === 'inProgress' && !startedAt) {
+      if (consultationObj.status === 'inProgress' && (!startedAt || startedAt === null)) {
         startedAt = consultationObj.updatedAt;
         console.log(`Setting startedAt to updatedAt for consultation ${consultationObj._id}: ${startedAt}`);
       }
