@@ -31,8 +31,17 @@ const getReviews = async (req, res) => {
   try {
     console.log('Getting reviews from database');
     
-    // Get all reviews from database
-    const reviews = await Review.find({ isPublic: true })
+    // Build query filter
+    const filter = { isPublic: true };
+    
+    // Add astrologer ID filter if provided
+    if (req.query.astrologerId) {
+      filter.astrologerId = new mongoose.Types.ObjectId(req.query.astrologerId);
+      console.log('Filtering by astrologer ID:', req.query.astrologerId);
+    }
+    
+    // Get reviews from database
+    const reviews = await Review.find(filter)
       .sort({ createdAt: -1 })
       .lean();
     
