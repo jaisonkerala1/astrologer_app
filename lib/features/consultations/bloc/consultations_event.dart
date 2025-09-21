@@ -143,3 +143,18 @@ class AddConsultationRatingEvent extends ConsultationsEvent {
   @override
   List<Object?> get props => [consultationId, rating, feedback];
 }
+
+class SearchConsultationsEvent extends ConsultationsEvent {
+  final String query;
+
+  const SearchConsultationsEvent({
+    required this.query,
+  });
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class ClearSearchEvent extends ConsultationsEvent {
+  const ClearSearchEvent();
+}

@@ -7,6 +7,7 @@ class DashboardStatsModel {
   final int totalSessions;
   final double averageSessionDuration;
   final double averageRating;
+  final int todayCount;
 
   DashboardStatsModel({
     required this.todayEarnings,
@@ -17,6 +18,7 @@ class DashboardStatsModel {
     required this.totalSessions,
     required this.averageSessionDuration,
     required this.averageRating,
+    required this.todayCount,
   });
 
   factory DashboardStatsModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class DashboardStatsModel {
       totalSessions: json['totalSessions'] ?? 0,
       averageSessionDuration: (json['averageSessionDuration'] ?? 0).toDouble(),
       averageRating: (json['averageRating'] ?? 0).toDouble(),
+      todayCount: json['todayCount'] ?? 0,
     );
   }
 
@@ -42,6 +45,7 @@ class DashboardStatsModel {
       'totalSessions': totalSessions,
       'averageSessionDuration': averageSessionDuration,
       'averageRating': averageRating,
+      'todayCount': todayCount,
     };
   }
 
@@ -54,6 +58,7 @@ class DashboardStatsModel {
     int? totalSessions,
     double? averageSessionDuration,
     double? averageRating,
+    int? todayCount,
   }) {
     return DashboardStatsModel(
       todayEarnings: todayEarnings ?? this.todayEarnings,
@@ -64,6 +69,7 @@ class DashboardStatsModel {
       totalSessions: totalSessions ?? this.totalSessions,
       averageSessionDuration: averageSessionDuration ?? this.averageSessionDuration,
       averageRating: averageRating ?? this.averageRating,
+      todayCount: todayCount ?? this.todayCount,
     );
   }
 }

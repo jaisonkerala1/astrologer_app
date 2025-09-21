@@ -29,6 +29,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
   bool _isCompleting = false;
   bool _isCancelling = false;
   Timer? _timer;
+  DateTime? _lastStartedAt;
+  String? _lastConsultationId;
 
   @override
   void initState() {
@@ -49,14 +51,39 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
   }
 
   void _startTimerIfNeeded() {
-    _timer?.cancel();
+    // Only start timer if consultation is in progress and we don't have a timer running for this consultation
     if (widget.consultation.status == ConsultationStatus.inProgress && 
-        widget.consultation.startedAt != null) {
+        widget.consultation.startedAt != null &&
+        (_timer == null || _lastConsultationId != widget.consultation.id)) {
+      
+      // Cancel existing timer if it's for a different consultation
+      if (_timer != null && _lastConsultationId != widget.consultation.id) {
+        print('Stopping timer for different consultation $_lastConsultationId');
+        _timer?.cancel();
+      }
+      
+      _lastStartedAt = widget.consultation.startedAt;
+      _lastConsultationId = widget.consultation.id;
+      
+      print('Starting timer for consultation ${widget.consultation.id} with startedAt: ${widget.consultation.startedAt}');
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (mounted) {
           setState(() {});
         }
       });
+    } else if (widget.consultation.status != ConsultationStatus.inProgress && _timer != null) {
+      // Stop timer if consultation is no longer in progress
+      print('Stopping timer for consultation ${widget.consultation.id}');
+      _timer?.cancel();
+      _timer = null;
+      _lastStartedAt = null;
+      _lastConsultationId = null;
+    } else if (widget.consultation.status == ConsultationStatus.inProgress && 
+               widget.consultation.startedAt != null &&
+               _lastConsultationId == widget.consultation.id &&
+               _timer != null) {
+      // Timer is already running for this consultation, no need to restart
+      print('Timer already running for consultation ${widget.consultation.id}, keeping existing timer');
     }
   }
 
@@ -315,12 +342,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
       final startedAt = widget.consultation.startedAt!;
       final elapsed = now.difference(startedAt);
       
-      // Debug logging
-      print('Timer Debug - Now: $now, StartedAt: $startedAt, Elapsed: ${elapsed.inSeconds}s');
-      
       // If elapsed time is negative, it means startedAt is in the future
       if (elapsed.isNegative) {
-        print('Warning: startedAt is in the future! Difference: ${elapsed.inSeconds}s');
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(

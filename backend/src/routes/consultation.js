@@ -18,7 +18,7 @@ router.get('/today/:astrologerId', consultationController.getTodaysConsultations
 // GET /api/consultation/stats/:astrologerId - Get consultation statistics
 router.get('/stats/:astrologerId', consultationController.getConsultationStats);
 
-// POST /api/consultation/fix-started-at - Fix startedAt for existing consultations
+ // POST /api/consultation/fix-started-at - Fix startedAt for existing consultations
 router.post('/fix-started-at', consultationController.fixStartedAt);
 
 // GET /api/consultation/detail/:consultationId - Get a single consultation by ID

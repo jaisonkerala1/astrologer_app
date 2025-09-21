@@ -15,6 +15,7 @@ import '../bloc/dashboard_state.dart';
 import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
 import '../widgets/stats_card_widget.dart';
+import '../widgets/calendar_card_widget.dart';
 import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
@@ -22,6 +23,7 @@ import '../../settings/screens/settings_screen.dart';
 import '../../heal/screens/heal_screen.dart';
 import '../../heal/screens/discussion_screen.dart';
 import '../../communication/screens/communication_screen.dart';
+import '../../calendar/screens/calendar_screen.dart';
 import '../../communication/screens/incoming_call_screen.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../auth/models/astrologer_model.dart';
@@ -341,6 +343,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 setState(() {
                   _selectedIndex = 3; // Earnings tab (updated index)
                 });
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Calendar Card
+            CalendarCardWidget(
+              todayBookings: stats.todayCount,
+              upcomingBookings: 5, // Mock data - replace with actual upcoming bookings
+              onTap: () {
+                // Navigate to calendar screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CalendarScreen(),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 16),

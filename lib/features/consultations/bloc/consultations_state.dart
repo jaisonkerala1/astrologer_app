@@ -24,6 +24,8 @@ class ConsultationsLoaded extends ConsultationsState {
   final List<ConsultationModel> completedConsultations;
   final ConsultationStatus? activeFilter;
   final DateTime? dateFilter;
+  final String searchQuery;
+  final bool isSearching;
 
   const ConsultationsLoaded({
     required this.allConsultations,
@@ -33,6 +35,8 @@ class ConsultationsLoaded extends ConsultationsState {
     required this.completedConsultations,
     this.activeFilter,
     this.dateFilter,
+    this.searchQuery = '',
+    this.isSearching = false,
   });
 
   @override
@@ -44,6 +48,8 @@ class ConsultationsLoaded extends ConsultationsState {
         completedConsultations,
         activeFilter,
         dateFilter,
+        searchQuery,
+        isSearching,
       ];
 
   ConsultationsLoaded copyWith({
@@ -54,6 +60,8 @@ class ConsultationsLoaded extends ConsultationsState {
     List<ConsultationModel>? completedConsultations,
     ConsultationStatus? activeFilter,
     DateTime? dateFilter,
+    String? searchQuery,
+    bool? isSearching,
     bool clearFilters = false,
   }) {
     return ConsultationsLoaded(
@@ -64,6 +72,8 @@ class ConsultationsLoaded extends ConsultationsState {
       completedConsultations: completedConsultations ?? this.completedConsultations,
       activeFilter: clearFilters ? null : (activeFilter ?? this.activeFilter),
       dateFilter: clearFilters ? null : (dateFilter ?? this.dateFilter),
+      searchQuery: searchQuery ?? this.searchQuery,
+      isSearching: isSearching ?? this.isSearching,
     );
   }
 

@@ -31,6 +31,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         totalSessions: 156,
         averageSessionDuration: 15.5,
         averageRating: 4.7,
+        todayCount: 12,
       );
       
       emit(DashboardLoadedState(mockStats));

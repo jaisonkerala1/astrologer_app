@@ -9,6 +9,7 @@ import '../widgets/consultation_card_widget.dart';
 import '../widgets/consultation_stats_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
+import '../widgets/consultation_search_bar.dart';
 
 class ConsultationsScreen extends StatefulWidget {
   const ConsultationsScreen({super.key});
@@ -117,38 +118,76 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
               },
               child: Column(
                 children: [
-                  // Stats section
-                  ConsultationStatsWidget(
-                    todayCount: state.todayCount,
-                    todayEarnings: state.todayEarnings,
-                    nextConsultation: state.nextConsultation,
+                  // Search bar
+                  ConsultationSearchBar(
+                    searchQuery: state.searchQuery,
+                    isSearching: state.isSearching,
+                    onSearchChanged: (query) {
+                      context.read<ConsultationsBloc>().add(
+                        SearchConsultationsEvent(query: query),
+                      );
+                    },
+                    onClearSearch: () {
+                      context.read<ConsultationsBloc>().add(
+                        const ClearSearchEvent(),
+                      );
+                    },
+                    onSearchSubmitted: () {
+                      // Search is handled in real-time, no need for submission
+                    },
                   ),
                   
-                  // Filter section
-                  ConsultationFilterWidget(
-                    selectedStatus: state.activeFilter,
-                    onStatusChanged: (status) {
-                      context.read<ConsultationsBloc>().add(
-                        FilterConsultationsEvent(statusFilter: status),
-                      );
-                    },
-                    onClearFilters: () {
-                      context.read<ConsultationsBloc>().add(
-                        const FilterConsultationsEvent(),
-                      );
-                    },
+                  // Search results indicator
+                  SearchResultsIndicator(
+                    resultCount: state.consultations.length,
+                    searchQuery: state.searchQuery,
+                    isSearching: state.isSearching,
                   ),
+                  
+                  // Stats section (only show when not searching)
+                  if (!state.isSearching) ...[
+                    ConsultationStatsWidget(
+                      todayCount: state.todayCount,
+                      todayEarnings: state.todayEarnings,
+                      nextConsultation: state.nextConsultation,
+                    ),
+                    
+                    // Filter section
+                    ConsultationFilterWidget(
+                      selectedStatus: state.activeFilter,
+                      onStatusChanged: (status) {
+                        context.read<ConsultationsBloc>().add(
+                          FilterConsultationsEvent(statusFilter: status),
+                        );
+                      },
+                      onClearFilters: () {
+                        context.read<ConsultationsBloc>().add(
+                          const FilterConsultationsEvent(),
+                        );
+                      },
+                    ),
+                  ],
                   
                   // Consultations list
                   Expanded(
                     child: state.consultations.isEmpty
-                        ? _buildEmptyState(context)
+                        ? (state.isSearching && state.searchQuery.isNotEmpty
+                            ? SearchEmptyState(
+                                searchQuery: state.searchQuery,
+                                onClearSearch: () {
+                                  context.read<ConsultationsBloc>().add(
+                                    const ClearSearchEvent(),
+                                  );
+                                },
+                              )
+                            : _buildEmptyState(context))
                         : ListView.builder(
                             padding: const EdgeInsets.only(bottom: 16),
                             itemCount: state.consultations.length,
                             itemBuilder: (context, index) {
                               final consultation = state.consultations[index];
                               return ConsultationCardWidget(
+                                key: ValueKey(consultation.id),
                                 consultation: consultation,
                                 onTap: () => _showConsultationDetails(context, consultation),
                                 onStart: () => _startConsultation(context, consultation.id),
@@ -169,6 +208,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddConsultationDialog(context),
         backgroundColor: AppTheme.primaryColor,
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

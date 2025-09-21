@@ -20,6 +20,8 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     on<FilterConsultationsEvent>(_onFilterConsultations);
     on<AddConsultationNotesEvent>(_onAddConsultationNotes);
     on<AddConsultationRatingEvent>(_onAddConsultationRating);
+    on<SearchConsultationsEvent>(_onSearchConsultations);
+    on<ClearSearchEvent>(_onClearSearch);
   }
 
   Future<void> _onLoadConsultations(
@@ -52,6 +54,29 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
       print('Refreshing consultations...');
       final consultations = await _consultationsService.getConsultations();
       print('Refreshed ${consultations.length} consultations');
+      
+      // Preserve local startedAt timestamps for in-progress consultations
+      if (state is ConsultationsLoaded) {
+        final currentState = state as ConsultationsLoaded;
+        final currentConsultations = currentState.allConsultations;
+        
+        for (int i = 0; i < consultations.length; i++) {
+          final serverConsultation = consultations[i];
+          if (serverConsultation.status == ConsultationStatus.inProgress) {
+            // Find matching consultation in current state
+            final currentConsultation = currentConsultations.firstWhere(
+              (c) => c.id == serverConsultation.id,
+              orElse: () => serverConsultation,
+            );
+            
+            // If current consultation has startedAt but server doesn't, preserve it
+            if (currentConsultation.startedAt != null && (serverConsultation.startedAt == null || serverConsultation.startedAt == DateTime.fromMillisecondsSinceEpoch(0))) {
+              print('Preserving local startedAt for consultation ${serverConsultation.id}: ${currentConsultation.startedAt}');
+              consultations[i] = serverConsultation.copyWith(startedAt: currentConsultation.startedAt);
+            }
+          }
+        }
+      }
       
       // Log server response for debugging
       for (var consultation in consultations) {
@@ -249,9 +274,8 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
         ConsultationStatus.inProgress,
       );
       
-      print('Consultation started successfully, refreshing data...');
-      // Reload consultations to sync with server
-      add(const RefreshConsultationsEvent());
+      print('Consultation started successfully, skipping refresh to maintain optimistic startedAt');
+      // Don't refresh immediately to avoid timer restart - the optimistic update is sufficient
     } catch (e) {
       print('Error starting consultation: $e');
       // Revert optimistic update on error
@@ -465,5 +489,87 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     } catch (e) {
       emit(ConsultationsError(message: e.toString()));
     }
+  }
+
+  Future<void> _onSearchConsultations(
+    SearchConsultationsEvent event,
+    Emitter<ConsultationsState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! ConsultationsLoaded) return;
+
+    final query = event.query.toLowerCase().trim();
+    
+    if (query.isEmpty) {
+      // If search query is empty, show all consultations
+      emit(currentState.copyWith(
+        consultations: currentState.allConsultations,
+        searchQuery: '',
+        isSearching: false,
+      ));
+      return;
+    }
+
+    // Filter consultations based on search query
+    final filteredConsultations = currentState.allConsultations.where((consultation) {
+      // Search in client name
+      if (consultation.clientName.toLowerCase().contains(query)) return true;
+      
+      // Search in client phone
+      if (consultation.clientPhone.toLowerCase().contains(query)) return true;
+      
+      // Search in status
+      if (consultation.status.displayName.toLowerCase().contains(query)) return true;
+      
+      // Search in consultation type
+      if (consultation.type.displayName.toLowerCase().contains(query)) return true;
+      
+      // Search in notes
+      if (consultation.notes != null && consultation.notes!.toLowerCase().contains(query)) return true;
+      
+      // Search in scheduled time (format: "Jan 21, 2025 6:15 PM")
+      final scheduledTimeStr = _formatDateTime(consultation.scheduledTime).toLowerCase();
+      if (scheduledTimeStr.contains(query)) return true;
+      
+      return false;
+    }).toList();
+
+    emit(currentState.copyWith(
+      consultations: filteredConsultations,
+      searchQuery: query,
+      isSearching: true,
+    ));
+  }
+
+  Future<void> _onClearSearch(
+    ClearSearchEvent event,
+    Emitter<ConsultationsState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! ConsultationsLoaded) return;
+
+    emit(currentState.copyWith(
+      consultations: currentState.allConsultations,
+      searchQuery: '',
+      isSearching: false,
+    ));
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    
+    final month = months[dateTime.month - 1];
+    final day = dateTime.day;
+    final year = dateTime.year;
+    final hour = dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    
+    return '$month $day, $year $displayHour:$minute $period';
   }
 }
