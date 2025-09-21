@@ -5,13 +5,34 @@ const Review = require('../models/Review');
 
 const getRatingStats = async (req, res) => {
   try {
-    console.log('Getting rating stats - minimal version');
+    console.log('Getting rating stats for astrologer:', req.user.astrologerId);
+    
+    // Get reviews for this astrologer only
+    const reviews = await Review.find({ 
+      astrologerId: req.user.astrologerId,
+      isPublic: true 
+    }).lean();
+    
+    // Calculate stats
+    const totalReviews = reviews.length;
+    const averageRating = totalReviews > 0 
+      ? (reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1)
+      : 0;
+    
+    // Rating breakdown
+    const ratingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach(review => {
+      ratingBreakdown[review.rating]++;
+    });
+    
+    // Count unresponded reviews
+    const unrespondedCount = reviews.filter(review => !review.astrologerReply).length;
     
     const result = {
-      averageRating: 4.4,
-      totalReviews: 5,
-      ratingBreakdown: { 1: 0, 2: 0, 3: 1, 4: 2, 5: 2 },
-      unrespondedCount: 3
+      averageRating: parseFloat(averageRating),
+      totalReviews,
+      ratingBreakdown,
+      unrespondedCount
     };
     
     res.json({
@@ -31,14 +52,13 @@ const getReviews = async (req, res) => {
   try {
     console.log('Getting reviews from database');
     
-    // Build query filter
-    const filter = { isPublic: true };
+    // Build query filter - ALWAYS filter by authenticated astrologer
+    const filter = { 
+      isPublic: true,
+      astrologerId: req.user.astrologerId // Only show reviews for this astrologer
+    };
     
-    // Add astrologer ID filter if provided
-    if (req.query.astrologerId) {
-      filter.astrologerId = new mongoose.Types.ObjectId(req.query.astrologerId);
-      console.log('Filtering by astrologer ID:', req.query.astrologerId);
-    }
+    console.log('Filtering by authenticated astrologer ID:', req.user.astrologerId);
     
     // Get reviews from database
     const reviews = await Review.find(filter)
