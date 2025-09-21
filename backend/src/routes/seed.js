@@ -507,6 +507,70 @@ router.post('/direct', async (req, res) => {
   }
 });
 
+// POST /api/seed/add-test-review - Add a test review for any astrologer
+router.post('/add-test-review', async (req, res) => {
+  try {
+    // Allow seeding in development or with special header for Railway testing
+    const allowSeeding = process.env.NODE_ENV !== 'production' || 
+                         req.headers['x-seed-key'] === 'dev-seed-reviews-2025';
+    
+    if (!allowSeeding) {
+      return res.status(403).json({
+        success: false,
+        message: 'Test review seeding not allowed in production without proper authorization'
+      });
+    }
+
+    const { astrologerId, clientId, rating, reviewText } = req.body;
+    
+    if (!astrologerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'astrologerId is required'
+      });
+    }
+
+    console.log('🎯 Adding test review for astrologer:', astrologerId);
+    
+    // Create test review
+    const testReview = new Review({
+      clientId: new mongoose.Types.ObjectId(clientId || '64a123456789abcdef123999'),
+      astrologerId: new mongoose.Types.ObjectId(astrologerId),
+      rating: rating || 5,
+      reviewText: reviewText || 'Test review for second astrologer account - This is a test review to verify the security fix is working correctly!',
+      sessionId: new mongoose.Types.ObjectId(),
+      astrologerReply: null,
+      repliedAt: null,
+      isPublic: true,
+      isVerified: true,
+      createdAt: new Date()
+    });
+
+    const savedReview = await testReview.save();
+    console.log('✅ Test review created:', savedReview._id);
+
+    res.json({
+      success: true,
+      message: 'Test review added successfully',
+      data: {
+        reviewId: savedReview._id,
+        astrologerId: savedReview.astrologerId,
+        rating: savedReview.rating,
+        reviewText: savedReview.reviewText,
+        createdAt: savedReview.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error adding test review:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add test review',
+      error: error.message
+    });
+  }
+});
+
 // GET /api/seed/debug - Debug what's in the database
 router.get('/debug', async (req, res) => {
   try {
