@@ -71,10 +71,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadUserData() async {
     try {
       final userData = await _storageService.getUserData();
+      print('👤 [DASHBOARD] User data from storage: $userData');
       if (userData != null && mounted) {
         final userDataMap = jsonDecode(userData);
+        print('👤 [DASHBOARD] Parsed user data: $userDataMap');
         setState(() {
           _currentUser = AstrologerModel.fromJson(userDataMap);
+          print('👤 [DASHBOARD] Current user profile picture: ${_currentUser?.profilePicture}');
         });
       }
     } catch (e) {
@@ -106,15 +109,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadUserData();
   }
 
+  // Go Live button method
+  void _goLive() {
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🎥 Going live... Feature coming soon!'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // Open notifications method
+  void _openNotifications() {
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔔 Notifications - Feature coming soon!'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   ImageProvider? _getImageProvider(String imagePath) {
+    print('🖼️ [DASHBOARD] Loading profile picture: $imagePath');
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
       // Network URL - construct full URL for Railway backend
       if (imagePath.startsWith('/uploads/')) {
-        return NetworkImage('https://astrologerapp-production.up.railway.app$imagePath');
+        final fullUrl = 'https://astrologerapp-production.up.railway.app$imagePath';
+        print('🖼️ [DASHBOARD] Full URL: $fullUrl');
+        return NetworkImage(fullUrl);
       }
+      print('🖼️ [DASHBOARD] Direct URL: $imagePath');
       return NetworkImage(imagePath);
     } else {
       // Local file path
+      print('🖼️ [DASHBOARD] Local file: $imagePath');
       return FileImage(File(imagePath));
     }
   }
@@ -500,18 +532,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
                             ? _getImageProvider(user!.profilePicture!)
                             : null,
-                        child: user?.profilePicture == null || user!.profilePicture!.isEmpty
-                            ? Text(
-                                user?.name?.isNotEmpty == true 
-                                    ? user!.name!.substring(0, 1).toUpperCase()
-                                    : 'J',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E40AF),
-                                ),
-                              )
-                            : null,
+                        child: Text(
+                          user?.name?.isNotEmpty == true 
+                              ? user!.name!.substring(0, 1).toUpperCase()
+                              : 'J',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E40AF),
+                          ),
+                        ),
+                        onBackgroundImageError: (exception, stackTrace) {
+                          print('🖼️ [DASHBOARD] Profile picture error: $exception');
+                          print('🖼️ [DASHBOARD] Stack trace: $stackTrace');
+                        },
                       ),
                     ),
                   ),
@@ -542,6 +576,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
+                  // Header action buttons
+                  Row(
+                    children: [
+                      // Live Video Button
+                      _buildGoLiveButton(),
+                      const SizedBox(width: 12),
+                      // Notifications Button
+                      _buildHeaderButton(
+                        icon: Icons.notifications_outlined,
+                        onTap: _openNotifications,
+                        tooltip: 'Notifications',
+                        badge: 0, // We'll add notification service later
+                      ),
+                    ],
+                  ),
                 ],
               ),
               
@@ -551,6 +600,129 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _buildGlassmorphismStatusCard(),
               
               const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Build Go Live button
+  Widget _buildGoLiveButton() {
+    return Tooltip(
+      message: 'Go Live',
+      child: GestureDetector(
+        onTap: _goLive,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF4444), Color(0xFFCC0000)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF4444).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Live indicator dot
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Camera icon
+              Icon(
+                Icons.videocam,
+                color: Colors.white,
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              // LIVE text
+              const Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Build header button
+  Widget _buildHeaderButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required String tooltip,
+    int? badge,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Center(
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              if (badge != null && badge > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      badge.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
