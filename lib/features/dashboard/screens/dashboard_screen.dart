@@ -28,6 +28,9 @@ import '../../communication/screens/incoming_call_screen.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
+import '../../notifications/screens/notifications_screen.dart';
+import '../../notifications/services/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -124,11 +127,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Open notifications method
   void _openNotifications() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🔔 Notifications - Feature coming soon!'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 2),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const NotificationsScreen(),
       ),
     );
   }
@@ -262,19 +264,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, state) {
             // Always show loading if user data is not ready yet
             if (_currentUser == null) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryColor,
-                ),
-              );
+              return const DashboardSkeletonLoader();
             }
             
             if (state is DashboardLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryColor,
-                ),
-              );
+              return const DashboardSkeletonLoader();
             } else if (state is DashboardLoadedState) {
               return _buildDashboardBody(state.stats);
             } else if (state is DashboardErrorState) {
@@ -317,11 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             } else {
               // Fallback for any unhandled states (like StatusUpdatedState)
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryColor,
-                ),
-              );
+              return const DashboardSkeletonLoader();
             }
           },
         ),
@@ -532,16 +522,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
                             ? _getImageProvider(user!.profilePicture!)
                             : null,
-                        child: Text(
-                          user?.name?.isNotEmpty == true 
-                              ? user!.name!.substring(0, 1).toUpperCase()
-                              : 'J',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E40AF),
-                          ),
-                        ),
+                        child: user?.profilePicture == null || user!.profilePicture!.isEmpty
+                            ? Text(
+                                user?.name?.isNotEmpty == true 
+                                    ? user!.name!.substring(0, 1).toUpperCase()
+                                    : 'J',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E40AF),
+                                ),
+                              )
+                            : null,
                         onBackgroundImageError: (exception, stackTrace) {
                           print('🖼️ [DASHBOARD] Profile picture error: $exception');
                           print('🖼️ [DASHBOARD] Stack trace: $stackTrace');
@@ -583,11 +575,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _buildGoLiveButton(),
                       const SizedBox(width: 12),
                       // Notifications Button
-                      _buildHeaderButton(
-                        icon: Icons.notifications_outlined,
-                        onTap: _openNotifications,
-                        tooltip: 'Notifications',
-                        badge: 0, // We'll add notification service later
+                      Consumer<NotificationService>(
+                        builder: (context, notificationService, child) {
+                          return _buildHeaderButton(
+                            icon: Icons.notifications_outlined,
+                            onTap: _openNotifications,
+                            tooltip: 'Notifications',
+                            badge: notificationService.unreadCount,
+                          );
+                        },
                       ),
                     ],
                   ),

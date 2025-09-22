@@ -7,6 +7,7 @@ import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
 import '../core/services/language_service.dart';
 import '../core/services/status_service.dart';
+import '../features/notifications/services/notification_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/auth/bloc/auth_event.dart';
 import '../features/auth/bloc/auth_state.dart';
@@ -24,8 +25,14 @@ import 'routes.dart';
 class App extends StatefulWidget {
   final LanguageService languageService;
   final StatusService statusService;
+  final NotificationService notificationService;
   
-  const App({super.key, required this.languageService, required this.statusService});
+  const App({
+    super.key, 
+    required this.languageService, 
+    required this.statusService,
+    required this.notificationService,
+  });
 
   @override
   State<App> createState() => _AppState();
@@ -61,6 +68,9 @@ class _AppState extends State<App> {
         ),
         ChangeNotifierProvider<StatusService>(
           create: (context) => widget.statusService,
+        ),
+        ChangeNotifierProvider<NotificationService>(
+          create: (context) => widget.notificationService,
         ),
       ],
       child: MultiBlocProvider(

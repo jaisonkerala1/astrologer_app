@@ -28,6 +28,15 @@ class ApiConstants {
   static const String chatClearHistory = '/api/chat/history';
   static const String chatDeleteConversation = '/api/chat/conversations';
   
+  // Notification endpoints
+  static const String notifications = '/api/notifications';
+  static const String notificationMarkRead = '/api/notifications';
+  static const String notificationMarkAllRead = '/api/notifications/read-all';
+  static const String notificationArchive = '/api/notifications';
+  static const String notificationDelete = '/api/notifications';
+  static const String notificationClearAll = '/api/notifications/clear-all';
+  static const String notificationSettings = '/api/notifications/settings';
+  
   // Headers
   static const Map<String, String> defaultHeaders = {
     'Content-Type': 'application/json',
