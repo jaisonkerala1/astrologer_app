@@ -129,13 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Go Live button method
   void _goLive() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🎥 Going live... Feature coming soon!'),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    Navigator.pushNamed(context, '/live-preparation');
   }
 
   // Open notifications method

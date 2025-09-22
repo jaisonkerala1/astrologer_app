@@ -82,7 +82,7 @@ class _ServiceRequestTimerWidgetState extends State<ServiceRequestTimerWidget> w
     final bool isInProgress = widget.request.status == RequestStatus.inProgress;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: isInProgress
             ? const LinearGradient(
@@ -95,12 +95,12 @@ class _ServiceRequestTimerWidgetState extends State<ServiceRequestTimerWidget> w
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: (isInProgress ? const Color(0xFF10B981) : Colors.black).withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -112,9 +112,10 @@ class _ServiceRequestTimerWidgetState extends State<ServiceRequestTimerWidget> w
             children: [
               Text(
                 'Service Timer',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: TextStyle(
                   color: isInProgress ? Colors.white : AppTheme.textColor,
                   fontWeight: FontWeight.w600,
+                  fontSize: 16,
                 ),
               ),
               if (isInProgress)
@@ -124,20 +125,20 @@ class _ServiceRequestTimerWidgetState extends State<ServiceRequestTimerWidget> w
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Center(
             child: Text(
               _formatDuration(_elapsedTime),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace', // Use a monospace font for timer
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 1.5,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: isInProgress ? Colors.white : AppTheme.textColor,
+                letterSpacing: 0.5,
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           if (widget.request.status == RequestStatus.confirmed)
             SizedBox(
               width: double.infinity,
