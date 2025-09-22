@@ -44,6 +44,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    // Set status bar style for transparent status bar
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Transparent status bar
+        statusBarIconBrightness: Brightness.light, // White icons on blue background
+        statusBarBrightness: Brightness.light, // For iOS - light content on dark background
+        systemNavigationBarColor: Colors.white, // Keep navigation bar white
+        systemNavigationBarIconBrightness: Brightness.dark, // Dark icons on white nav bar
+      ),
+    );
     // Load user data first, then load dashboard stats
     _initializeData();
   }
@@ -205,11 +215,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardContent() {
-    return SafeArea(
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        child: BlocBuilder<DashboardBloc, DashboardState>(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF1E40AF), // Force blue status bar
+        statusBarIconBrightness: Brightness.light, // White icons
+        statusBarBrightness: Brightness.light, // For iOS
+      ),
+      child: SafeArea(
+        top: false, // Don't add top padding since we handle status bar manually
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          child: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
             // Always show loading if user data is not ready yet
             if (_currentUser == null) {
@@ -277,6 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         ),
       ),
+      ),
     );
   }
 
@@ -289,47 +307,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (context, constraints) {
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: constraints.maxHeight - AppConstants.defaultPadding * 2,
+                minHeight: constraints.maxHeight,
                 maxWidth: constraints.maxWidth,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-            // Header
+            // Header (includes status toggle) - Full width
             _buildHeader(_currentUser),
-            const SizedBox(height: 24),
             
-            // Status Toggle
-            Consumer<StatusService>(
-              builder: (context, statusService, child) {
-                if (statusService == null) {
-                  // Fallback widget if service is not available
-                  return Container(
-                    height: 60,
-                    child: const Center(
-                      child: Text('Status service unavailable'),
-                    ),
-                  );
-                }
-                
-                return StatusToggleWidget(
-                  isOnline: statusService.isOnline,
-                  onToggle: (isOnline) {
-                    try {
-                      HapticFeedback.lightImpact();
-                      statusService.setOnlineStatus(isOnline);
-                    } catch (e) {
-                      print('Error toggling status: $e');
-                    }
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 24),
+            // Content with padding
+            Padding(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
             
             // Earnings Card
             EarningsCardWidget(
@@ -343,22 +339,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 setState(() {
                   _selectedIndex = 3; // Earnings tab (updated index)
                 });
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // Calendar Card
-            CalendarCardWidget(
-              todayBookings: stats.todayCount,
-              upcomingBookings: 5, // Mock data - replace with actual upcoming bookings
-              onTap: () {
-                // Navigate to calendar screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CalendarScreen(),
-                  ),
-                );
               },
             ),
             const SizedBox(height: 16),
@@ -417,6 +397,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            
+            // Calendar Card
+            CalendarCardWidget(
+              todayBookings: stats.todayCount,
+              upcomingBookings: 5, // Mock data - replace with actual upcoming bookings
+              onTap: () {
+                // Navigate to calendar screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CalendarScreen(),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 24),
             
             // Discussion Card
@@ -448,6 +444,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -455,79 +454,226 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHeader(AstrologerModel? user) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primaryColor, AppTheme.infoColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF1E40AF), // Force blue status bar
+        statusBarIconBrightness: Brightness.light, // White icons
+        statusBarBrightness: Brightness.light, // For iOS
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)], // Modern blue gradient
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () {
-              // Navigate to profile
-              setState(() {
-                _selectedIndex = 4; // Profile tab (updated index)
-              });
-            },
-            child: Container(
-              width: 60,
-              height: 60,
-              child: CircleAvatar(
-                radius: 30,
-                backgroundColor: Colors.white,
-                backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
-                    ? _getImageProvider(user!.profilePicture!)
-                    : null,
-                child: user?.profilePicture == null || user!.profilePicture!.isEmpty
-                    ? Text(
-                        user?.name?.isNotEmpty == true 
-                            ? user!.name!.substring(0, 1).toUpperCase()
-                            : 'J',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 0),
+          child: Column(
+            children: [
+              // User info row
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to profile
+                      setState(() {
+                        _selectedIndex = 4; // Profile tab (updated index)
+                      });
+                    },
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.white,
+                        backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
+                            ? _getImageProvider(user!.profilePicture!)
+                            : null,
+                        child: user?.profilePicture == null || user!.profilePicture!.isEmpty
+                            ? Text(
+                                user?.name?.isNotEmpty == true 
+                                    ? user!.name!.substring(0, 1).toUpperCase()
+                                    : 'J',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E40AF),
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome back!',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      )
-                    : null,
+                        const SizedBox(height: 4),
+                        Text(
+                          user?.name ?? 'Loading...',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
+              
+              const SizedBox(height: 24),
+              
+              // Glassmorphism availability status card
+              _buildGlassmorphismStatusCard(),
+              
+              const SizedBox(height: 20),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Welcome back!',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user?.name ?? 'Loading...',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildGlassmorphismStatusCard() {
+    return Consumer<StatusService>(
+      builder: (context, statusService, child) {
+        if (statusService == null) {
+          return Container(
+            height: 60,
+            child: const Center(
+              child: Text('Status service unavailable'),
+            ),
+          );
+        }
+        
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Availability Status',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusService.isOnline ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (statusService.isOnline ? Colors.green : Colors.red).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      statusService.isOnline ? 'ONLINE' : 'OFFLINE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    try {
+                      HapticFeedback.lightImpact();
+                      statusService.setOnlineStatus(!statusService.isOnline);
+                    } catch (e) {
+                      print('Error toggling status: $e');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: statusService.isOnline 
+                        ? Colors.red.shade500
+                        : Colors.green.shade500,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        statusService.isOnline ? Icons.pause_circle : Icons.play_circle,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        statusService.isOnline ? 'Go Offline' : 'Go Online',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

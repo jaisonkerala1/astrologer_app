@@ -189,7 +189,6 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
                               return ConsultationCardWidget(
                                 key: ValueKey(consultation.id),
                                 consultation: consultation,
-                                onTap: () => _showConsultationDetails(context, consultation),
                                 onStart: () => _startConsultation(context, consultation.id),
                                 onComplete: () => _completeConsultation(context, consultation),
                                 onCancel: () => _cancelConsultation(context, consultation.id),

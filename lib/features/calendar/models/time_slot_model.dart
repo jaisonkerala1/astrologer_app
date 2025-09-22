@@ -145,4 +145,3 @@ class TimeSlotModel {
     return 'Available';
   }
 }
-

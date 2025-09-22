@@ -455,4 +455,3 @@ class _AvailabilityDialogState extends State<_AvailabilityDialog> {
     Navigator.pop(context);
   }
 }
-

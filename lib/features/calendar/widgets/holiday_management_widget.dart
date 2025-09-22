@@ -506,4 +506,3 @@ class _HolidayDialogState extends State<_HolidayDialog> {
     Navigator.pop(context);
   }
 }
-

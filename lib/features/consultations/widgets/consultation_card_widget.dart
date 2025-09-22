@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/consultation_model.dart';
+import '../screens/consultation_detail_screen.dart';
 
 class ConsultationCardWidget extends StatefulWidget {
   final ConsultationModel consultation;
@@ -156,7 +157,20 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: () {
+          if (widget.onTap != null) {
+            widget.onTap!();
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ConsultationDetailScreen(
+                  consultation: widget.consultation,
+                ),
+              ),
+            );
+          }
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),

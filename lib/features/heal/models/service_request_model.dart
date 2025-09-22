@@ -18,6 +18,10 @@ class ServiceRequest {
   final double price;
   final String specialInstructions;
   final DateTime createdAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final DateTime? cancelledAt;
+  final String? notes;
 
   ServiceRequest({
     required this.id,
@@ -31,6 +35,10 @@ class ServiceRequest {
     required this.price,
     required this.specialInstructions,
     required this.createdAt,
+    this.startedAt,
+    this.completedAt,
+    this.cancelledAt,
+    this.notes,
   });
 
   factory ServiceRequest.fromJson(Map<String, dynamic> json) {
@@ -49,6 +57,10 @@ class ServiceRequest {
       price: (json['price'] ?? 0.0).toDouble(),
       specialInstructions: json['specialInstructions'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      startedAt: json['startedAt'] != null ? DateTime.parse(json['startedAt']) : null,
+      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
+      cancelledAt: json['cancelledAt'] != null ? DateTime.parse(json['cancelledAt']) : null,
+      notes: json['notes'],
     );
   }
 
@@ -65,6 +77,10 @@ class ServiceRequest {
       'price': price,
       'specialInstructions': specialInstructions,
       'createdAt': createdAt.toIso8601String(),
+      'startedAt': startedAt?.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
+      'cancelledAt': cancelledAt?.toIso8601String(),
+      'notes': notes,
     };
   }
 
@@ -80,6 +96,10 @@ class ServiceRequest {
     double? price,
     String? specialInstructions,
     DateTime? createdAt,
+    DateTime? startedAt,
+    DateTime? completedAt,
+    DateTime? cancelledAt,
+    String? notes,
   }) {
     return ServiceRequest(
       id: id ?? this.id,
@@ -93,6 +113,10 @@ class ServiceRequest {
       price: price ?? this.price,
       specialInstructions: specialInstructions ?? this.specialInstructions,
       createdAt: createdAt ?? this.createdAt,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      notes: notes ?? this.notes,
     );
   }
 

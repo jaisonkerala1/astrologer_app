@@ -99,4 +99,3 @@ class HolidayModel {
     return date.isAfter(DateTime(now.year, now.month, now.day));
   }
 }
-

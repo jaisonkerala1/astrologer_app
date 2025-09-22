@@ -13,6 +13,17 @@ import 'shared/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Set system UI overlay style for transparent status bar
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent, // Transparent status bar
+      statusBarIconBrightness: Brightness.light, // White icons on blue background
+      statusBarBrightness: Brightness.light, // For iOS - light content on dark background
+      systemNavigationBarColor: Colors.white, // Keep navigation bar white
+      systemNavigationBarIconBrightness: Brightness.dark, // Dark icons on white nav bar
+    ),
+  );
+  
   // Initialize services
   await StorageService().initialize();
   ApiService().initialize();

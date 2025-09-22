@@ -5,6 +5,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../consultations/models/consultation_model.dart';
 import '../../consultations/services/consultations_service.dart';
+import '../../consultations/screens/consultation_detail_screen.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/availability_management_widget.dart';
 import '../widgets/holiday_management_widget.dart';
@@ -98,31 +99,12 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
   }
 
   void _showConsultationDetails(ConsultationModel consultation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(consultation.clientName),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Phone: ${consultation.clientPhone}'),
-            Text('Time: ${_formatTime(consultation.scheduledTime)}'),
-            Text('Duration: ${consultation.duration} minutes'),
-            Text('Type: ${consultation.type.displayName}'),
-            Text('Status: ${consultation.status.displayName}'),
-            if (consultation.notes != null) ...[
-              const SizedBox(height: 8),
-              Text('Notes: ${consultation.notes}'),
-            ],
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConsultationDetailScreen(
+          consultation: consultation,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
