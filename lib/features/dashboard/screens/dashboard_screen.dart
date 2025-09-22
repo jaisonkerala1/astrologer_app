@@ -75,35 +75,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final userData = await _storageService.getUserData();
       print('👤 [DASHBOARD] User data from storage: $userData');
-      if (userData != null && mounted) {
+      if (userData != null && userData.isNotEmpty && mounted) {
         final userDataMap = jsonDecode(userData);
         print('👤 [DASHBOARD] Parsed user data: $userDataMap');
-        setState(() {
-          _currentUser = AstrologerModel.fromJson(userDataMap);
-          print('👤 [DASHBOARD] Current user profile picture: ${_currentUser?.profilePicture}');
-        });
+        
+        // Validate that the user data contains required fields
+        if (userDataMap is Map<String, dynamic> && userDataMap.containsKey('id')) {
+          setState(() {
+            _currentUser = AstrologerModel.fromJson(userDataMap);
+            print('👤 [DASHBOARD] Current user profile picture: ${_currentUser?.profilePicture}');
+          });
+        } else {
+          print('👤 [DASHBOARD] Invalid user data format, using fallback');
+          _setFallbackUser();
+        }
+      } else {
+        print('👤 [DASHBOARD] No user data found, using fallback');
+        _setFallbackUser();
       }
     } catch (e) {
       print('Error loading user data: $e');
-      // Set a fallback user to prevent null issues
-      if (mounted) {
-        setState(() {
-          _currentUser = AstrologerModel(
-            id: 'unknown',
-            name: 'User',
-            email: '',
-            phone: '',
-            specializations: [],
-            languages: [],
-            experience: 0,
-            ratePerMinute: 0.0,
-            isOnline: false,
-            totalEarnings: 0.0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-        });
-      }
+      _setFallbackUser();
+    }
+  }
+
+  void _setFallbackUser() {
+    if (mounted) {
+      setState(() {
+        _currentUser = AstrologerModel(
+          id: 'unknown',
+          name: 'User',
+          email: '',
+          phone: '',
+          profilePicture: null, // Explicitly set to null
+          specializations: [],
+          languages: [],
+          experience: 0,
+          ratePerMinute: 0.0,
+          isOnline: false,
+          totalEarnings: 0.0,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      });
     }
   }
 
@@ -136,20 +150,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   ImageProvider? _getImageProvider(String imagePath) {
-    print('🖼️ [DASHBOARD] Loading profile picture: $imagePath');
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
-      // Network URL - construct full URL for Railway backend
-      if (imagePath.startsWith('/uploads/')) {
-        final fullUrl = 'https://astrologerapp-production.up.railway.app$imagePath';
-        print('🖼️ [DASHBOARD] Full URL: $fullUrl');
-        return NetworkImage(fullUrl);
+    try {
+      print('🖼️ [DASHBOARD] Loading profile picture: $imagePath');
+      
+      // Validate imagePath is not empty
+      if (imagePath.isEmpty) {
+        print('🖼️ [DASHBOARD] Image path is empty, returning null');
+        return null;
       }
-      print('🖼️ [DASHBOARD] Direct URL: $imagePath');
-      return NetworkImage(imagePath);
-    } else {
-      // Local file path
-      print('🖼️ [DASHBOARD] Local file: $imagePath');
-      return FileImage(File(imagePath));
+      
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/uploads/')) {
+        // Network URL - construct full URL for Railway backend
+        if (imagePath.startsWith('/uploads/')) {
+          final fullUrl = 'https://astrologerapp-production.up.railway.app$imagePath';
+          print('🖼️ [DASHBOARD] Full URL: $fullUrl');
+          return NetworkImage(fullUrl);
+        }
+        print('🖼️ [DASHBOARD] Direct URL: $imagePath');
+        return NetworkImage(imagePath);
+      } else {
+        // Local file path
+        print('🖼️ [DASHBOARD] Local file: $imagePath');
+        return FileImage(File(imagePath));
+      }
+    } catch (e) {
+      print('🖼️ [DASHBOARD] Error creating image provider: $e');
+      return null;
     }
   }
 
@@ -522,6 +548,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
                             ? _getImageProvider(user!.profilePicture!)
                             : null,
+                        onBackgroundImageError: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
+                            ? (exception, stackTrace) {
+                                print('🖼️ [DASHBOARD] Profile picture error: $exception');
+                                print('🖼️ [DASHBOARD] Stack trace: $stackTrace');
+                              }
+                            : null,
                         child: user?.profilePicture == null || user!.profilePicture!.isEmpty
                             ? Text(
                                 user?.name?.isNotEmpty == true 
@@ -534,10 +566,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               )
                             : null,
-                        onBackgroundImageError: (exception, stackTrace) {
-                          print('🖼️ [DASHBOARD] Profile picture error: $exception');
-                          print('🖼️ [DASHBOARD] Stack trace: $stackTrace');
-                        },
                       ),
                     ),
                   ),
