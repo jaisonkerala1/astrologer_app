@@ -9,6 +9,7 @@ import '../core/services/language_service.dart';
 import '../core/services/status_service.dart';
 import '../features/notifications/services/notification_service.dart';
 import '../features/live/services/live_stream_service.dart';
+import '../shared/theme/services/theme_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/auth/bloc/auth_event.dart';
 import '../features/auth/bloc/auth_state.dart';
@@ -28,6 +29,7 @@ class App extends StatefulWidget {
   final StatusService statusService;
   final NotificationService notificationService;
   final LiveStreamService liveStreamService;
+  final ThemeService themeService;
   
   const App({
     super.key, 
@@ -35,6 +37,7 @@ class App extends StatefulWidget {
     required this.statusService,
     required this.notificationService,
     required this.liveStreamService,
+    required this.themeService,
   });
 
   @override
@@ -77,6 +80,9 @@ class _AppState extends State<App> {
         ),
         ChangeNotifierProvider<LiveStreamService>(
           create: (context) => widget.liveStreamService,
+        ),
+        ChangeNotifierProvider<ThemeService>(
+          create: (context) => widget.themeService,
         ),
       ],
       child: MultiBlocProvider(

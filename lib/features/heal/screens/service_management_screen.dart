@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../models/service_model.dart';
@@ -122,28 +124,30 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text(l10n.services),
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: _showAddServiceDialog,
-            icon: const Icon(Icons.add),
-            tooltip: l10n.addService,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: Text(l10n.services),
+            backgroundColor: themeService.surfaceColor,
+            foregroundColor: themeService.textPrimary,
+            elevation: 0,
+            actions: [
+              IconButton(
+                onPressed: _showAddServiceDialog,
+                icon: Icon(Icons.add, color: themeService.textPrimary),
+                tooltip: l10n.addService,
+              ),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(
+                height: 1,
+                color: themeService.borderColor,
+              ),
+            ),
           ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            color: Colors.grey.shade300,
-          ),
-        ),
-      ),
       body: Column(
         children: [
           // Category Filter
@@ -159,20 +163,22 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
           
           // Services List
           Expanded(
-            child: _buildServicesList(l10n),
+            child: _buildServicesList(l10n, themeService),
           ),
         ],
       ),
+        );
+      },
     );
   }
 
-  Widget _buildServicesList(AppLocalizations l10n) {
+  Widget _buildServicesList(AppLocalizations l10n, ThemeService themeService) {
     final filteredServices = _selectedCategory == 'all'
         ? _services
         : _services.where((service) => service.category == _selectedCategory).toList();
 
     if (filteredServices.isEmpty) {
-      return _buildEmptyState(l10n);
+      return _buildEmptyState(l10n, themeService);
     }
 
     return ListView.builder(
@@ -190,7 +196,7 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
     );
   }
 
-  Widget _buildEmptyState(AppLocalizations l10n) {
+  Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -200,15 +206,15 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
             Icon(
               Icons.spa_outlined,
               size: 64,
-              color: AppTheme.textColor.withOpacity(0.3),
+              color: themeService.textHint,
             ),
             const SizedBox(height: 16),
             Text(
               l10n.noServicesFound,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: themeService.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -219,7 +225,7 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textColor.withOpacity(0.6),
+                color: themeService.textSecondary,
               ),
             ),
             const SizedBox(height: 24),
@@ -228,11 +234,11 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
               icon: const Icon(Icons.add),
               label: Text(l10n.addService),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: themeService.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: themeService.borderRadius,
                 ),
               ),
             ),

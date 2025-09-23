@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/consultation_model.dart';
 
 class ConsultationStatsWidget extends StatelessWidget {
@@ -16,42 +18,48 @@ class ConsultationStatsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Today's stats row
-          Row(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          child: Column(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Today',
-                  todayCount.toString(),
-                  'Consultations',
-                  Icons.today,
-                  AppTheme.primaryColor,
-                ),
+              // Today's stats row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Today',
+                      todayCount.toString(),
+                      'Consultations',
+                      Icons.today,
+                      themeService.primaryColor,
+                      themeService,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Today',
+                      '₹${todayEarnings.toStringAsFixed(0)}',
+                      'Earnings',
+                      Icons.currency_rupee,
+                      themeService.successColor,
+                      themeService,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Today',
-                  '₹${todayEarnings.toStringAsFixed(0)}',
-                  'Earnings',
-                  Icons.currency_rupee,
-                  Colors.green,
-                ),
-              ),
+              if (nextConsultation != null) ...[
+                const SizedBox(height: 16),
+                _buildNextConsultationCard(context, themeService),
+              ],
             ],
           ),
-          if (nextConsultation != null) ...[
-            const SizedBox(height: 16),
-            _buildNextConsultationCard(context),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -62,19 +70,14 @@ class ConsultationStatsWidget extends StatelessWidget {
     String subtitle,
     IconData icon,
     Color color,
+    ThemeService themeService,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: themeService.cardColor,
+        borderRadius: themeService.borderRadius,
+        boxShadow: [themeService.cardShadow],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +100,7 @@ class ConsultationStatsWidget extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textColor.withOpacity(0.7),
+                  color: themeService.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -108,14 +111,14 @@ class ConsultationStatsWidget extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textColor.withOpacity(0.6),
+              color: themeService.textSecondary,
             ),
           ),
         ],
@@ -123,22 +126,22 @@ class ConsultationStatsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildNextConsultationCard(BuildContext context) {
+  Widget _buildNextConsultationCard(BuildContext context, ThemeService themeService) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryColor.withOpacity(0.1),
-            AppTheme.primaryColor.withOpacity(0.05),
+            themeService.primaryColor.withOpacity(0.1),
+            themeService.primaryColor.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: themeService.borderRadius,
         border: Border.all(
-          color: AppTheme.primaryColor.withOpacity(0.2),
+          color: themeService.primaryColor.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -148,14 +151,14 @@ class ConsultationStatsWidget extends StatelessWidget {
             children: [
               Icon(
                 Icons.schedule,
-                color: AppTheme.primaryColor,
+                color: themeService.primaryColor,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 'Next Consultation',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppTheme.primaryColor,
+                  color: themeService.primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -166,6 +169,7 @@ class ConsultationStatsWidget extends StatelessWidget {
             nextConsultation!.clientName,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -174,26 +178,26 @@ class ConsultationStatsWidget extends StatelessWidget {
               Icon(
                 _getTypeIcon(nextConsultation!.type),
                 size: 16,
-                color: AppTheme.textColor.withOpacity(0.7),
+                color: themeService.textSecondary,
               ),
               const SizedBox(width: 4),
               Text(
                 nextConsultation!.type.displayName,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textColor.withOpacity(0.7),
+                  color: themeService.textSecondary,
                 ),
               ),
               const SizedBox(width: 16),
               Icon(
                 Icons.access_time,
                 size: 16,
-                color: AppTheme.textColor.withOpacity(0.7),
+                color: themeService.textSecondary,
               ),
               const SizedBox(width: 4),
               Text(
                 _formatTime(nextConsultation!.scheduledTime),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textColor.withOpacity(0.7),
+                  color: themeService.textSecondary,
                 ),
               ),
             ],

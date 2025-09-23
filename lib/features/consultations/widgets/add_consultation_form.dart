@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/consultation_model.dart';
 
 class AddConsultationForm extends StatefulWidget {
@@ -41,235 +43,250 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: themeService.cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Row(
-              children: [
-                const Text(
-                  'Add Consultation',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textColor,
+                  // Header
+                  Row(
+                    children: [
+                      Text(
+                        'Add Consultation',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: themeService.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: widget.onCancel,
+                        icon: const Icon(Icons.close),
+                        color: themeService.textSecondary,
+                      ),
+                    ],
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: widget.onCancel,
-                  icon: const Icon(Icons.close),
-                  color: AppTheme.textColor.withOpacity(0.6),
-                ),
-              ],
-            ),
             const SizedBox(height: 20),
 
-            // Client Name
-            _buildTextField(
-              controller: _clientNameController,
-              label: 'Client Name',
-              hint: 'Enter client name',
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Client name is required';
-                }
-                if (value.trim().length > 100) {
-                  return 'Client name must be less than 100 characters';
-                }
-                return null;
-              },
-            ),
-
-            // Client Phone
-            _buildTextField(
-              controller: _clientPhoneController,
-              label: 'Client Phone',
-              hint: 'Enter phone number (e.g., +919876543210)',
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                LengthLimitingTextInputFormatter(15),
-              ],
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Phone number is required';
-                }
-                final trimmedValue = value.trim();
-                if (trimmedValue.length > 15) {
-                  return 'Phone number must be maximum 15 characters';
-                }
-                if (trimmedValue.length < 10) {
-                  return 'Phone number must be at least 10 characters';
-                }
-                // Check if it starts with + and contains only digits after that
-                if (trimmedValue.startsWith('+')) {
-                  if (!RegExp(r'^\+[0-9]+$').hasMatch(trimmedValue)) {
-                    return 'Invalid phone number format';
-                  }
-                  if (trimmedValue.length < 11) { // +1 + country code + 9 digits minimum
-                    return 'Phone number too short';
-                  }
-                } else {
-                  // If no +, should contain only digits
-                  if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
-                    return 'Phone number must contain only digits or start with +';
-                  }
-                }
-                return null;
-              },
-            ),
-
-            // Consultation Type
-            _buildSectionTitle('Consultation Type'),
-            const SizedBox(height: 8),
-            _buildTypeSelector(),
-
-            // Date and Time
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDateTimeField(
-                    label: 'Date',
-                    value: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                    onTap: _selectDate,
-                    validator: () => _validateDateTime(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildDateTimeField(
-                    label: 'Time',
-                    value: _selectedTime.format(context),
-                    onTap: _selectTime,
-                    validator: () => _validateDateTime(),
-                  ),
-                ),
-              ],
-            ),
-
-            // Duration and Amount
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _durationController,
-                    label: 'Duration (minutes)',
-                    hint: '15-180 minutes',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
+                  // Client Name
+                  _buildTextField(
+                    controller: _clientNameController,
+                    label: 'Client Name',
+                    hint: 'Enter client name',
+                    themeService: themeService,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Duration is required';
+                        return 'Client name is required';
                       }
-                      final duration = int.tryParse(value.trim());
-                      if (duration == null) {
-                        return 'Duration must be a number';
-                      }
-                      if (duration < 15) {
-                        return 'Minimum duration is 15 minutes';
-                      }
-                      if (duration > 180) {
-                        return 'Maximum duration is 180 minutes (3 hours)';
+                      if (value.trim().length > 100) {
+                        return 'Client name must be less than 100 characters';
                       }
                       return null;
                     },
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _amountController,
-                    label: 'Amount (₹)',
-                    hint: 'Enter amount',
-                    keyboardType: TextInputType.number,
+
+                  // Client Phone
+                  _buildTextField(
+                    controller: _clientPhoneController,
+                    label: 'Client Phone',
+                    hint: 'Enter phone number (e.g., +919876543210)',
+                    keyboardType: TextInputType.phone,
+                    themeService: themeService,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                      LengthLimitingTextInputFormatter(15),
                     ],
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Amount is required';
+                        return 'Phone number is required';
                       }
-                      final amount = double.tryParse(value.trim());
-                      if (amount == null) {
-                        return 'Amount must be a valid number';
+                      final trimmedValue = value.trim();
+                      if (trimmedValue.length > 15) {
+                        return 'Phone number must be maximum 15 characters';
                       }
-                      if (amount <= 0) {
-                        return 'Amount must be greater than 0';
+                      if (trimmedValue.length < 10) {
+                        return 'Phone number must be at least 10 characters';
                       }
-                      if (amount > 100000) {
-                        return 'Amount seems too high (max ₹1,00,000)';
+                      // Check if it starts with + and contains only digits after that
+                      if (trimmedValue.startsWith('+')) {
+                        if (!RegExp(r'^\+[0-9]+$').hasMatch(trimmedValue)) {
+                          return 'Invalid phone number format';
+                        }
+                        if (trimmedValue.length < 11) { // +1 + country code + 9 digits minimum
+                          return 'Phone number too short';
+                        }
+                      } else {
+                        // If no +, should contain only digits
+                        if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                          return 'Phone number must contain only digits or start with +';
+                        }
                       }
                       return null;
                     },
                   ),
-                ),
-              ],
-            ),
 
-            // Notes
-            _buildTextField(
-              controller: _notesController,
-              label: 'Notes (Optional)',
-              hint: 'Add any additional notes',
-              maxLines: 3,
-            ),
+                  // Consultation Type
+                  _buildSectionTitle('Consultation Type', themeService),
+                  const SizedBox(height: 8),
+                  _buildTypeSelector(themeService),
 
-            const SizedBox(height: 24),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: widget.onCancel,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: AppTheme.textColor.withOpacity(0.3)),
-                    ),
-                    child: const Text('Cancel'),
+                  // Date and Time
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDateTimeField(
+                          label: 'Date',
+                          value: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                          onTap: _selectDate,
+                          validator: () => _validateDateTime(),
+                          themeService: themeService,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildDateTimeField(
+                          label: 'Time',
+                          value: _selectedTime.format(context),
+                          onTap: _selectTime,
+                          validator: () => _validateDateTime(),
+                          themeService: themeService,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _submitForm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Add Consultation',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
 
-            // Add bottom padding for keyboard
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
-          ],
-        ),
-      ),
-    );
+                  // Duration and Amount
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _durationController,
+                          label: 'Duration (minutes)',
+                          hint: '15-180 minutes',
+                          keyboardType: TextInputType.number,
+                          themeService: themeService,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(3),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Duration is required';
+                            }
+                            final duration = int.tryParse(value.trim());
+                            if (duration == null) {
+                              return 'Duration must be a number';
+                            }
+                            if (duration < 15) {
+                              return 'Minimum duration is 15 minutes';
+                            }
+                            if (duration > 180) {
+                              return 'Maximum duration is 180 minutes (3 hours)';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _amountController,
+                          label: 'Amount (₹)',
+                          hint: 'Enter amount',
+                          keyboardType: TextInputType.number,
+                          themeService: themeService,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Amount is required';
+                            }
+                            final amount = double.tryParse(value.trim());
+                            if (amount == null) {
+                              return 'Amount must be a valid number';
+                            }
+                            if (amount <= 0) {
+                              return 'Amount must be greater than 0';
+                            }
+                            if (amount > 100000) {
+                              return 'Amount seems too high (max ₹1,00,000)';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Notes
+                  _buildTextField(
+                    controller: _notesController,
+                    label: 'Notes (Optional)',
+                    hint: 'Add any additional notes',
+                    maxLines: 3,
+                    themeService: themeService,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: widget.onCancel,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: themeService.borderColor),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(color: themeService.textPrimary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeService.primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text(
+                            'Add Consultation',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Add bottom padding for keyboard
+                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                ],
+              ),
+            ),
+          );
+        },
+      );
   }
 
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    required ThemeService themeService,
     String? hint,
     TextInputType? keyboardType,
     int maxLines = 1,
@@ -287,36 +304,40 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
+          labelStyle: TextStyle(color: themeService.textSecondary),
+          hintStyle: TextStyle(color: themeService.textHint),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppTheme.textColor.withOpacity(0.3)),
+            borderRadius: themeService.borderRadius,
+            borderSide: BorderSide(color: themeService.borderColor),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppTheme.textColor.withOpacity(0.3)),
+            borderRadius: themeService.borderRadius,
+            borderSide: BorderSide(color: themeService.borderColor),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppTheme.primaryColor),
+            borderRadius: themeService.borderRadius,
+            borderSide: BorderSide(color: themeService.primaryColor, width: 2),
           ),
+          filled: true,
+          fillColor: themeService.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, ThemeService themeService) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: AppTheme.textColor,
+        color: themeService.textPrimary,
       ),
     );
   }
 
-  Widget _buildTypeSelector() {
+  Widget _buildTypeSelector(ThemeService themeService) {
     return Container(
       height: 50,
       child: ListView.builder(
@@ -338,16 +359,16 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor : Colors.white,
-                  borderRadius: BorderRadius.circular(25),
+                  color: isSelected ? themeService.primaryColor : themeService.cardColor,
+                  borderRadius: themeService.borderRadius,
                   border: Border.all(
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.textColor.withOpacity(0.3),
+                    color: isSelected ? themeService.primaryColor : themeService.borderColor,
                   ),
                 ),
                 child: Text(
                   type.displayName,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textColor,
+                    color: isSelected ? Colors.white : themeService.textPrimary,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -364,6 +385,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
     required String label,
     required String value,
     required VoidCallback onTap,
+    required ThemeService themeService,
     String? Function()? validator,
   }) {
     return Padding(
@@ -373,10 +395,10 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -388,10 +410,11 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
               decoration: BoxDecoration(
                 border: Border.all(
                   color: validator != null && validator() != null 
-                    ? Colors.red 
-                    : AppTheme.textColor.withOpacity(0.3)
+                    ? themeService.errorColor 
+                    : themeService.borderColor
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: themeService.borderRadius,
+                color: themeService.surfaceColor,
               ),
               child: Row(
                 children: [
@@ -401,16 +424,16 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                       style: TextStyle(
                         fontSize: 16,
                         color: validator != null && validator() != null 
-                          ? Colors.red 
-                          : null,
+                          ? themeService.errorColor 
+                          : themeService.textPrimary,
                       ),
                     ),
                   ),
                   Icon(
                     Icons.arrow_drop_down,
                     color: validator != null && validator() != null 
-                      ? Colors.red 
-                      : AppTheme.textColor.withOpacity(0.6),
+                      ? themeService.errorColor 
+                      : themeService.textSecondary,
                   ),
                 ],
               ),
@@ -420,8 +443,8 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
             const SizedBox(height: 4),
             Text(
               validator()!,
-              style: const TextStyle(
-                color: Colors.red,
+              style: TextStyle(
+                color: themeService.errorColor,
                 fontSize: 12,
               ),
             ),

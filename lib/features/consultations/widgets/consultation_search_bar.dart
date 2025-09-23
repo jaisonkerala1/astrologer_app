@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 
 class ConsultationSearchBar extends StatefulWidget {
   final String searchQuery;
   final bool isSearching;
+  final int resultCount;
   final Function(String) onSearchChanged;
   final VoidCallback onClearSearch;
   final VoidCallback onSearchSubmitted;
@@ -13,6 +16,7 @@ class ConsultationSearchBar extends StatefulWidget {
     super.key,
     required this.searchQuery,
     required this.isSearching,
+    required this.resultCount,
     required this.onSearchChanged,
     required this.onClearSearch,
     required this.onSearchSubmitted,
@@ -94,84 +98,133 @@ class _ConsultationSearchBarState extends State<ConsultationSearchBar>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: Colors.grey[200]!,
-                  width: 1,
-                ),
-              ),
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                onChanged: _onSearchChanged,
-                onSubmitted: _onSearchSubmitted,
-                textInputAction: TextInputAction.search,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black87,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search consultations...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[400],
-                    fontWeight: FontWeight.w400,
-                    fontSize: 15,
-                  ),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: widget.isSearching 
-                          ? AppTheme.primaryColor 
-                          : Colors.grey[400],
-                      size: 20,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    // Main search bar
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: themeService.surfaceColor,
+                        borderRadius: themeService.borderRadius,
+                        border: Border.all(
+                          color: themeService.borderColor,
+                          width: 1,
+                        ),
+                        boxShadow: [themeService.cardShadow],
+                      ),
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        onChanged: _onSearchChanged,
+                        onSubmitted: _onSearchSubmitted,
+                        textInputAction: TextInputAction.search,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          color: themeService.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search consultations...',
+                          hintStyle: TextStyle(
+                            color: themeService.textHint,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 15,
+                          ),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Icon(
+                              Icons.search_rounded,
+                              color: widget.isSearching 
+                                  ? themeService.primaryColor 
+                                  : themeService.textHint,
+                              size: 20,
+                            ),
+                          ),
+                          suffixIcon: widget.searchQuery.isNotEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: _onClearPressed,
+                                      borderRadius: themeService.borderRadius,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: themeService.borderColor,
+                                          borderRadius: themeService.borderRadius,
+                                        ),
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          color: themeService.textSecondary,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  suffixIcon: widget.searchQuery.isNotEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _onClearPressed,
-                              borderRadius: BorderRadius.circular(15),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.grey[500],
-                                  size: 16,
+                    
+                    // Results indicator (integrated into search bar)
+                    if (widget.isSearching && widget.searchQuery.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: themeService.backgroundColor,
+                          borderRadius: themeService.borderRadius,
+                          border: Border.all(
+                            color: themeService.borderColor,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.search_rounded,
+                              color: themeService.textSecondary,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.resultCount == 0
+                                    ? 'No results for "${widget.searchQuery}"'
+                                    : widget.resultCount == 1
+                                        ? '1 result for "${widget.searchQuery}"'
+                                        : '${widget.resultCount} results for "${widget.searchQuery}"',
+                                style: TextStyle(
+                                  color: themeService.textSecondary,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 13,
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -241,71 +294,75 @@ class SearchEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(60),
-              ),
-              child: Icon(
-                Icons.search_off_rounded,
-                size: 48,
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No Results Found',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No consultations match "$searchQuery"',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[500],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try searching with different keywords',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[400],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: onClearSearch,
-              icon: const Icon(Icons.clear_all_rounded),
-              label: const Text('Clear Search'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: themeService.surfaceColor,
+                    borderRadius: BorderRadius.circular(60),
+                  ),
+                  child: Icon(
+                    Icons.search_off_rounded,
+                    size: 48,
+                    color: themeService.textHint,
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 24),
+                Text(
+                  'No Results Found',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: themeService.textPrimary,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  'No consultations match "$searchQuery"',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: themeService.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try searching with different keywords',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: themeService.textHint,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: onClearSearch,
+                  icon: const Icon(Icons.clear_all_rounded),
+                  label: const Text('Clear Search'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeService.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: themeService.borderRadius,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

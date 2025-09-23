@@ -9,6 +9,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
@@ -201,8 +202,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
       body: IndexedStack(
         index: _selectedIndex,
         children: [
@@ -215,11 +218,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       bottomNavigationBar: Container(
         height: 80, // Increased height for better touch targets
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: themeService.surfaceColor,
           border: Border(
             top: BorderSide(
-              color: Color(0xFFE5E5E5),
+              color: themeService.borderColor,
               width: 0.5,
             ),
           ),
@@ -236,8 +239,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: AppTheme.primaryColor,
-          unselectedItemColor: const Color(0xFF9E9E9E),
+          selectedItemColor: themeService.primaryColor,
+          unselectedItemColor: themeService.textSecondary,
           selectedFontSize: 11,
           unselectedFontSize: 10,
           iconSize: 22, // Slightly larger icons for better visibility
@@ -265,6 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
         ),
       ),
+        );
+      },
     );
   }
 
@@ -349,15 +354,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (context, constraints) {
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-                maxWidth: constraints.maxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                  maxWidth: constraints.maxWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
             // Header (includes status toggle) - Full width
             _buildHeader(_currentUser),
             
@@ -366,7 +370,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(AppConstants.defaultPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
             
             // Earnings Card

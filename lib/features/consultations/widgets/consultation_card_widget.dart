@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/consultation_model.dart';
 import '../screens/consultation_detail_screen.dart';
 
@@ -150,122 +152,134 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          if (widget.onTap != null) {
-            widget.onTap!();
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ConsultationDetailScreen(
-                  consultation: widget.consultation,
-                ),
-              ),
-            );
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.consultation.clientName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.consultation.clientPhone,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textColor.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          elevation: 2,
+          color: themeService.cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: themeService.borderRadius,
+          ),
+          child: InkWell(
+            onTap: () {
+              if (widget.onTap != null) {
+                widget.onTap!();
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ConsultationDetailScreen(
+                      consultation: widget.consultation,
                     ),
                   ),
-                  _buildStatusChip(),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
+                );
+              }
+            },
+            borderRadius: themeService.borderRadius,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoItem(
-                    Icons.access_time,
-                    DateFormat('MMM dd, yyyy - HH:mm').format(widget.consultation.scheduledTime),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.consultation.clientName,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: themeService.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.consultation.clientPhone,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: themeService.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildStatusChip(),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  _buildInfoItem(
-                    _getTypeIcon(),
-                    widget.consultation.type.displayName,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildInfoItem(
+                        Icons.access_time,
+                        DateFormat('MMM dd, yyyy - HH:mm').format(widget.consultation.scheduledTime),
+                        themeService,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildInfoItem(
+                        _getTypeIcon(),
+                        widget.consultation.type.displayName,
+                        themeService,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildInfoItem(
-                    Icons.schedule,
-                    '${widget.consultation.duration} min',
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildInfoItem(
+                        Icons.schedule,
+                        '${widget.consultation.duration} min',
+                        themeService,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildInfoItem(
+                        Icons.currency_rupee,
+                        '₹${widget.consultation.amount.toStringAsFixed(0)}',
+                        themeService,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  _buildInfoItem(
-                    Icons.currency_rupee,
-                    '₹${widget.consultation.amount.toStringAsFixed(0)}',
-                  ),
-                ],
-              ),
               if (widget.consultation.status == ConsultationStatus.inProgress && widget.consultation.startedAt != null) ...[
                 const SizedBox(height: 8),
                 _buildElapsedTime(),
               ],
-              if (widget.consultation.notes != null && widget.consultation.notes!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.backgroundColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.note,
-                        size: 16,
-                        color: AppTheme.textColor.withOpacity(0.7),
+                  if (widget.consultation.notes != null && widget.consultation.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: themeService.backgroundColor,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          widget.consultation.notes!,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.note,
+                            size: 16,
+                            color: themeService.textSecondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              widget.consultation.notes!,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: themeService.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              _buildActionButtons(),
-            ],
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  _buildActionButtons(),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -316,21 +330,21 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
     }
   }
 
-  Widget _buildInfoItem(IconData icon, String text) {
+  Widget _buildInfoItem(IconData icon, String text, ThemeService themeService) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
           size: 16,
-          color: AppTheme.textColor.withOpacity(0.7),
+          color: themeService.textSecondary,
         ),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontSize: 12,
-            color: AppTheme.textColor.withOpacity(0.7),
+            color: themeService.textSecondary,
           ),
         ),
       ],

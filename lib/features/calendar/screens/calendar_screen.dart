@@ -3,12 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/loading_indicator.dart';
+import '../../../shared/widgets/error_state_widget.dart';
+import '../../../shared/widgets/transition_animations.dart';
+import '../../../shared/widgets/custom_refresh_indicator.dart';
+import '../../../shared/widgets/simple_shimmer.dart';
 import '../../consultations/models/consultation_model.dart';
 import '../../consultations/services/consultations_service.dart';
 import '../../consultations/screens/consultation_detail_screen.dart';
 import '../widgets/calendar_widget.dart';
+import '../widgets/calendar_skeleton_widget.dart';
+import '../widgets/simple_calendar_skeleton.dart';
 import '../widgets/availability_management_widget.dart';
 import '../widgets/holiday_management_widget.dart';
+import '../models/calendar_loading_state.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -22,7 +30,7 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
   DateTime _selectedDate = DateTime.now();
   List<ConsultationModel> _consultations = [];
   String? _astrologerId;
-  bool _isLoading = false;
+  CalendarLoadingModel _loadingState = CalendarLoadingModel.initial();
   final ConsultationsService _consultationsService = ConsultationsService();
 
   @override
@@ -39,6 +47,10 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
   }
 
   Future<void> _loadAstrologerId() async {
+    setState(() {
+      _loadingState = CalendarLoadingModel.loading(CalendarLoadingState.loadingAstrologerId);
+    });
+
     try {
       final userDataString = await StorageService().getUserData();
       if (userDataString != null) {
@@ -48,10 +60,20 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
             _astrologerId = userData['id'].toString();
           });
           _loadConsultations();
+        } else {
+          setState(() {
+            _loadingState = CalendarLoadingModel.error('User ID not found');
+          });
         }
+      } else {
+        setState(() {
+          _loadingState = CalendarLoadingModel.error('User data not found');
+        });
       }
     } catch (e) {
-      print('Error loading astrologer ID: $e');
+      setState(() {
+        _loadingState = CalendarLoadingModel.error('Error loading profile: ${e.toString()}');
+      });
     }
   }
 
@@ -59,7 +81,7 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     if (_astrologerId == null) return;
     
     setState(() {
-      _isLoading = true;
+      _loadingState = CalendarLoadingModel.loading(CalendarLoadingState.loadingConsultations);
     });
 
     try {
@@ -67,22 +89,40 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
       final consultations = await _consultationsService.getConsultations();
       setState(() {
         _consultations = consultations;
+        _loadingState = CalendarLoadingModel.loaded();
       });
     } catch (e) {
-      print('Error loading consultations: $e');
-      // Show error message to user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load consultations: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
       setState(() {
-        _isLoading = false;
+        _loadingState = CalendarLoadingModel.error('Failed to load consultations: ${e.toString()}');
       });
+    }
+  }
+
+  Future<void> _refreshConsultations() async {
+    if (_astrologerId == null) return;
+    
+    setState(() {
+      _loadingState = CalendarLoadingModel.refreshing();
+    });
+
+    try {
+      final consultations = await _consultationsService.getConsultations();
+      setState(() {
+        _consultations = consultations;
+        _loadingState = CalendarLoadingModel.loaded();
+      });
+    } catch (e) {
+      setState(() {
+        _loadingState = CalendarLoadingModel.error('Failed to refresh consultations: ${e.toString()}');
+      });
+    }
+  }
+
+  void _retryLoading() {
+    if (_astrologerId == null) {
+      _loadAstrologerId();
+    } else {
+      _loadConsultations();
     }
   }
 
@@ -122,15 +162,42 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Calendar & Scheduling',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            const Text(
+              'Calendar & Scheduling',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            if (_loadingState.state == CalendarLoadingState.refreshing) ...[
+              const SizedBox(width: 12),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ],
+          ],
         ),
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
+        actions: [
+          if (_loadingState.isLoading && _loadingState.state != CalendarLoadingState.refreshing)
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: const LoadingIndicator(
+                size: 20,
+                color: Colors.white,
+                message: null,
+                showMessage: false,
+              ),
+            ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -155,25 +222,14 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
   }
 
   Widget _buildCalendarTab() {
-    return RefreshIndicator(
-      onRefresh: _loadConsultations,
+    return CustomRefreshIndicator(
+      onRefresh: _refreshConsultations,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Calendar Widget
-            CalendarWidget(
-              consultations: _consultations,
-              selectedDate: _selectedDate,
-              onDateSelected: (date) {
-                setState(() {
-                  _selectedDate = date;
-                });
-              },
-              onConsultationSelected: (consultation) {
-                _showConsultationDetails(consultation);
-              },
-            ),
+            // Calendar Widget with Loading States
+            _buildCalendarContent(),
             
             const SizedBox(height: 16),
             
@@ -182,6 +238,44 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCalendarContent() {
+    // Show error state
+    if (_loadingState.hasError) {
+      return Container(
+        height: 400,
+        child: ErrorStateWidget(
+          title: 'Unable to Load Calendar',
+          message: _loadingState.errorMessage ?? 'Something went wrong',
+          onRetry: _retryLoading,
+          icon: Icons.calendar_today,
+          iconColor: Colors.orange,
+        ),
+      );
+    }
+
+    // Show skeleton while loading
+    if (_loadingState.isLoading) {
+      return const SimpleCalendarSkeleton(
+        showConsultations: true,
+        enabled: true,
+      );
+    }
+
+    // Show real calendar when loaded
+    return CalendarWidget(
+      consultations: _consultations,
+      selectedDate: _selectedDate,
+      onDateSelected: (date) {
+        setState(() {
+          _selectedDate = date;
+        });
+      },
+      onConsultationSelected: (consultation) {
+        _showConsultationDetails(consultation);
+      },
     );
   }
 

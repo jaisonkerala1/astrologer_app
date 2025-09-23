@@ -44,6 +44,8 @@ dependencies:
   image_picker: ^1.0.4
   animations: ^2.0.8
   share_plus: ^7.2.1
+  flutter_local_notifications: ^17.2.3
+  permission_handler: ^11.3.1
   
   # UI & Media
   # image_picker: ^0.8.6  # Temporarily disabled due to SDK 35 compatibility issues

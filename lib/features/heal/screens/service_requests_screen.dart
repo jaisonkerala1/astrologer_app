@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/constants/app_constants.dart';
 import '../models/service_request_model.dart';
 import '../widgets/service_request_card_widget.dart';
@@ -99,23 +101,27 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: Column(
-        children: [
-          // Filter Chips
-          _buildFilterChips(l10n),
-          
-          // Requests List
-          Expanded(
-            child: _buildRequestsList(l10n),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          body: Column(
+            children: [
+              // Filter Chips
+              _buildFilterChips(l10n, themeService),
+              
+              // Requests List
+              Expanded(
+                child: _buildRequestsList(l10n, themeService),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildFilterChips(AppLocalizations l10n) {
+  Widget _buildFilterChips(AppLocalizations l10n, ThemeService themeService) {
     final filters = [
       {'key': 'all', 'label': 'All', 'count': _requests.length},
       {'key': 'pending', 'label': 'Pending', 'count': _requests.where((r) => r.status == RequestStatus.pending).length},
@@ -127,10 +133,10 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: themeService.surfaceColor,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E5E5)),
+          bottom: BorderSide(color: themeService.borderColor),
         ),
       ),
       child: ListView.builder(
@@ -155,13 +161,13 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppTheme.primaryColor
-                        : AppTheme.backgroundColor,
-                    borderRadius: BorderRadius.circular(20),
+                        ? themeService.primaryColor
+                        : themeService.backgroundColor,
+                    borderRadius: themeService.borderRadius,
                     border: Border.all(
                       color: isSelected
-                          ? AppTheme.primaryColor
-                          : Colors.grey.shade300,
+                          ? themeService.primaryColor
+                          : themeService.borderColor,
                       width: 1,
                     ),
                   ),
@@ -175,7 +181,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                           fontWeight: FontWeight.w500,
                           color: isSelected
                               ? Colors.white
-                              : AppTheme.textColor,
+                              : themeService.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -184,7 +190,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Colors.white.withOpacity(0.2)
-                              : AppTheme.primaryColor.withOpacity(0.1),
+                              : themeService.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -194,7 +200,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                             fontWeight: FontWeight.bold,
                             color: isSelected
                                 ? Colors.white
-                                : AppTheme.primaryColor,
+                                : themeService.primaryColor,
                           ),
                         ),
                       ),
@@ -209,11 +215,11 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     );
   }
 
-  Widget _buildRequestsList(AppLocalizations l10n) {
+  Widget _buildRequestsList(AppLocalizations l10n, ThemeService themeService) {
     final filteredRequests = _getFilteredRequests();
 
     if (filteredRequests.isEmpty) {
-      return _buildEmptyState(l10n);
+      return _buildEmptyState(l10n, themeService);
     }
 
     return ListView.builder(
@@ -232,7 +238,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     );
   }
 
-  Widget _buildEmptyState(AppLocalizations l10n) {
+  Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -242,15 +248,15 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
             Icon(
               Icons.shopping_cart_outlined,
               size: 64,
-              color: AppTheme.textColor.withOpacity(0.3),
+              color: themeService.textHint,
             ),
             const SizedBox(height: 16),
             Text(
               'No service requests found',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: themeService.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -261,7 +267,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textColor.withOpacity(0.6),
+                color: themeService.textSecondary,
               ),
             ),
           ],
@@ -303,6 +309,10 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     });
   }
 }
+
+
+
+
 
 
 

@@ -9,6 +9,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
@@ -18,6 +19,9 @@ import 'edit_profile_screen.dart';
 import '../../settings/screens/language_selection_screen.dart';
 import '../../chat/widgets/floating_chat_button.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
+import '../../help_support/screens/help_support_screen.dart';
+import '../../notifications/screens/notification_settings_screen.dart';
+import '../../theme/screens/theme_selection_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -101,103 +105,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       },
-      child: Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        floatingActionButton: FloatingChatButton(userProfile: _currentUser),
-        body: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 40),
-              
-              // Profile Header - Full width
-              _buildProfileHeader(context, _currentUser),
-              const SizedBox(height: 32),
-              
-              // Content with padding
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile Stats
-                    _buildProfileStats(),
-                    const SizedBox(height: 24),
-                    
-                    // Profile Sections
-                    _buildProfileSection(
-                      'Personal Information',
-                      [
-                        _buildInfoTile(Icons.person, 'Full Name', _currentUser?.name ?? 'Loading...'),
-                        _buildInfoTile(Icons.phone, 'Phone', _currentUser?.phone ?? 'Loading...'),
-                        _buildInfoTile(Icons.email, 'Email', _currentUser?.email ?? 'Loading...'),
-                        _buildInfoTile(Icons.cake, 'Date of Birth', '15 Aug, 1985'),
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Scaffold(
+            backgroundColor: themeService.backgroundColor,
+            floatingActionButton: FloatingChatButton(userProfile: _currentUser),
+            body: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 40),
+                  
+                  // Profile Header - Full width
+                  _buildProfileHeader(context, _currentUser, themeService),
+                  const SizedBox(height: 32),
+                  
+                  // Content with padding
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Profile Stats
+                        _buildProfileStats(themeService),
+                        const SizedBox(height: 24),
+                        
+                        // Profile Sections
+                        _buildProfileSection(
+                          'Personal Information',
+                          [
+                            _buildInfoTile(Icons.person, 'Full Name', _currentUser?.name ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.phone, 'Phone', _currentUser?.phone ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.email, 'Email', _currentUser?.email ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.cake, 'Date of Birth', '15 Aug, 1985', themeService),
+                          ],
+                          themeService,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        _buildProfileSection(
+                          'Professional Details',
+                          [
+                            _buildInfoTile(Icons.school, 'Experience', '${_currentUser?.experience ?? 0} Years', themeService),
+                            _buildInfoTile(Icons.star, 'Specializations', _currentUser?.specializations.join(', ') ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.language, 'Languages', _currentUser?.languages.join(', ') ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${_currentUser?.ratePerMinute ?? 0}', themeService),
+                          ],
+                          themeService,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Settings Section
+                        _buildProfileSection(
+                          AppLocalizations.of(context)!.settings,
+                          [
+                            _buildSettingsTile(Icons.notifications_outlined, AppLocalizations.of(context)!.notifications, 'Manage your notifications', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NotificationSettingsScreen(),
+                                ),
+                              );
+                            }, themeService),
+                            _buildSettingsTile(Icons.language_outlined, AppLocalizations.of(context)!.language, 'Change app language', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LanguageSelectionScreen(),
+                                ),
+                              );
+                            }, themeService),
+                            _buildSettingsTile(Icons.palette_outlined, 'Theme', 'Choose your preferred theme', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ThemeSelectionScreen(),
+                                ),
+                              );
+                            }, themeService),
+                            _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {}, themeService),
+                          ],
+                          themeService,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Support Section
+                        _buildProfileSection(
+                          'Support',
+                          [
+                            _buildSettingsTile(Icons.help_outline, AppLocalizations.of(context)!.help, 'Get help and support', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HelpSupportScreen(),
+                                ),
+                              );
+                            }, themeService),
+                            _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {}, themeService),
+                            _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {}, themeService),
+                          ],
+                          themeService,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Action Buttons
+                        _buildActionButtons(context, themeService),
+                        const SizedBox(height: 32),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    
-                    _buildProfileSection(
-                      'Professional Details',
-                      [
-                        _buildInfoTile(Icons.school, 'Experience', '${_currentUser?.experience ?? 0} Years'),
-                        _buildInfoTile(Icons.star, 'Specializations', _currentUser?.specializations.join(', ') ?? 'Loading...'),
-                        _buildInfoTile(Icons.language, 'Languages', _currentUser?.languages.join(', ') ?? 'Loading...'),
-                        _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${_currentUser?.ratePerMinute ?? 0}'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Settings Section
-                    _buildProfileSection(
-                      AppLocalizations.of(context)!.settings,
-                      [
-                        _buildSettingsTile(Icons.notifications_outlined, AppLocalizations.of(context)!.notifications, 'Manage your notifications', () {}),
-                        _buildSettingsTile(Icons.language_outlined, AppLocalizations.of(context)!.language, 'Change app language', () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LanguageSelectionScreen(),
-                            ),
-                          );
-                        }),
-                        _buildSettingsTile(Icons.dark_mode_outlined, 'Theme', 'Switch between light and dark mode', () {}),
-                        _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {}),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Support Section
-                    _buildProfileSection(
-                      'Support',
-                      [
-                        _buildSettingsTile(Icons.help_outline, AppLocalizations.of(context)!.help, 'Get help and support', () {}),
-                        _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {}),
-                        _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {}),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Action Buttons
-                    _buildActionButtons(context),
-                    const SizedBox(height: 32),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, AstrologerModel? user) {
+  Widget _buildProfileHeader(BuildContext context, AstrologerModel? user, ThemeService themeService) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+        color: themeService.cardColor,
+        border: Border.all(color: themeService.borderColor, width: 1),
       ),
       child: Column(
         children: [
@@ -217,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 CircleAvatar(
                   radius: 45,
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: themeService.primaryColor,
                   backgroundImage: _currentUser?.profilePicture != null && _currentUser!.profilePicture!.isNotEmpty
                       ? _getImageProvider(_currentUser!.profilePicture!)
                       : null,
@@ -240,7 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
+                      color: themeService.primaryColor,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
@@ -257,10 +290,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           Text(
             user?.name ?? 'Loading...',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -268,7 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Professional Astrologer',
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.textColor.withOpacity(0.7),
+              color: themeService.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -344,34 +377,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileStats() {
+  Widget _buildProfileStats(ThemeService themeService) {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard('Total Consultations', '127', Icons.event_note, AppTheme.infoColor),
+          child: _buildStatCard('Total Consultations', '127', Icons.event_note, themeService.infoColor, themeService),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: GestureDetector(
             onTap: () => _navigateToReviews(),
-            child: _buildStatCard('Average Rating', '4.8', Icons.star, AppTheme.ratingColor),
+            child: _buildStatCard('Average Rating', '4.8', Icons.star, themeService.warningColor, themeService),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildStatCard('This Month', '23', Icons.calendar_month, AppTheme.callsColor),
+          child: _buildStatCard('This Month', '23', Icons.calendar_month, themeService.primaryColor, themeService),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+        color: themeService.cardColor,
+        borderRadius: themeService.borderRadius,
+        border: Border.all(color: themeService.borderColor, width: 1),
       ),
       child: Column(
         children: [
@@ -379,17 +412,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: themeService.borderRadius,
             ),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -397,7 +430,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title,
             style: TextStyle(
               fontSize: 11,
-              color: AppTheme.textColor.withOpacity(0.6),
+              color: themeService.textSecondary,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -407,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileSection(String title, List<Widget> children) {
+  Widget _buildProfileSection(String title, List<Widget> children, ThemeService themeService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -415,19 +448,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
             ),
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+            color: themeService.cardColor,
+            borderRadius: themeService.borderRadius,
+            border: Border.all(color: themeService.borderColor, width: 1),
           ),
           child: Column(children: children),
         ),
@@ -435,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoTile(IconData icon, String title, String subtitle) {
+  Widget _buildInfoTile(IconData icon, String title, String subtitle, ThemeService themeService) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -443,10 +476,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(4),
+              color: themeService.primaryColor.withOpacity(0.1),
+              borderRadius: themeService.borderRadius,
             ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 18),
+            child: Icon(icon, color: themeService.primaryColor, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -455,9 +488,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textColor,
+                    color: themeService.textPrimary,
                     fontSize: 14,
                   ),
                 ),
@@ -465,7 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: AppTheme.textColor.withOpacity(0.6),
+                    color: themeService.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -477,12 +510,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildSettingsTile(IconData icon, String title, String subtitle, VoidCallback onTap, ThemeService themeService) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: themeService.borderRadius,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -490,10 +523,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  color: themeService.primaryColor.withOpacity(0.1),
+                  borderRadius: themeService.borderRadius,
                 ),
-                child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+                child: Icon(icon, color: themeService.primaryColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -502,9 +535,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textColor,
+                        color: themeService.textPrimary,
                         fontSize: 15,
                       ),
                     ),
@@ -512,14 +545,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: AppTheme.textColor.withOpacity(0.6),
+                        color: themeService.textSecondary,
                         fontSize: 13,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppTheme.textColor.withOpacity(0.4), size: 20),
+              Icon(Icons.chevron_right, color: themeService.textHint, size: 20),
             ],
           ),
         ),
@@ -527,7 +560,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, ThemeService themeService) {
     return Column(
       children: [
         // Primary Actions Row
@@ -537,7 +570,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _buildCompactButton(
                 text: 'Edit Profile',
                 icon: Icons.edit_outlined,
-                color: AppTheme.primaryColor,
+                color: themeService.primaryColor,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -549,6 +582,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 },
+                themeService: themeService,
               ),
             ),
             const SizedBox(width: 12),
@@ -556,10 +590,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _buildCompactButton(
                 text: 'Share',
                 icon: Icons.share_outlined,
-                color: AppTheme.infoColor,
+                color: themeService.infoColor,
                 onPressed: () {
                   _showShareOptions(context);
                 },
+                themeService: themeService,
               ),
             ),
           ],
@@ -573,11 +608,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _buildCompactButton(
                 text: 'Logout',
                 icon: Icons.logout_outlined,
-                color: AppTheme.warningColor,
+                color: themeService.warningColor,
                 isOutlined: true,
                 onPressed: () {
                   _showLogoutDialog(context);
                 },
+                themeService: themeService,
               ),
             ),
             const SizedBox(width: 12),
@@ -585,11 +621,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _buildCompactButton(
                 text: 'Delete Account',
                 icon: Icons.delete_outline,
-                color: AppTheme.errorColor,
+                color: themeService.errorColor,
                 isOutlined: true,
                 onPressed: () {
                   _showDeleteAccountDialog(context);
                 },
+                themeService: themeService,
               ),
             ),
           ],
@@ -603,19 +640,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required Color color,
     required VoidCallback onPressed,
+    required ThemeService themeService,
     bool isOutlined = false,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: themeService.borderRadius,
         child: Container(
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isOutlined ? Colors.transparent : color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: themeService.borderRadius,
             border: isOutlined ? Border.all(color: color.withOpacity(0.3), width: 1) : null,
           ),
           child: Row(

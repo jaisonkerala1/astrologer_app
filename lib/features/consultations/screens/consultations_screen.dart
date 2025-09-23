@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
 import '../bloc/consultations_state.dart';
@@ -41,35 +43,38 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Consultations',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: AnimatedBuilder(
-              animation: _refreshAnimationController,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: _refreshAnimationController.value * 2 * 3.14159,
-                  child: const Icon(Icons.refresh, color: Colors.white),
-                );
-              },
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: Text(
+              'Consultations',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
             ),
-            onPressed: _isRefreshing ? null : () {
-              _handleRefresh();
-            },
+            backgroundColor: themeService.primaryColor,
+            foregroundColor: themeService.textPrimary,
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: AnimatedBuilder(
+                  animation: _refreshAnimationController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _refreshAnimationController.value * 2 * 3.14159,
+                      child: Icon(Icons.refresh, color: themeService.textPrimary),
+                    );
+                  },
+                ),
+                onPressed: _isRefreshing ? null : () {
+                  _handleRefresh();
+                },
+              ),
+            ],
           ),
-        ],
-      ),
       body: BlocConsumer<ConsultationsBloc, ConsultationsState>(
         listener: (context, state) {
           if (state is ConsultationsError) {
@@ -106,20 +111,20 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                   Icon(
                     Icons.error_outline,
                     size: 64,
-                    color: AppTheme.textColor.withOpacity(0.5),
+                    color: themeService.textHint,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Failed to load consultations',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.textColor.withOpacity(0.7),
+                      color: themeService.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     state.message,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textColor.withOpacity(0.5),
+                      color: themeService.textHint,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -130,6 +135,10 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeService.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -143,10 +152,11 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
               },
               child: Column(
                 children: [
-                  // Search bar
+                  // Search bar with integrated results indicator
                   ConsultationSearchBar(
                     searchQuery: state.searchQuery,
                     isSearching: state.isSearching,
+                    resultCount: state.consultations.length,
                     onSearchChanged: (query) {
                       context.read<ConsultationsBloc>().add(
                         SearchConsultationsEvent(query: query),
@@ -160,13 +170,6 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                     onSearchSubmitted: () {
                       // Search is handled in real-time, no need for submission
                     },
-                  ),
-                  
-                  // Search results indicator
-                  SearchResultsIndicator(
-                    resultCount: state.consultations.length,
-                    searchQuery: state.searchQuery,
-                    isSearching: state.isSearching,
                   ),
                   
                   // Stats section (only show when not searching)
@@ -229,12 +232,14 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddConsultationDialog(context),
-        backgroundColor: AppTheme.primaryColor,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showAddConsultationDialog(context),
+            backgroundColor: themeService.primaryColor,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        );
+      },
     );
   }
 
@@ -260,31 +265,35 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_note,
-            size: 64,
-            color: AppTheme.textColor.withOpacity(0.3),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.event_note,
+                size: 64,
+                color: themeService.textHint,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No consultations found',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: themeService.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add your first consultation to get started',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: themeService.textHint,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No consultations found',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppTheme.textColor.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add your first consultation to get started',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textColor.withOpacity(0.5),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -298,50 +307,57 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
   }
 
   Widget _buildConsultationDetailsSheet(ConsultationModel consultation) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: themeService.cardColor,
+            borderRadius: themeService.borderRadius,
+            border: Border.all(color: themeService.borderColor),
+            boxShadow: [themeService.cardShadow],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    consultation.clientName,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        consultation.clientName,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: themeService.textPrimary,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: themeService.textSecondary),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
+                const SizedBox(height: 16),
+                _buildDetailRow('Phone', consultation.clientPhone, themeService),
+                _buildDetailRow('Type', consultation.type.displayName, themeService),
+                _buildDetailRow('Duration', '${consultation.duration} minutes', themeService),
+                _buildDetailRow('Amount', '₹${consultation.amount.toStringAsFixed(0)}', themeService),
+                _buildDetailRow('Status', consultation.status.displayName, themeService),
+                if (consultation.notes != null && consultation.notes!.isNotEmpty)
+                  _buildDetailRow('Notes', consultation.notes!, themeService),
               ],
             ),
-            const SizedBox(height: 16),
-            _buildDetailRow('Phone', consultation.clientPhone),
-            _buildDetailRow('Type', consultation.type.displayName),
-            _buildDetailRow('Duration', '${consultation.duration} minutes'),
-            _buildDetailRow('Amount', '₹${consultation.amount.toStringAsFixed(0)}'),
-            _buildDetailRow('Status', consultation.status.displayName),
-            if (consultation.notes != null && consultation.notes!.isNotEmpty)
-              _buildDetailRow('Notes', consultation.notes!),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, ThemeService themeService) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -353,15 +369,16 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
               '$label:',
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textColor.withOpacity(0.7),
+                color: themeService.textSecondary,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w400,
+                color: themeService.textPrimary,
               ),
             ),
           ),
