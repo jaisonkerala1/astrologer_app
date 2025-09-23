@@ -195,6 +195,83 @@ flutter test
 
 ⚠️ **Do not modify these versions** as they are part of a tested dependency chain.
 
+## 🐛 Known Issues & Fixes
+
+### Scaling/Zooming Issue Fix
+
+**Problem**: The app experienced scaling/zooming issues where UI elements appeared larger than intended, particularly affecting the dashboard and OTP verification screen.
+
+**Root Cause**: The scaling issue was caused by several factors:
+
+1. **Layout Constraint Issues**: 
+   - Incorrect use of `Expanded` widgets with `flex` properties
+   - Missing `ConstrainedBox` constraints in dashboard layout
+   - Improper `Column` sizing with `mainAxisSize: MainAxisSize.min`
+
+2. **Text Scaling Interference**:
+   - Global `TextScaler.linear(1.0)` was applied incorrectly
+   - System text scaling was interfering with custom layouts
+
+3. **Theme Integration Conflicts**:
+   - Dashboard screen was not properly integrated with `ThemeService`
+   - Hardcoded colors conflicted with dynamic theme system
+
+**Solution Applied**:
+
+```dart
+// ❌ BEFORE (Causing scaling issues):
+Column(
+  mainAxisSize: MainAxisSize.min,  // This caused layout problems
+  children: [
+    Expanded(flex: 2, child: HeaderWidget()),  // flex caused issues
+    Expanded(flex: 3, child: ContentWidget()),
+  ],
+)
+
+// ✅ AFTER (Fixed scaling):
+Column(
+  children: [
+    HeaderWidget(),  // Natural sizing
+    Expanded(child: ContentWidget()),  // Only one Expanded needed
+  ],
+)
+```
+
+**Key Changes Made**:
+
+1. **Layout Structure**:
+   - Removed unnecessary `flex` properties from `Expanded` widgets
+   - Restored proper `ConstrainedBox` with `maxWidth` constraints
+   - Fixed `Column` sizing to use natural layout flow
+
+2. **Text Scaling**:
+   - Removed global `TextScaler.linear(1.0)` override
+   - Let system handle text scaling naturally
+   - Used `MediaQuery` for responsive design instead
+
+3. **Theme Integration**:
+   - Added `Consumer<ThemeService>` wrapper to dashboard
+   - Updated all hardcoded colors to use `themeService` properties
+   - Ensured consistent theming across all screens
+
+**Files Modified**:
+- `lib/features/dashboard/screens/dashboard_screen.dart`
+- `lib/features/auth/screens/otp_verification_screen.dart`
+- `lib/app/app.dart`
+- `lib/main.dart`
+
+**Result**: 
+- ✅ Scaling issues completely resolved
+- ✅ Consistent UI across all screen sizes
+- ✅ Proper theme integration maintained
+- ✅ Responsive design working correctly
+
+**Prevention**: 
+- Always test layout changes on different screen sizes
+- Avoid unnecessary `flex` properties in `Expanded` widgets
+- Use `ConstrainedBox` for layout constraints instead of forcing sizes
+- Test theme changes across all screens to ensure consistency
+
 ## 🤝 Contributing
 
 1. Fork the repository
