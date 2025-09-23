@@ -18,11 +18,25 @@ class ConsultationsScreen extends StatefulWidget {
   State<ConsultationsScreen> createState() => _ConsultationsScreenState();
 }
 
-class _ConsultationsScreenState extends State<ConsultationsScreen> {
+class _ConsultationsScreenState extends State<ConsultationsScreen> 
+    with TickerProviderStateMixin {
+  late AnimationController _refreshAnimationController;
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
+    _refreshAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
     context.read<ConsultationsBloc>().add(const LoadConsultationsEvent());
+  }
+
+  @override
+  void dispose() {
+    _refreshAnimationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -41,9 +55,17 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+            icon: AnimatedBuilder(
+              animation: _refreshAnimationController,
+              builder: (context, child) {
+                return Transform.rotate(
+                  angle: _refreshAnimationController.value * 2 * 3.14159,
+                  child: const Icon(Icons.refresh, color: Colors.white),
+                );
+              },
+            ),
+            onPressed: _isRefreshing ? null : () {
+              _handleRefresh();
             },
           ),
         ],
@@ -51,6 +73,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
       body: BlocConsumer<ConsultationsBloc, ConsultationsState>(
         listener: (context, state) {
           if (state is ConsultationsError) {
+            _stopRefreshAnimation();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -64,6 +87,8 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
                 backgroundColor: Colors.green,
               ),
             );
+          } else if (state is ConsultationsLoaded) {
+            _stopRefreshAnimation();
           }
         },
         builder: (context, state) {
@@ -211,6 +236,27 @@ class _ConsultationsScreenState extends State<ConsultationsScreen> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
+  }
+
+  void _handleRefresh() {
+    if (_isRefreshing) return;
+    
+    setState(() {
+      _isRefreshing = true;
+    });
+    
+    _refreshAnimationController.repeat();
+    context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+  }
+
+  void _stopRefreshAnimation() {
+    if (_isRefreshing) {
+      setState(() {
+        _isRefreshing = false;
+      });
+      _refreshAnimationController.stop();
+      _refreshAnimationController.reset();
+    }
   }
 
   Widget _buildEmptyState(BuildContext context) {

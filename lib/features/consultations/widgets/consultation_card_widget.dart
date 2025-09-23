@@ -470,23 +470,44 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
       children: [
         if (canStart) ...[
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _isStarting ? null : _handleStart,
-              icon: _isStarting 
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.play_arrow, size: 18),
-              label: Text(_isStarting ? 'Starting...' : 'Start'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isStarting ? null : _handleStart,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: _isStarting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.play_arrow, size: 16, color: Colors.white),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isStarting ? 'Starting...' : 'Start',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -494,23 +515,44 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
         ],
         if (canComplete) ...[
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _isCompleting ? null : _handleComplete,
-              icon: _isCompleting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.check, size: 18),
-              label: Text(_isCompleting ? 'Completing...' : 'Mark as Complete'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isCompleting ? null : _handleComplete,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: _isCompleting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check, size: 16, color: Colors.white),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isCompleting ? 'Completing...' : 'Complete',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -518,23 +560,45 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
         ],
         if (canCancel) ...[
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _isCancelling ? null : _handleCancel,
-              icon: _isCancelling
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                    ),
-                  )
-                : const Icon(Icons.cancel, size: 18),
-              label: Text(_isCancelling ? 'Cancelling...' : 'Cancel'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isCancelling ? null : _handleCancel,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: _isCancelling
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade600),
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.close, size: 16, color: Colors.grey.shade600),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isCancelling ? 'Cancelling...' : 'Cancel',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
               ),
             ),
           ),

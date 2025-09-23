@@ -80,8 +80,11 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
               label: 'Client Name',
               hint: 'Enter client name',
               validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter client name';
+                if (value == null || value.trim().isEmpty) {
+                  return 'Client name is required';
+                }
+                if (value.trim().length > 100) {
+                  return 'Client name must be less than 100 characters';
                 }
                 return null;
               },
@@ -91,14 +94,36 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
             _buildTextField(
               controller: _clientPhoneController,
               label: 'Client Phone',
-              hint: 'Enter phone number',
+              hint: 'Enter phone number (e.g., +919876543210)',
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                LengthLimitingTextInputFormatter(15),
+              ],
               validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter phone number';
+                if (value == null || value.trim().isEmpty) {
+                  return 'Phone number is required';
                 }
-                if (value.length < 10) {
-                  return 'Please enter a valid phone number';
+                final trimmedValue = value.trim();
+                if (trimmedValue.length > 15) {
+                  return 'Phone number must be maximum 15 characters';
+                }
+                if (trimmedValue.length < 10) {
+                  return 'Phone number must be at least 10 characters';
+                }
+                // Check if it starts with + and contains only digits after that
+                if (trimmedValue.startsWith('+')) {
+                  if (!RegExp(r'^\+[0-9]+$').hasMatch(trimmedValue)) {
+                    return 'Invalid phone number format';
+                  }
+                  if (trimmedValue.length < 11) { // +1 + country code + 9 digits minimum
+                    return 'Phone number too short';
+                  }
+                } else {
+                  // If no +, should contain only digits
+                  if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                    return 'Phone number must contain only digits or start with +';
+                  }
                 }
                 return null;
               },
@@ -117,6 +142,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                     label: 'Date',
                     value: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
                     onTap: _selectDate,
+                    validator: () => _validateDateTime(),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -125,6 +151,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                     label: 'Time',
                     value: _selectedTime.format(context),
                     onTap: _selectTime,
+                    validator: () => _validateDateTime(),
                   ),
                 ),
               ],
@@ -136,14 +163,26 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                 Expanded(
                   child: _buildTextField(
                     controller: _durationController,
-                    label: 'Duration (min)',
+                    label: 'Duration (minutes)',
+                    hint: '15-180 minutes',
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Duration is required';
                       }
-                      if (int.tryParse(value) == null || int.parse(value) <= 0) {
-                        return 'Invalid';
+                      final duration = int.tryParse(value.trim());
+                      if (duration == null) {
+                        return 'Duration must be a number';
+                      }
+                      if (duration < 15) {
+                        return 'Minimum duration is 15 minutes';
+                      }
+                      if (duration > 180) {
+                        return 'Maximum duration is 180 minutes (3 hours)';
                       }
                       return null;
                     },
@@ -154,13 +193,24 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                   child: _buildTextField(
                     controller: _amountController,
                     label: 'Amount (₹)',
+                    hint: 'Enter amount',
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Amount is required';
                       }
-                      if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                        return 'Invalid';
+                      final amount = double.tryParse(value.trim());
+                      if (amount == null) {
+                        return 'Amount must be a valid number';
+                      }
+                      if (amount <= 0) {
+                        return 'Amount must be greater than 0';
+                      }
+                      if (amount > 100000) {
+                        return 'Amount seems too high (max ₹1,00,000)';
                       }
                       return null;
                     },
@@ -224,6 +274,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
     TextInputType? keyboardType,
     int maxLines = 1,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -232,6 +283,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
         keyboardType: keyboardType,
         maxLines: maxLines,
         validator: validator,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -312,6 +364,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
     required String label,
     required String value,
     required VoidCallback onTap,
+    String? Function()? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -333,7 +386,11 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.textColor.withOpacity(0.3)),
+                border: Border.all(
+                  color: validator != null && validator() != null 
+                    ? Colors.red 
+                    : AppTheme.textColor.withOpacity(0.3)
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -341,17 +398,34 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                   Expanded(
                     child: Text(
                       value,
-                      style: const TextStyle(fontSize: 16),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: validator != null && validator() != null 
+                          ? Colors.red 
+                          : null,
+                      ),
                     ),
                   ),
                   Icon(
                     Icons.arrow_drop_down,
-                    color: AppTheme.textColor.withOpacity(0.6),
+                    color: validator != null && validator() != null 
+                      ? Colors.red 
+                      : AppTheme.textColor.withOpacity(0.6),
                   ),
                 ],
               ),
             ),
           ),
+          if (validator != null && validator() != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              validator()!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -385,7 +459,40 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
     }
   }
 
+  String? _validateDateTime() {
+    final scheduledDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+    
+    final now = DateTime.now();
+    if (scheduledDateTime.isBefore(now)) {
+      return 'Date and time must be in the future';
+    }
+    return null;
+  }
+
   void _submitForm() {
+    // Validate date/time first
+    final dateTimeError = _validateDateTime();
+    
+    if (dateTimeError != null) {
+      // Show error for date/time
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(dateTimeError),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Validate all form fields
     if (_formKey.currentState!.validate()) {
       HapticFeedback.lightImpact();
       
@@ -412,6 +519,15 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
 
       print('Form submitted with consultation: ${consultation.clientName}');
       widget.onSubmit(consultation);
+    } else {
+      // Form validation failed
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fix the errors before submitting'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 }
