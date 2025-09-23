@@ -117,142 +117,203 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           }
         },
         child: SafeArea(
-          child: SingleChildScrollView(
+          child: Padding(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             child: Form(
               key: _formKey,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - 
-                    MediaQuery.of(context).padding.top - 
-                    MediaQuery.of(context).padding.bottom - 
-                    kToolbarHeight - 
-                    (AppConstants.defaultPadding * 2),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                  // OTP Icon
-                  const Icon(
-                    Icons.message,
-                    size: 80,
-                    color: AppTheme.primaryColor,
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Title and Description
-                  Text(
-                    'Enter Verification Code',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'We sent a 6-digit code to\n${widget.phoneNumber}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.textColor.withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  
-                  // OTP Input - Simple and Clean
-                  TextFormField(
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: AppConstants.otpLength,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      letterSpacing: 8,
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Enter 6-digit OTP',
-                      hintText: '000000',
-                      counterText: '',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.withOpacity(0.05),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                    ),
-                    onChanged: (value) {
-                      if (value.length == AppConstants.otpLength) {
-                        // Auto-verify when OTP is complete
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          if (mounted) {
-                            _verifyOtp();
-                          }
-                        });
-                      }
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter the OTP';
-                      }
-                      if (value.length != AppConstants.otpLength) {
-                        return 'Please enter a valid 6-digit OTP';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Verify Button
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _verifyOtp,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text('Verify OTP'),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Resend OTP
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Didn't receive the code? ",
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      if (_canResend)
-                        TextButton(
-                          onPressed: _resendOtp,
-                          child: const Text('Resend'),
-                        )
-                      else
-                        Text(
-                          'Resend in ${_resendTimer}s',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textColor.withOpacity(0.6),
+              child: Column(
+                children: [
+                  // Top section with icon and title
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // OTP Icon
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.message,
+                            size: 60,
+                            color: AppTheme.primaryColor,
                           ),
                         ),
-                    ],
+                        const SizedBox(height: 32),
+                        
+                        // Title and Description
+                        Text(
+                          'Enter Verification Code',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'We sent a 6-digit code to',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppTheme.textColor.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.phoneNumber,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  ],
-                ),
+                  
+                  // Middle section with OTP input
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // OTP Input - Professional Design
+                        Container(
+                          constraints: const BoxConstraints(maxWidth: 300),
+                          child: TextFormField(
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            maxLength: AppConstants.otpLength,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              letterSpacing: 12,
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Enter 6-digit OTP',
+                              hintText: '000000',
+                              counterText: '',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.withOpacity(0.05),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                            ),
+                            onChanged: (value) {
+                              if (value.length == AppConstants.otpLength) {
+                                // Auto-verify when OTP is complete
+                                Future.delayed(const Duration(milliseconds: 300), () {
+                                  if (mounted) {
+                                    _verifyOtp();
+                                  }
+                                });
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter the OTP';
+                              }
+                              if (value.length != AppConstants.otpLength) {
+                                return 'Please enter a valid 6-digit OTP';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Bottom section with buttons - Always visible
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // Verify Button - Professional Design
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _verifyOtp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Verify OTP',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Resend OTP - Professional Design
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Didn't receive the code? ",
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.textColor.withOpacity(0.7),
+                              ),
+                            ),
+                            if (_canResend)
+                              TextButton(
+                                onPressed: _resendOtp,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppTheme.primaryColor,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                ),
+                                child: const Text(
+                                  'Resend',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              )
+                            else
+                              Text(
+                                'Resend in ${_resendTimer}s',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppTheme.textColor.withOpacity(0.5),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
