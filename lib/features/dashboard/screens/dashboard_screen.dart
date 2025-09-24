@@ -133,7 +133,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Go Live button method
   void _goLive() {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/live-preparation');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Going Live - Coming Soon!',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: const Color(0xFFFF4444),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   // Open notifications method
@@ -403,26 +420,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: GestureDetector(
+                  child: StatsCardWidget(
+                    title: 'Calls Today',
+                    value: stats.callsToday.toString(),
+                    icon: Icons.phone,
+                    color: AppTheme.callsColor,
                     onTap: () => _openCommunicationScreen('calls'),
-                    child: StatsCardWidget(
-                      title: 'Calls Today',
-                      value: stats.callsToday.toString(),
-                      icon: Icons.phone,
-                      color: AppTheme.callsColor,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: GestureDetector(
+                  child: StatsCardWidget(
+                    title: 'Messages Today',
+                    value: '12', // Mock data - replace with actual messages today
+                    icon: Icons.message,
+                    color: AppTheme.primaryColor,
                     onTap: () => _openCommunicationScreen('messages'),
-                    child: StatsCardWidget(
-                      title: 'Messages Today',
-                      value: '12', // Mock data - replace with actual messages today
-                      icon: Icons.message,
-                      color: AppTheme.primaryColor,
-                    ),
                   ),
                 ),
               ],
@@ -432,14 +445,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: GestureDetector(
+                  child: StatsCardWidget(
+                    title: 'Avg Rating',
+                    value: stats.averageRating.toStringAsFixed(1),
+                    icon: Icons.star,
+                    color: AppTheme.ratingColor,
                     onTap: () => _openReviewsScreen(),
-                    child: StatsCardWidget(
-                      title: 'Avg Rating',
-                      value: stats.averageRating.toStringAsFixed(1),
-                      icon: Icons.star,
-                      color: AppTheme.ratingColor,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -449,6 +460,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
                     icon: Icons.timer,
                     color: AppTheme.secondaryColor,
+                    onTap: () {
+                      // TODO: Add navigation for average duration
+                    },
                   ),
                 ),
               ],

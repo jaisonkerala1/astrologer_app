@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -372,21 +373,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
-            onTap: () => _navigateToConsultationAnalytics(),
-            child: _buildStatCard('Total Consultations', '127', Icons.event_note, themeService.infoColor, themeService),
+          child: _buildInteractiveStatCard(
+            title: 'This Month',
+            value: '23',
+            icon: Icons.calendar_month,
+            color: themeService.primaryColor,
+            themeService: themeService,
+            onTap: () => _navigateToConsultationAnalytics(initialTabIndex: 1), // Monthly tab
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: GestureDetector(
+          child: _buildInteractiveStatCard(
+            title: 'Average Rating',
+            value: '4.8',
+            icon: Icons.star,
+            color: themeService.warningColor,
+            themeService: themeService,
             onTap: () => _navigateToReviews(),
-            child: _buildStatCard('Average Rating', '4.8', Icons.star, themeService.warningColor, themeService),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildStatCard('This Month', '23', Icons.calendar_month, themeService.primaryColor, themeService),
+          child: _buildInteractiveStatCard(
+            title: 'Total Consultations',
+            value: '127',
+            icon: Icons.event_note,
+            color: themeService.infoColor,
+            themeService: themeService,
+            onTap: () => _navigateToConsultationAnalytics(initialTabIndex: 2), // All Time tab
+          ),
         ),
       ],
     );
@@ -430,6 +446,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  // Enhanced interactive stat card with Material Design ripple and hover effects
+  Widget _buildInteractiveStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required ThemeService themeService,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: themeService.cardColor,
+      elevation: 1,
+      borderRadius: themeService.borderRadius,
+      shadowColor: Colors.black.withOpacity(0.05),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: themeService.borderRadius,
+        splashColor: color.withOpacity(0.15),
+        highlightColor: color.withOpacity(0.1),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: themeService.borderRadius,
+            border: Border.all(
+              color: themeService.borderColor,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              // Icon container
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: themeService.borderRadius,
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Value text
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: themeService.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Title text
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: themeService.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -935,8 +1024,12 @@ Download the Astrologer App to connect with me and get personalized astrological
     );
   }
 
-  void _navigateToConsultationAnalytics() {
-    Navigator.pushNamed(context, '/consultation-analytics');
+  void _navigateToConsultationAnalytics({required int initialTabIndex}) {
+    Navigator.pushNamed(
+      context, 
+      '/consultation-analytics',
+      arguments: {'initialTabIndex': initialTabIndex},
+    );
   }
 
   String _generateProfileText() {

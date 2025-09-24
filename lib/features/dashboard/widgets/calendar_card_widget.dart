@@ -16,25 +16,32 @@ class CalendarCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap ?? () => _navigateToCalendar(context),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.primaryColor.withOpacity(0.1),
-              AppTheme.primaryColor.withOpacity(0.05),
-            ],
+    return Material(
+      color: Colors.transparent,
+      elevation: 0,
+      child: InkWell(
+        onTap: onTap ?? () => _navigateToCalendar(context),
+        borderRadius: BorderRadius.circular(16),
+        splashColor: AppTheme.primaryColor.withOpacity(0.12),
+        highlightColor: AppTheme.primaryColor.withOpacity(0.08),
+        hoverColor: AppTheme.primaryColor.withOpacity(0.04),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.primaryColor.withOpacity(0.1),
+                AppTheme.primaryColor.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.primaryColor.withOpacity(0.2),
+              width: 1,
+            ),
           ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppTheme.primaryColor.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -134,6 +141,7 @@ class CalendarCardWidget extends StatelessWidget {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -189,36 +197,44 @@ class CalendarCardWidget extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: AppTheme.primaryColor,
+    return Material(
+      color: Colors.transparent,
+      elevation: 0,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: AppTheme.primaryColor.withOpacity(0.15),
+        highlightColor: AppTheme.primaryColor.withOpacity(0.1),
+        hoverColor: AppTheme.primaryColor.withOpacity(0.05),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              width: 1,
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
                 color: AppTheme.primaryColor,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

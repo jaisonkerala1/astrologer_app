@@ -72,78 +72,92 @@ class ConsultationStatsWidget extends StatelessWidget {
     Color color,
     ThemeService themeService,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: themeService.cardColor,
+    return Material(
+      color: themeService.cardColor,
+      elevation: 2,
+      borderRadius: themeService.borderRadius,
+      shadowColor: Colors.black.withOpacity(0.1),
+      child: InkWell(
+        onTap: () {
+          // TODO: Add navigation based on card type
+          // For now, just show a subtle feedback
+        },
         borderRadius: themeService.borderRadius,
-        boxShadow: [themeService.cardShadow],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        splashColor: color.withOpacity(0.15),
+        highlightColor: color.withOpacity(0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: color,
+                      size: 20,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: themeService.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: themeService.textPrimary,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 4),
               Text(
-                title,
+                subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: themeService.textSecondary,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: themeService.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: themeService.textSecondary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildNextConsultationCard(BuildContext context, ThemeService themeService) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            themeService.primaryColor.withOpacity(0.1),
-            themeService.primaryColor.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+    return Material(
+      color: themeService.primaryColor.withOpacity(0.08),
+      elevation: 1,
+      borderRadius: themeService.borderRadius,
+      shadowColor: themeService.primaryColor.withOpacity(0.2),
+      child: InkWell(
+        onTap: () {
+          // TODO: Navigate to consultation detail
+        },
         borderRadius: themeService.borderRadius,
-        border: Border.all(
-          color: themeService.primaryColor.withOpacity(0.2),
-        ),
-      ),
+        splashColor: themeService.primaryColor.withOpacity(0.15),
+        highlightColor: themeService.primaryColor.withOpacity(0.1),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: themeService.borderRadius,
+            border: Border.all(
+              color: themeService.primaryColor.withOpacity(0.2),
+            ),
+          ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -203,6 +217,8 @@ class ConsultationStatsWidget extends StatelessWidget {
             ],
           ),
         ],
+        ),
+        ),
       ),
     );
   }

@@ -38,8 +38,10 @@ class AppRoutes {
           builder: (_) => const LiveStreamingPage(),
         );
       case consultationAnalytics:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final initialTabIndex = args?['initialTabIndex'] as int? ?? 2;
         return MaterialPageRoute(
-          builder: (_) => const ConsultationAnalyticsScreen(),
+          builder: (_) => ConsultationAnalyticsScreen(initialTabIndex: initialTabIndex),
         );
       default:
         return MaterialPageRoute(

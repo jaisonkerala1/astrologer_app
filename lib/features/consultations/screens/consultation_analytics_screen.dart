@@ -7,7 +7,12 @@ import '../services/consultations_service.dart';
 import '../models/consultation_model.dart';
 
 class ConsultationAnalyticsScreen extends StatefulWidget {
-  const ConsultationAnalyticsScreen({super.key});
+  final int initialTabIndex;
+  
+  const ConsultationAnalyticsScreen({
+    super.key,
+    this.initialTabIndex = 2, // Default to All Time tab (index 2)
+  });
 
   @override
   State<ConsultationAnalyticsScreen> createState() => _ConsultationAnalyticsScreenState();
@@ -33,7 +38,11 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3, 
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
     _consultationsService = ConsultationsService();
     _loadAnalyticsData();
   }
