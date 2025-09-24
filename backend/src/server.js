@@ -95,18 +95,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Debug endpoint for Twilio credentials
-app.get('/api/debug/twilio', (req, res) => {
-  res.status(200).json({
-    hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
-    hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
-    hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER,
-    accountSidPrefix: process.env.TWILIO_ACCOUNT_SID ? process.env.TWILIO_ACCOUNT_SID.substring(0, 5) + '...' : 'NOT_SET',
-    phoneNumber: process.env.TWILIO_PHONE_NUMBER || 'NOT_SET',
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/dashboard', require('./routes/dashboard'));

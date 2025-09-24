@@ -288,4 +288,3 @@ class TicketMessage extends Equatable {
 }
 
 
-

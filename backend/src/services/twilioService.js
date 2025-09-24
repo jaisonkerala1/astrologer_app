@@ -24,14 +24,6 @@ const sendOTP = async (phone, otp) => {
       throw new Error('Twilio client not initialized. Please check your credentials.');
     }
 
-    // For development/testing, log the OTP instead of sending SMS
-    if (process.env.NODE_ENV === 'development' || process.env.TWILIO_DEBUG === 'true') {
-      console.log(`🔐 OTP for ${phone}: ${otp}`);
-      console.log(`📱 SMS would be sent to: ${phone}`);
-      console.log(`📞 From: ${process.env.TWILIO_PHONE_NUMBER}`);
-      return { success: true, messageId: 'debug-' + Date.now() };
-    }
-
     // Send actual SMS via Twilio
     const message = await client.messages.create({
       body: `Your Astrologer App verification code is: ${otp}. This code will expire in 5 minutes.`,
@@ -43,13 +35,6 @@ const sendOTP = async (phone, otp) => {
     return { success: true, messageId: message.sid };
   } catch (error) {
     console.error('Twilio SMS error:', error);
-    
-    // If A2P 10DLC error, provide helpful message
-    if (error.message.includes('A2P') || error.message.includes('10DLC')) {
-      console.log(`🔐 OTP for ${phone}: ${otp} (A2P 10DLC registration required)`);
-      return { success: true, messageId: 'a2p-debug-' + Date.now() };
-    }
-    
     throw new Error(`Failed to send SMS: ${error.message}`);
   }
 };

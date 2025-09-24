@@ -195,82 +195,86 @@ flutter test
 
 ⚠️ **Do not modify these versions** as they are part of a tested dependency chain.
 
-## 🐛 Known Issues & Fixes
+## 🐛 Known Issues & Solutions
 
-### Scaling/Zooming Issue Fix
+### ✅ Scaling/Zooming Issue - FIXED
 
-**Problem**: The app experienced scaling/zooming issues where UI elements appeared larger than intended, particularly affecting the dashboard and OTP verification screen.
+**Problem**: The app experienced scaling/zooming issues where UI elements appeared larger than intended, particularly affecting the dashboard.
 
-**Root Cause**: The scaling issue was caused by several factors:
-
-1. **Layout Constraint Issues**: 
-   - Incorrect use of `Expanded` widgets with `flex` properties
-   - Missing `ConstrainedBox` constraints in dashboard layout
-   - Improper `Column` sizing with `mainAxisSize: MainAxisSize.min`
-
-2. **Text Scaling Interference**:
-   - Global `TextScaler.linear(1.0)` was applied incorrectly
-   - System text scaling was interfering with custom layouts
-
-3. **Theme Integration Conflicts**:
-   - Dashboard screen was not properly integrated with `ThemeService`
-   - Hardcoded colors conflicted with dynamic theme system
+**Root Cause**: The scaling issue was caused by incorrect layout constraints:
+- Using `MediaQuery.of(context).size.height` in `ConstrainedBox` instead of `LayoutBuilder`
+- Forcing full screen height constraints that caused content to scale improperly
 
 **Solution Applied**:
-
 ```dart
-// ❌ BEFORE (Causing scaling issues):
-Column(
-  mainAxisSize: MainAxisSize.min,  // This caused layout problems
-  children: [
-    Expanded(flex: 2, child: HeaderWidget()),  // flex caused issues
-    Expanded(flex: 3, child: ContentWidget()),
-  ],
+// ❌ WRONG (Causing scaling issues):
+ConstrainedBox(
+  constraints: BoxConstraints(
+    minHeight: MediaQuery.of(context).size.height, // This causes scaling!
+  ),
+  child: Column(...)
 )
 
-// ✅ AFTER (Fixed scaling):
-Column(
-  children: [
-    HeaderWidget(),  // Natural sizing
-    Expanded(child: ContentWidget()),  // Only one Expanded needed
-  ],
+// ✅ CORRECT (Fixed scaling):
+LayoutBuilder(
+  builder: (context, constraints) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: constraints.maxHeight, // This is correct
+        maxWidth: constraints.maxWidth,
+      ),
+      child: Column(...)
+    );
+  },
 )
 ```
 
-**Key Changes Made**:
+**Prevention Guidelines**:
+1. **Always use `LayoutBuilder`** instead of `MediaQuery` for responsive constraints
+2. **Avoid forcing dimensions** unless absolutely necessary
+3. **Test on real devices** with different screen sizes
+4. **Keep working backups** before making layout changes
+5. **Use natural sizing** over forced sizing for better UX
 
-1. **Layout Structure**:
-   - Removed unnecessary `flex` properties from `Expanded` widgets
-   - Restored proper `ConstrainedBox` with `maxWidth` constraints
-   - Fixed `Column` sizing to use natural layout flow
+## 🔧 Troubleshooting
 
-2. **Text Scaling**:
-   - Removed global `TextScaler.linear(1.0)` override
-   - Let system handle text scaling naturally
-   - Used `MediaQuery` for responsive design instead
+### Layout Issues
+If you encounter scaling or layout problems:
 
-3. **Theme Integration**:
-   - Added `Consumer<ThemeService>` wrapper to dashboard
-   - Updated all hardcoded colors to use `themeService` properties
-   - Ensured consistent theming across all screens
+1. **Check LayoutBuilder Usage**:
+   ```dart
+   // ✅ Correct way
+   LayoutBuilder(
+     builder: (context, constraints) {
+       return ConstrainedBox(
+         constraints: BoxConstraints(
+           minHeight: constraints.maxHeight,
+           maxWidth: constraints.maxWidth,
+         ),
+         child: YourWidget(),
+       );
+     },
+   )
+   ```
 
-**Files Modified**:
-- `lib/features/dashboard/screens/dashboard_screen.dart`
-- `lib/features/auth/screens/otp_verification_screen.dart`
-- `lib/app/app.dart`
-- `lib/main.dart`
+2. **Avoid MediaQuery in Constraints**:
+   ```dart
+   // ❌ Don't do this
+   ConstrainedBox(
+     constraints: BoxConstraints(
+       minHeight: MediaQuery.of(context).size.height,
+     ),
+   )
+   ```
 
-**Result**: 
-- ✅ Scaling issues completely resolved
-- ✅ Consistent UI across all screen sizes
-- ✅ Proper theme integration maintained
-- ✅ Responsive design working correctly
+3. **Test on Real Devices**: Always test layout changes on actual devices, not just emulators.
 
-**Prevention**: 
-- Always test layout changes on different screen sizes
-- Avoid unnecessary `flex` properties in `Expanded` widgets
-- Use `ConstrainedBox` for layout constraints instead of forcing sizes
-- Test theme changes across all screens to ensure consistency
+4. **Keep Backups**: Maintain working code backups before making layout changes.
+
+### Build Issues
+- **Java Version**: Ensure Java 17 is installed and configured
+- **Android SDK**: Use API level 34+ as specified
+- **Clean Build**: Run `flutter clean` before building if issues persist
 
 ## 🤝 Contributing
 

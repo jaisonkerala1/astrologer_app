@@ -337,4 +337,3 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   }
 }
 
-
