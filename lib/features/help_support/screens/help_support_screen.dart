@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_shimmer.dart';
 import '../models/help_article.dart';
 import '../services/help_support_service.dart';
@@ -86,30 +87,32 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Help & Support',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: const Text(
+              'Help & Support',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: themeService.primaryColor,
+            elevation: 0,
+            bottom: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              tabs: const [
+                Tab(text: 'Documentation', icon: Icon(Icons.article, size: 20)),
+                Tab(text: 'FAQ', icon: Icon(Icons.help_outline, size: 20)),
+                Tab(text: 'Tickets', icon: Icon(Icons.support_agent, size: 20)),
+              ],
+            ),
           ),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Documentation', icon: Icon(Icons.article, size: 20)),
-            Tab(text: 'FAQ', icon: Icon(Icons.help_outline, size: 20)),
-            Tab(text: 'Tickets', icon: Icon(Icons.support_agent, size: 20)),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingChatButton(userProfile: _currentUser),
       body: TabBarView(
         controller: _tabController,
@@ -133,6 +136,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
           ),
         ],
       ),
+        );
+      },
     );
   }
 }
@@ -156,35 +161,37 @@ class QuickHelpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: themeService.surfaceColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: (iconColor ?? AppTheme.primaryColor).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: iconColor ?? AppTheme.primaryColor,
-                size: 24,
-              ),
-            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: (iconColor ?? themeService.primaryColor).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor ?? themeService.primaryColor,
+                    size: 24,
+                  ),
+                ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -192,10 +199,10 @@ class QuickHelpCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: themeService.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -203,7 +210,7 @@ class QuickHelpCard extends StatelessWidget {
                     description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: themeService.textSecondary,
                     ),
                   ),
                 ],
@@ -211,12 +218,14 @@ class QuickHelpCard extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.grey[400],
+              color: themeService.textSecondary,
               size: 16,
             ),
           ],
         ),
       ),
+        );
+      },
     );
   }
 }

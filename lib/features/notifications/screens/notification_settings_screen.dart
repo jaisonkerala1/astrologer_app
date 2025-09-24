@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/notification_model.dart';
 import '../services/notification_service.dart';
 import '../services/local_notification_service.dart';
@@ -68,31 +69,33 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Notification Settings',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: _saveSettings,
-            child: const Text(
-              'Save',
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: const Text(
+              'Notification Settings',
               style: TextStyle(
-                color: Colors.white,
                 fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
             ),
+            backgroundColor: themeService.primaryColor,
+            elevation: 0,
+            actions: [
+              TextButton(
+                onPressed: _saveSettings,
+                child: const Text(
+                  'Save',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -108,26 +111,31 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   'Receive push notifications on your device',
                   _pushNotificationsEnabled,
                   (value) => setState(() => _pushNotificationsEnabled = value),
+                  themeService,
                 ),
                 _buildSwitchTile(
                   'Email Notifications',
                   'Receive important updates via email',
                   _emailNotificationsEnabled,
                   (value) => setState(() => _emailNotificationsEnabled = value),
+                  themeService,
                 ),
                 _buildSwitchTile(
                   'Sound',
                   'Play sound for notifications',
                   _soundEnabled,
                   (value) => setState(() => _soundEnabled = value),
+                  themeService,
                 ),
                 _buildSwitchTile(
                   'Vibration',
                   'Vibrate for notifications',
                   _vibrationEnabled,
                   (value) => setState(() => _vibrationEnabled = value),
+                  themeService,
                 ),
               ],
+              themeService,
             ),
             
             const SizedBox(height: 24),
@@ -142,17 +150,20 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   'Pause notifications during specified hours',
                   _quietHoursEnabled,
                   (value) => setState(() => _quietHoursEnabled = value),
+                  themeService,
                 ),
                 if (_quietHoursEnabled) ...[
                   _buildTimeTile(
                     'Start Time',
                     _quietHoursStart,
                     (time) => setState(() => _quietHoursStart = time),
+                    themeService,
                   ),
                   _buildTimeTile(
                     'End Time',
                     _quietHoursEnd,
                     (time) => setState(() => _quietHoursEnd = time),
+                    themeService,
                   ),
                 ],
                 _buildSwitchTile(
@@ -160,8 +171,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   'Only receive notifications during work hours',
                   _workingHoursOnly,
                   (value) => setState(() => _workingHoursOnly = value),
+                  themeService,
                 ),
               ],
+              themeService,
             ),
             
             const SizedBox(height: 24),
@@ -170,23 +183,26 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             _buildSection(
               'Notification Types',
               Icons.notifications,
-              _buildNotificationTypeToggles(),
+              _buildNotificationTypeToggles(themeService),
+              themeService,
             ),
             
             const SizedBox(height: 24),
             
             // Test Notification
-            _buildTestNotificationButton(),
+            _buildTestNotificationButton(themeService),
           ],
         ),
       ),
+        );
+      },
     );
   }
 
-  Widget _buildSection(String title, IconData icon, List<Widget> children) {
+  Widget _buildSection(String title, IconData icon, List<Widget> children, ThemeService themeService) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -206,22 +222,22 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color: themeService.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
-                    color: AppTheme.primaryColor,
+                    color: themeService.primaryColor,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+                    color: themeService.textPrimary,
                   ),
                 ),
               ],
@@ -233,7 +249,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
   }
 
-  Widget _buildSwitchTile(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitchTile(String title, String subtitle, bool value, ValueChanged<bool> onChanged, ThemeService? themeService) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
@@ -244,10 +260,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: themeService?.textPrimary ?? Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -255,7 +271,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   subtitle,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: themeService?.textSecondary ?? Colors.grey[600],
                   ),
                 ),
               ],
@@ -264,14 +280,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.primaryColor,
+            activeColor: themeService?.primaryColor ?? Colors.blue,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeTile(String title, TimeOfDay time, ValueChanged<TimeOfDay> onChanged) {
+  Widget _buildTimeTile(String title, TimeOfDay time, ValueChanged<TimeOfDay> onChanged, ThemeService? themeService) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: InkWell(
@@ -292,10 +308,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: themeService?.textPrimary ?? Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -303,7 +319,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     time.format(context),
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: themeService?.textSecondary ?? Colors.grey[600],
                     ),
                   ),
                 ],
@@ -311,7 +327,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             ),
             Icon(
               Icons.access_time,
-              color: Colors.grey[400],
+              color: themeService?.textSecondary ?? Colors.grey[400],
             ),
           ],
         ),
@@ -319,13 +335,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
   }
 
-  List<Widget> _buildNotificationTypeToggles() {
+  List<Widget> _buildNotificationTypeToggles(ThemeService themeService) {
     return NotificationType.values.map((type) {
-      return _buildNotificationTypeTile(type);
+      return _buildNotificationTypeTile(type, themeService);
     }).toList();
   }
 
-  Widget _buildNotificationTypeTile(NotificationType type) {
+  Widget _buildNotificationTypeTile(NotificationType type, ThemeService themeService) {
     final isEnabled = _notificationToggles[type] ?? false;
     
     return Padding(
@@ -351,10 +367,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               children: [
                 Text(
                   _getNotificationTypeTitle(type),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: themeService.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -362,7 +378,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _getNotificationTypeDescription(type),
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: themeService.textSecondary,
                   ),
                 ),
               ],
@@ -375,19 +391,19 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 _notificationToggles[type] = value;
               });
             },
-            activeColor: AppTheme.primaryColor,
+            activeColor: themeService.primaryColor,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTestNotificationButton() {
+  Widget _buildTestNotificationButton(ThemeService themeService) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -402,15 +418,15 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           Icon(
             Icons.notifications_active,
             size: 48,
-            color: AppTheme.primaryColor,
+            color: themeService.primaryColor,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Test Notification',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.black87,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -419,7 +435,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: themeService.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -428,7 +444,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             icon: const Icon(Icons.send),
             label: const Text('Send Test'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(

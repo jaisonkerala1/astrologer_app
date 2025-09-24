@@ -79,7 +79,7 @@ class _AppState extends State<App> {
           create: (context) => widget.notificationService,
         ),
         ChangeNotifierProvider<LiveStreamService>(
-          create: (context) => widget.liveStreamService,
+          create: (context) => LiveStreamService.instance,
         ),
         ChangeNotifierProvider<ThemeService>(
           create: (context) => widget.themeService,

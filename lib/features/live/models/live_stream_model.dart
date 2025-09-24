@@ -1,210 +1,107 @@
-import 'package:flutter/material.dart';
-
-enum LiveStreamStatus {
-  preparing,
-  live,
-  ended,
-  paused,
-}
-
-enum LiveStreamQuality {
-  low,
-  medium,
-  high,
-  ultra,
-}
-
-enum LiveStreamCategory {
-  general,
-  astrology,
-  healing,
-  meditation,
-  tarot,
-  numerology,
-  palmistry,
-  spiritual,
-}
-
-class LiveStreamModel {
+class LiveStreamCardModel {
   final String id;
-  final String astrologerId;
   final String astrologerName;
-  final String? astrologerProfilePicture;
   final String title;
-  final String? description;
-  final LiveStreamCategory category;
-  final LiveStreamStatus status;
-  final LiveStreamQuality quality;
-  final DateTime startedAt;
-  final DateTime? endedAt;
+  final String category;
   final int viewerCount;
-  final int totalViewers;
-  final int likes;
-  final int comments;
-  final bool isPrivate;
-  final String? thumbnailUrl;
-  final String? streamUrl;
-  final List<String> tags;
-  final Map<String, dynamic> metadata;
+  final String thumbnailUrl;
+  final String profilePicture;
+  final bool isLive;
+  final DateTime startTime;
 
-  LiveStreamModel({
+  const LiveStreamCardModel({
     required this.id,
-    required this.astrologerId,
     required this.astrologerName,
-    this.astrologerProfilePicture,
     required this.title,
-    this.description,
     required this.category,
-    required this.status,
-    required this.quality,
-    required this.startedAt,
-    this.endedAt,
-    this.viewerCount = 0,
-    this.totalViewers = 0,
-    this.likes = 0,
-    this.comments = 0,
-    this.isPrivate = false,
-    this.thumbnailUrl,
-    this.streamUrl,
-    this.tags = const [],
-    this.metadata = const {},
+    required this.viewerCount,
+    required this.thumbnailUrl,
+    required this.profilePicture,
+    required this.isLive,
+    required this.startTime,
   });
 
-  factory LiveStreamModel.fromJson(Map<String, dynamic> json) {
-    return LiveStreamModel(
-      id: json['id'] ?? '',
-      astrologerId: json['astrologerId'] ?? '',
-      astrologerName: json['astrologerName'] ?? '',
-      astrologerProfilePicture: json['astrologerProfilePicture'],
-      title: json['title'] ?? '',
-      description: json['description'],
-      category: LiveStreamCategory.values.firstWhere(
-        (e) => e.name == json['category'],
-        orElse: () => LiveStreamCategory.general,
-      ),
-      status: LiveStreamStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => LiveStreamStatus.ended,
-      ),
-      quality: LiveStreamQuality.values.firstWhere(
-        (e) => e.name == json['quality'],
-        orElse: () => LiveStreamQuality.medium,
-      ),
-      startedAt: DateTime.parse(json['startedAt']),
-      endedAt: json['endedAt'] != null ? DateTime.parse(json['endedAt']) : null,
-      viewerCount: json['viewerCount'] ?? 0,
-      totalViewers: json['totalViewers'] ?? 0,
-      likes: json['likes'] ?? 0,
-      comments: json['comments'] ?? 0,
-      isPrivate: json['isPrivate'] ?? false,
-      thumbnailUrl: json['thumbnailUrl'],
-      streamUrl: json['streamUrl'],
-      tags: List<String>.from(json['tags'] ?? []),
-      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
-    );
+  String get formattedViewerCount {
+    if (viewerCount >= 1000000) {
+      return '${(viewerCount / 1000000).toStringAsFixed(1)}M';
+    } else if (viewerCount >= 1000) {
+      return '${(viewerCount / 1000).toStringAsFixed(1)}K';
+    }
+    return viewerCount.toString();
+  }
+
+  String get durationString {
+    final duration = DateTime.now().difference(startTime);
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h ${duration.inMinutes % 60}m';
+    } else {
+      return '${duration.inMinutes}m';
+    }
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'astrologerId': astrologerId,
       'astrologerName': astrologerName,
-      'astrologerProfilePicture': astrologerProfilePicture,
       'title': title,
-      'description': description,
-      'category': category.name,
-      'status': status.name,
-      'quality': quality.name,
-      'startedAt': startedAt.toIso8601String(),
-      'endedAt': endedAt?.toIso8601String(),
+      'category': category,
       'viewerCount': viewerCount,
-      'totalViewers': totalViewers,
-      'likes': likes,
-      'comments': comments,
-      'isPrivate': isPrivate,
       'thumbnailUrl': thumbnailUrl,
-      'streamUrl': streamUrl,
-      'tags': tags,
-      'metadata': metadata,
+      'profilePicture': profilePicture,
+      'isLive': isLive,
+      'startTime': startTime.toIso8601String(),
     };
   }
 
-  LiveStreamModel copyWith({
-    String? id,
-    String? astrologerId,
-    String? astrologerName,
-    String? astrologerProfilePicture,
-    String? title,
-    String? description,
-    LiveStreamCategory? category,
-    LiveStreamStatus? status,
-    LiveStreamQuality? quality,
-    DateTime? startedAt,
-    DateTime? endedAt,
-    int? viewerCount,
-    int? totalViewers,
-    int? likes,
-    int? comments,
-    bool? isPrivate,
-    String? thumbnailUrl,
-    String? streamUrl,
-    List<String>? tags,
-    Map<String, dynamic>? metadata,
-  }) {
-    return LiveStreamModel(
-      id: id ?? this.id,
-      astrologerId: astrologerId ?? this.astrologerId,
-      astrologerName: astrologerName ?? this.astrologerName,
-      astrologerProfilePicture: astrologerProfilePicture ?? this.astrologerProfilePicture,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      category: category ?? this.category,
-      status: status ?? this.status,
-      quality: quality ?? this.quality,
-      startedAt: startedAt ?? this.startedAt,
-      endedAt: endedAt ?? this.endedAt,
-      viewerCount: viewerCount ?? this.viewerCount,
-      totalViewers: totalViewers ?? this.totalViewers,
-      likes: likes ?? this.likes,
-      comments: comments ?? this.comments,
-      isPrivate: isPrivate ?? this.isPrivate,
-      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
-      streamUrl: streamUrl ?? this.streamUrl,
-      tags: tags ?? this.tags,
-      metadata: metadata ?? this.metadata,
+  factory LiveStreamCardModel.fromJson(Map<String, dynamic> json) {
+    return LiveStreamCardModel(
+      id: json['id'] as String,
+      astrologerName: json['astrologerName'] as String,
+      title: json['title'] as String,
+      category: json['category'] as String,
+      viewerCount: json['viewerCount'] as int,
+      thumbnailUrl: json['thumbnailUrl'] as String,
+      profilePicture: json['profilePicture'] as String,
+      isLive: json['isLive'] as bool,
+      startTime: DateTime.parse(json['startTime'] as String),
     );
   }
 
-  bool get isLive => status == LiveStreamStatus.live;
-  bool get isEnded => status == LiveStreamStatus.ended;
-  bool get isPreparing => status == LiveStreamStatus.preparing;
-  
-  Duration get duration {
-    final endTime = endedAt ?? DateTime.now();
-    return endTime.difference(startedAt);
+  LiveStreamCardModel copyWith({
+    String? id,
+    String? astrologerName,
+    String? title,
+    String? category,
+    int? viewerCount,
+    String? thumbnailUrl,
+    String? profilePicture,
+    bool? isLive,
+    DateTime? startTime,
+  }) {
+    return LiveStreamCardModel(
+      id: id ?? this.id,
+      astrologerName: astrologerName ?? this.astrologerName,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      viewerCount: viewerCount ?? this.viewerCount,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      profilePicture: profilePicture ?? this.profilePicture,
+      isLive: isLive ?? this.isLive,
+      startTime: startTime ?? this.startTime,
+    );
   }
 
-  String get formattedDuration {
-    final duration = this.duration;
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    
-    if (hours > 0) {
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    } else {
-      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    }
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is LiveStreamCardModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    return 'LiveStreamCardModel(id: $id, astrologerName: $astrologerName, title: $title, category: $category, viewerCount: $viewerCount, isLive: $isLive)';
   }
 }
-
-
-
-
-
-
-
-
-
-
-

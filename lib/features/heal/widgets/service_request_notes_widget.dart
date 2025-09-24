@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/service_request_model.dart';
 
 class ServiceRequestNotesWidget extends StatefulWidget {
@@ -67,29 +68,31 @@ class _ServiceRequestNotesWidgetState extends State<ServiceRequestNotesWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Notes & Observations',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textColor,
-            ),
-          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Notes & Observations',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: themeService.textPrimary,
+                ),
+              ),
           const SizedBox(height: 16),
           _isEditing
               ? Column(
@@ -99,15 +102,16 @@ class _ServiceRequestNotesWidgetState extends State<ServiceRequestNotesWidget> {
                       maxLines: 5,
                       decoration: InputDecoration(
                         hintText: 'Add your notes here...',
+                        hintStyle: TextStyle(color: themeService.textSecondary.withOpacity(0.6)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: themeService.backgroundColor,
                         contentPadding: const EdgeInsets.all(16),
                       ),
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: TextStyle(color: themeService.textPrimary),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -115,13 +119,13 @@ class _ServiceRequestNotesWidgetState extends State<ServiceRequestNotesWidget> {
                       children: [
                         TextButton(
                           onPressed: _cancelEditing,
-                          child: const Text('Cancel', style: TextStyle(color: AppTheme.textColor)),
+                          child: Text('Cancel', style: TextStyle(color: themeService.textSecondary)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: _saveNotes,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
+                            backgroundColor: themeService.primaryColor,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('Save', style: TextStyle(color: Colors.white)),
@@ -140,15 +144,15 @@ class _ServiceRequestNotesWidgetState extends State<ServiceRequestNotesWidget> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
+                      color: themeService.backgroundColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      border: Border.all(color: themeService.borderColor),
                     ),
                     child: (widget.request.notes != null && widget.request.notes!.isNotEmpty)
                         ? Text(
                             widget.request.notes!,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textColor.withOpacity(0.8),
+                              color: themeService.textSecondary,
                             ),
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
@@ -156,7 +160,7 @@ class _ServiceRequestNotesWidgetState extends State<ServiceRequestNotesWidget> {
                         : Text(
                             'Tap to add notes...',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textColor.withOpacity(0.5),
+                              color: themeService.textSecondary.withOpacity(0.5),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -164,6 +168,8 @@ class _ServiceRequestNotesWidgetState extends State<ServiceRequestNotesWidget> {
                 ),
         ],
       ),
+    );
+      },
     );
   }
 }

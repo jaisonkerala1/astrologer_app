@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/storage_service.dart';
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/error_state_widget.dart';
 import '../../../shared/widgets/transition_animations.dart';
@@ -159,33 +160,35 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Text(
-              'Calendar & Scheduling',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            if (_loadingState.state == CalendarLoadingState.refreshing) ...[
-              const SizedBox(width: 12),
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: Row(
+              children: [
+                const Text(
+                  'Calendar & Scheduling',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ],
-          ],
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
+                if (_loadingState.state == CalendarLoadingState.refreshing) ...[
+                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            backgroundColor: themeService.primaryColor,
+            elevation: 0,
         actions: [
           if (_loadingState.isLoading && _loadingState.state != CalendarLoadingState.refreshing)
             Container(
@@ -218,26 +221,32 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
           _buildHolidaysTab(),
         ],
       ),
+        );
+      },
     );
   }
 
   Widget _buildCalendarTab() {
-    return CustomRefreshIndicator(
-      onRefresh: _refreshConsultations,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Calendar Widget with Loading States
-            _buildCalendarContent(),
-            
-            const SizedBox(height: 16),
-            
-            // Quick Actions
-            _buildQuickActions(),
-          ],
-        ),
-      ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return CustomRefreshIndicator(
+          onRefresh: _refreshConsultations,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Calendar Widget with Loading States
+                _buildCalendarContent(),
+                
+                const SizedBox(height: 16),
+                
+                // Quick Actions
+                _buildQuickActions(themeService),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -287,11 +296,11 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     return const HolidayManagementWidget();
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -304,12 +313,12 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Quick Actions',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -322,6 +331,7 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
                   onTap: () {
                     _tabController.animateTo(1);
                   },
+                  themeService: themeService,
                 ),
               ),
               const SizedBox(width: 12),
@@ -332,6 +342,7 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
                   onTap: () {
                     _tabController.animateTo(2);
                   },
+                  themeService: themeService,
                 ),
               ),
             ],
@@ -345,16 +356,17 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    required ThemeService themeService,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.1),
+          color: themeService.primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppTheme.primaryColor.withOpacity(0.3),
+            color: themeService.primaryColor.withOpacity(0.3),
             width: 1,
           ),
         ),
@@ -364,15 +376,15 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
             Icon(
               icon,
               size: 18,
-              color: AppTheme.primaryColor,
+              color: themeService.primaryColor,
             ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.primaryColor,
+                color: themeService.primaryColor,
               ),
             ),
           ],

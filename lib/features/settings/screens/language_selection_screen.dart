@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/language_service.dart';
 import '../../../core/services/app_restart_service.dart';
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
@@ -72,29 +72,31 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: AppTheme.textColor,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            backgroundColor: themeService.surfaceColor,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios,
+                color: themeService.textPrimary,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              l10n.selectLanguage,
+              style: TextStyle(
+                color: themeService.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            centerTitle: true,
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          l10n.selectLanguage,
-          style: const TextStyle(
-            color: AppTheme.textColor,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-      ),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
@@ -104,20 +106,22 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(l10n),
+          _buildHeader(l10n, themeService),
           const SizedBox(height: 24),
-          _buildLanguageOptions(l10n),
+          _buildLanguageOptions(l10n, themeService),
           const SizedBox(height: 32),
-          _buildSaveButton(l10n),
+          _buildSaveButton(l10n, themeService),
         ],
             ),
           ),
         ),
       ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader(AppLocalizations l10n) {
+  Widget _buildHeader(AppLocalizations l10n, ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -125,13 +129,13 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.primaryColor.withOpacity(0.1),
-            AppTheme.infoColor.withOpacity(0.1),
+            themeService.primaryColor.withOpacity(0.1),
+            themeService.primaryColor.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.primaryColor.withOpacity(0.2),
+          color: themeService.primaryColor.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -140,22 +144,22 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: themeService.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.language,
               size: 32,
-              color: AppTheme.primaryColor,
+              color: themeService.primaryColor,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             l10n.selectLanguage,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -164,7 +168,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
             'Choose your preferred language for the app',
             style: TextStyle(
               fontSize: 16,
-              color: AppTheme.textColor.withOpacity(0.7),
+              color: themeService.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -174,7 +178,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
   }
 
 
-  Widget _buildLanguageOptions(AppLocalizations l10n) {
+  Widget _buildLanguageOptions(AppLocalizations l10n, ThemeService themeService) {
     return Consumer<LanguageService>(
       builder: (context, languageService, child) {
         final languages = languageService.getAvailableLanguages();
@@ -184,21 +188,21 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
           children: [
             Text(
               l10n.availableLanguages,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: themeService.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
-            ...languages.map((language) => _buildLanguageOption(language)),
+            ...languages.map((language) => _buildLanguageOption(language, themeService)),
           ],
         );
       },
     );
   }
 
-  Widget _buildLanguageOption(Map<String, String> language) {
+  Widget _buildLanguageOption(Map<String, String> language, ThemeService themeService) {
     final isSelected = _selectedLanguage == language['code'];
     
     return Container(
@@ -218,19 +222,19 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: isSelected 
-                  ? AppTheme.primaryColor.withOpacity(0.1)
-                  : Colors.white,
+                  ? themeService.primaryColor.withOpacity(0.1)
+                  : themeService.surfaceColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected 
-                    ? AppTheme.primaryColor
-                    : Colors.grey.withOpacity(0.2),
+                    ? themeService.primaryColor
+                    : themeService.borderColor,
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isSelected 
-                      ? AppTheme.primaryColor.withOpacity(0.2)
+                      ? themeService.primaryColor.withOpacity(0.2)
                       : Colors.grey.withOpacity(0.1),
                   spreadRadius: isSelected ? 1 : 0,
                   blurRadius: isSelected ? 8 : 4,
@@ -246,8 +250,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                   height: 48,
                   decoration: BoxDecoration(
                     color: isSelected 
-                        ? AppTheme.primaryColor.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                        ? themeService.primaryColor.withOpacity(0.1)
+                        : themeService.borderColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -270,8 +274,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: isSelected 
-                              ? AppTheme.primaryColor
-                              : AppTheme.textColor,
+                              ? themeService.primaryColor
+                              : themeService.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -280,8 +284,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                         style: TextStyle(
                           fontSize: 14,
                           color: isSelected 
-                              ? AppTheme.primaryColor.withOpacity(0.7)
-                              : AppTheme.textColor.withOpacity(0.6),
+                              ? themeService.primaryColor.withOpacity(0.7)
+                              : themeService.textSecondary,
                         ),
                       ),
                     ],
@@ -295,13 +299,13 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                   height: 24,
                   decoration: BoxDecoration(
                     color: isSelected 
-                        ? AppTheme.primaryColor
+                        ? themeService.primaryColor
                         : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isSelected 
-                          ? AppTheme.primaryColor
-                          : Colors.grey.withOpacity(0.4),
+                          ? themeService.primaryColor
+                          : themeService.borderColor,
                       width: 2,
                     ),
                   ),
@@ -321,7 +325,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
     );
   }
 
-  Widget _buildSaveButton(AppLocalizations l10n) {
+  Widget _buildSaveButton(AppLocalizations l10n, ThemeService themeService) {
     return Consumer<LanguageService>(
       builder: (context, languageService, child) {
         final hasChanged = _selectedLanguage != languageService.currentLanguageCode;
@@ -334,12 +338,12 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
             onPressed: hasChanged ? _saveLanguage : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: hasChanged 
-                  ? AppTheme.primaryColor
+                  ? themeService.primaryColor
                   : Colors.grey.withOpacity(0.3),
               foregroundColor: Colors.white,
               elevation: hasChanged ? 4 : 0,
               shadowColor: hasChanged 
-                  ? AppTheme.primaryColor.withOpacity(0.3)
+                  ? themeService.primaryColor.withOpacity(0.3)
                   : Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -384,7 +388,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.languageChanged),
-            backgroundColor: AppTheme.successColor,
+            backgroundColor: Provider.of<ThemeService>(context, listen: false).successColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -404,7 +408,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: Provider.of<ThemeService>(context, listen: false).errorColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

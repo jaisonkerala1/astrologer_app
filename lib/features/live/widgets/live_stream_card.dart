@@ -1,124 +1,202 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../models/live_stream_model.dart';
 
-class LiveStreamCard extends StatelessWidget {
-  final LiveStreamModel stream;
+class LiveStreamCard extends StatefulWidget {
+  final LiveStreamCardModel stream;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const LiveStreamCard({
     super.key,
     required this.stream,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
+  State<LiveStreamCard> createState() => _LiveStreamCardState();
+}
+
+class _LiveStreamCardState extends State<LiveStreamCard>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _scaleController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Pulse animation for live indicator
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Scale animation for tap feedback
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.red.withOpacity(0.3),
-            width: 1,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return GestureDetector(
+          onTap: () {
+            _scaleController.forward().then((_) {
+              _scaleController.reverse();
+            });
+            widget.onTap();
+          },
+          onLongPress: widget.onLongPress,
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: themeService.surfaceColor,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Thumbnail with live indicator
+                        _buildThumbnail(themeService),
+                        
+                        // Stream info
+                        _buildStreamInfo(themeService),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Stream Thumbnail
-              _buildThumbnail(),
-              
-              // Stream Info
-              _buildStreamInfo(),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildThumbnail() {
-    return Container(
-      height: 200,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.grey.shade900,
-            Colors.black,
-            Colors.grey.shade800,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+  Widget _buildThumbnail(ThemeService themeService) {
+    return Expanded(
+      flex: 3,
       child: Stack(
         children: [
-          // Mock thumbnail content
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _getCategoryIcon(stream.category),
-                  size: 50,
-                  color: Colors.white.withOpacity(0.6),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  stream.title,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+          // Thumbnail image
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  themeService.primaryColor.withOpacity(0.1),
+                  themeService.primaryColor.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Image.network(
+              widget.stream.thumbnailUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: themeService.backgroundColor,
+                  child: Icon(
+                    Icons.live_tv,
+                    size: 48,
+                    color: themeService.textSecondary,
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                );
+              },
             ),
           ),
           
-          // Live indicator
+          // Live indicator overlay
           Positioned(
-            top: 12,
-            left: 12,
+            top: 8,
+            left: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.4),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
+                  AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'LIVE',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Colors.white,
-                      fontSize: 10,
                       fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
@@ -128,10 +206,10 @@ class LiveStreamCard extends StatelessWidget {
           
           // Viewer count
           Positioned(
-            top: 12,
-            right: 12,
+            top: 8,
+            right: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(12),
@@ -141,16 +219,16 @@ class LiveStreamCard extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.visibility,
-                    color: Colors.white.withOpacity(0.8),
                     size: 12,
+                    color: Colors.white,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 2),
                   Text(
-                    '${stream.viewerCount}',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 12,
+                    widget.stream.formattedViewerCount,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
+                      fontSize: 10,
                     ),
                   ),
                 ],
@@ -160,20 +238,20 @@ class LiveStreamCard extends StatelessWidget {
           
           // Duration
           Positioned(
-            bottom: 12,
-            right: 12,
+            bottom: 8,
+            right: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                stream.formattedDuration,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 12,
+                widget.stream.durationString,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
                   fontWeight: FontWeight.w500,
+                  fontSize: 9,
                 ),
               ),
             ),
@@ -183,229 +261,116 @@ class LiveStreamCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStreamInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Astrologer info
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.blue.withOpacity(0.8),
-                child: Text(
-                  stream.astrologerName.isNotEmpty
-                      ? stream.astrologerName[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+  Widget _buildStreamInfo(ThemeService themeService) {
+    return Expanded(
+      flex: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Astrologer info row
+            Row(
+              children: [
+                // Profile picture
+                ProfileAvatarWidget(
+                  imagePath: widget.stream.profilePicture,
+                  radius: 16,
+                  fallbackText: widget.stream.astrologerName.isNotEmpty
+                      ? widget.stream.astrologerName.substring(0, 1).toUpperCase()
+                      : 'A',
+                  backgroundColor: themeService.primaryColor,
+                  textColor: Colors.white,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      stream.astrologerName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      _getCategoryDisplayName(stream.category),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Stream title
-          Text(
-            stream.title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          
-          if (stream.description != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              stream.description!,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          
-          const SizedBox(height: 12),
-          
-          // Stream stats
-          Row(
-            children: [
-              _buildStatItem(
-                Icons.visibility,
-                '${stream.viewerCount}',
-                Colors.blue,
-              ),
-              const SizedBox(width: 16),
-              _buildStatItem(
-                Icons.favorite,
-                '${stream.likes}',
-                Colors.red,
-              ),
-              const SizedBox(width: 16),
-              _buildStatItem(
-                Icons.chat,
-                '${stream.comments}',
-                Colors.green,
-              ),
-              const Spacer(),
-              if (stream.isPrivate)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                const SizedBox(width: 8),
+                
+                // Astrologer name and category
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.lock,
-                        color: Colors.orange,
-                        size: 12,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        'Private',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 10,
+                        widget.stream.astrologerName,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: themeService.textPrimary,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: themeService.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          widget.stream.category,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: themeService.primaryColor,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 9,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-            ],
-          ),
-          
-          // Tags
-          if (stream.tags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: stream.tags.take(3).map((tag) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ],
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Stream title
+            Expanded(
+              child: Text(
+                widget.stream.title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: themeService.textPrimary,
+                  fontSize: 11,
+                  height: 1.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            
+            const SizedBox(height: 4),
+            
+            // Live status indicator
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.6),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    '#$tag',
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Live now',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 9,
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
           ],
-        ],
+        ),
       ),
     );
-  }
-
-  Widget _buildStatItem(IconData icon, String value, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: color,
-          size: 16,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: Colors.grey.shade700,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  IconData _getCategoryIcon(LiveStreamCategory category) {
-    switch (category) {
-      case LiveStreamCategory.general:
-        return Icons.public;
-      case LiveStreamCategory.astrology:
-        return Icons.star;
-      case LiveStreamCategory.healing:
-        return Icons.healing;
-      case LiveStreamCategory.meditation:
-        return Icons.self_improvement;
-      case LiveStreamCategory.tarot:
-        return Icons.style;
-      case LiveStreamCategory.numerology:
-        return Icons.numbers;
-      case LiveStreamCategory.palmistry:
-        return Icons.contact_page;
-      case LiveStreamCategory.spiritual:
-        return Icons.auto_awesome;
-    }
-  }
-
-  String _getCategoryDisplayName(LiveStreamCategory category) {
-    switch (category) {
-      case LiveStreamCategory.general:
-        return 'General';
-      case LiveStreamCategory.astrology:
-        return 'Astrology';
-      case LiveStreamCategory.healing:
-        return 'Healing';
-      case LiveStreamCategory.meditation:
-        return 'Meditation';
-      case LiveStreamCategory.tarot:
-        return 'Tarot';
-      case LiveStreamCategory.numerology:
-        return 'Numerology';
-      case LiveStreamCategory.palmistry:
-        return 'Palmistry';
-      case LiveStreamCategory.spiritual:
-        return 'Spiritual';
-    }
   }
 }

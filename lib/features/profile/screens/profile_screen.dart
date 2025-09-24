@@ -22,6 +22,7 @@ import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../help_support/screens/help_support_screen.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
 import '../../theme/screens/theme_selection_screen.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -248,24 +249,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: Stack(
               children: [
-                CircleAvatar(
+                ProfileAvatarWidget(
+                  imagePath: _currentUser?.profilePicture,
                   radius: 45,
+                  fallbackText: _currentUser?.name?.isNotEmpty == true 
+                      ? _currentUser!.name!.substring(0, 1).toUpperCase()
+                      : 'A',
                   backgroundColor: themeService.primaryColor,
-                  backgroundImage: _currentUser?.profilePicture != null && _currentUser!.profilePicture!.isNotEmpty
-                      ? _getImageProvider(_currentUser!.profilePicture!)
-                      : null,
-                  child: _currentUser?.profilePicture == null || _currentUser!.profilePicture!.isEmpty
-                      ? Text(
-                          _currentUser?.name?.isNotEmpty == true 
-                              ? _currentUser!.name!.substring(0, 1).toUpperCase()
-                              : 'J',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
+                  textColor: Colors.white,
                 ),
                 Positioned(
                   bottom: 0,
@@ -381,7 +372,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard('Total Consultations', '127', Icons.event_note, themeService.infoColor, themeService),
+          child: GestureDetector(
+            onTap: () => _navigateToConsultationAnalytics(),
+            child: _buildStatCard('Total Consultations', '127', Icons.event_note, themeService.infoColor, themeService),
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -939,6 +933,10 @@ Download the Astrologer App to connect with me and get personalized astrological
         builder: (context) => const ReviewsOverviewScreen(),
       ),
     );
+  }
+
+  void _navigateToConsultationAnalytics() {
+    Navigator.pushNamed(context, '/consultation-analytics');
   }
 
   String _generateProfileText() {

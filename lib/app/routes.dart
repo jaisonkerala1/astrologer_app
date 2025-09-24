@@ -9,20 +9,15 @@ import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
-import '../features/live/screens/live_preparation_screen.dart';
-import '../features/live/screens/live_streaming_screen.dart';
-import '../features/live/screens/live_streams_screen.dart';
-import '../features/live/screens/live_audience_screen.dart';
-import '../features/live/models/live_stream_model.dart';
+import '../features/live/screens/live_streaming_page.dart';
+import '../features/consultations/screens/consultation_analytics_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
-  static const String livePreparation = '/live-preparation';
-  static const String liveStreaming = '/live-streaming';
-  static const String liveStreams = '/live-streams';
-  static const String liveAudience = '/live-audience';
+  static const String liveStreamingPage = '/live-streaming-page';
+  static const String consultationAnalytics = '/consultation-analytics';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -38,22 +33,13 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => const DashboardScreen(),
         );
-      case livePreparation:
+      case liveStreamingPage:
         return MaterialPageRoute(
-          builder: (_) => const LivePreparationScreen(),
+          builder: (_) => const LiveStreamingPage(),
         );
-      case liveStreaming:
+      case consultationAnalytics:
         return MaterialPageRoute(
-          builder: (_) => const LiveStreamingScreen(),
-        );
-      case liveStreams:
-        return MaterialPageRoute(
-          builder: (_) => const LiveStreamsScreen(),
-        );
-      case liveAudience:
-        final stream = settings.arguments as LiveStreamModel;
-        return MaterialPageRoute(
-          builder: (_) => LiveAudienceScreen(stream: stream),
+          builder: (_) => const ConsultationAnalyticsScreen(),
         );
       default:
         return MaterialPageRoute(

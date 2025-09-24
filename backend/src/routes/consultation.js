@@ -18,6 +18,24 @@ router.get('/today/:astrologerId', consultationController.getTodaysConsultations
 // GET /api/consultation/stats/:astrologerId - Get consultation statistics
 router.get('/stats/:astrologerId', consultationController.getConsultationStats);
 
+// GET /api/consultation/stats/:astrologerId/weekly - Get weekly consultation statistics
+router.get('/stats/:astrologerId/weekly', consultationController.getWeeklyConsultationStats);
+
+// GET /api/consultation/stats/:astrologerId/monthly - Get monthly consultation statistics
+router.get('/stats/:astrologerId/monthly', consultationController.getMonthlyConsultationStats);
+
+// GET /api/consultation/stats/:astrologerId/all-time - Get all-time consultation statistics
+router.get('/stats/:astrologerId/all-time', consultationController.getAllTimeConsultationStats);
+
+// GET /api/consultation/weekly/:astrologerId - Get weekly consultations
+router.get('/weekly/:astrologerId', consultationController.getWeeklyConsultations);
+
+// GET /api/consultation/monthly/:astrologerId - Get monthly consultations
+router.get('/monthly/:astrologerId', consultationController.getMonthlyConsultations);
+
+// GET /api/consultation/all-time/:astrologerId - Get all-time consultations
+router.get('/all-time/:astrologerId', consultationController.getAllTimeConsultations);
+
  // POST /api/consultation/fix-started-at - Fix startedAt for existing consultations
 router.post('/fix-started-at', consultationController.fixStartedAt);
 

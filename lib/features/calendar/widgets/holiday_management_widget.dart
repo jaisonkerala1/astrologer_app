@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/holiday_model.dart';
 
 class HolidayManagementWidget extends StatefulWidget {
@@ -77,31 +78,33 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
-                child: Text(
-                  'Holidays & Unavailable Days',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Holidays & Unavailable Days',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: _addHoliday,
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: themeService.primaryColor,
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: _addHoliday,
-                icon: const Icon(Icons.add_circle_outline),
-                color: AppTheme.primaryColor,
-              ),
-            ],
-          ),
           
           const SizedBox(height: 16),
           
@@ -109,15 +112,17 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_holidays.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState(themeService)
           else
-            ..._holidays.map((holiday) => _buildHolidayCard(holiday)),
+            ..._holidays.map((holiday) => _buildHolidayCard(holiday, themeService)),
         ],
       ),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -151,7 +156,7 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
             icon: const Icon(Icons.add),
             label: const Text('Add Holiday'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -161,7 +166,7 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
     );
   }
 
-  Widget _buildHolidayCard(HolidayModel holiday) {
+  Widget _buildHolidayCard(HolidayModel holiday, ThemeService themeService) {
     final isToday = holiday.isToday;
     final isPast = holiday.isPast;
     final isFuture = holiday.isFuture;
@@ -171,11 +176,11 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isToday 
-            ? AppTheme.primaryColor.withOpacity(0.1)
-            : Colors.white,
+            ? themeService.primaryColor.withOpacity(0.1)
+            : themeService.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         border: isToday 
-            ? Border.all(color: AppTheme.primaryColor, width: 1)
+            ? Border.all(color: themeService.primaryColor, width: 1)
             : null,
         boxShadow: [
           BoxShadow(
@@ -192,20 +197,20 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  holiday.reason,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isToday ? AppTheme.primaryColor : Colors.black87,
+                child:                   Text(
+                    holiday.reason,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isToday ? themeService.primaryColor : themeService.textPrimary,
+                    ),
                   ),
-                ),
               ),
               if (isToday)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
+                    color: themeService.primaryColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -228,26 +233,26 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
               Icon(
                 Icons.calendar_today,
                 size: 16,
-                color: isToday ? AppTheme.primaryColor : Colors.grey[600],
+                color: isToday ? themeService.primaryColor : themeService.textSecondary,
               ),
               const SizedBox(width: 8),
-              Text(
-                holiday.formattedDate,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isToday ? AppTheme.primaryColor : Colors.grey[700],
-                  fontWeight: FontWeight.w500,
+                Text(
+                  holiday.formattedDate,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isToday ? themeService.primaryColor : themeService.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
               const SizedBox(width: 16),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: isPast 
-                      ? Colors.grey[200]
+                      ? themeService.borderColor.withOpacity(0.3)
                       : isToday
-                          ? AppTheme.primaryColor.withOpacity(0.2)
-                          : Colors.blue[100],
+                          ? themeService.primaryColor.withOpacity(0.2)
+                          : themeService.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -260,10 +265,10 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                     color: isPast 
-                        ? Colors.grey[600]
+                        ? themeService.textSecondary
                         : isToday
-                            ? AppTheme.primaryColor
-                            : Colors.blue[700],
+                            ? themeService.primaryColor
+                            : themeService.primaryColor,
                   ),
                 ),
               ),
@@ -301,7 +306,7 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
                 icon: const Icon(Icons.edit, size: 16),
                 label: const Text('Edit'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.primaryColor,
+                  foregroundColor: themeService.primaryColor,
                 ),
               ),
               const SizedBox(width: 8),

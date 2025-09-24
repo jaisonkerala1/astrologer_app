@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../models/consultation_model.dart';
+import '../../../shared/theme/services/theme_service.dart';
 
 class ConsultationNotesWidget extends StatefulWidget {
   final ConsultationModel consultation;
@@ -34,41 +36,43 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: themeService.borderColor,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF3B82F6),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Notes & Observations',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              const Spacer(),
-              if (!_isEditing)
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: themeService.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Notes & Observations',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: themeService.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (!_isEditing)
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
@@ -79,24 +83,24 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: themeService.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.edit_outlined,
                           size: 16,
-                          color: Color(0xFF475569),
+                          color: themeService.textSecondary,
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(
                           'Edit',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF475569),
+                            color: themeService.textSecondary,
                           ),
                         ),
                       ],
@@ -114,36 +118,36 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
               maxLines: 6,
               decoration: InputDecoration(
                 hintText: 'Add your notes and observations...',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                hintStyle: TextStyle(
+                  color: themeService.textSecondary.withOpacity(0.6),
                   fontSize: 14,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE2E8F0),
+                  borderSide: BorderSide(
+                    color: themeService.borderColor,
                     width: 1,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE2E8F0),
+                  borderSide: BorderSide(
+                    color: themeService.borderColor,
                     width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF3B82F6),
+                  borderSide: BorderSide(
+                    color: themeService.primaryColor,
                     width: 2,
                   ),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF1E293B),
+                color: themeService.textPrimary,
                 height: 1.5,
               ),
             ),
@@ -158,20 +162,20 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFFE2E8F0),
+                          color: themeService.borderColor,
                           width: 1,
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Cancel',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
+                          color: themeService.textSecondary,
                         ),
                       ),
                     ),
@@ -184,7 +188,7 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6),
+                        color: themeService.primaryColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -205,9 +209,9 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
             if (widget.consultation.notes != null && widget.consultation.notes!.isNotEmpty)
               Text(
                 widget.consultation.notes!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF64748B),
+                  color: themeService.textSecondary,
                   height: 1.5,
                 ),
               )
@@ -216,10 +220,10 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: themeService.backgroundColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFFE2E8F0),
+                    color: themeService.borderColor,
                     width: 1,
                     style: BorderStyle.solid,
                   ),
@@ -229,14 +233,14 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                     Icon(
                       Icons.note_add_outlined,
                       size: 32,
-                      color: Colors.grey[400],
+                      color: themeService.textSecondary.withOpacity(0.4),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No notes added yet',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: themeService.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -245,7 +249,7 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                       'Tap edit to add your observations',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[500],
+                        color: themeService.textSecondary.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -254,6 +258,8 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
           ],
         ],
       ),
+    );
+      },
     );
   }
 

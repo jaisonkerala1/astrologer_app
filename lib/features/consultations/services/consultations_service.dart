@@ -359,6 +359,132 @@ class ConsultationsService {
     }
   }
 
+  Future<Map<String, dynamic>> getWeeklyConsultationStats() async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/stats/$astrologerId/weekly');
+
+      if (response.data['success'] == true) {
+        return response.data['data'];
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to fetch weekly consultation stats');
+      }
+    } catch (e) {
+      print('Error fetching weekly consultation stats: $e');
+      // Return mock weekly stats
+      return {
+        'totalConsultations': 0,
+        'totalEarnings': 0.0,
+        'completedConsultations': 0,
+        'cancelledConsultations': 0,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> getMonthlyConsultationStats() async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/stats/$astrologerId/monthly');
+
+      if (response.data['success'] == true) {
+        return response.data['data'];
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to fetch monthly consultation stats');
+      }
+    } catch (e) {
+      print('Error fetching monthly consultation stats: $e');
+      // Return mock monthly stats
+      return {
+        'totalConsultations': 0,
+        'totalEarnings': 0.0,
+        'completedConsultations': 0,
+        'cancelledConsultations': 0,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> getAllTimeConsultationStats() async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/stats/$astrologerId/all-time');
+
+      if (response.data['success'] == true) {
+        return response.data['data'];
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to fetch all-time consultation stats');
+      }
+    } catch (e) {
+      print('Error fetching all-time consultation stats: $e');
+      // Return mock all-time stats
+      return {
+        'totalConsultations': 0,
+        'totalEarnings': 0.0,
+        'completedConsultations': 0,
+        'cancelledConsultations': 0,
+      };
+    }
+  }
+
+  Future<List<ConsultationModel>> getWeeklyConsultations() async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/weekly/$astrologerId');
+
+      if (response.data['success'] == true) {
+        final consultationsData = response.data['data'] as List;
+        return consultationsData
+            .map((json) => ConsultationModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to fetch weekly consultations');
+      }
+    } catch (e) {
+      print('Error fetching weekly consultations: $e');
+      // Return empty list for development
+      return [];
+    }
+  }
+
+  Future<List<ConsultationModel>> getMonthlyConsultations() async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/monthly/$astrologerId');
+
+      if (response.data['success'] == true) {
+        final consultationsData = response.data['data'] as List;
+        return consultationsData
+            .map((json) => ConsultationModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to fetch monthly consultations');
+      }
+    } catch (e) {
+      print('Error fetching monthly consultations: $e');
+      // Return empty list for development
+      return [];
+    }
+  }
+
+  Future<List<ConsultationModel>> getAllTimeConsultations() async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.get('/api/consultation/all-time/$astrologerId');
+
+      if (response.data['success'] == true) {
+        final consultationsData = response.data['data'] as List;
+        return consultationsData
+            .map((json) => ConsultationModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to fetch all-time consultations');
+      }
+    } catch (e) {
+      print('Error fetching all-time consultations: $e');
+      // Return empty list for development
+      return [];
+    }
+  }
+
   Future<ConsultationModel> addConsultationNotes(String consultationId, String notes) async {
     try {
       final response = await _apiService.put(

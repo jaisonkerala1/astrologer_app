@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/availability_model.dart';
 
 class AvailabilityManagementWidget extends StatefulWidget {
@@ -67,31 +68,33 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
-                child: Text(
-                  'Your Availability',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Your Availability',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: _addAvailability,
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: themeService.primaryColor,
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: _addAvailability,
-                icon: const Icon(Icons.add_circle_outline),
-                color: AppTheme.primaryColor,
-              ),
-            ],
-          ),
           
           const SizedBox(height: 16),
           
@@ -99,15 +102,17 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_availability.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState(themeService)
           else
-            ..._availability.map((avail) => _buildAvailabilityCard(avail)),
+            ..._availability.map((avail) => _buildAvailabilityCard(avail, themeService)),
         ],
       ),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -141,7 +146,7 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
             icon: const Icon(Icons.add),
             label: const Text('Add Availability'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -151,12 +156,12 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
     );
   }
 
-  Widget _buildAvailabilityCard(AvailabilityModel availability) {
+  Widget _buildAvailabilityCard(AvailabilityModel availability, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -175,17 +180,17 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
               Expanded(
                 child: Text(
                   availability.dayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: themeService.textPrimary,
                   ),
                 ),
               ),
               Switch(
                 value: availability.isActive,
                 onChanged: (value) => _toggleAvailability(availability, value),
-                activeColor: AppTheme.primaryColor,
+                activeColor: themeService.primaryColor,
               ),
             ],
           ),
@@ -198,14 +203,14 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
               Icon(
                 Icons.access_time,
                 size: 16,
-                color: Colors.grey[600],
+                color: themeService.textSecondary,
               ),
               const SizedBox(width: 8),
               Text(
                 '${availability.startTime} - ${availability.endTime}',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: themeService.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -222,14 +227,14 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
                   Icon(
                     Icons.pause_circle_outline,
                     size: 14,
-                    color: Colors.grey[500],
+                    color: themeService.textSecondary.withOpacity(0.7),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '${breakTime.startTime} - ${breakTime.endTime} (${breakTime.reason})',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: themeService.textSecondary,
                     ),
                   ),
                 ],
@@ -246,7 +251,7 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
                 icon: const Icon(Icons.edit, size: 16),
                 label: const Text('Edit'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.primaryColor,
+                  foregroundColor: themeService.primaryColor,
                 ),
               ),
               const SizedBox(width: 8),
@@ -255,7 +260,7 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
                 icon: const Icon(Icons.delete, size: 16),
                 label: const Text('Delete'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
+                  foregroundColor: themeService.errorColor,
                 ),
               ),
             ],

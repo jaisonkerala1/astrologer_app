@@ -578,6 +578,330 @@ const getConsultationStats = async (req, res) => {
   }
 };
 
+// Get weekly consultation statistics
+const getWeeklyConsultationStats = async (req, res) => {
+  try {
+    const { astrologerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid astrologer ID'
+      });
+    }
+
+    // Calculate start and end of current week (Monday to Sunday)
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const [totalConsultations, totalEarnings, completedConsultations, cancelledConsultations] = await Promise.all([
+      Consultation.countDocuments({
+        astrologerId,
+        scheduledTime: { $gte: startOfWeek, $lte: endOfWeek }
+      }),
+      Consultation.aggregate([
+        {
+          $match: {
+            astrologerId: new mongoose.Types.ObjectId(astrologerId),
+            scheduledTime: { $gte: startOfWeek, $lte: endOfWeek },
+            status: 'completed'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalEarnings: { $sum: '$amount' }
+          }
+        }
+      ]),
+      Consultation.countDocuments({
+        astrologerId,
+        scheduledTime: { $gte: startOfWeek, $lte: endOfWeek },
+        status: 'completed'
+      }),
+      Consultation.countDocuments({
+        astrologerId,
+        scheduledTime: { $gte: startOfWeek, $lte: endOfWeek },
+        status: 'cancelled'
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalConsultations,
+        totalEarnings: totalEarnings[0]?.totalEarnings || 0,
+        completedConsultations,
+        cancelledConsultations
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching weekly consultation stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch weekly consultation statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Get monthly consultation statistics
+const getMonthlyConsultationStats = async (req, res) => {
+  try {
+    const { astrologerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid astrologer ID'
+      });
+    }
+
+    // Calculate start and end of current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const [totalConsultations, totalEarnings, completedConsultations, cancelledConsultations] = await Promise.all([
+      Consultation.countDocuments({
+        astrologerId,
+        scheduledTime: { $gte: startOfMonth, $lte: endOfMonth }
+      }),
+      Consultation.aggregate([
+        {
+          $match: {
+            astrologerId: new mongoose.Types.ObjectId(astrologerId),
+            scheduledTime: { $gte: startOfMonth, $lte: endOfMonth },
+            status: 'completed'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalEarnings: { $sum: '$amount' }
+          }
+        }
+      ]),
+      Consultation.countDocuments({
+        astrologerId,
+        scheduledTime: { $gte: startOfMonth, $lte: endOfMonth },
+        status: 'completed'
+      }),
+      Consultation.countDocuments({
+        astrologerId,
+        scheduledTime: { $gte: startOfMonth, $lte: endOfMonth },
+        status: 'cancelled'
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalConsultations,
+        totalEarnings: totalEarnings[0]?.totalEarnings || 0,
+        completedConsultations,
+        cancelledConsultations
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching monthly consultation stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch monthly consultation statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Get all-time consultation statistics
+const getAllTimeConsultationStats = async (req, res) => {
+  try {
+    const { astrologerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid astrologer ID'
+      });
+    }
+
+    const [totalConsultations, totalEarnings, completedConsultations, cancelledConsultations] = await Promise.all([
+      Consultation.countDocuments({ astrologerId }),
+      Consultation.aggregate([
+        {
+          $match: {
+            astrologerId: new mongoose.Types.ObjectId(astrologerId),
+            status: 'completed'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalEarnings: { $sum: '$amount' }
+          }
+        }
+      ]),
+      Consultation.countDocuments({
+        astrologerId,
+        status: 'completed'
+      }),
+      Consultation.countDocuments({
+        astrologerId,
+        status: 'cancelled'
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalConsultations,
+        totalEarnings: totalEarnings[0]?.totalEarnings || 0,
+        completedConsultations,
+        cancelledConsultations
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching all-time consultation stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch all-time consultation statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Get weekly consultations
+const getWeeklyConsultations = async (req, res) => {
+  try {
+    const { astrologerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid astrologer ID'
+      });
+    }
+
+    // Calculate start and end of current week (Monday to Sunday)
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const consultations = await Consultation.find({
+      astrologerId,
+      scheduledTime: { $gte: startOfWeek, $lte: endOfWeek }
+    })
+    .select('+startedAt +completedAt +cancelledAt')
+    .sort({ scheduledTime: 'desc' })
+    .populate('astrologerId', 'name phone email');
+
+    res.status(200).json({
+      success: true,
+      data: consultations
+    });
+
+  } catch (error) {
+    console.error('Error fetching weekly consultations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch weekly consultations',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Get monthly consultations
+const getMonthlyConsultations = async (req, res) => {
+  try {
+    const { astrologerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid astrologer ID'
+      });
+    }
+
+    // Calculate start and end of current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const consultations = await Consultation.find({
+      astrologerId,
+      scheduledTime: { $gte: startOfMonth, $lte: endOfMonth }
+    })
+    .select('+startedAt +completedAt +cancelledAt')
+    .sort({ scheduledTime: 'desc' })
+    .populate('astrologerId', 'name phone email');
+
+    res.status(200).json({
+      success: true,
+      data: consultations
+    });
+
+  } catch (error) {
+    console.error('Error fetching monthly consultations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch monthly consultations',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Get all-time consultations
+const getAllTimeConsultations = async (req, res) => {
+  try {
+    const { astrologerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid astrologer ID'
+      });
+    }
+
+    const consultations = await Consultation.find({ astrologerId })
+      .select('+startedAt +completedAt +cancelledAt')
+      .sort({ scheduledTime: 'desc' })
+      .populate('astrologerId', 'name phone email');
+
+    res.status(200).json({
+      success: true,
+      data: consultations
+    });
+
+  } catch (error) {
+    console.error('Error fetching all-time consultations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch all-time consultations',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 // Add notes to consultation
 const addConsultationNotes = async (req, res) => {
   try {
@@ -689,6 +1013,12 @@ module.exports = {
   getUpcomingConsultations,
   getTodaysConsultations,
   getConsultationStats,
+  getWeeklyConsultationStats,
+  getMonthlyConsultationStats,
+  getAllTimeConsultationStats,
+  getWeeklyConsultations,
+  getMonthlyConsultations,
+  getAllTimeConsultations,
   addConsultationNotes,
   addConsultationRating,
   fixStartedAt

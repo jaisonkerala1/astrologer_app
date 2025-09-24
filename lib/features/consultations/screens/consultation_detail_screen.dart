@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
 import '../models/consultation_model.dart';
@@ -8,6 +9,7 @@ import '../widgets/consultation_timer_widget.dart';
 import '../widgets/consultation_notes_widget.dart';
 import '../widgets/consultation_actions_widget.dart';
 import '../widgets/consultation_info_widget.dart';
+import '../../../shared/theme/services/theme_service.dart';
 
 class ConsultationDetailScreen extends StatefulWidget {
   final ConsultationModel consultation;
@@ -69,66 +71,70 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with back button and actions
-            _buildHeader(),
-            
-            // Main content
-            Expanded(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Consultation Info Card
-                        ConsultationInfoWidget(consultation: widget.consultation),
-                        const SizedBox(height: 24),
-                        
-                        // Timer Widget (if in progress)
-                        if (widget.consultation.status == ConsultationStatus.inProgress)
-                          ConsultationTimerWidget(consultation: widget.consultation),
-                        
-                        if (widget.consultation.status == ConsultationStatus.inProgress)
-                          const SizedBox(height: 24),
-                        
-                        // Notes Section
-                        ConsultationNotesWidget(consultation: widget.consultation),
-                        const SizedBox(height: 24),
-                        
-                        // Actions Section
-                        ConsultationActionsWidget(consultation: widget.consultation),
-                        const SizedBox(height: 24),
-                        
-                        // Status History
-                        _buildStatusHistory(),
-                      ],
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Header with back button and actions
+                _buildHeader(themeService),
+                
+                // Main content
+                Expanded(
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Consultation Info Card
+                            ConsultationInfoWidget(consultation: widget.consultation),
+                            const SizedBox(height: 24),
+                            
+                            // Timer Widget (if in progress)
+                            if (widget.consultation.status == ConsultationStatus.inProgress)
+                              ConsultationTimerWidget(consultation: widget.consultation),
+                            
+                            if (widget.consultation.status == ConsultationStatus.inProgress)
+                              const SizedBox(height: 24),
+                            
+                            // Notes Section
+                            ConsultationNotesWidget(consultation: widget.consultation),
+                            const SizedBox(height: 24),
+                            
+                            // Actions Section
+                            ConsultationActionsWidget(consultation: widget.consultation),
+                            const SizedBox(height: 24),
+                            
+                            // Status History
+                            _buildStatusHistory(themeService),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: themeService.surfaceColor,
         border: Border(
           bottom: BorderSide(
-            color: Color(0xFFE2E8F0),
+            color: themeService.borderColor,
             width: 1,
           ),
         ),
@@ -145,13 +151,13 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: themeService.cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new,
                 size: 18,
-                color: Color(0xFF475569),
+                color: themeService.textSecondary,
               ),
             ),
           ),
@@ -164,17 +170,17 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               children: [
                 Text(
                   'Consultation Details',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B),
+                    color: themeService.textPrimary,
                   ),
                 ),
                 Text(
                   widget.consultation.clientName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF64748B),
+                    color: themeService.textSecondary,
                   ),
                 ),
               ],
@@ -185,19 +191,19 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
           GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              _showMoreOptions();
+              _showMoreOptions(themeService);
             },
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: themeService.cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.more_horiz,
                 size: 20,
-                color: Color(0xFF475569),
+                color: themeService.textSecondary,
               ),
             ),
           ),
@@ -206,14 +212,14 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
     );
   }
 
-  Widget _buildStatusHistory() {
+  Widget _buildStatusHistory(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFE2E8F0),
+          color: themeService.borderColor,
           width: 1,
         ),
       ),
@@ -225,18 +231,18 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF3B82F6),
+                decoration: BoxDecoration(
+                  color: themeService.primaryColor,
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Status History',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
@@ -244,40 +250,40 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
           const SizedBox(height: 16),
           
           // Status timeline
-          _buildStatusTimeline(),
+          _buildStatusTimeline(themeService),
         ],
       ),
     );
   }
 
-  Widget _buildStatusTimeline() {
+  Widget _buildStatusTimeline(ThemeService themeService) {
     final statuses = [
       {
         'status': 'Scheduled',
         'time': widget.consultation.scheduledTime,
         'icon': Icons.schedule,
-        'color': const Color(0xFF3B82F6),
+        'color': themeService.primaryColor,
       },
       if (widget.consultation.startedAt != null)
         {
           'status': 'Started',
           'time': widget.consultation.startedAt!,
           'icon': Icons.play_arrow,
-          'color': const Color(0xFF10B981),
+          'color': themeService.successColor,
         },
       if (widget.consultation.status == ConsultationStatus.completed)
         {
           'status': 'Completed',
           'time': widget.consultation.completedAt ?? DateTime.now(),
           'icon': Icons.check_circle,
-          'color': const Color(0xFF059669),
+          'color': themeService.successColor,
         },
       if (widget.consultation.status == ConsultationStatus.cancelled)
         {
           'status': 'Cancelled',
           'time': widget.consultation.cancelledAt ?? DateTime.now(),
           'icon': Icons.cancel,
-          'color': const Color(0xFFEF4444),
+          'color': themeService.errorColor,
         },
     ];
 
@@ -309,7 +315,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                   Container(
                     width: 2,
                     height: 40,
-                    color: const Color(0xFFE2E8F0),
+                    color: themeService.borderColor,
                   ),
               ],
             ),
@@ -322,18 +328,18 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                 children: [
                   Text(
                     status['status'] as String,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1E293B),
+                      color: themeService.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatDateTime(status['time'] as DateTime),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: themeService.textSecondary,
                     ),
                   ),
                 ],
@@ -360,15 +366,15 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
     }
   }
 
-  void _showMoreOptions() {
+  void _showMoreOptions(ThemeService themeService) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: themeService.surfaceColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
@@ -381,7 +387,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
+                color: themeService.borderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -395,6 +401,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                 Navigator.pop(context);
                 // TODO: Navigate to edit screen
               },
+              themeService: themeService,
             ),
             _buildOptionTile(
               icon: Icons.copy,
@@ -403,6 +410,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                 Navigator.pop(context);
                 // TODO: Duplicate consultation
               },
+              themeService: themeService,
             ),
             _buildOptionTile(
               icon: Icons.share,
@@ -411,15 +419,17 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                 Navigator.pop(context);
                 // TODO: Share consultation
               },
+              themeService: themeService,
             ),
             _buildOptionTile(
               icon: Icons.delete_outline,
               title: 'Delete',
               onTap: () {
                 Navigator.pop(context);
-                _showDeleteConfirmation();
+                _showDeleteConfirmation(themeService);
               },
               isDestructive: true,
+              themeService: themeService,
             ),
           ],
         ),
@@ -431,6 +441,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    required ThemeService themeService,
     bool isDestructive = false,
   }) {
     return GestureDetector(
@@ -444,16 +455,16 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               height: 40,
               decoration: BoxDecoration(
                 color: isDestructive 
-                    ? const Color(0xFFFEF2F2)
-                    : const Color(0xFFF1F5F9),
+                    ? themeService.errorColor.withOpacity(0.1)
+                    : themeService.cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 size: 20,
                 color: isDestructive 
-                    ? const Color(0xFFEF4444)
-                    : const Color(0xFF475569),
+                    ? themeService.errorColor
+                    : themeService.textSecondary,
               ),
             ),
             const SizedBox(width: 16),
@@ -463,8 +474,8 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: isDestructive 
-                    ? const Color(0xFFEF4444)
-                    : const Color(0xFF1E293B),
+                    ? themeService.errorColor
+                    : themeService.textPrimary,
               ),
             ),
           ],
@@ -473,35 +484,36 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
     );
   }
 
-  void _showDeleteConfirmation() {
+  void _showDeleteConfirmation(ThemeService themeService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: themeService.surfaceColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: const Text(
+        title: Text(
           'Delete Consultation',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1E293B),
+            color: themeService.textPrimary,
           ),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to delete this consultation? This action cannot be undone.',
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF64748B),
+            color: themeService.textSecondary,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Cancel',
               style: TextStyle(
-                color: Color(0xFF64748B),
+                color: themeService.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -515,10 +527,10 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               );
               Navigator.pop(context);
             },
-            child: const Text(
+            child: Text(
               'Delete',
               style: TextStyle(
-                color: Color(0xFFEF4444),
+                color: themeService.errorColor,
                 fontWeight: FontWeight.w600,
               ),
             ),

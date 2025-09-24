@@ -36,7 +36,7 @@ void main() async {
   await statusService.initialize();
   final notificationService = NotificationService();
   await notificationService.initialize();
-  final liveStreamService = LiveStreamService();
+  final liveStreamService = LiveStreamService.instance;
   liveStreamService.initialize();
   final themeService = ThemeService();
   await themeService.initialize();
