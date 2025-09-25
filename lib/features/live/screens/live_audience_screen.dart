@@ -88,26 +88,28 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
   Future<void> _joinStream() async {
     debugPrint('🎬 Attempting to join stream: ${widget.streamId}');
     
-    // First, ensure Agora is initialized
-    if (!_agoraService.isInitialized) {
-      debugPrint('🔧 Initializing Agora service...');
-      final initialized = await _agoraService.initialize();
-      if (!initialized) {
-        debugPrint('❌ Failed to initialize Agora service');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to initialize video engine.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          Navigator.pop(context);
-        }
-        return;
+    // Always initialize Agora first
+    debugPrint('🔧 Initializing Agora service...');
+    final initialized = await _agoraService.initialize();
+    if (!initialized) {
+      debugPrint('❌ Failed to initialize Agora service');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to initialize video engine.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.pop(context);
       }
+      return;
     }
     
     debugPrint('✅ Agora service initialized, joining stream...');
+    
+    // Add a small delay to ensure Agora is fully ready
+    await Future.delayed(const Duration(milliseconds: 500));
+    
     final success = await _agoraService.joinLiveStream(widget.streamId);
     
     if (!success) {
@@ -124,6 +126,10 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
       }
     } else {
       debugPrint('✅ Successfully joined live stream');
+      // Force a rebuild to show the video
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -168,17 +174,158 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
     return ListenableBuilder(
       listenable: _agoraService,
       builder: (context, child) {
-        // Check if Agora engine is initialized and we have a current stream
-        if (_agoraService.agoraEngine != null && _agoraService.currentStream != null) {
-          // Real Agora video view for audience
-          return AgoraVideoView(
-            controller: VideoViewController(
-              rtcEngine: _agoraService.agoraEngine!,
-              canvas: const VideoCanvas(uid: 12345), // Use broadcaster UID
+        debugPrint('🎬 Building video widget - Agora Engine: ${_agoraService.agoraEngine != null}, Current Stream: ${_agoraService.currentStream != null}');
+        
+        // Always show the Agora video view if engine is initialized, even if currentStream is null
+        if (_agoraService.agoraEngine != null) {
+          debugPrint('📹 Rendering Agora video view');
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            child: Stack(
+              children: [
+                // Dynamic video display based on remote users
+                if (_agoraService.remoteUsers.isNotEmpty)
+                  // Show video from the broadcaster
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: Colors.black, // Black background for video
+                    child: AgoraVideoView(
+                      controller: VideoViewController(
+                        rtcEngine: _agoraService.agoraEngine!,
+                        canvas: VideoCanvas(
+                          uid: _agoraService.remoteUsers.first,
+                          renderMode: RenderModeType.renderModeFit,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  // Show waiting screen when no remote users
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black,
+                          Colors.grey.shade800,
+                          Colors.black,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: Colors.blue,
+                            strokeWidth: 3,
+                          ),
+                          const SizedBox(height: 20),
+                          Icon(
+                            Icons.videocam,
+                            size: 60,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Waiting for ${stream.astrologerName}',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'to start the video stream...',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'LIVE',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                // Overlay with stream info for debugging
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stream: ${stream.astrologerName}',
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                        Text(
+                          'ID: ${stream.id.substring(0, 20)}...',
+                          style: const TextStyle(color: Colors.white70, fontSize: 10),
+                        ),
+                        Text(
+                          'Status: ${_agoraService.currentStream?.status ?? "Connecting"}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 10),
+                        ),
+                        Text(
+                          'Remote Users: ${_agoraService.remoteUsers.length}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 10),
+                        ),
+                        if (_agoraService.remoteUsers.isNotEmpty)
+                          Text(
+                            'Broadcasting UID: ${_agoraService.remoteUsers.first}',
+                            style: const TextStyle(color: Colors.white70, fontSize: 10),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         } else {
           // Show connection status
+          debugPrint('⏳ Showing loading screen - Agora not initialized');
           return Container(
             width: double.infinity,
             height: double.infinity,
@@ -200,9 +347,7 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 16),
                   Text(
-                    _agoraService.agoraEngine == null 
-                        ? 'Initializing Video Engine...'
-                        : 'Connecting to Live Stream...',
+                    'Initializing Video Engine...',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 18,

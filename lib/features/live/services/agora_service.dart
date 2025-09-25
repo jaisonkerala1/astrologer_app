@@ -10,6 +10,7 @@ import '../models/live_comment_model.dart';
 import '../../../core/services/live_stream_api_service.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/agora_token_service.dart';
 
 class AgoraService extends ChangeNotifier {
   static final AgoraService _instance = AgoraService._internal();
@@ -27,6 +28,8 @@ class AgoraService extends ChangeNotifier {
   List<LiveStreamModel> _liveStreams = [];
   bool _isStreaming = false;
   bool _isInitialized = false;
+  bool _isConnected = false;
+  List<int> _remoteUsers = [];
   
   // Stream configuration
   String? _channelName;
@@ -49,7 +52,8 @@ class AgoraService extends ChangeNotifier {
   List<LiveStreamModel> get liveStreams => List.from(_liveStreams);
   bool get isStreaming => _isStreaming;
   bool get isInitialized => _isInitialized;
-  bool get isConnected => _agoraEngine != null && _currentStream != null;
+  bool get isConnected => _isConnected;
+  List<int> get remoteUsers => List.from(_remoteUsers);
   int get viewerCount => _currentStream?.viewerCount ?? 0;
   int get totalViewers => _currentStream?.totalViewers ?? 0;
   int get likes => _currentStream?.likes ?? 0;
@@ -98,9 +102,11 @@ class AgoraService extends ChangeNotifier {
       // Initialize RTC Engine
       _agoraEngine = createAgoraRtcEngine();
       
-      debugPrint('⚙️ Initializing with App ID: 6358473261094f98be1fea84042b1fcf');
-      await _agoraEngine!.initialize(const RtcEngineContext(
-        appId: '6358473261094f98be1fea84042b1fcf', // Real Agora App ID for Phase 2
+      // Use Agora's test App ID that allows empty tokens for testing
+      const testAppId = 'aab8b8f5a8cd4469a63042fcfafe7063'; // Test App ID that allows empty tokens
+      debugPrint('⚙️ Initializing with Test App ID: $testAppId');
+      await _agoraEngine!.initialize(RtcEngineContext(
+        appId: testAppId,
       ));
 
       debugPrint('📹 Enabling video...');
@@ -118,10 +124,14 @@ class AgoraService extends ChangeNotifier {
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
             debugPrint('👤 User joined: $remoteUid (elapsed: ${elapsed}ms)');
+            _remoteUsers.add(remoteUid);
             _onUserJoined(remoteUid);
+            // Force UI update immediately when remote user joins
+            notifyListeners();
           },
           onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
             debugPrint('👤 User offline: $remoteUid, reason: $reason');
+            _remoteUsers.remove(remoteUid);
             _onUserLeft(remoteUid);
           },
           onError: (ErrorCodeType err, String msg) {
@@ -139,7 +149,7 @@ class AgoraService extends ChangeNotifier {
 
       // Initialize RTM for messaging (optional for now)
       try {
-        _rtmClient = await AgoraRtmClient.createInstance('6358473261094f98be1fea84042b1fcf');
+        _rtmClient = await AgoraRtmClient.createInstance(testAppId);
         await _rtmClient!.login(null, _generateRandomUserId());
         debugPrint('RTM client initialized successfully');
       } catch (e) {
@@ -186,14 +196,7 @@ class AgoraService extends ChangeNotifier {
         return false;
       }
 
-      // Generate channel name and token
-      _channelName = 'test_channel_123'; // Simple channel name for testing
-      _uid = 12345; // Fixed UID for testing
-      
-      // For Phase 2, we can use empty token for testing
-      _token = null; // Empty token for testing mode
-
-      // Get user data from storage
+      // Get user data from storage first
       final storageService = StorageService();
       final userDataJson = await storageService.getUserData();
       String astrologerId = 'current_user';
@@ -210,6 +213,14 @@ class AgoraService extends ChangeNotifier {
           debugPrint('Error parsing user data: $e');
         }
       }
+
+      // Generate dynamic channel name and token after getting user data
+      _channelName = 'live_${astrologerId}_${DateTime.now().millisecondsSinceEpoch}';
+      // Generate unique UID for broadcaster (use a lower range for broadcasters)
+      _uid = _random.nextInt(10000) + 1;
+      
+      // For Phase 2, we can use empty token for testing
+      _token = null; // Empty token for testing mode
 
       // Create stream model
       final streamId = 'stream_${DateTime.now().millisecondsSinceEpoch}';
@@ -256,16 +267,38 @@ class AgoraService extends ChangeNotifier {
             // Start camera preview before joining channel
             await _agoraEngine!.startPreview();
             
+            // Generate dynamic token for broadcaster
+            debugPrint('🎫 Generating token for broadcaster...');
+            final tokenData = await AgoraTokenService.generateToken(
+              channelName: _channelName!,
+              uid: _uid!,
+              role: 'broadcaster',
+            );
+
+            String token = '';
+            if (tokenData != null) {
+              token = tokenData['token'] ?? '';
+              debugPrint('✅ Token generated for broadcaster');
+            } else {
+              debugPrint('⚠️ Using empty token for broadcaster');
+            }
+            
             // Join channel as broadcaster
             await _agoraEngine!.joinChannel(
-              token: _token ?? '',
+              token: token,
               channelId: _channelName!,
               uid: _uid!,
               options: const ChannelMediaOptions(
                 clientRoleType: ClientRoleType.clientRoleBroadcaster,
                 channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+                publishCameraTrack: true, // Explicitly publish camera track
+                publishMicrophoneTrack: true, // Explicitly publish microphone track
               ),
             );
+
+            // Ensure video is being published
+            await _agoraEngine!.enableVideo();
+            await _agoraEngine!.enableAudio();
 
       // Join RTM channel for messaging (only if RTM client is available)
       if (_rtmClient != null) {
@@ -373,13 +406,31 @@ class AgoraService extends ChangeNotifier {
       _uid = _random.nextInt(100000) + 100000;
       debugPrint('👤 Using UID: $_uid');
       
+      // Generate dynamic token for audience
+      debugPrint('🎫 Generating token for audience...');
+      final tokenData = await AgoraTokenService.generateToken(
+        channelName: _channelName!,
+        uid: _uid!,
+        role: 'audience',
+      );
+
+      String token = '';
+      if (tokenData != null) {
+        token = tokenData['token'] ?? '';
+        debugPrint('✅ Token generated for audience');
+      } else {
+        debugPrint('⚠️ Using empty token for audience');
+      }
+      
       await _agoraEngine!.joinChannel(
-        token: _token ?? '',
+        token: token,
         channelId: _channelName!,
         uid: _uid!,
         options: const ChannelMediaOptions(
           clientRoleType: ClientRoleType.clientRoleAudience,
           channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+          autoSubscribeAudio: true, // Automatically subscribe to audio
+          autoSubscribeVideo: true, // Automatically subscribe to video
         ),
       );
 
@@ -396,6 +447,8 @@ class AgoraService extends ChangeNotifier {
         debugPrint('✅ Joined RTM channel');
       }
 
+      // Set connection status
+      _isConnected = true;
       notifyListeners();
       debugPrint('🎉 Successfully joined live stream: $streamId');
       return true;

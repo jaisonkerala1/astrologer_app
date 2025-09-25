@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
 const WebSocket = require('ws');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -231,6 +232,44 @@ app.post('/api/live-streams/start', (req, res) => {
 
   } catch (error) {
     console.error('❌ Error starting live stream:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Generate Agora token
+app.post('/api/agora/token', (req, res) => {
+  try {
+    const { channelName, uid, role = 'audience' } = req.body;
+
+    if (!channelName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Channel name is required'
+      });
+    }
+
+    // For development, return empty token (no authentication)
+    // In production, you would use agora-access-token package to generate real tokens
+    const token = '';
+    const expirationTime = Math.floor(Date.now() / 1000) + (24 * 3600); // 24 hours
+
+    console.log(`🎫 Generated token for channel: ${channelName}, UID: ${uid || 'auto'}, role: ${role}`);
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        channelName,
+        uid: uid || Math.floor(Math.random() * 100000),
+        expirationTime
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error generating token:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
