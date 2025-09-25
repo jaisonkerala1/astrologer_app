@@ -175,6 +175,8 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
       listenable: _agoraService,
       builder: (context, child) {
         debugPrint('🎬 Building video widget - Agora Engine: ${_agoraService.agoraEngine != null}, Current Stream: ${_agoraService.currentStream != null}');
+        debugPrint('👥 Remote users count: ${_agoraService.remoteUsers.length}');
+        debugPrint('👥 Remote users: ${_agoraService.remoteUsers}');
         
         // Always show the Agora video view if engine is initialized, even if currentStream is null
         if (_agoraService.agoraEngine != null) {

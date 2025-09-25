@@ -126,8 +126,29 @@ class AgoraService extends ChangeNotifier {
             debugPrint('👤 User joined: $remoteUid (elapsed: ${elapsed}ms)');
             _remoteUsers.add(remoteUid);
             _onUserJoined(remoteUid);
+            
+            // Video and audio subscription is handled by autoSubscribeVideo and autoSubscribeAudio options
+            debugPrint('📹 Remote user detected: $remoteUid');
+            
             // Force UI update immediately when remote user joins
             notifyListeners();
+          },
+          onUserInfoUpdated: (int remoteUid, UserInfo userInfo) {
+            debugPrint('👤 User info updated: $remoteUid - ${userInfo.uid}');
+          },
+          onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
+            debugPrint('📹 Remote video state changed: UID=$remoteUid, State=$state, Reason=$reason');
+            if (state == RemoteVideoState.remoteVideoStateStarting) {
+              debugPrint('🎬 Remote video is starting for UID: $remoteUid');
+            } else if (state == RemoteVideoState.remoteVideoStateDecoding) {
+              debugPrint('✅ Remote video is decoding for UID: $remoteUid');
+            } else if (state == RemoteVideoState.remoteVideoStateStopped) {
+              debugPrint('⏹️ Remote video stopped for UID: $remoteUid');
+            }
+            notifyListeners();
+          },
+          onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
+            debugPrint('🔊 Remote audio state changed: UID=$remoteUid, State=$state, Reason=$reason');
           },
           onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
             debugPrint('👤 User offline: $remoteUid, reason: $reason');
@@ -436,6 +457,11 @@ class AgoraService extends ChangeNotifier {
 
       debugPrint('✅ Successfully joined Agora channel');
 
+      // Check if there are already remote users in the channel
+      // This can happen if the broadcaster was already streaming when we joined
+      debugPrint('🔍 Checking for existing remote users...');
+      // Note: We'll rely on the onUserJoined callback to detect existing users
+      
       // Join RTM channel for messaging (only if RTM client is available)
       if (_rtmClient != null) {
         _rtmChannel = await _rtmClient!.createChannel(_channelName!);
