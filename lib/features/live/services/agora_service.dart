@@ -49,6 +49,7 @@ class AgoraService extends ChangeNotifier {
   List<LiveStreamModel> get liveStreams => List.from(_liveStreams);
   bool get isStreaming => _isStreaming;
   bool get isInitialized => _isInitialized;
+  bool get isConnected => _agoraEngine != null && _currentStream != null;
   int get viewerCount => _currentStream?.viewerCount ?? 0;
   int get totalViewers => _currentStream?.totalViewers ?? 0;
   int get likes => _currentStream?.likes ?? 0;
@@ -326,16 +327,22 @@ class AgoraService extends ChangeNotifier {
   // Join live stream as audience (Phase 2 - Real Agora)
   Future<bool> joinLiveStream(String streamId) async {
     try {
-      // Find the stream
-      final stream = _liveStreams.firstWhere(
+      // Get stream from WebSocket service (which has the latest data)
+      final activeStreams = _webSocketService.activeStreams;
+      final stream = activeStreams.firstWhere(
         (s) => s.id == streamId,
         orElse: () => throw Exception('Stream not found'),
       );
 
-      if (!stream.isLive) return false;
+      if (!stream.isLive) {
+        debugPrint('Stream is not live: ${stream.status}');
+        return false;
+      }
 
       _currentStream = stream;
       _channelName = stream.streamUrl.replaceFirst('agora://', '');
+      
+      debugPrint('Joining channel: $_channelName as audience');
       
       // Join as audience
       _uid = _random.nextInt(100000) + 100000;
@@ -478,6 +485,31 @@ class AgoraService extends ChangeNotifier {
           final streamId = streamData['id'] as String?;
           if (streamId != null) {
             _liveStreams.removeWhere((stream) => stream.id == streamId);
+            
+            // If the current user is watching this stream, end their viewing
+            if (_currentStream?.id == streamId) {
+              _currentStream = _currentStream!.copyWith(
+                status: LiveStreamStatus.ended,
+                endedAt: DateTime.now(),
+              );
+              
+              // Leave the Agora channel
+              if (_agoraEngine != null) {
+                await _agoraEngine!.leaveChannel();
+              }
+              
+              // Leave RTM channel
+              if (_rtmChannel != null) {
+                await _rtmChannel!.leave();
+                _rtmChannel = null;
+              }
+              
+              _isStreaming = false;
+              _channelName = null;
+              _token = null;
+              _uid = null;
+            }
+            
             notifyListeners();
           }
           break;

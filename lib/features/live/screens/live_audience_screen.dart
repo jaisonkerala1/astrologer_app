@@ -32,11 +32,30 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
     _initializeAnimations();
     _hideSystemUI();
     _joinStream();
+    
+    // Listen for stream end events
+    _agoraService.addListener(_onAgoraServiceUpdate);
+  }
+  
+  void _onAgoraServiceUpdate() {
+    if (mounted) {
+      // Check if the current stream has ended
+      if (_agoraService.currentStream?.status == LiveStreamStatus.ended) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The live stream has ended.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _agoraService.removeListener(_onAgoraServiceUpdate);
     _showSystemUI();
     super.dispose();
   }
@@ -66,7 +85,19 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
   }
 
   Future<void> _joinStream() async {
-    await _agoraService.joinLiveStream(widget.streamId);
+    final success = await _agoraService.joinLiveStream(widget.streamId);
+    if (!success) {
+      // Show error message and go back
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to join live stream. The stream may have ended.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    }
   }
 
   @override
@@ -110,12 +141,12 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
     return ListenableBuilder(
       listenable: _agoraService,
       builder: (context, child) {
-        if (_agoraService.isConnected && _agoraService.agoraEngine != null) {
+        if (_agoraService.isConnected) {
           // Real Agora video view for audience
           return AgoraVideoView(
             controller: VideoViewController(
               rtcEngine: _agoraService.agoraEngine!,
-              canvas: VideoCanvas(uid: stream.astrologerId.hashCode), // Use astrologer ID as UID
+              canvas: const VideoCanvas(uid: 12345), // Use broadcaster UID
             ),
           );
         } else {
@@ -145,29 +176,25 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'by ${stream.astrologerName}',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Mock video stream for demonstration',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.4),
-                fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'by ${stream.astrologerName}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          );
+        }
+      },
     );
   }
 
