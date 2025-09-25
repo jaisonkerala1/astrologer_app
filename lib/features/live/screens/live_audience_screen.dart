@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/live_stream_model.dart';
-import '../services/live_stream_service.dart';
+import '../services/agora_service.dart';
 
 class LiveAudienceScreen extends StatefulWidget {
-  final LiveStreamModel stream;
+  final String streamId;
 
   const LiveAudienceScreen({
     super.key,
-    required this.stream,
+    required this.streamId,
   });
 
   @override
@@ -17,7 +17,7 @@ class LiveAudienceScreen extends StatefulWidget {
 
 class _LiveAudienceScreenState extends State<LiveAudienceScreen>
     with TickerProviderStateMixin {
-  final LiveStreamService _liveService = LiveStreamService();
+  final AgoraService _agoraService = AgoraService();
   
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -65,7 +65,7 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
   }
 
   Future<void> _joinStream() async {
-    await _liveService.joinLiveStream(widget.stream.id);
+    await _agoraService.joinLiveStream(widget.streamId);
   }
 
   @override
@@ -73,30 +73,30 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
     return Scaffold(
       backgroundColor: Colors.black,
       body: ListenableBuilder(
-        listenable: _liveService,
+        listenable: _agoraService,
         builder: (context, child) {
-          final stream = _liveService.currentStream ?? widget.stream;
+          final stream = _agoraService.currentStream;
           
           return Stack(
             children: [
               // Stream Video (Mock)
-              _buildStreamVideo(stream),
+              if (stream != null) _buildStreamVideo(stream),
               
               // Live Indicator
               _buildLiveIndicator(),
               
               // Stream Info Overlay
-              _buildStreamInfoOverlay(stream),
+              if (stream != null) _buildStreamInfoOverlay(stream),
               
               // Viewer Stats
-              _buildViewerStats(stream),
+              if (stream != null) _buildViewerStats(stream),
               
               
               // Top Controls
               _buildTopControls(),
               
               // Bottom Controls
-              _buildBottomControls(stream),
+              if (stream != null) _buildBottomControls(stream),
               
             ],
           );

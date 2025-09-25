@@ -19,6 +19,7 @@ enum LiveReactionType {
 
 class LiveCommentModel {
   final String id;
+  final String streamId;
   final String userId;
   final String userName;
   final String? userProfilePicture;
@@ -35,6 +36,7 @@ class LiveCommentModel {
 
   LiveCommentModel({
     required this.id,
+    required this.streamId,
     required this.userId,
     required this.userName,
     this.userProfilePicture,
@@ -53,6 +55,7 @@ class LiveCommentModel {
   factory LiveCommentModel.fromJson(Map<String, dynamic> json) {
     return LiveCommentModel(
       id: json['id'] ?? '',
+      streamId: json['streamId'] ?? '',
       userId: json['userId'] ?? '',
       userName: json['userName'] ?? '',
       userProfilePicture: json['userProfilePicture'],
@@ -80,6 +83,7 @@ class LiveCommentModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'streamId': streamId,
       'userId': userId,
       'userName': userName,
       'userProfilePicture': userProfilePicture,
@@ -98,6 +102,7 @@ class LiveCommentModel {
 
   LiveCommentModel copyWith({
     String? id,
+    String? streamId,
     String? userId,
     String? userName,
     String? userProfilePicture,
@@ -114,6 +119,7 @@ class LiveCommentModel {
   }) {
     return LiveCommentModel(
       id: id ?? this.id,
+      streamId: streamId ?? this.streamId,
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
       userProfilePicture: userProfilePicture ?? this.userProfilePicture,
@@ -166,6 +172,7 @@ class LiveCommentModel {
     }
   }
 }
+
 
 
 

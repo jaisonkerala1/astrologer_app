@@ -10,6 +10,9 @@ import '../core/services/storage_service.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
 import '../features/live/screens/live_streaming_page.dart';
+import '../features/live/screens/live_preparation_screen.dart';
+import '../features/live/screens/live_streaming_screen.dart';
+import '../features/live/screens/live_audience_screen.dart';
 import '../features/consultations/screens/consultation_analytics_screen.dart';
 
 class AppRoutes {
@@ -17,6 +20,9 @@ class AppRoutes {
   static const String login = '/login';
   static const String dashboard = '/dashboard';
   static const String liveStreamingPage = '/live-streaming-page';
+  static const String livePreparation = '/live-preparation';
+  static const String liveStreaming = '/live-streaming';
+  static const String liveAudience = '/live-audience';
   static const String consultationAnalytics = '/consultation-analytics';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -36,6 +42,22 @@ class AppRoutes {
       case liveStreamingPage:
         return MaterialPageRoute(
           builder: (_) => const LiveStreamingPage(),
+        );
+      case livePreparation:
+        return MaterialPageRoute(
+          builder: (_) => const LivePreparationScreen(),
+        );
+      case liveStreaming:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final streamId = args?['streamId'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => LiveStreamingScreen(streamId: streamId ?? ''),
+        );
+      case liveAudience:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final streamId = args?['streamId'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => LiveAudienceScreen(streamId: streamId ?? ''),
         );
       case consultationAnalytics:
         final args = settings.arguments as Map<String, dynamic>?;

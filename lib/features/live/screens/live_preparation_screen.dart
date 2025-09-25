@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/live_stream_model.dart';
-import '../services/live_stream_service.dart';
+import '../services/agora_service.dart';
 
 class LivePreparationScreen extends StatefulWidget {
   const LivePreparationScreen({super.key});
@@ -22,7 +22,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
   bool _isPrivate = false;
   bool _isLoading = false;
 
-  final LiveStreamService _liveService = LiveStreamService();
+  final AgoraService _agoraService = AgoraService();
 
   final List<String> _availableTags = [
     'tarot', 'palmistry', 'numerology', 'astrology', 'meditation',
@@ -591,7 +591,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
     HapticFeedback.mediumImpact();
 
     try {
-      final success = await _liveService.startLiveStream(
+      final success = await _agoraService.startLiveStream(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty
             ? null

@@ -17,6 +17,7 @@ import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
 import '../widgets/stats_card_widget.dart';
 import '../widgets/calendar_card_widget.dart';
+import '../widgets/dashboard_skeleton_loader.dart';
 import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
@@ -133,24 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Go Live button method
   void _goLive() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Going Live - Coming Soon!',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        backgroundColor: const Color(0xFFFF4444),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    Navigator.pushNamed(context, '/live-preparation');
   }
 
   // Open notifications method

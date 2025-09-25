@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../widgets/consultation_analytics_widget.dart';
+import '../widgets/consultation_analytics_skeleton.dart';
 import '../services/consultations_service.dart';
 import '../models/consultation_model.dart';
 
@@ -129,25 +130,18 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
             ),
           ),
           body: _isLoading
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          themeService.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Loading analytics...',
-                        style: TextStyle(
-                          color: themeService.textSecondary,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
+              ? TabBarView(
+                  controller: _tabController,
+                  children: const [
+                    // Weekly Analytics Skeleton
+                    WeeklyAnalyticsSkeleton(),
+                    
+                    // Monthly Analytics Skeleton
+                    MonthlyAnalyticsSkeleton(),
+                    
+                    // All Time Analytics Skeleton
+                    AllTimeAnalyticsSkeleton(),
+                  ],
                 )
               : TabBarView(
                   controller: _tabController,

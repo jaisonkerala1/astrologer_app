@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/theme/services/theme_service.dart';
 import '../bloc/reviews_bloc.dart';
 import '../bloc/reviews_event.dart';
 import '../bloc/reviews_state.dart';
@@ -11,6 +13,7 @@ import '../widgets/review_item_card.dart';
 import '../widgets/rating_filter_chips.dart';
 import '../widgets/filter_options_bottom_sheet.dart';
 import '../widgets/reply_dialog.dart';
+import '../widgets/reviews_skeleton_loader.dart';
 
 class ReviewsOverviewScreen extends StatefulWidget {
   const ReviewsOverviewScreen({super.key});
@@ -33,24 +36,26 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Reviews & Ratings'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterOptions,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: const Text('Reviews & Ratings'),
+            backgroundColor: themeService.surfaceColor,
+            foregroundColor: themeService.textPrimary,
+            elevation: 0.5,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: _showFilterOptions,
+              ),
+            ],
           ),
-        ],
-      ),
       body: BlocBuilder<ReviewsBloc, ReviewsState>(
         builder: (context, state) {
           if (state is ReviewsLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const ReviewsOverviewSkeleton();
           }
           
           if (state is ReviewsError) {
@@ -174,6 +179,8 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen> {
           return const SizedBox();
         },
       ),
+        );
+      },
     );
   }
 
