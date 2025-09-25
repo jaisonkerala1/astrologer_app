@@ -168,7 +168,7 @@ class AgoraService extends ChangeNotifier {
         ),
       );
 
-      // Initialize RTM for messaging (optional for now)
+      // Initialize RTM for messaging
       try {
         _rtmClient = await AgoraRtmClient.createInstance(appId);
         await _rtmClient!.login(null, _generateRandomUserId());
@@ -542,22 +542,71 @@ class AgoraService extends ChangeNotifier {
     }
   }
 
-  // Get live streams (mock data for now)
+  // Leave live stream (for viewers)
+  Future<bool> leaveLiveStream() async {
+    try {
+      if (_currentStream == null) return false;
+
+      debugPrint('👋 Leaving live stream: ${_currentStream!.id}');
+
+      // Leave RTM channel
+      if (_rtmChannel != null) {
+        await _rtmChannel!.leave();
+        _rtmChannel = null;
+        debugPrint('✅ Left RTM channel');
+      }
+
+      // Leave RTC channel
+      if (_agoraEngine != null) {
+        await _agoraEngine!.leaveChannel();
+        debugPrint('✅ Left RTC channel');
+      }
+
+      // Reset state
+      _currentStream = null;
+      _isConnected = false;
+      _remoteUsers.clear();
+      _comments.clear();
+      _channelName = null;
+      _token = null;
+      _uid = null;
+
+      notifyListeners();
+      debugPrint('🎉 Successfully left live stream');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error leaving live stream: $e');
+      return false;
+    }
+  }
+
+  // Get live streams for astrologers to watch
   Future<List<LiveStreamModel>> getLiveStreams({
     LiveStreamCategory? category,
     int limit = 20,
     int offset = 0,
   }) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Get streams from WebSocket service (real-time data)
+      final activeStreams = _webSocketService.activeStreams;
+      debugPrint('📊 Found ${activeStreams.length} active streams for viewing');
+      
+      var filteredStreams = activeStreams.where((stream) => stream.isLive);
+      if (category != null) {
+        filteredStreams = filteredStreams.where((stream) => stream.category == category);
+      }
+      
+      final result = filteredStreams.skip(offset).take(limit).toList();
+      debugPrint('📺 Returning ${result.length} live streams');
+      return result;
+    } catch (e) {
+      debugPrint('Error getting live streams: $e');
+      // Fallback to local streams
       var filteredStreams = _liveStreams.where((stream) => stream.isLive);
       if (category != null) {
         filteredStreams = filteredStreams.where((stream) => stream.category == category);
       }
       return filteredStreams.skip(offset).take(limit).toList();
-    } catch (e) {
-      debugPrint('Error getting live streams: $e');
-      return [];
     }
   }
 

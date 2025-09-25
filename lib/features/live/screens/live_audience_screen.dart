@@ -189,13 +189,14 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                 // Dynamic video display based on remote users
                 if (_agoraService.remoteUsers.isNotEmpty)
                   // Show video from the broadcaster
-                  Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: double.infinity,
-                        color: Colors.black, // Black background for video
-                        child: AgoraVideoView(
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: Colors.black,
+                    child: Stack(
+                      children: [
+                        // Main video view
+                        AgoraVideoView(
                           controller: VideoViewController(
                             rtcEngine: _agoraService.agoraEngine!,
                             canvas: VideoCanvas(
@@ -204,24 +205,24 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                             ),
                           ),
                         ),
-                      ),
-                      // Temporary overlay to confirm video is trying to render
-                      Positioned(
-                        bottom: 100,
-                        left: 20,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Video Widget Active\nUID: ${_agoraService.remoteUsers.first}',
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                        // Debug overlay
+                        Positioned(
+                          bottom: 100,
+                          left: 20,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Live Stream Active\nBroadcaster UID: ${_agoraService.remoteUsers.first}',
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   )
                 else
                   // Show waiting screen when no remote users

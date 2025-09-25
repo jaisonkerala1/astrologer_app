@@ -111,11 +111,16 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       listenable: _agoraService,
       builder: (context, child) {
         if (_agoraService.isStreaming && _agoraService.currentStream != null) {
-          // Real Agora video view
-          return AgoraVideoView(
-            controller: VideoViewController(
-              rtcEngine: _agoraService.agoraEngine!,
-              canvas: const VideoCanvas(uid: 0), // 0 for local video
+          // Real Agora video view for broadcaster
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.black,
+            child: AgoraVideoView(
+              controller: VideoViewController(
+                rtcEngine: _agoraService.agoraEngine!,
+                canvas: const VideoCanvas(uid: 0), // 0 for local video
+              ),
             ),
           );
         } else {
