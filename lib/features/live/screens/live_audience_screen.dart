@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import '../models/live_stream_model.dart';
 import '../services/agora_service.dart';
@@ -85,8 +86,32 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
   }
 
   Future<void> _joinStream() async {
+    debugPrint('🎬 Attempting to join stream: ${widget.streamId}');
+    
+    // First, ensure Agora is initialized
+    if (!_agoraService.isInitialized) {
+      debugPrint('🔧 Initializing Agora service...');
+      final initialized = await _agoraService.initialize();
+      if (!initialized) {
+        debugPrint('❌ Failed to initialize Agora service');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to initialize video engine.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          Navigator.pop(context);
+        }
+        return;
+      }
+    }
+    
+    debugPrint('✅ Agora service initialized, joining stream...');
     final success = await _agoraService.joinLiveStream(widget.streamId);
+    
     if (!success) {
+      debugPrint('❌ Failed to join live stream');
       // Show error message and go back
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -97,6 +122,8 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
         );
         Navigator.pop(context);
       }
+    } else {
+      debugPrint('✅ Successfully joined live stream');
     }
   }
 
@@ -141,7 +168,8 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
     return ListenableBuilder(
       listenable: _agoraService,
       builder: (context, child) {
-        if (_agoraService.isConnected) {
+        // Check if Agora engine is initialized and we have a current stream
+        if (_agoraService.agoraEngine != null && _agoraService.currentStream != null) {
           // Real Agora video view for audience
           return AgoraVideoView(
             controller: VideoViewController(
@@ -150,7 +178,7 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
             ),
           );
         } else {
-          // Fallback to loading screen
+          // Show connection status
           return Container(
             width: double.infinity,
             height: double.infinity,
@@ -172,7 +200,9 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 16),
                   Text(
-                    'Connecting to Live Stream...',
+                    _agoraService.agoraEngine == null 
+                        ? 'Initializing Video Engine...'
+                        : 'Connecting to Live Stream...',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 18,
@@ -186,6 +216,15 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.6),
                       fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Stream ID: ${stream.id}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
                     ),
                     textAlign: TextAlign.center,
                   ),

@@ -170,15 +170,20 @@ app.post('/api/live-streams/start', (req, res) => {
       });
     }
 
-    // Check if astrologer already has an active stream
+    // Check if astrologer already has an active stream and end it automatically
     const existingStream = Array.from(activeStreams.values()).find(
       stream => stream.astrologerId === astrologerId && stream.status === 'live'
     );
-
+    
     if (existingStream) {
-      return res.status(400).json({
-        success: false,
-        message: 'You already have an active live stream. Please end the current stream before starting a new one.'
+      console.log(`🔄 Ending existing stream: ${existingStream.id} before starting new one`);
+      existingStream.status = 'ended';
+      existingStream.endedAt = new Date().toISOString();
+      
+      // Broadcast stream ended event
+      broadcastToClients({
+        type: 'stream_ended',
+        data: existingStream
       });
     }
 

@@ -84,39 +84,55 @@ class AgoraService extends ChangeNotifier {
   // Initialize Agora SDK
   Future<bool> initialize() async {
     try {
-      if (_isInitialized) return true;
+      debugPrint('🔧 Starting Agora initialization...');
+      
+      if (_isInitialized) {
+        debugPrint('✅ Agora already initialized');
+        return true;
+      }
 
       // Don't request permissions during initialization
       // Permissions will be requested when actually starting a live stream
 
+      debugPrint('🏗️ Creating Agora RTC Engine...');
       // Initialize RTC Engine
       _agoraEngine = createAgoraRtcEngine();
+      
+      debugPrint('⚙️ Initializing with App ID: 6358473261094f98be1fea84042b1fcf');
       await _agoraEngine!.initialize(const RtcEngineContext(
         appId: '6358473261094f98be1fea84042b1fcf', // Real Agora App ID for Phase 2
       ));
 
+      debugPrint('📹 Enabling video...');
       // Enable video (but don't start preview automatically)
       await _agoraEngine!.enableVideo();
       // Note: startPreview() is only called when actually starting a live stream
 
+      debugPrint('📡 Setting up event handlers...');
       // Set up event handlers
       _agoraEngine!.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-            debugPrint('Successfully joined channel: ${connection.channelId}');
+            debugPrint('✅ Successfully joined channel: ${connection.channelId} (elapsed: ${elapsed}ms)');
             _onChannelJoined();
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-            debugPrint('User joined: $remoteUid');
+            debugPrint('👤 User joined: $remoteUid (elapsed: ${elapsed}ms)');
             _onUserJoined(remoteUid);
           },
           onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-            debugPrint('User offline: $remoteUid');
+            debugPrint('👤 User offline: $remoteUid, reason: $reason');
             _onUserLeft(remoteUid);
           },
           onError: (ErrorCodeType err, String msg) {
-            debugPrint('Agora RTC Error: $err - $msg');
+            debugPrint('❌ Agora RTC Error: $err - $msg');
             _onError(err, msg);
+          },
+          onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
+            debugPrint('🔄 Connection state changed: $state, reason: $reason');
+          },
+          onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
+            debugPrint('⚠️ Token will expire soon');
           },
         ),
       );
@@ -140,10 +156,10 @@ class AgoraService extends ChangeNotifier {
       // Load live streams from backend
       await _loadLiveStreamsFromBackend();
 
-      debugPrint('Agora SDK initialized successfully');
+      debugPrint('🎉 Agora SDK initialized successfully');
       return true;
     } catch (e) {
-      debugPrint('Failed to initialize Agora SDK: $e');
+      debugPrint('❌ Failed to initialize Agora SDK: $e');
       return false;
     }
   }
@@ -327,25 +343,36 @@ class AgoraService extends ChangeNotifier {
   // Join live stream as audience (Phase 2 - Real Agora)
   Future<bool> joinLiveStream(String streamId) async {
     try {
+      debugPrint('🔍 Looking for stream: $streamId');
+      
       // Get stream from WebSocket service (which has the latest data)
       final activeStreams = _webSocketService.activeStreams;
+      debugPrint('📊 Found ${activeStreams.length} active streams');
+      
       final stream = activeStreams.firstWhere(
         (s) => s.id == streamId,
         orElse: () => throw Exception('Stream not found'),
       );
 
+      debugPrint('✅ Found stream: ${stream.title} by ${stream.astrologerName}');
+      debugPrint('📺 Stream status: ${stream.status}');
+      debugPrint('🔗 Stream URL: ${stream.streamUrl}');
+
       if (!stream.isLive) {
-        debugPrint('Stream is not live: ${stream.status}');
+        debugPrint('❌ Stream is not live: ${stream.status}');
         return false;
       }
 
       _currentStream = stream;
       _channelName = stream.streamUrl.replaceFirst('agora://', '');
       
-      debugPrint('Joining channel: $_channelName as audience');
+      debugPrint('🎬 Joining channel: $_channelName as audience');
+      debugPrint('🔧 Agora engine status: ${_agoraEngine != null ? "Initialized" : "Not initialized"}');
       
       // Join as audience
       _uid = _random.nextInt(100000) + 100000;
+      debugPrint('👤 Using UID: $_uid');
+      
       await _agoraEngine!.joinChannel(
         token: _token ?? '',
         channelId: _channelName!,
@@ -356,6 +383,8 @@ class AgoraService extends ChangeNotifier {
         ),
       );
 
+      debugPrint('✅ Successfully joined Agora channel');
+
       // Join RTM channel for messaging (only if RTM client is available)
       if (_rtmClient != null) {
         _rtmChannel = await _rtmClient!.createChannel(_channelName!);
@@ -364,13 +393,14 @@ class AgoraService extends ChangeNotifier {
         _rtmChannel!.onMessageReceived = (AgoraRtmMessage message, AgoraRtmMember member) {
           _onMessageReceived(message, member);
         };
+        debugPrint('✅ Joined RTM channel');
       }
 
       notifyListeners();
-      debugPrint('Joined live stream with real Agora: $streamId');
+      debugPrint('🎉 Successfully joined live stream: $streamId');
       return true;
     } catch (e) {
-      debugPrint('Error joining live stream: $e');
+      debugPrint('❌ Error joining live stream: $e');
       return false;
     }
   }
@@ -464,7 +494,7 @@ class AgoraService extends ChangeNotifier {
   }
 
   // Handle WebSocket updates
-  void _handleWebSocketUpdate(Map<String, dynamic> data) {
+  void _handleWebSocketUpdate(Map<String, dynamic> data) async {
     try {
       final type = data['type'] as String?;
       final streamData = data['data'];
