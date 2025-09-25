@@ -170,6 +170,18 @@ app.post('/api/live-streams/start', (req, res) => {
       });
     }
 
+    // Check if astrologer already has an active stream
+    const existingStream = Array.from(activeStreams.values()).find(
+      stream => stream.astrologerId === astrologerId && stream.status === 'live'
+    );
+
+    if (existingStream) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active live stream. Please end the current stream before starting a new one.'
+      });
+    }
+
     // Generate unique stream ID
     const streamId = `stream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 

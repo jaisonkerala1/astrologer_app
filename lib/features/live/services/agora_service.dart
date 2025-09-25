@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -8,6 +9,7 @@ import '../models/live_stream_model.dart';
 import '../models/live_comment_model.dart';
 import '../../../core/services/live_stream_api_service.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../../core/services/storage_service.dart';
 
 class AgoraService extends ChangeNotifier {
   static final AgoraService _instance = AgoraService._internal();
@@ -174,13 +176,31 @@ class AgoraService extends ChangeNotifier {
       // For Phase 2, we can use empty token for testing
       _token = null; // Empty token for testing mode
 
+      // Get user data from storage
+      final storageService = StorageService();
+      final userDataJson = await storageService.getUserData();
+      String astrologerId = 'current_user';
+      String astrologerName = 'Your Name';
+      String? astrologerProfilePicture;
+      
+      if (userDataJson != null) {
+        try {
+          final userData = jsonDecode(userDataJson);
+          astrologerId = userData['id']?.toString() ?? 'current_user';
+          astrologerName = userData['name']?.toString() ?? 'Your Name';
+          astrologerProfilePicture = userData['profilePicture']?.toString();
+        } catch (e) {
+          debugPrint('Error parsing user data: $e');
+        }
+      }
+
       // Create stream model
       final streamId = 'stream_${DateTime.now().millisecondsSinceEpoch}';
       _currentStream = LiveStreamModel(
         id: streamId,
-        astrologerId: 'current_user', // TODO: Get from user authentication
-        astrologerName: 'Your Name', // TODO: Get from user profile
-        astrologerProfilePicture: null, // TODO: Get from user profile
+        astrologerId: astrologerId,
+        astrologerName: astrologerName,
+        astrologerProfilePicture: astrologerProfilePicture,
         title: title,
         description: description,
         category: category,

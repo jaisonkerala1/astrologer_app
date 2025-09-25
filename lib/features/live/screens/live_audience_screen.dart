@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import '../models/live_stream_model.dart';
 import '../services/agora_service.dart';
 
@@ -106,35 +107,44 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
   }
 
   Widget _buildStreamVideo(LiveStreamModel stream) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.black,
-            Colors.grey.shade900,
-            Colors.black,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _getCategoryIcon(stream.category),
-              size: 80,
-              color: Colors.white.withOpacity(0.4),
+    return ListenableBuilder(
+      listenable: _agoraService,
+      builder: (context, child) {
+        if (_agoraService.isConnected && _agoraService.agoraEngine != null) {
+          // Real Agora video view for audience
+          return AgoraVideoView(
+            controller: VideoViewController(
+              rtcEngine: _agoraService.agoraEngine!,
+              canvas: VideoCanvas(uid: stream.astrologerId.hashCode), // Use astrologer ID as UID
             ),
-            const SizedBox(height: 16),
-            Text(
-              stream.title,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 20,
+          );
+        } else {
+          // Fallback to loading screen
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black,
+                  Colors.grey.shade900,
+                  Colors.black,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Connecting to Live Stream...',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
