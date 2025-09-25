@@ -10,7 +10,7 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 const PORT = 7566; // Force port 7566
-console.log('🚀 Server starting - force redeploy 2025-09-20 v2 with Live Streaming API');
+console.log('🚀 Server starting - force redeploy 2025-09-20 v3 with OTP ObjectId fix');
 
 // Security middleware
 app.use(helmet());
