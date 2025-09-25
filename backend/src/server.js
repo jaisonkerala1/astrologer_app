@@ -251,20 +251,23 @@ app.post('/api/agora/token', (req, res) => {
       });
     }
 
-    // For development, return empty token (no authentication)
-    // In production, you would use agora-access-token package to generate real tokens
+    // For development, we'll disable token authentication by returning empty token
+    // This works when Agora App is configured for "Testing Mode" (no certificate)
     const token = '';
+    const actualUid = uid || Math.floor(Math.random() * 100000);
     const expirationTime = Math.floor(Date.now() / 1000) + (24 * 3600); // 24 hours
 
-    console.log(`🎫 Generated token for channel: ${channelName}, UID: ${uid || 'auto'}, role: ${role}`);
+    console.log(`🎫 Generated empty token for channel: ${channelName}, UID: ${actualUid}, role: ${role}`);
+    console.log(`🔧 Note: Using empty token for testing. Configure Agora App for "Testing Mode" if needed.`);
 
     res.json({
       success: true,
       data: {
         token,
         channelName,
-        uid: uid || Math.floor(Math.random() * 100000),
-        expirationTime
+        uid: actualUid,
+        expirationTime,
+        appId: '6358473261094f98be1fea84042b1fcf'
       }
     });
 

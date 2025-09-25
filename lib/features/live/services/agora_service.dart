@@ -102,11 +102,11 @@ class AgoraService extends ChangeNotifier {
       // Initialize RTC Engine
       _agoraEngine = createAgoraRtcEngine();
       
-      // Use Agora's test App ID that allows empty tokens for testing
-      const testAppId = 'aab8b8f5a8cd4469a63042fcfafe7063'; // Test App ID that allows empty tokens
-      debugPrint('⚙️ Initializing with Test App ID: $testAppId');
+      // Use your original App ID
+      const appId = '6358473261094f98be1fea84042b1fcf';
+      debugPrint('⚙️ Initializing with App ID: $appId');
       await _agoraEngine!.initialize(RtcEngineContext(
-        appId: testAppId,
+        appId: appId,
       ));
 
       debugPrint('📹 Enabling video...');
@@ -149,7 +149,7 @@ class AgoraService extends ChangeNotifier {
 
       // Initialize RTM for messaging (optional for now)
       try {
-        _rtmClient = await AgoraRtmClient.createInstance(testAppId);
+        _rtmClient = await AgoraRtmClient.createInstance(appId);
         await _rtmClient!.login(null, _generateRandomUserId());
         debugPrint('RTM client initialized successfully');
       } catch (e) {

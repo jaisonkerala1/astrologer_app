@@ -187,19 +187,39 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                 // Dynamic video display based on remote users
                 if (_agoraService.remoteUsers.isNotEmpty)
                   // Show video from the broadcaster
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Colors.black, // Black background for video
-                    child: AgoraVideoView(
-                      controller: VideoViewController(
-                        rtcEngine: _agoraService.agoraEngine!,
-                        canvas: VideoCanvas(
-                          uid: _agoraService.remoteUsers.first,
-                          renderMode: RenderModeType.renderModeFit,
+                  Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        color: Colors.black, // Black background for video
+                        child: AgoraVideoView(
+                          controller: VideoViewController(
+                            rtcEngine: _agoraService.agoraEngine!,
+                            canvas: VideoCanvas(
+                              uid: _agoraService.remoteUsers.first,
+                              renderMode: RenderModeType.renderModeFit,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      // Temporary overlay to confirm video is trying to render
+                      Positioned(
+                        bottom: 100,
+                        left: 20,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Video Widget Active\nUID: ${_agoraService.remoteUsers.first}',
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                   )
                 else
                   // Show waiting screen when no remote users
@@ -309,12 +329,20 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                         ),
                         Text(
                           'Remote Users: ${_agoraService.remoteUsers.length}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 10),
+                          style: TextStyle(
+                            color: _agoraService.remoteUsers.isEmpty ? Colors.red : Colors.green, 
+                            fontSize: 10
+                          ),
                         ),
                         if (_agoraService.remoteUsers.isNotEmpty)
                           Text(
                             'Broadcasting UID: ${_agoraService.remoteUsers.first}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 10),
+                            style: const TextStyle(color: Colors.green, fontSize: 10),
+                          )
+                        else
+                          Text(
+                            'No broadcaster detected',
+                            style: const TextStyle(color: Colors.red, fontSize: 10),
                           ),
                       ],
                     ),
