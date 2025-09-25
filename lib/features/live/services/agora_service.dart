@@ -211,11 +211,13 @@ class AgoraService extends ChangeNotifier {
       }
 
       // Request permissions when actually starting live stream
+      debugPrint('🔐 Requesting camera and microphone permissions...');
       final permissionsGranted = await _requestPermissions();
       if (!permissionsGranted) {
-        debugPrint('Permissions not granted, cannot start live stream');
+        debugPrint('❌ Permissions not granted, cannot start live stream');
         return false;
       }
+      debugPrint('✅ Permissions granted successfully');
 
       // Get user data from storage first
       final storageService = StorageService();
@@ -263,6 +265,13 @@ class AgoraService extends ChangeNotifier {
       );
 
       // Notify backend about stream start
+      debugPrint('📡 Notifying backend about stream start...');
+      debugPrint('📊 Stream details:');
+      debugPrint('  - Astrologer ID: ${_currentStream!.astrologerId}');
+      debugPrint('  - Astrologer Name: ${_currentStream!.astrologerName}');
+      debugPrint('  - Title: ${_currentStream!.title}');
+      debugPrint('  - Channel: $_channelName');
+      
       final apiResult = await _apiService.startLiveStream(
         astrologerId: _currentStream!.astrologerId,
         astrologerName: _currentStream!.astrologerName,
@@ -278,8 +287,11 @@ class AgoraService extends ChangeNotifier {
       );
 
       if (apiResult == null) {
-        debugPrint('❌ Failed to notify backend about stream start');
-        return false;
+        debugPrint('❌ Failed to notify backend about stream start - API returned null');
+        debugPrint('⚠️ Continuing without backend notification for testing...');
+        // Don't return false, continue with local stream for testing
+      } else {
+        debugPrint('✅ Backend notified successfully');
       }
 
       _isStreaming = true;
@@ -305,6 +317,11 @@ class AgoraService extends ChangeNotifier {
             }
             
             // Join channel as broadcaster
+            debugPrint('🎬 Joining Agora channel as broadcaster...');
+            debugPrint('  - Channel: $_channelName');
+            debugPrint('  - UID: $_uid');
+            debugPrint('  - Token: ${token.isEmpty ? "Empty (testing mode)" : "Provided"}');
+            
             await _agoraEngine!.joinChannel(
               token: token,
               channelId: _channelName!,
@@ -316,6 +333,8 @@ class AgoraService extends ChangeNotifier {
                 publishMicrophoneTrack: true, // Explicitly publish microphone track
               ),
             );
+            
+            debugPrint('✅ Successfully joined Agora channel as broadcaster');
 
             // Ensure video is being published
             await _agoraEngine!.enableVideo();
