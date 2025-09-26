@@ -63,6 +63,16 @@ app.get('/live-viewer.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../live-viewer.js'));
 });
 
+// Serve Agora viewer page
+app.get('/agora-viewer.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../agora-viewer.html'));
+});
+
+// Serve Agora viewer JavaScript
+app.get('/agora-viewer.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../agora-viewer.js'));
+});
+
 // Database connection
 const connectDB = async () => {
   try {
