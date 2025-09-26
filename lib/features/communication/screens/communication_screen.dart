@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/constants/app_constants.dart';
 import 'chat_screen.dart';
 import 'dialer_screen.dart';
@@ -29,22 +31,25 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Communication'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppTheme.textColor,
-      ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            title: const Text('Communication'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            foregroundColor: themeService.textPrimary,
+          ),
       body: Column(
         children: [
           // Tab Bar
           Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(16),
+              color: themeService.cardColor,
+              borderRadius: themeService.borderRadius,
+              border: Border.all(color: themeService.borderColor),
             ),
             child: Row(
               children: [
@@ -54,23 +59,17 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _selectedTab == 0 ? Colors.white : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+                        color: _selectedTab == 0 ? themeService.surfaceColor : Colors.transparent,
+                        borderRadius: themeService.borderRadius,
                         boxShadow: _selectedTab == 0
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
+                            ? [themeService.cardShadow]
                             : null,
                       ),
                       child: Text(
                         'Calls',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: _selectedTab == 0 ? AppTheme.primaryColor : Colors.grey[600],
+                          color: _selectedTab == 0 ? themeService.primaryColor : themeService.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -83,23 +82,17 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _selectedTab == 1 ? Colors.white : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+                        color: _selectedTab == 1 ? themeService.surfaceColor : Colors.transparent,
+                        borderRadius: themeService.borderRadius,
                         boxShadow: _selectedTab == 1
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
+                            ? [themeService.cardShadow]
                             : null,
                       ),
                       child: Text(
                         'Messages',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: _selectedTab == 1 ? AppTheme.primaryColor : Colors.grey[600],
+                          color: _selectedTab == 1 ? themeService.primaryColor : themeService.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -111,25 +104,27 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
           ),
           // Content
           Expanded(
-            child: _selectedTab == 0 ? _buildCallsList() : _buildMessagesList(),
+            child: _selectedTab == 0 ? _buildCallsList(themeService) : _buildMessagesList(themeService),
           ),
         ],
       ),
       floatingActionButton: _selectedTab == 0
           ? FloatingActionButton(
               onPressed: _showDialer,
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               child: const Icon(Icons.dialpad, color: Colors.white),
             )
           : FloatingActionButton(
               onPressed: _showNewMessageModal,
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               child: const Icon(Icons.message, color: Colors.white),
             ),
+        );
+      },
     );
   }
 
-  Widget _buildCallsList() {
+  Widget _buildCallsList(ThemeService themeService) {
     final calls = [
       {
         'name': 'Sarah Miller',
@@ -158,26 +153,26 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       itemCount: calls.length,
       itemBuilder: (context, index) {
         final call = calls[index];
-        return _buildCallItem(call);
+        return _buildCallItem(call, themeService);
       },
     );
   }
 
-  Widget _buildCallItem(Map<String, dynamic> call) {
-    Color statusColor = Colors.grey;
+  Widget _buildCallItem(Map<String, dynamic> call, ThemeService themeService) {
+    Color statusColor = themeService.textSecondary;
     IconData statusIcon = Icons.phone;
 
     switch (call['status']) {
       case 'answered':
-        statusColor = Colors.green;
+        statusColor = themeService.successColor;
         statusIcon = Icons.call_received;
         break;
       case 'missed':
-        statusColor = Colors.red;
+        statusColor = themeService.errorColor;
         statusIcon = Icons.call_missed;
         break;
       case 'outgoing':
-        statusColor = AppTheme.primaryColor;
+        statusColor = themeService.primaryColor;
         statusIcon = Icons.call_made;
         break;
     }
@@ -185,19 +180,13 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: themeService.cardColor,
+        borderRadius: themeService.borderRadius,
+        boxShadow: [themeService.cardShadow],
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppTheme.primaryColor,
+          backgroundColor: themeService.primaryColor,
           child: Text(
             call['avatar'],
             style: const TextStyle(
@@ -208,7 +197,10 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         ),
         title: Text(
           call['name'],
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: themeService.textPrimary,
+          ),
         ),
         subtitle: Row(
           children: [
@@ -216,7 +208,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
             const SizedBox(width: 8),
             Text(
               '${call['type']} • ${call['time']}',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: themeService.textSecondary),
             ),
           ],
         ),
@@ -225,11 +217,11 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
           children: [
             IconButton(
               onPressed: () => _makeCall(call['name']),
-              icon: const Icon(Icons.phone, color: Colors.green),
+              icon: Icon(Icons.phone, color: themeService.successColor),
             ),
             IconButton(
               onPressed: () => _openChat(call['name']),
-              icon: const Icon(Icons.message, color: AppTheme.primaryColor),
+              icon: Icon(Icons.message, color: themeService.primaryColor),
             ),
           ],
         ),
@@ -237,7 +229,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     );
   }
 
-  Widget _buildMessagesList() {
+  Widget _buildMessagesList(ThemeService themeService) {
     final messages = [
       {
         'name': 'Sarah Miller',
@@ -269,31 +261,25 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
-        return _buildMessageItem(message);
+        return _buildMessageItem(message, themeService);
       },
     );
   }
 
-  Widget _buildMessageItem(Map<String, dynamic> message) {
+  Widget _buildMessageItem(Map<String, dynamic> message, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: themeService.cardColor,
+        borderRadius: themeService.borderRadius,
+        boxShadow: [themeService.cardShadow],
       ),
       child: ListTile(
         onTap: () => _openChat(message['name']),
         leading: Stack(
           children: [
             CircleAvatar(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               child: Text(
                 message['avatar'],
                 style: const TextStyle(
@@ -310,9 +296,9 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: themeService.successColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: themeService.cardColor, width: 2),
                   ),
                 ),
               ),
@@ -320,12 +306,15 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         ),
         title: Text(
           message['name'],
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: themeService.textPrimary,
+          ),
         ),
         subtitle: Text(
           message['preview'],
           style: TextStyle(
-            color: Colors.grey[600],
+            color: themeService.textSecondary,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -336,7 +325,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
             Text(
               message['time'],
               style: TextStyle(
-                color: Colors.grey[500],
+                color: themeService.textHint,
                 fontSize: 12,
               ),
             ),
@@ -345,7 +334,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                 margin: const EdgeInsets.only(top: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: themeService.errorColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -368,7 +357,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Calling $name...'),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -394,30 +383,45 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   void _showNewMessageModal() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'New Message',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+      builder: (context) => Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: themeService.cardColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text('Select a contact to start messaging'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // TODO: Show contact picker
-              },
-              child: const Text('Choose Contact'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'New Message',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: themeService.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Select a contact to start messaging',
+                  style: TextStyle(color: themeService.textSecondary),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: Show contact picker
+                  },
+                  child: const Text('Choose Contact'),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

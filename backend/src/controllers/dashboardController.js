@@ -53,9 +53,6 @@ const getDashboardStats = async (req, res) => {
       ? sessionsWithRating.reduce((sum, session) => sum + session.rating, 0) / sessionsWithRating.length
       : 0;
 
-    // Get response time statistics
-    const responseTimeStats = astrologer.getResponseTimeStats();
-
     res.json({
       success: true,
       data: {
@@ -66,9 +63,7 @@ const getDashboardStats = async (req, res) => {
         isOnline: astrologer.isOnline,
         totalSessions,
         averageSessionDuration: avgDuration,
-        averageRating: avgRating,
-        averageResponseTime: responseTimeStats.averageResponseTime,
-        responseTimeStats: responseTimeStats
+        averageRating: avgRating
       }
     });
   } catch (error) {

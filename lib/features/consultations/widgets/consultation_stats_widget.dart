@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/consultation_model.dart';
+import '../screens/consultation_analytics_screen.dart';
+import '../../dashboard/screens/dashboard_screen.dart';
 
 class ConsultationStatsWidget extends StatelessWidget {
   final int todayCount;
@@ -79,8 +81,7 @@ class ConsultationStatsWidget extends StatelessWidget {
       shadowColor: Colors.black.withOpacity(0.1),
       child: InkWell(
         onTap: () {
-          // TODO: Add navigation based on card type
-          // For now, just show a subtle feedback
+          _handleCardTap(context, subtitle);
         },
         borderRadius: themeService.borderRadius,
         splashColor: color.withOpacity(0.15),
@@ -248,6 +249,30 @@ class ConsultationStatsWidget extends StatelessWidget {
       return '${difference.inMinutes}m';
     } else {
       return 'Now';
+    }
+  }
+
+  void _handleCardTap(BuildContext context, String subtitle) {
+    if (subtitle == 'Consultations') {
+      // Navigate to consultation analytics with weekly tab (index 0)
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ConsultationAnalyticsScreen(
+            initialTabIndex: 0, // Weekly analytics
+          ),
+        ),
+      );
+    } else if (subtitle == 'Earnings') {
+      // Navigate to earnings tab in main dashboard
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const DashboardScreen(
+            initialTabIndex: 3, // Earnings tab (index 3)
+          ),
+        ),
+      );
     }
   }
 }

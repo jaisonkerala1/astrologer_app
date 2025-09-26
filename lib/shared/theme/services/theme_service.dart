@@ -17,10 +17,13 @@ class ThemeService extends ChangeNotifier {
     
     try {
       final prefs = await SharedPreferences.getInstance();
-      final themeIndex = prefs.getInt(_themeKey) ?? 0;
+      final themeIndex = prefs.getInt(_themeKey);
       
-      if (themeIndex >= 0 && themeIndex < ThemeDefinitions.themes.length) {
+      if (themeIndex != null && themeIndex >= 0 && themeIndex < ThemeDefinitions.themes.length) {
         _currentTheme = ThemeDefinitions.themes[themeIndex];
+      } else {
+        // No saved theme, use Vedic as default (index 2)
+        _currentTheme = ThemeDefinitions.themes[2]; // Vedic theme
       }
     } catch (e) {
       debugPrint('Error loading theme: $e');
@@ -72,6 +75,18 @@ class ThemeService extends ChangeNotifier {
 
   bool isLightMode() {
     return _currentTheme.type == AppThemeType.light;
+  }
+
+  // Method to reset theme to default (Vedic)
+  Future<void> resetToDefaultTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_themeKey);
+      _currentTheme = ThemeDefinitions.getDefaultTheme();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error resetting theme: $e');
+    }
   }
 
   // Helper methods for common theme operations

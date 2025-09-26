@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import 'live_astrologer_circle_widget.dart';
+import '../../live/screens/live_stream_viewer_screen.dart';
+import '../../live/models/live_stream_model.dart';
+import '../../live/services/live_stream_service.dart';
 
 class LiveAstrologersStoriesWidget extends StatelessWidget {
   const LiveAstrologersStoriesWidget({super.key});
@@ -51,7 +54,7 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
                       onTap: () {
                         // Navigate to all live streams
                         HapticFeedback.lightImpact();
-                        Navigator.pushNamed(context, '/live-streaming-page');
+                        Navigator.pushNamed(context, '/live-streams');
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -103,15 +106,48 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     );
   }
 
-  void _handleAstrologerTap(BuildContext context, MockLiveAstrologer astrologer) {
+  void _handleAstrologerTap(BuildContext context, MockLiveAstrologer astrologer) async {
     HapticFeedback.lightImpact();
-    // TODO: Navigate to live stream viewer
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Joining ${astrologer.name}\'s live stream...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    
+    try {
+      // Convert MockLiveAstrologer to LiveStreamModel
+      final liveStream = LiveStreamModel(
+        id: astrologer.id,
+        astrologerId: astrologer.id,
+        astrologerName: astrologer.name,
+        astrologerProfilePicture: astrologer.profilePicture,
+        astrologerSpecialty: astrologer.specialty,
+        title: '${astrologer.specialty} Session',
+        description: 'Join me for a live ${astrologer.specialty.toLowerCase()} session!',
+        viewerCount: astrologer.viewerCount,
+        isLive: astrologer.isLive,
+        startedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        thumbnailUrl: astrologer.thumbnailUrl,
+        tags: [astrologer.specialty.toLowerCase()],
+        rating: 4.5 + (astrologer.viewerCount % 50) / 10, // Mock rating
+        totalSessions: 100 + astrologer.viewerCount,
+        isVerified: astrologer.viewerCount > 200,
+      );
+      
+      // Navigate to live stream viewer
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LiveStreamViewerScreen(
+            liveStream: liveStream,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to join live stream: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _handleAstrologerLongPress(BuildContext context, MockLiveAstrologer astrologer) {

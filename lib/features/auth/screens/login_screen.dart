@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -31,8 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthLoading) {
@@ -62,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: AppTheme.errorColor,
+                backgroundColor: themeService.errorColor,
               ),
             );
           }
@@ -77,17 +81,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo and Title
-                  const Icon(
+                  Icon(
                     Icons.star,
                     size: 80,
-                    color: AppTheme.primaryColor,
+                    color: themeService.primaryColor,
                   ),
                   const SizedBox(height: 24),
                   Text(
                     '${l10n.welcome}\n${l10n.appTitle}',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppTheme.primaryColor,
+                      color: themeService.primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -96,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Sign in to manage your astrology practice',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.textColor.withOpacity(0.7),
+                      color: themeService.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 48),
@@ -158,13 +162,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         text: TextSpan(
                           text: 'New to our platform? ',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textColor.withOpacity(0.7),
+                            color: themeService.textSecondary,
                           ),
                           children: [
                             TextSpan(
                               text: l10n.signup,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.primaryColor,
+                                color: themeService.primaryColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -180,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'By continuing, you agree to our Terms of Service and Privacy Policy',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textColor.withOpacity(0.6),
+                      color: themeService.textHint,
                     ),
                   ),
                 ],
@@ -189,6 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 

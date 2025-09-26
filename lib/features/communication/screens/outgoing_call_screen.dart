@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 
 class OutgoingCallScreen extends StatefulWidget {
   final String phoneNumber;
@@ -98,10 +100,12 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: Column(
           children: [
             // Status bar
             Container(
@@ -146,11 +150,11 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
                           width: 200,
                           height: 200,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor,
+                            color: themeService.primaryColor,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryColor.withOpacity(0.3),
+                                color: themeService.primaryColor.withOpacity(0.3),
                                 blurRadius: 20,
                                 spreadRadius: 5,
                               ),
@@ -214,9 +218,9 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
                       ),
                     ),
                   ] else if (_isConnected) ...[
-                    const Icon(
+                    Icon(
                       Icons.phone,
-                      color: Colors.green,
+                      color: themeService.successColor,
                       size: 32,
                     ),
                     const SizedBox(height: 16),
@@ -228,9 +232,9 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
                       ),
                     ),
                   ] else ...[
-                    const Icon(
+                    Icon(
                       Icons.call_end,
-                      color: Colors.red,
+                      color: themeService.errorColor,
                       size: 32,
                     ),
                     const SizedBox(height: 16),
@@ -247,14 +251,16 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
             ),
             
             // Call controls
-            if (_isConnected) _buildCallControls(),
+            if (_isConnected) _buildCallControls(themeService),
           ],
         ),
       ),
+        );
+      },
     );
   }
 
-  Widget _buildCallControls() {
+  Widget _buildCallControls(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(40),
       child: Row(
@@ -263,7 +269,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // Mute button
           _buildControlButton(
             icon: Icons.mic_off,
-            color: Colors.grey[600]!,
+            color: themeService.surfaceColor,
             onTap: () {
               HapticFeedback.lightImpact();
               // TODO: Implement mute functionality
@@ -273,7 +279,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // Speaker button
           _buildControlButton(
             icon: Icons.volume_up,
-            color: Colors.grey[600]!,
+            color: themeService.surfaceColor,
             onTap: () {
               HapticFeedback.lightImpact();
               // TODO: Implement speaker functionality
@@ -283,7 +289,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // Keypad button
           _buildControlButton(
             icon: Icons.dialpad,
-            color: Colors.grey[600]!,
+            color: themeService.surfaceColor,
             onTap: () {
               HapticFeedback.lightImpact();
               // TODO: Implement keypad functionality
@@ -293,7 +299,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // End call button
           _buildControlButton(
             icon: Icons.call_end,
-            color: Colors.red,
+            color: themeService.errorColor,
             onTap: () {
               HapticFeedback.lightImpact();
               _endCall();

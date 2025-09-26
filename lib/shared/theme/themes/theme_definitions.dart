@@ -125,6 +125,6 @@ class ThemeDefinitions {
   }
 
   static AppTheme getDefaultTheme() {
-    return _lightTheme;
+    return _vedicTheme;
   }
 }

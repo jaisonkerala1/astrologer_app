@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String contactName;
@@ -53,19 +55,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textColor),
-        ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(Icons.arrow_back, color: themeService.textPrimary),
+            ),
         title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               child: Text(
                 widget.contactName.split(' ').map((e) => e[0]).join(),
                 style: const TextStyle(
@@ -81,15 +85,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     widget.contactName,
-                    style: const TextStyle(
-                      color: AppTheme.textColor,
+                    style: TextStyle(
+                      color: themeService.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Online now',
                     style: TextStyle(
-                      color: Colors.green,
+                      color: themeService.successColor,
                       fontSize: 12,
                     ),
                   ),
@@ -101,11 +105,11 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           IconButton(
             onPressed: () => _makeCall(),
-            icon: const Icon(Icons.phone, color: Colors.green),
+            icon: Icon(Icons.phone, color: themeService.successColor),
           ),
           IconButton(
             onPressed: () => _showMoreOptions(),
-            icon: const Icon(Icons.more_vert, color: AppTheme.textColor),
+            icon: Icon(Icons.more_vert, color: themeService.textPrimary),
           ),
         ],
       ),
@@ -119,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return _buildMessageBubble(message);
+                return _buildMessageBubble(message, themeService);
               },
             ),
           ),
@@ -127,29 +131,26 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+              color: themeService.cardColor,
+              boxShadow: [themeService.cardShadow],
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: themeService.surfaceColor,
                       borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: themeService.borderColor),
                     ),
                     child: TextField(
                       controller: _messageController,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: themeService.textPrimary),
+                      decoration: InputDecoration(
                         hintText: 'Type a message...',
+                        hintStyle: TextStyle(color: themeService.textHint),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 12,
                         ),
@@ -167,7 +168,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
+                      color: themeService.primaryColor,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -182,10 +183,12 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> message) {
+  Widget _buildMessageBubble(Map<String, dynamic> message, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -197,7 +200,7 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!message['isMe']) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeService.primaryColor,
               child: Text(
                 widget.contactName.split(' ').map((e) => e[0]).join(),
                 style: const TextStyle(
@@ -216,7 +219,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: message['isMe'] ? AppTheme.primaryColor : Colors.grey[200],
+                color: message['isMe'] ? themeService.primaryColor : themeService.surfaceColor,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -230,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Text(
                     message['text'],
                     style: TextStyle(
-                      color: message['isMe'] ? Colors.white : Colors.black87,
+                      color: message['isMe'] ? Colors.white : themeService.textPrimary,
                       fontSize: 15,
                     ),
                   ),
@@ -240,7 +243,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: TextStyle(
                       color: message['isMe']
                           ? Colors.white.withOpacity(0.7)
-                          : Colors.grey[600],
+                          : themeService.textSecondary,
                       fontSize: 11,
                     ),
                   ),
@@ -252,10 +255,10 @@ class _ChatScreenState extends State<ChatScreen> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey[300],
-              child: const Icon(
+              backgroundColor: themeService.surfaceColor,
+              child: Icon(
                 Icons.person,
-                color: Colors.white,
+                color: themeService.textSecondary,
                 size: 16,
               ),
             ),
@@ -296,7 +299,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Calling ${widget.contactName}...'),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -304,49 +307,61 @@ class _ChatScreenState extends State<ChatScreen> {
   void _showMoreOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.call, color: Colors.green),
-              title: const Text('Call'),
-              onTap: () {
-                Navigator.pop(context);
-                _makeCall();
-              },
+      builder: (context) => Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: themeService.cardColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.videocam, color: AppTheme.primaryColor),
-              title: const Text('Video Call'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement video call
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.call, color: themeService.successColor),
+                  title: Text('Call', style: TextStyle(color: themeService.textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _makeCall();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.videocam, color: themeService.primaryColor),
+                  title: Text('Video Call', style: TextStyle(color: themeService.textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Implement video call
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.info, color: themeService.infoColor),
+                  title: Text('Contact Info', style: TextStyle(color: themeService.textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Show contact info
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.block, color: themeService.errorColor),
+                  title: Text('Block Contact', style: TextStyle(color: themeService.textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Block contact
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.info, color: Colors.blue),
-              title: const Text('Contact Info'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Show contact info
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block, color: Colors.red),
-              title: const Text('Block Contact'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Block contact
-              },
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
+
 
 
 

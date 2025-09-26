@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -59,54 +61,56 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is OtpSentState) {
-          setState(() {
-            _isLoading = false;
-          });
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OtpVerificationScreen(
-                phoneNumber: _phoneController.text,
-                otpId: state.otpId,
-                isSignup: true,
-                signupData: {
-                  'name': _nameController.text,
-                  'email': _emailController.text,
-                  'experience': int.tryParse(_experienceController.text) ?? 0,
-                  'specializations': _selectedSpecializations,
-                  'languages': _selectedLanguages,
-                },
-              ),
-            ),
-          );
-        } else if (state is AuthErrorState) {
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is OtpSentState) {
+              setState(() {
+                _isLoading = false;
+              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OtpVerificationScreen(
+                    phoneNumber: _phoneController.text,
+                    otpId: state.otpId,
+                    isSignup: true,
+                    signupData: {
+                      'name': _nameController.text,
+                      'email': _emailController.text,
+                      'experience': int.tryParse(_experienceController.text) ?? 0,
+                      'specializations': _selectedSpecializations,
+                      'languages': _selectedLanguages,
+                    },
+                  ),
+                ),
+              );
+            } else if (state is AuthErrorState) {
+              setState(() {
+                _isLoading = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: themeService.errorColor,
+                ),
+              );
+            }
+          },
+          child: Scaffold(
+            backgroundColor: themeService.backgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: themeService.cardColor,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.textColor),
+            icon: Icon(Icons.arrow_back, color: themeService.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'Create Account',
             style: TextStyle(
-              color: AppTheme.textColor,
+              color: themeService.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
@@ -447,6 +451,8 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 

@@ -1,34 +1,28 @@
-class LiveCommentModel {
+class LiveReactionModel {
   final String id;
   final String streamId;
   final String userId;
   final String userName;
-  final String? userProfilePicture;
-  final String message;
+  final String emoji;
   final DateTime timestamp;
-  final bool isFromViewer;
 
-  LiveCommentModel({
+  LiveReactionModel({
     required this.id,
     required this.streamId,
     required this.userId,
     required this.userName,
-    this.userProfilePicture,
-    required this.message,
+    required this.emoji,
     required this.timestamp,
-    required this.isFromViewer,
   });
 
-  factory LiveCommentModel.fromJson(Map<String, dynamic> json) {
-    return LiveCommentModel(
+  factory LiveReactionModel.fromJson(Map<String, dynamic> json) {
+    return LiveReactionModel(
       id: json['id'] ?? '',
       streamId: json['streamId'] ?? '',
       userId: json['userId'] ?? '',
       userName: json['userName'] ?? '',
-      userProfilePicture: json['userProfilePicture'],
-      message: json['message'] ?? '',
+      emoji: json['emoji'] ?? '',
       timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
-      isFromViewer: json['isFromViewer'] ?? false,
     );
   }
 
@@ -38,10 +32,8 @@ class LiveCommentModel {
       'streamId': streamId,
       'userId': userId,
       'userName': userName,
-      'userProfilePicture': userProfilePicture,
-      'message': message,
+      'emoji': emoji,
       'timestamp': timestamp.toIso8601String(),
-      'isFromViewer': isFromViewer,
     };
   }
 
@@ -49,14 +41,16 @@ class LiveCommentModel {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
     
-    if (difference.inMinutes < 1) {
+    if (difference.inSeconds < 10) {
       return 'now';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds}s';
     } else if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h';
     } else {
-      return '${difference.inDays}d';
+      return '${difference.inHours}h';
     }
   }
 }
+
+

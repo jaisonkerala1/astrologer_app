@@ -36,9 +36,15 @@ import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
+import '../../live/screens/live_preparation_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final int? initialTabIndex;
+  
+  const DashboardScreen({
+    super.key,
+    this.initialTabIndex,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -52,6 +58,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Set initial tab if provided
+    if (widget.initialTabIndex != null) {
+      _selectedIndex = widget.initialTabIndex!;
+    }
+    
     // Set status bar style for transparent status bar
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -134,22 +146,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Go Live button method
   void _goLive() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Going Live - Coming Soon!',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        backgroundColor: const Color(0xFFFF4444),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        margin: const EdgeInsets.all(16),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LivePreparationScreen(),
       ),
     );
   }
@@ -277,7 +277,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     label: l10n.consultations,
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.auto_awesome),
+                    icon: const Icon(Icons.healing_outlined),
                     label: l10n.heal,
                   ),
                   BottomNavigationBarItem(
@@ -472,8 +472,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             // Calendar Card
             CalendarCardWidget(
-              todayBookings: stats.todayCount,
-              upcomingBookings: 5, // Mock data - replace with actual upcoming bookings
               onTap: () {
                 // Navigate to calendar screen
                 Navigator.push(

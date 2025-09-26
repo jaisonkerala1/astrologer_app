@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
+import 'live_streaming_screen.dart';
 
 class LivePreparationScreen extends StatefulWidget {
   const LivePreparationScreen({super.key});
@@ -604,7 +605,11 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
 
       if (success && mounted) {
         // Navigate to live streaming screen
-        Navigator.of(context).pushReplacementNamed('/live-streaming');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const LiveStreamingScreen(),
+          ),
+        );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

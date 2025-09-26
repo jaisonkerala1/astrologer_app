@@ -9,15 +9,15 @@ import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
-import '../features/live/screens/live_streaming_page.dart';
 import '../features/consultations/screens/consultation_analytics_screen.dart';
+import '../features/live/screens/live_streams_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
-  static const String liveStreamingPage = '/live-streaming-page';
   static const String consultationAnalytics = '/consultation-analytics';
+  static const String liveStreams = '/live-streams';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -33,15 +33,15 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => const DashboardScreen(),
         );
-      case liveStreamingPage:
-        return MaterialPageRoute(
-          builder: (_) => const LiveStreamingPage(),
-        );
       case consultationAnalytics:
         final args = settings.arguments as Map<String, dynamic>?;
         final initialTabIndex = args?['initialTabIndex'] as int? ?? 2;
         return MaterialPageRoute(
           builder: (_) => ConsultationAnalyticsScreen(initialTabIndex: initialTabIndex),
+        );
+      case liveStreams:
+        return MaterialPageRoute(
+          builder: (_) => const LiveStreamsScreen(),
         );
       default:
         return MaterialPageRoute(

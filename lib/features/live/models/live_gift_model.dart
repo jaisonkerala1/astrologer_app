@@ -1,34 +1,34 @@
-class LiveCommentModel {
+class LiveGiftModel {
   final String id;
   final String streamId;
   final String userId;
   final String userName;
-  final String? userProfilePicture;
-  final String message;
+  final String giftName;
+  final String giftEmoji;
+  final int giftValue;
   final DateTime timestamp;
-  final bool isFromViewer;
 
-  LiveCommentModel({
+  LiveGiftModel({
     required this.id,
     required this.streamId,
     required this.userId,
     required this.userName,
-    this.userProfilePicture,
-    required this.message,
+    required this.giftName,
+    required this.giftEmoji,
+    required this.giftValue,
     required this.timestamp,
-    required this.isFromViewer,
   });
 
-  factory LiveCommentModel.fromJson(Map<String, dynamic> json) {
-    return LiveCommentModel(
+  factory LiveGiftModel.fromJson(Map<String, dynamic> json) {
+    return LiveGiftModel(
       id: json['id'] ?? '',
       streamId: json['streamId'] ?? '',
       userId: json['userId'] ?? '',
       userName: json['userName'] ?? '',
-      userProfilePicture: json['userProfilePicture'],
-      message: json['message'] ?? '',
+      giftName: json['giftName'] ?? '',
+      giftEmoji: json['giftEmoji'] ?? '',
+      giftValue: json['giftValue'] ?? 0,
       timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
-      isFromViewer: json['isFromViewer'] ?? false,
     );
   }
 
@@ -38,10 +38,10 @@ class LiveCommentModel {
       'streamId': streamId,
       'userId': userId,
       'userName': userName,
-      'userProfilePicture': userProfilePicture,
-      'message': message,
+      'giftName': giftName,
+      'giftEmoji': giftEmoji,
+      'giftValue': giftValue,
       'timestamp': timestamp.toIso8601String(),
-      'isFromViewer': isFromViewer,
     };
   }
 
@@ -49,14 +49,24 @@ class LiveCommentModel {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
     
-    if (difference.inMinutes < 1) {
+    if (difference.inSeconds < 10) {
       return 'now';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds}s';
     } else if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h';
     } else {
-      return '${difference.inDays}d';
+      return '${difference.inHours}h';
+    }
+  }
+
+  String get formattedValue {
+    if (giftValue >= 1000) {
+      return '${(giftValue / 1000).toStringAsFixed(1)}K';
+    } else {
+      return giftValue.toString();
     }
   }
 }
+
+

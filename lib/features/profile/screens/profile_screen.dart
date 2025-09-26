@@ -23,7 +23,10 @@ import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../help_support/screens/help_support_screen.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
 import '../../theme/screens/theme_selection_screen.dart';
+import '../../settings/screens/privacy_settings_screen.dart';
+import '../../settings/screens/terms_privacy_screen.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
+import 'about_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -186,7 +189,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               );
                             }, themeService),
-                            _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {}, themeService),
+                            _buildSettingsTile(Icons.security_outlined, AppLocalizations.of(context)!.privacy, 'Manage your privacy settings', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const PrivacySettingsScreen(),
+                                ),
+                              );
+                            }, themeService),
                           ],
                           themeService,
                         ),
@@ -204,8 +214,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               );
                             }, themeService),
-                            _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {}, themeService),
-                            _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {}, themeService),
+                            _buildSettingsTile(Icons.info_outline, AppLocalizations.of(context)!.about, 'App version and information', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AboutScreen(),
+                                ),
+                              );
+                            }, themeService),
+                            _buildSettingsTile(Icons.policy_outlined, 'Terms & Privacy', 'Read our terms and privacy policy', () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const TermsPrivacyScreen(),
+                                ),
+                              );
+                            }, themeService),
                           ],
                           themeService,
                         ),

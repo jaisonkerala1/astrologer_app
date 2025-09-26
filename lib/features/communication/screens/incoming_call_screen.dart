@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final String phoneNumber;
@@ -88,12 +90,14 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: Column(
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Column(
             children: [
               // Status bar
               Container(
@@ -133,11 +137,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                             width: 200,
                             height: 200,
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
+                              color: themeService.primaryColor,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(0.3),
+                                  color: themeService.primaryColor.withOpacity(0.3),
                                   blurRadius: 30,
                                   spreadRadius: 10,
                                 ),
@@ -193,9 +197,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                         ),
                       ),
                     ] else if (_isConnected) ...[
-                      const Icon(
+                      Icon(
                         Icons.phone,
-                        color: Colors.green,
+                        color: themeService.successColor,
                         size: 32,
                       ),
                       const SizedBox(height: 16),
@@ -207,9 +211,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                         ),
                       ),
                     ] else ...[
-                      const Icon(
+                      Icon(
                         Icons.call_end,
-                        color: Colors.red,
+                        color: themeService.errorColor,
                         size: 32,
                       ),
                       const SizedBox(height: 16),
@@ -227,17 +231,19 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               
               // Call controls
               if (_isRinging)
-                _buildIncomingCallControls()
+                _buildIncomingCallControls(themeService)
               else if (_isConnected)
-                _buildActiveCallControls(),
+                _buildActiveCallControls(themeService),
             ],
           ),
         ),
       ),
+        );
+      },
     );
   }
 
-  Widget _buildIncomingCallControls() {
+  Widget _buildIncomingCallControls(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(40),
       child: Row(
@@ -253,11 +259,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.green,
+                color: themeService.successColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.4),
+                    color: themeService.successColor.withOpacity(0.4),
                     blurRadius: 16,
                     spreadRadius: 3,
                     offset: const Offset(0, 4),
@@ -282,11 +288,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.grey[600],
+                color: themeService.surfaceColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: themeService.borderColor.withOpacity(0.3),
                     blurRadius: 8,
                     spreadRadius: 2,
                     offset: const Offset(0, 4),
@@ -311,11 +317,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: themeService.errorColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.4),
+                    color: themeService.errorColor.withOpacity(0.4),
                     blurRadius: 16,
                     spreadRadius: 3,
                     offset: const Offset(0, 4),
@@ -334,7 +340,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     );
   }
 
-  Widget _buildActiveCallControls() {
+  Widget _buildActiveCallControls(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(40),
       child: Row(
@@ -343,7 +349,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Mute button
           _buildControlButton(
             icon: Icons.mic_off,
-            color: Colors.grey[600]!,
+            color: themeService.surfaceColor,
             onTap: () {
               HapticFeedback.lightImpact();
               // TODO: Implement mute functionality
@@ -353,7 +359,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Speaker button
           _buildControlButton(
             icon: Icons.volume_up,
-            color: Colors.grey[600]!,
+            color: themeService.surfaceColor,
             onTap: () {
               HapticFeedback.lightImpact();
               // TODO: Implement speaker functionality
@@ -363,7 +369,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Keypad button
           _buildControlButton(
             icon: Icons.dialpad,
-            color: Colors.grey[600]!,
+            color: themeService.surfaceColor,
             onTap: () {
               HapticFeedback.lightImpact();
               // TODO: Implement keypad functionality
@@ -373,7 +379,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // End call button
           _buildControlButton(
             icon: Icons.call_end,
-            color: Colors.red,
+            color: themeService.errorColor,
             onTap: () {
               HapticFeedback.lightImpact();
               _endCall();
@@ -465,7 +471,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Message sent to ${widget.contactName}'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }

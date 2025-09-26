@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import 'outgoing_call_screen.dart';
 
 class DialerScreen extends StatefulWidget {
@@ -22,15 +24,17 @@ class _DialerScreenState extends State<DialerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: themeService.cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
       child: Column(
         children: [
           // Handle bar
@@ -39,7 +43,7 @@ class _DialerScreenState extends State<DialerScreen> {
             height: 4,
             margin: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: themeService.borderColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -51,20 +55,21 @@ class _DialerScreenState extends State<DialerScreen> {
               children: [
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: themeService.textSecondary),
                 ),
-                const Text(
+                Text(
                   'Dialer',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
+                    color: themeService.textPrimary,
                   ),
                 ),
                 const Spacer(),
                 if (_phoneNumber.isNotEmpty)
                   IconButton(
                     onPressed: _clearNumber,
-                    icon: const Icon(Icons.backspace, color: Colors.grey),
+                    icon: Icon(Icons.backspace, color: themeService.textSecondary),
                   ),
               ],
             ),
@@ -75,20 +80,20 @@ class _DialerScreenState extends State<DialerScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
+              color: themeService.surfaceColor,
+              borderRadius: themeService.borderRadius,
+              border: Border.all(color: themeService.borderColor),
             ),
             child: Row(
               children: [
-                const Icon(Icons.phone, color: AppTheme.primaryColor),
+                Icon(Icons.phone, color: themeService.primaryColor),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _phoneNumber.isEmpty ? 'Enter phone number' : _phoneNumber,
                     style: TextStyle(
                       fontSize: 18,
-                      color: _phoneNumber.isEmpty ? Colors.grey[500] : Colors.black87,
+                      color: _phoneNumber.isEmpty ? themeService.textHint : themeService.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -107,9 +112,9 @@ class _DialerScreenState extends State<DialerScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        _buildDialButton('1', ''),
-                        _buildDialButton('2', 'ABC'),
-                        _buildDialButton('3', 'DEF'),
+                        _buildDialButton('1', '', themeService),
+                        _buildDialButton('2', 'ABC', themeService),
+                        _buildDialButton('3', 'DEF', themeService),
                       ],
                     ),
                   ),
@@ -117,9 +122,9 @@ class _DialerScreenState extends State<DialerScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        _buildDialButton('4', 'GHI'),
-                        _buildDialButton('5', 'JKL'),
-                        _buildDialButton('6', 'MNO'),
+                        _buildDialButton('4', 'GHI', themeService),
+                        _buildDialButton('5', 'JKL', themeService),
+                        _buildDialButton('6', 'MNO', themeService),
                       ],
                     ),
                   ),
@@ -127,9 +132,9 @@ class _DialerScreenState extends State<DialerScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        _buildDialButton('7', 'PQRS'),
-                        _buildDialButton('8', 'TUV'),
-                        _buildDialButton('9', 'WXYZ'),
+                        _buildDialButton('7', 'PQRS', themeService),
+                        _buildDialButton('8', 'TUV', themeService),
+                        _buildDialButton('9', 'WXYZ', themeService),
                       ],
                     ),
                   ),
@@ -137,9 +142,9 @@ class _DialerScreenState extends State<DialerScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        _buildDialButton('*', ''),
-                        _buildDialButton('0', '+'),
-                        _buildDialButton('#', ''),
+                        _buildDialButton('*', '', themeService),
+                        _buildDialButton('0', '+', themeService),
+                        _buildDialButton('#', '', themeService),
                       ],
                     ),
                   ),
@@ -159,12 +164,12 @@ class _DialerScreenState extends State<DialerScreen> {
                     child: Container(
                       height: 60,
                       decoration: BoxDecoration(
-                        color: _phoneNumber.isNotEmpty ? Colors.green : Colors.grey[300],
+                        color: _phoneNumber.isNotEmpty ? themeService.successColor : themeService.surfaceColor,
                         shape: BoxShape.circle,
                         boxShadow: _phoneNumber.isNotEmpty
                             ? [
                                 BoxShadow(
-                                  color: Colors.green.withOpacity(0.3),
+                                  color: themeService.successColor.withOpacity(0.3),
                                   blurRadius: 8,
                                   spreadRadius: 2,
                                   offset: const Offset(0, 4),
@@ -174,7 +179,7 @@ class _DialerScreenState extends State<DialerScreen> {
                       ),
                       child: Icon(
                         Icons.call,
-                        color: _phoneNumber.isNotEmpty ? Colors.white : Colors.grey[500],
+                        color: _phoneNumber.isNotEmpty ? Colors.white : themeService.textSecondary,
                         size: 28,
                       ),
                     ),
@@ -185,10 +190,12 @@ class _DialerScreenState extends State<DialerScreen> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
-  Widget _buildDialButton(String number, String letters) {
+  Widget _buildDialButton(String number, String letters, ThemeService themeService) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.all(4),
@@ -201,26 +208,20 @@ class _DialerScreenState extends State<DialerScreen> {
               height: 80,
               width: 80,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: themeService.surfaceColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey[200]!),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: themeService.borderColor),
+                boxShadow: [themeService.cardShadow],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     number,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: themeService.textPrimary,
                     ),
                   ),
                   if (letters.isNotEmpty)
@@ -228,7 +229,7 @@ class _DialerScreenState extends State<DialerScreen> {
                       letters,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: themeService.textSecondary,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
