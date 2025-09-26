@@ -14,8 +14,28 @@ const server = http.createServer(app);
 const PORT = 7566; // Force port 7566
 console.log('🚀 Server starting - force redeploy 2025-09-20 v3 with OTP ObjectId fix');
 
-// Security middleware
-app.use(helmet());
+// Security middleware with relaxed CSP for Agora SDK
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://web-cdn.agora.io",
+        "https://download.agora.io",
+        "https://webdemo.agora.io"
+      ],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:", "wss:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'", "https:"],
+      frameSrc: ["'self'", "https://webdemo.agora.io"]
+    }
+  }
+}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -81,6 +101,11 @@ app.get('/simple-viewer.html', (req, res) => {
 // Serve simple viewer JavaScript
 app.get('/simple-viewer.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../simple-viewer.js'));
+});
+
+// Serve standalone viewer page
+app.get('/standalone-viewer.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../standalone-viewer.html'));
 });
 
 // Database connection
