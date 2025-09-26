@@ -58,6 +58,11 @@ app.get('/live-viewer.html', (req, res) => {
   res.sendFile(path.join(__dirname, '../live-viewer.html'));
 });
 
+// Serve live viewer JavaScript
+app.get('/live-viewer.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../live-viewer.js'));
+});
+
 // Database connection
 const connectDB = async () => {
   try {
