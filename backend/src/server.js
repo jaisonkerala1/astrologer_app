@@ -53,6 +53,11 @@ app.get('/admin-dashboard.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin-dashboard.js'));
 });
 
+// Serve live viewer page
+app.get('/live-viewer.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../live-viewer.html'));
+});
+
 // Database connection
 const connectDB = async () => {
   try {
