@@ -48,6 +48,11 @@ app.get('/admin-dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin-dashboard.html'));
 });
 
+// Serve admin dashboard JavaScript
+app.get('/admin-dashboard.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin-dashboard.js'));
+});
+
 // Database connection
 const connectDB = async () => {
   try {
