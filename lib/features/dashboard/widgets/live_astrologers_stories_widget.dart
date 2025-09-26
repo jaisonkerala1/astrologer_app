@@ -5,6 +5,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import 'live_astrologer_circle_widget.dart';
 import '../../live/services/agora_service.dart';
 import '../../live/models/live_stream_model.dart';
+import '../../../core/services/websocket_service.dart';
 
 class LiveAstrologersStoriesWidget extends StatefulWidget {
   const LiveAstrologersStoriesWidget({super.key});
@@ -15,16 +16,23 @@ class LiveAstrologersStoriesWidget extends StatefulWidget {
 
 class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWidget> {
   AgoraService? _agoraService;
+  WebSocketService? _webSocketService;
 
   @override
   void initState() {
     super.initState();
-    _initializeAgoraService();
+    _initializeServices();
   }
 
-  void _initializeAgoraService() async {
-    _agoraService = AgoraService(); // Use factory constructor (singleton)
+  void _initializeServices() async {
+    // Initialize Agora service
+    _agoraService = AgoraService();
     await _agoraService!.initialize();
+    
+    // Initialize WebSocket service for real-time updates
+    _webSocketService = WebSocketService();
+    await _webSocketService!.connect();
+    
     if (mounted) {
       setState(() {});
     }
@@ -34,6 +42,7 @@ class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWid
   void dispose() {
     // Don't dispose the singleton instance, just clear the reference
     _agoraService = null;
+    _webSocketService = null;
     super.dispose();
   }
 
@@ -119,9 +128,9 @@ class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWid
               
               // Horizontal scrolling live astrologers
               Expanded(
-                child: _agoraService != null 
+                child: _agoraService != null && _webSocketService != null
                     ? ListenableBuilder(
-                        listenable: _agoraService!,
+                        listenable: _webSocketService!,
                         builder: (context, child) => _buildLiveStreamsList(),
                       )
                     : _buildNoLiveStreamsMessage(),
@@ -182,22 +191,22 @@ class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWid
   }
 
   List<LiveStreamModel> _getLiveStreams() {
-    if (_agoraService == null) return [];
+    if (_agoraService == null || _webSocketService == null) return [];
     
     List<LiveStreamModel> allLiveStreams = [];
     
-    // Add current stream if it's live
+    // Get live streams from WebSocket service (real-time updates from backend)
+    allLiveStreams.addAll(
+      _webSocketService!.activeStreams
+          .where((stream) => stream.status == LiveStreamStatus.live)
+          .toList()
+    );
+    
+    // Add current stream if it's live (for the broadcaster)
     if (_agoraService!.currentStream != null && 
         _agoraService!.currentStream!.status == LiveStreamStatus.live) {
       allLiveStreams.add(_agoraService!.currentStream!);
     }
-    
-    // Add other live streams from the list
-    allLiveStreams.addAll(
-      _agoraService!.liveStreams
-          .where((stream) => stream.status == LiveStreamStatus.live)
-          .toList()
-    );
     
     // Remove duplicates based on stream ID
     final uniqueStreams = <String, LiveStreamModel>{};
