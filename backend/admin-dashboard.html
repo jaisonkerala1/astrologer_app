@@ -117,6 +117,7 @@
         </div>
 
         <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+        <button class="refresh-btn" onclick="testAPI()" style="margin-left: 10px; background-color: #28a745;">🧪 Test API</button>
 
         <div id="loading" class="loading">
             Loading live streams data...
@@ -176,8 +177,24 @@
             document.getElementById('noStreams').style.display = 'none';
 
             try {
-                const response = await fetch(`${API_BASE}/live-streams/status`);
+                console.log('Fetching data from:', `${API_BASE}/live-streams/status`);
+                const response = await fetch(`${API_BASE}/live-streams/status`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    mode: 'cors'
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Response data:', data);
 
                 if (data.success) {
                     displayData(data.data);
@@ -248,6 +265,29 @@
 
         // Auto-refresh every 10 seconds
         setInterval(refreshData, 10000);
+
+        // Test API function
+        async function testAPI() {
+            try {
+                console.log('Testing API endpoints...');
+                
+                // Test health endpoint
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                const healthData = await healthResponse.json();
+                console.log('Health check:', healthData);
+                
+                // Test live streams endpoint
+                const streamsResponse = await fetch(`${API_BASE}/live-streams/status`);
+                const streamsData = await streamsResponse.json();
+                console.log('Live streams:', streamsData);
+                
+                alert(`API Test Results:\n\nHealth: ${healthData.status}\nStreams: ${streamsData.success ? 'Success' : 'Failed'}\nActive Streams: ${streamsData.data?.totalActiveStreams || 0}\n\nCheck browser console for details.`);
+                
+            } catch (error) {
+                console.error('API Test Error:', error);
+                alert(`API Test Failed: ${error.message}`);
+            }
+        }
 
         // Load data on page load
         refreshData();
