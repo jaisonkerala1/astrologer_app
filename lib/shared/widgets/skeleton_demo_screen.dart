@@ -384,4 +384,3 @@ class _SkeletonDemoScreenState extends State<SkeletonDemoScreen> {
     );
   }
 }
-

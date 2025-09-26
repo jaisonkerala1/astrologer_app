@@ -80,6 +80,3 @@ class ChatSettings {
 
 
 
-
-
-

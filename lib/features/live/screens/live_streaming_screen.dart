@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/live_stream_model.dart';
-import '../services/agora_service.dart';
+import '../services/live_stream_service.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
-  final String streamId;
-  const LiveStreamingScreen({super.key, required this.streamId});
+  const LiveStreamingScreen({super.key});
 
   @override
   State<LiveStreamingScreen> createState() => _LiveStreamingScreenState();
@@ -15,7 +13,7 @@ class LiveStreamingScreen extends StatefulWidget {
 
 class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     with TickerProviderStateMixin {
-  final AgoraService _agoraService = AgoraService();
+  final LiveStreamService _liveService = LiveStreamService();
   
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -65,9 +63,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     return Scaffold(
       backgroundColor: Colors.black,
       body: ListenableBuilder(
-        listenable: _agoraService,
+        listenable: _liveService,
         builder: (context, child) {
-          final stream = _agoraService.currentStream;
+          final stream = _liveService.currentStream;
           
           if (stream == null) {
             return const Center(
@@ -107,57 +105,48 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   Widget _buildCameraPreview() {
-    return ListenableBuilder(
-      listenable: _agoraService,
-      builder: (context, child) {
-        if (_agoraService.isStreaming && _agoraService.currentStream != null) {
-          // Real Agora video view for broadcaster
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black,
-            child: AgoraVideoView(
-              controller: VideoViewController(
-                rtcEngine: _agoraService.agoraEngine!,
-                canvas: const VideoCanvas(uid: 0), // 0 for local video
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.black,
+            Colors.grey.shade900,
+            Colors.black,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.videocam,
+              size: 80,
+              color: Colors.white.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Camera Preview',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 18,
               ),
             ),
-          );
-        } else {
-          // Fallback to loading screen
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black,
-                  Colors.grey.shade900,
-                  Colors.black,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+            const SizedBox(height: 8),
+            Text(
+              'Mock camera feed for demonstration',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.4),
+                fontSize: 14,
               ),
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Colors.white),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Starting Live Stream...',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -479,7 +468,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   Future<void> _endStream() async {
     HapticFeedback.mediumImpact();
     
-    final success = await _agoraService.endLiveStream();
+    final success = await _liveService.endLiveStream();
     
     if (success && mounted) {
       Navigator.of(context).pop();

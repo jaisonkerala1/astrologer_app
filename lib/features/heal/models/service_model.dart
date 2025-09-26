@@ -237,6 +237,3 @@ class ServiceAvailability {
 
 
 
-
-
-

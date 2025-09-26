@@ -24,7 +24,6 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
           onTap: onTap,
           onLongPress: onLongPress,
           child: Column(
-            mainAxisSize: MainAxisSize.min, // Minimize column height
             children: [
               // Main circle with Instagram Stories-style live border
               Container(
@@ -78,7 +77,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: themeService.surfaceColor,
                           ),
-                          child: (astrologer.thumbnailUrl != null && astrologer.thumbnailUrl.isNotEmpty)
+                          child: astrologer.thumbnailUrl.isNotEmpty
                               ? Image.network(
                                   astrologer.thumbnailUrl,
                                   width: 64,
@@ -88,7 +87,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                                     return ProfileAvatarWidget(
                                       imagePath: astrologer.profilePicture,
                                       radius: 32,
-                                      fallbackText: (astrologer.name != null && astrologer.name.isNotEmpty) 
+                                      fallbackText: astrologer.name.isNotEmpty 
                                           ? astrologer.name.substring(0, 1).toUpperCase()
                                           : 'A',
                                       backgroundColor: themeService.primaryColor,
@@ -118,7 +117,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                               : ProfileAvatarWidget(
                                   imagePath: astrologer.profilePicture,
                                   radius: 32,
-                                  fallbackText: (astrologer.name != null && astrologer.name.isNotEmpty) 
+                                  fallbackText: astrologer.name.isNotEmpty 
                                       ? astrologer.name.substring(0, 1).toUpperCase()
                                       : 'A',
                                   backgroundColor: themeService.primaryColor,
@@ -213,30 +212,28 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 4), // Reduced spacing
+              const SizedBox(height: 6),
               
               // Astrologer name
               SizedBox(
-                width: 80, // Increased width to prevent overflow
+                width: 70,
                 child: Text(
-                  astrologer.name ?? 'Unknown',
+                  astrologer.name,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: themeService.textPrimary,
-                    fontSize: 10, // Slightly smaller font
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    height: 1.2, // Reduced line height
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               
-              const SizedBox(height: 1), // Reduced spacing
+              const SizedBox(height: 2),
               
               // Viewer count
               Container(
-                width: 80, // Match the name container width
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: themeService.surfaceColor,
@@ -248,23 +245,19 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center, // Center the content
                   children: [
                     Icon(
                       Icons.visibility,
-                      size: 9, // Slightly smaller icon
+                      size: 10,
                       color: themeService.textSecondary,
                     ),
                     const SizedBox(width: 2),
-                    Flexible( // Use Flexible to prevent overflow
-                      child: Text(
-                        _formatViewerCount(astrologer.viewerCount ?? 0),
-                        style: TextStyle(
-                          color: themeService.textSecondary,
-                          fontSize: 8, // Slightly smaller font
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      _formatViewerCount(astrologer.viewerCount),
+                      style: TextStyle(
+                        color: themeService.textSecondary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

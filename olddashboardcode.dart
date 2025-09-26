@@ -9,7 +9,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
@@ -17,7 +16,6 @@ import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
 import '../widgets/stats_card_widget.dart';
 import '../widgets/calendar_card_widget.dart';
-import '../widgets/dashboard_skeleton_loader.dart';
 import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
@@ -31,11 +29,8 @@ import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
-import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notification_service.dart';
-import '../widgets/live_astrologers_stories_widget.dart';
-import '../widgets/minimal_availability_toggle_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -134,24 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Go Live button method
   void _goLive() {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Going Live - Coming Soon!',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        backgroundColor: const Color(0xFFFF4444),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    Navigator.pushNamed(context, '/live-preparation');
   }
 
   // Open notifications method
@@ -180,8 +158,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (imagePath.startsWith('/uploads/')) {
           final fullUrl = 'https://astrologerapp-production.up.railway.app$imagePath';
           print('🖼️ [DASHBOARD] Full URL: $fullUrl');
-          
-          // Return NetworkImage with error handling
           return NetworkImage(fullUrl);
         }
         print('🖼️ [DASHBOARD] Direct URL: $imagePath');
@@ -225,90 +201,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Scaffold(
-          backgroundColor: themeService.backgroundColor,
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _buildDashboardContent(),
-              const ConsultationsScreen(),
-              const HealScreen(),
-              const EarningsScreen(),
-              ProfileScreen(onProfileUpdated: refreshUserData),
-            ],
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          _buildDashboardContent(),
+          const ConsultationsScreen(),
+          const HealScreen(),
+          const EarningsScreen(),
+          ProfileScreen(onProfileUpdated: refreshUserData),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        height: 80, // Increased height for better touch targets
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: Color(0xFFE5E5E5),
+              width: 0.5,
+            ),
           ),
-          bottomNavigationBar: Container(
-            height: 80, // Increased height for better touch targets
-            decoration: BoxDecoration(
-              color: themeService.surfaceColor,
-              border: Border(
-                top: BorderSide(
-                  color: themeService.borderColor,
-                  width: 0.5,
-                ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            // Add soft haptic feedback
+            HapticFeedback.lightImpact();
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: AppTheme.primaryColor,
+          unselectedItemColor: const Color(0xFF9E9E9E),
+          selectedFontSize: 11,
+          unselectedFontSize: 10,
+          iconSize: 22, // Slightly larger icons for better visibility
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.dashboard_outlined),
+                label: l10n.dashboard,
               ),
-            ),
-            child: BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: (index) {
-                // Add soft haptic feedback
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              selectedItemColor: themeService.primaryColor,
-          unselectedItemColor: themeService.textSecondary,
-              selectedFontSize: 11,
-              unselectedFontSize: 10,
-              iconSize: 22, // Slightly larger icons for better visibility
-                items: [
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: l10n.dashboard,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.chat_bubble_outline),
-                    label: l10n.consultations,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.auto_awesome),
-                    label: l10n.heal,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.trending_up_outlined),
-                    label: l10n.earnings,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.account_circle_outlined),
-                    label: l10n.profile,
-                  ),
-                ],
-            ),
-          ),
-        );
-      },
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: l10n.consultations,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.auto_awesome),
+                label: l10n.heal,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.trending_up_outlined),
+                label: l10n.earnings,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.account_circle_outlined),
+                label: l10n.profile,
+              ),
+            ],
+        ),
+      ),
     );
   }
 
   Widget _buildDashboardContent() {
-        return AnnotatedRegion<SystemUiOverlayStyle>(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Color(0xFF1E40AF), // Force blue status bar
         statusBarIconBrightness: Brightness.light, // White icons
         statusBarBrightness: Brightness.light, // For iOS
-          ),
+      ),
       child: SafeArea(
         top: false, // Don't add top padding since we handle status bar manually
         child: Container(
           width: double.infinity,
           height: double.infinity,
-        child: BlocBuilder<DashboardBloc, DashboardState>(
+          child: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
             // Always show loading if user data is not ready yet
             if (_currentUser == null) {
@@ -363,7 +335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
           },
         ),
-        ),
+      ),
       ),
     );
   }
@@ -384,21 +356,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
             // Header (includes status toggle) - Full width
             _buildHeader(_currentUser),
-            
-            // Live Astrologers Stories Widget - Instagram Style
-            const LiveAstrologersStoriesWidget(),
-            
-            // Minimal Availability Toggle - Above Earnings Card
-            const MinimalAvailabilityToggleWidget(),
             
             // Content with padding
             Padding(
               padding: const EdgeInsets.all(AppConstants.defaultPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
             
             // Earnings Card
@@ -421,22 +389,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: StatsCardWidget(
-                    title: 'Calls Today',
-                    value: stats.callsToday.toString(),
-                    icon: Icons.phone,
-                    color: AppTheme.callsColor,
+                  child: GestureDetector(
                     onTap: () => _openCommunicationScreen('calls'),
+                    child: StatsCardWidget(
+                      title: 'Calls Today',
+                      value: stats.callsToday.toString(),
+                      icon: Icons.phone,
+                      color: AppTheme.callsColor,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: StatsCardWidget(
-                    title: 'Messages Today',
-                    value: '12', // Mock data - replace with actual messages today
-                    icon: Icons.message,
-                    color: AppTheme.primaryColor,
+                  child: GestureDetector(
                     onTap: () => _openCommunicationScreen('messages'),
+                    child: StatsCardWidget(
+                      title: 'Messages Today',
+                      value: '12', // Mock data - replace with actual messages today
+                      icon: Icons.message,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                 ),
               ],
@@ -446,12 +418,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: StatsCardWidget(
-                    title: 'Avg Rating',
-                    value: stats.averageRating.toStringAsFixed(1),
-                    icon: Icons.star,
-                    color: AppTheme.ratingColor,
+                  child: GestureDetector(
                     onTap: () => _openReviewsScreen(),
+                    child: StatsCardWidget(
+                      title: 'Avg Rating',
+                      value: stats.averageRating.toStringAsFixed(1),
+                      icon: Icons.star,
+                      color: AppTheme.ratingColor,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -461,9 +435,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
                     icon: Icons.timer,
                     color: AppTheme.secondaryColor,
-                    onTap: () {
-                      // TODO: Add navigation for average duration
-                    },
                   ),
                 ),
               ],
@@ -525,30 +496,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHeader(AstrologerModel? user) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        // Only modify for dark and Vedic themes, keep light theme original
-        if (themeService.isLightMode()) {
-          // Keep original light theme header
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: const SystemUiOverlayStyle(
-              statusBarColor: Color(0xFF1E40AF), // Force blue status bar
-              statusBarIconBrightness: Brightness.light, // White icons
-              statusBarBrightness: Brightness.light, // For iOS
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF1E40AF), // Force blue status bar
+        statusBarIconBrightness: Brightness.light, // White icons
+        statusBarBrightness: Brightness.light, // For iOS
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)], // Modern blue gradient
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Container(
-            width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)], // Modern blue gradient
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+        ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 0),
           child: Column(
@@ -570,14 +536,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                       ),
-                      child: ProfileAvatarWidget(
-                        imagePath: user?.profilePicture,
+                      child: CircleAvatar(
                         radius: 28,
-                        fallbackText: user?.name?.isNotEmpty == true 
-                                    ? user!.name!.substring(0, 1).toUpperCase()
-                            : 'A',
                         backgroundColor: Colors.white,
-                        textColor: const Color(0xFF1E40AF),
+                        backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
+                            ? _getImageProvider(user!.profilePicture!)
+                            : null,
+                        onBackgroundImageError: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
+                            ? (exception, stackTrace) {
+                                print('🖼️ [DASHBOARD] Profile picture error: $exception');
+                                print('🖼️ [DASHBOARD] Stack trace: $stackTrace');
+                              }
+                            : null,
+                        child: user?.profilePicture == null || user!.profilePicture!.isEmpty
+                            ? Text(
+                                user?.name?.isNotEmpty == true 
+                                    ? user!.name!.substring(0, 1).toUpperCase()
+                                    : 'J',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E40AF),
+                                ),
+                              )
+                            : null,
                       ),
                     ),
                   ),
@@ -630,173 +612,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-        );
-        } else {
-          // Enhanced header for dark and Vedic themes
-          LinearGradient headerGradient;
-          SystemUiOverlayStyle statusBarStyle;
-          
-          if (themeService.isVedicMode()) {
-            // Vedic theme: Dark gradient similar to earnings card
-            headerGradient = const LinearGradient(
-              colors: [
-                Color(0xFF1a1a2e), // Deep dark blue
-                Color(0xFF16213e), // Slightly lighter dark blue
-                Color(0xFF0f3460), // Dark blue with hint of purple
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: [0.0, 0.5, 1.0],
-            );
-            statusBarStyle = const SystemUiOverlayStyle(
-              statusBarColor: Color(0xFF1a1a2e),
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.light,
-            );
-          } else {
-            // Dark theme: Elegant dark gradient
-            headerGradient = LinearGradient(
-              colors: [
-                themeService.primaryColor.withOpacity(0.9),
-                themeService.primaryColor.withOpacity(0.7),
-                themeService.backgroundColor,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: const [0.0, 0.6, 1.0],
-            );
-            statusBarStyle = SystemUiOverlayStyle(
-              statusBarColor: themeService.primaryColor.withOpacity(0.9),
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.light,
-            );
-          }
-
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: statusBarStyle,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: headerGradient,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: themeService.isVedicMode() 
-                        ? Colors.black.withOpacity(0.4)
-                        : themeService.primaryColor.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 0),
-                child: Column(
-                  children: [
-                    // User info row
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            // Navigate to profile
-                            setState(() {
-                              _selectedIndex = 4; // Profile tab (updated index)
-                            });
-                          },
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: themeService.isVedicMode() 
-                                    ? Colors.white.withOpacity(0.2)
-                                    : Colors.white.withOpacity(0.3), 
-                                width: 2
-                              ),
-                            ),
-                            child: ProfileAvatarWidget(
-                              imagePath: user?.profilePicture,
-                              radius: 28,
-                              fallbackText: user?.name?.isNotEmpty == true 
-                                  ? user!.name!.substring(0, 1).toUpperCase()
-                                  : 'A',
-                              backgroundColor: themeService.isVedicMode() 
-                                  ? const Color(0xFF1a1a2e)
-                                  : Colors.white,
-                              textColor: themeService.isVedicMode() 
-                                  ? Colors.white
-                                  : themeService.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back!',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: themeService.isVedicMode() 
-                                      ? Colors.white.withOpacity(0.8)
-                                      : Colors.white.withOpacity(0.9),
-                            fontSize: 16,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.name ?? 'Loading...',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Header action buttons
-                  Row(
-                    children: [
-                      // Live Video Button
-                      _buildGoLiveButton(),
-                      const SizedBox(width: 12),
-                      // Notifications Button
-                      Consumer<NotificationService>(
-                        builder: (context, notificationService, child) {
-                          return _buildHeaderButton(
-                            icon: Icons.notifications_outlined,
-                            onTap: _openNotifications,
-                            tooltip: 'Notifications',
-                            badge: notificationService.unreadCount,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                      ],
-                    ),
+              const SizedBox(height: 24),
+              
+              // Glassmorphism availability status card
+              _buildGlassmorphismStatusCard(),
               
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
-    );
-        }
-      },
     );
   }
 
@@ -923,6 +748,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildGlassmorphismStatusCard() {
+    return Consumer<StatusService>(
+      builder: (context, statusService, child) {
+        if (statusService == null) {
+          return Container(
+            height: 60,
+            child: const Center(
+              child: Text('Status service unavailable'),
+            ),
+          );
+        }
+        
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Availability Status',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusService.isOnline ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (statusService.isOnline ? Colors.green : Colors.red).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      statusService.isOnline ? 'ONLINE' : 'OFFLINE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    try {
+                      HapticFeedback.lightImpact();
+                      statusService.setOnlineStatus(!statusService.isOnline);
+                    } catch (e) {
+                      print('Error toggling status: $e');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: statusService.isOnline 
+                        ? Colors.red.shade500
+                        : Colors.green.shade500,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        statusService.isOnline ? Icons.pause_circle : Icons.play_circle,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        statusService.isOnline ? 'Go Offline' : 'Go Online',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildDiscussionCard() {
     return Container(

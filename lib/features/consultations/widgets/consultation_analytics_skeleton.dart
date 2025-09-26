@@ -307,4 +307,3 @@ class ConsultationAnalyticsScreenSkeleton extends StatelessWidget {
     );
   }
 }
-

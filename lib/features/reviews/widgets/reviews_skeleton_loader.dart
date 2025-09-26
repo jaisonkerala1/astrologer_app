@@ -592,4 +592,3 @@ class ReviewsListSkeleton extends StatelessWidget {
     );
   }
 }
-

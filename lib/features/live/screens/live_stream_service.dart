@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/live_stream_model.dart';
 import '../models/live_comment_model.dart';
-import '../../../core/services/storage_service.dart';
 
 class LiveStreamService extends ChangeNotifier {
   static final LiveStreamService _instance = LiveStreamService._internal();
@@ -44,31 +42,13 @@ class LiveStreamService extends ChangeNotifier {
     List<String> tags = const [],
   }) async {
     try {
-      // Get user data from storage
-      final storageService = StorageService();
-      final userDataJson = await storageService.getUserData();
-      String astrologerId = 'current_user';
-      String astrologerName = 'Your Name';
-      String? astrologerProfilePicture;
-      
-      if (userDataJson != null) {
-        try {
-          final userData = jsonDecode(userDataJson);
-          astrologerId = userData['id']?.toString() ?? 'current_user';
-          astrologerName = userData['name']?.toString() ?? 'Your Name';
-          astrologerProfilePicture = userData['profilePicture']?.toString();
-        } catch (e) {
-          debugPrint('Error parsing user data: $e');
-        }
-      }
-
       // Create new stream
       final streamId = 'stream_${DateTime.now().millisecondsSinceEpoch}';
       _currentStream = LiveStreamModel(
         id: streamId,
-        astrologerId: astrologerId,
-        astrologerName: astrologerName,
-        astrologerProfilePicture: astrologerProfilePicture,
+        astrologerId: 'current_user',
+        astrologerName: 'Your Name',
+        astrologerProfilePicture: null,
         title: title,
         description: description,
         category: category,

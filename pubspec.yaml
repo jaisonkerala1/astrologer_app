@@ -55,11 +55,6 @@ dependencies:
   timeago: ^3.6.0
   expandable_text: ^2.3.0
   
-  # Live Streaming
-  agora_rtc_engine: ^6.3.2
-  agora_rtm: ^1.5.7
-  web_socket_channel: ^2.4.0
-  
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

@@ -307,4 +307,3 @@ When adding new skeleton components:
 ## License
 
 This skeleton loader system is part of the astrologer app project and follows the same licensing terms.
-

@@ -61,7 +61,7 @@ const sendOTP = async (req, res) => {
     res.json({
       success: true,
       message: 'OTP sent successfully to your phone number',
-      otpId: otpRecord.id.toString()
+      otpId: otpRecord.id
     });
   } catch (error) {
     console.error('Send OTP error:', error);
@@ -123,7 +123,7 @@ const verifyOTP = async (req, res) => {
       message: 'Login successful',
       token,
       astrologer: {
-        id: astrologer.id.toString(),
+        id: astrologer.id,
         phone: astrologer.phone,
         name: astrologer.name,
         email: astrologer.email,
@@ -207,7 +207,7 @@ const signup = async (req, res) => {
       message: 'Account created successfully',
       token,
       astrologer: {
-        id: astrologer.id.toString(),
+        id: astrologer.id,
         phone: astrologer.phone,
         name: astrologer.name,
         email: astrologer.email,

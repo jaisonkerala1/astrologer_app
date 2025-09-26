@@ -1,195 +1,127 @@
-# Live Streams API for Astrologer App
+# Astrologer App Backend 🚀
 
-This backend API provides real-time live streaming functionality for the Astrologer App, including WebSocket support for cross-device synchronization.
+Node.js/Express backend for the Astrologer App with Twilio SMS integration.
 
-## 🚀 Features
+## 🔥 Railway Deployment
 
-- **Real-time Live Streams**: Start, end, and manage live streams
-- **WebSocket Support**: Real-time updates across all connected devices
-- **Cross-Device Sync**: Streams appear instantly on all devices
-- **RESTful API**: Standard HTTP endpoints for stream management
-- **Health Monitoring**: Built-in health check endpoints
+This backend is optimized for deployment on [Railway](https://railway.com).
 
-## 📋 API Endpoints
+### Quick Deploy to Railway
 
-### Live Stream Management
-- `POST /api/live-streams/start` - Start a new live stream
-- `PUT /api/live-streams/:id/end` - End a live stream
-- `GET /api/live-streams/active` - Get all active streams
-- `GET /api/live-streams/:id` - Get specific stream details
-- `PUT /api/live-streams/:id/stats` - Update stream statistics
+1. **Fork this repository** on GitHub
+2. **Create Railway account** at [railway.com](https://railway.com)
+3. **Click "Deploy from GitHub"** 
+4. **Select your forked repository**
+5. **Set root directory** to `/backend` (if deploying backend only)
+6. **Add environment variables** (see below)
+7. **Deploy!** 🎉
 
-### WebSocket
-- `ws://your-domain/ws/live-streams` - Real-time stream updates
+### Environment Variables for Railway
 
-### Health Check
-- `GET /api/health` - API health status
+Add these in your Railway project settings:
 
-## 🛠️ Setup for Railway Deployment
-
-### 1. Install Dependencies
-```bash
-cd backend
-npm install
-```
-
-### 2. Environment Variables
-Create a `.env` file (optional for basic setup):
 ```env
-PORT=3001
-NODE_ENV=production
+# Required for Railway
+PORT=7566
+
+# JWT Configuration
+JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_EXPIRES_IN=7d
+
+# Twilio Configuration (Get from https://twilio.com)
+TWILIO_ACCOUNT_SID=your_twilio_account_sid_here
+TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
+TWILIO_PHONE_NUMBER=your_twilio_phone_number_here
+
+# CORS (Set to your frontend domain)
+CORS_ORIGIN=*
+
+# Database (Optional - currently using in-memory storage)
+# MONGODB_URI=your_mongodb_connection_string
 ```
 
-### 3. Deploy to Railway
+### 🔧 Package.json Scripts
 
-#### Option A: Using Railway CLI
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Login to Railway
-railway login
-
-# Initialize project
-railway init
-
-# Deploy
-railway up
-```
-
-#### Option B: Using Railway Dashboard
-1. Go to [Railway.app](https://railway.app)
-2. Create a new project
-3. Connect your GitHub repository
-4. Select the `backend` folder
-5. Railway will automatically detect Node.js and deploy
-
-### 4. Configure WebSocket URL
-After deployment, update your Flutter app with the Railway URL:
-- Production: `wss://your-app-name.up.railway.app/ws/live-streams`
-- API Base: `https://your-app-name.up.railway.app/api`
-
-## 🔧 Development Setup
-
-### Local Development
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Or start production server
-npm start
-```
-
-### Testing the API
-```bash
-# Health check
-curl https://your-app-name.up.railway.app/api/health
-
-# Get active streams
-curl https://your-app-name.up.railway.app/api/live-streams/active
-```
-
-## 📱 Flutter Integration
-
-The Flutter app will automatically connect to:
-- **Development**: `ws://localhost:3001/ws/live-streams`
-- **Production**: `wss://your-app-name.up.railway.app/ws/live-streams`
-
-## 🔄 Real-time Updates
-
-The WebSocket server broadcasts the following events:
-
-### Stream Started
 ```json
 {
-  "type": "stream_started",
-  "data": {
-    "id": "stream_123",
-    "astrologerName": "Dr. Sarah",
-    "title": "Daily Tarot Reading",
-    "viewerCount": 0,
-    "status": "live"
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"No tests yet\""
   }
 }
 ```
 
-### Stream Ended
-```json
-{
-  "type": "stream_ended",
-  "data": {
-    "id": "stream_123",
-    "endedAt": "2024-01-01T12:00:00Z"
-  }
-}
-```
+### 📦 Dependencies
 
-### Stats Updated
-```json
-{
-  "type": "stream_stats_updated",
-  "data": {
-    "id": "stream_123",
-    "viewerCount": 45,
-    "likes": 23,
-    "comments": 8
-  }
-}
-```
+- **express** - Web framework
+- **cors** - Cross-origin requests
+- **jsonwebtoken** - JWT tokens
+- **twilio** - SMS service
+- **dotenv** - Environment variables
 
-## 🚨 Troubleshooting
+## 🌐 API Endpoints
 
-### Common Issues
+Base URL: `https://your-railway-app.railway.app/api`
 
-1. **WebSocket Connection Failed**
-   - Check if Railway supports WebSockets
-   - Verify the WebSocket URL format
-   - Check firewall settings
+### Authentication
+- `POST /auth/send-otp` - Send OTP
+- `POST /auth/verify-otp` - Verify & Login  
+- `POST /auth/signup` - Register
+- `POST /auth/logout` - Logout
 
-2. **API Not Responding**
-   - Check Railway deployment logs
-   - Verify environment variables
-   - Test health endpoint
+### Profile
+- `GET /profile` - Get profile
+- `PUT /profile` - Update profile
 
-3. **CORS Issues**
-   - The API includes CORS middleware
-   - Check if your Flutter app URL is allowed
+### Dashboard  
+- `GET /dashboard/stats` - Get stats
 
-### Logs
-Check Railway deployment logs for debugging:
-```bash
-railway logs
-```
+## 🔐 Security Features
+
+- **JWT Authentication** - Secure tokens
+- **CORS Protection** - Controlled access
+- **Environment Variables** - Secure config
+- **Input Validation** - Clean data
+
+## 🚀 Performance
+
+- **In-Memory Storage** - Fast response times
+- **Lightweight** - Minimal dependencies
+- **Stateless** - Horizontally scalable
 
 ## 📊 Monitoring
 
-The API provides health check endpoint for monitoring:
-- `GET /api/health` - Returns active streams count and connected clients
+Railway provides built-in:
+- **Logs** - Real-time application logs
+- **Metrics** - CPU, memory, network usage
+- **Uptime** - Service availability
+- **Deployments** - Version history
 
-## 🔒 Security Considerations
+## 🐛 Troubleshooting
 
-For production deployment:
-1. Add authentication middleware
-2. Implement rate limiting
-3. Add input validation
-4. Use HTTPS/WSS only
-5. Add CORS restrictions
+### Common Issues
+
+1. **Port Issues**: Railway automatically sets PORT via environment
+2. **CORS Errors**: Update CORS_ORIGIN to your frontend domain
+3. **Twilio Errors**: Verify account SID and auth token
+4. **JWT Errors**: Ensure JWT_SECRET is set
+
+### Debug Mode
+
+Set `NODE_ENV=development` for detailed error logs.
 
 ## 📈 Scaling
 
-For high-traffic scenarios:
-1. Use Redis for stream storage
-2. Implement load balancing
-3. Add database persistence
-4. Use message queues for WebSocket scaling
+Railway auto-scales based on traffic. For high-traffic applications:
 
-## 🤝 Support
+1. **Add PostgreSQL** - Replace in-memory storage
+2. **Add Redis** - For session management  
+3. **Load Balancing** - Railway handles automatically
+4. **CDN** - For static assets
 
-For issues or questions:
-1. Check Railway deployment logs
-2. Test API endpoints manually
-3. Verify WebSocket connection
-4. Check Flutter app logs
+---
+
+**Deploy Status**: [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/your-template)
+
+**Live Demo**: https://your-railway-app.railway.app
