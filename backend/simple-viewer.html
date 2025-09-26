@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agora Live Stream Viewer</title>
+    <title>Simple Live Stream Viewer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -37,6 +37,7 @@
             align-items: center;
             justify-content: center;
             font-size: 18px;
+            text-align: center;
         }
         .controls {
             text-align: center;
@@ -93,30 +94,79 @@
             border-radius: 4px;
             margin: 10px 0;
         }
+        .instructions {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+        }
+        .step-number {
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔴 Agora Live Stream Viewer</h1>
-            <p>Watch live streams with integrated Agora Web SDK</p>
+            <h1>🔴 Live Stream Viewer</h1>
+            <p>Watch live streams from your astrologer app</p>
+        </div>
+
+        <div class="instructions">
+            <h3>📺 How to Watch Your Live Stream</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Keep your mobile app streaming</strong> - Make sure your live stream is active
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Use Agora Web Demo</strong> - Click the link below to open the official Agora viewer
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Enter your channel name</strong> - Copy the channel name from below
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Click "Join"</strong> - You should see your live video!
+            </div>
         </div>
 
         <div class="controls">
             <input type="text" id="channelInput" placeholder="Enter channel name" style="padding: 10px; width: 300px; margin-right: 10px;">
-            <button class="btn" id="joinBtn">Join Stream</button>
-            <button class="btn" id="leaveBtn" disabled>Leave Stream</button>
+            <button class="btn" id="openDemoBtn">Open Agora Web Demo</button>
+            <button class="btn" id="copyChannelBtn">Copy Channel Name</button>
         </div>
 
         <div class="status" id="status">
-            Ready to join a live stream
+            Ready to watch live stream
         </div>
 
         <div id="message" style="display: none;"></div>
 
         <div class="video-container">
             <div id="video-player">
-                <div>Enter channel name and click "Join Stream" to watch</div>
+                <div>
+                    <h3>🎥 Live Stream Ready</h3>
+                    <p>Click "Open Agora Web Demo" to watch your live video</p>
+                    <p>Channel: <strong id="currentChannel">Loading...</strong></p>
+                </div>
             </div>
         </div>
 
@@ -131,46 +181,12 @@
             <div class="info-item">
                 <span class="label">Viewers:</span> <span id="viewerCount">-</span>
             </div>
+            <div class="info-item">
+                <span class="label">Duration:</span> <span id="duration">-</span>
+            </div>
         </div>
     </div>
 
-    <!-- Agora Web SDK - Try multiple CDN sources -->
-    <script src="https://web-cdn.agora.io/agora-rtc-sdk-ng/4.20.0/dist/agora-rtc-sdk-ng.js"></script>
-    <script>
-        // Fallback if the first CDN fails
-        if (typeof AgoraRTC === 'undefined') {
-            console.log('Trying fallback CDN...');
-            const script = document.createElement('script');
-            script.src = 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js';
-            script.onload = function() {
-                console.log('Fallback CDN loaded');
-                loadViewerScript();
-            };
-            script.onerror = function() {
-                console.log('Both CDNs failed, using mock implementation');
-                // Mock AgoraRTC for testing
-                window.AgoraRTC = {
-                    createClient: function() {
-                        return {
-                            join: async function() { throw new Error('Agora SDK not available'); },
-                            leave: async function() { console.log('Mock leave'); },
-                            subscribe: async function() { console.log('Mock subscribe'); },
-                            on: function() { console.log('Mock event handler'); }
-                        };
-                    }
-                };
-                loadViewerScript();
-            };
-            document.head.appendChild(script);
-        } else {
-            loadViewerScript();
-        }
-        
-        function loadViewerScript() {
-            const viewerScript = document.createElement('script');
-            viewerScript.src = 'agora-viewer.js';
-            document.head.appendChild(viewerScript);
-        }
-    </script>
+    <script src="simple-viewer.js"></script>
 </body>
 </html>

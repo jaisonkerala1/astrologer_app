@@ -73,6 +73,16 @@ app.get('/agora-viewer.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../agora-viewer.js'));
 });
 
+// Serve simple viewer page
+app.get('/simple-viewer.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../simple-viewer.html'));
+});
+
+// Serve simple viewer JavaScript
+app.get('/simple-viewer.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../simple-viewer.js'));
+});
+
 // Database connection
 const connectDB = async () => {
   try {
