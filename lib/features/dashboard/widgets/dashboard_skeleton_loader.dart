@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/theme/app_theme.dart';
 
 /// Skeleton loader for the dashboard screen
 class DashboardSkeletonLoader extends StatelessWidget {
@@ -107,8 +108,8 @@ class DashboardSkeletonLoader extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: headerGradient,
             borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(24),
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
             ),
             boxShadow: [
               BoxShadow(
@@ -121,82 +122,59 @@ class DashboardSkeletonLoader extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top row with status toggle and notifications
+                // User info row - matches actual header structure
                 Row(
                   children: [
-                    // Status toggle skeleton
-                    SkeletonLoader(
-                      width: 120,
-                      height: 36,
-                      borderRadius: BorderRadius.circular(18),
+                    // Profile avatar skeleton
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                      ),
+                      child: SkeletonCircle(size: 56),
                     ),
-                    const Spacer(),
-                    // Notification button skeleton
-                    SkeletonLoader(
-                      width: 40,
-                      height: 40,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                
-                // Welcome text skeleton
-                SkeletonLoader(
-                  width: 180,
-                  height: 24,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                const SizedBox(height: 8),
-                SkeletonLoader(
-                  width: 220,
-                  height: 16,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 16),
-                
-                // Stats row skeleton
-                Row(
-                  children: [
+                    const SizedBox(width: 16),
+                    // Welcome text and name
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SkeletonLoader(
-                            width: 80,
-                            height: 14,
+                            width: 120,
+                            height: 16,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           const SizedBox(height: 4),
                           SkeletonLoader(
-                            width: 60,
-                            height: 18,
+                            width: 150,
+                            height: 20,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ],
                       ),
                     ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SkeletonLoader(
-                            width: 80,
-                            height: 14,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          const SizedBox(height: 4),
-                          SkeletonLoader(
-                            width: 60,
-                            height: 18,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ],
-                      ),
+                    // Header action buttons
+                    Row(
+                      children: [
+                        // Go Live button skeleton
+                        SkeletonLoader(
+                          width: 80,
+                          height: 32,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        const SizedBox(width: 12),
+                        // Notifications button skeleton
+                        SkeletonLoader(
+                          width: 40,
+                          height: 40,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -210,145 +188,162 @@ class DashboardSkeletonLoader extends StatelessWidget {
 
   Widget _buildLiveAstrologersStoriesSkeleton() {
     return Container(
-      height: 100,
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Column(
-              children: [
-                SkeletonCircle(size: 60),
-                const SizedBox(height: 8),
-                SkeletonLoader(
-                  width: 50,
-                  height: 12,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ],
+      height: 120, // Matches actual LiveAstrologersStoriesWidget height
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with "Live Now" title
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: SkeletonLoader(
+              width: 80,
+              height: 16,
+              borderRadius: BorderRadius.circular(4),
             ),
-          );
-        },
+          ),
+          // Horizontal scrolling live astrologers
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(left: 4, bottom: 4),
+              itemCount: 8, // Matches actual number of astrologers
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    children: [
+                      SkeletonCircle(size: 60),
+                      const SizedBox(height: 8),
+                      SkeletonLoader(
+                        width: 50,
+                        height: 12,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildMinimalAvailabilityToggleSkeleton() {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: themeService.surfaceColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: themeService.borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Status label skeleton
+          Row(
             children: [
               SkeletonLoader(
-                width: 20,
-                height: 20,
+                width: 8,
+                height: 8,
                 borderRadius: BorderRadius.circular(4),
               ),
-              const SizedBox(width: 12),
-              SkeletonLoader(
-                width: 120,
-                height: 16,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const Spacer(),
+              const SizedBox(width: 8),
               SkeletonLoader(
                 width: 60,
-                height: 24,
-                borderRadius: BorderRadius.circular(12),
+                height: 14,
+                borderRadius: BorderRadius.circular(4),
               ),
             ],
           ),
-        );
-      },
+          // Toggle switch skeleton
+          SkeletonLoader(
+            width: 48,
+            height: 26,
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildEarningsCardSkeleton(ThemeService themeService) {
-    return SkeletonCard(
-      children: [
-        // Header with earnings icon and refresh button
-        Row(
-          children: [
-            SkeletonLoader(
-              width: 24,
-              height: 24,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            const SizedBox(width: 12),
-            SkeletonLoader(
-              width: 100,
-              height: 18,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            const Spacer(),
-            SkeletonLoader(
-              width: 24,
-              height: 24,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.earningsColor, AppTheme.successColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        const SizedBox(height: 16),
-        
-        // Earnings amounts row
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.earningsColor.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonLoader(
+                width: 120,
+                height: 18,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              Row(
                 children: [
                   SkeletonLoader(
-                    width: 80,
-                    height: 14,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 4),
-                  SkeletonLoader(
-                    width: 100,
+                    width: 24,
                     height: 24,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  const SizedBox(width: 8),
+                  SkeletonLoader(
+                    width: 24,
+                    height: 24,
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ],
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Today's earnings amount
+          SkeletonLoader(
+            width: 150,
+            height: 32,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 16),
+          // Total earnings container
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonLoader(
-                    width: 80,
-                    height: 14,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 4),
-                  SkeletonLoader(
-                    width: 100,
-                    height: 24,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SkeletonLoader(
+                  width: 80,
+                  height: 14,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                SkeletonLoader(
+                  width: 100,
+                  height: 16,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -356,11 +351,11 @@ class DashboardSkeletonLoader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: SkeletonStatCard(),
+          child: _buildStatsCardSkeleton(),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: SkeletonStatCard(),
+          child: _buildStatsCardSkeleton(),
         ),
       ],
     );
@@ -370,134 +365,239 @@ class DashboardSkeletonLoader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: SkeletonStatCard(),
+          child: _buildStatsCardSkeleton(),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: SkeletonStatCard(),
+          child: _buildStatsCardSkeleton(),
         ),
       ],
     );
   }
 
+  Widget _buildStatsCardSkeleton() {
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: themeService.cardColor,
+            borderRadius: themeService.borderRadius,
+            boxShadow: [themeService.cardShadow],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon and trending icon row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Icon container
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SkeletonLoader(
+                      width: 20,
+                      height: 20,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  // Trending icon
+                  SkeletonLoader(
+                    width: 16,
+                    height: 16,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Value
+              SkeletonLoader(
+                width: 60,
+                height: 24,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(height: 4),
+              // Title
+              SkeletonLoader(
+                width: 80,
+                height: 14,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCalendarCardSkeleton(ThemeService themeService) {
-    return SkeletonCard(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            themeService.primaryColor.withOpacity(0.1),
+            themeService.primaryColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: themeService.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: themeService.primaryColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SkeletonLoader(
+                  width: 24,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonLoader(
+                      width: 140,
+                      height: 16,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 4),
+                    SkeletonLoader(
+                      width: 100,
+                      height: 12,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                ),
+              ),
+              SkeletonLoader(
+                width: 16,
+                height: 16,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Stats
+          Row(
+            children: [
+              Expanded(
+                child: _buildCalendarStatItemSkeleton(),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildCalendarStatItemSkeleton(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarStatItemSkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with calendar icon
         Row(
           children: [
             SkeletonLoader(
-              width: 24,
-              height: 24,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            const SizedBox(width: 12),
-            SkeletonLoader(
-              width: 100,
-              height: 18,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            const Spacer(),
-            SkeletonLoader(
-              width: 80,
+              width: 16,
               height: 16,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            const SizedBox(width: 8),
+            SkeletonLoader(
+              width: 40,
+              height: 12,
               borderRadius: BorderRadius.circular(4),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        
-        // Today's bookings and upcoming bookings
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonLoader(
-                    width: 80,
-                    height: 14,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 4),
-                  SkeletonLoader(
-                    width: 40,
-                    height: 20,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonLoader(
-                    width: 80,
-                    height: 14,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 4),
-                  SkeletonLoader(
-                    width: 40,
-                    height: 20,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(height: 8),
+        SkeletonLoader(
+          width: 30,
+          height: 20,
+          borderRadius: BorderRadius.circular(4),
         ),
       ],
     );
   }
 
   Widget _buildDiscussionCardSkeleton(ThemeService themeService) {
-    return SkeletonCard(
-      children: [
-        // Header
-        Row(
-          children: [
-            SkeletonLoader(
-              width: 24,
-              height: 24,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            const SizedBox(width: 12),
-            SkeletonLoader(
-              width: 120,
-              height: 18,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        
-        // Discussion content
-        SkeletonText(
-          lines: 3,
-          height: 14,
-          spacing: 8,
-        ),
-        const SizedBox(height: 12),
-        
-        // Action buttons
-        Row(
-          children: [
-            SkeletonLoader(
-              width: 80,
-              height: 32,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            const SizedBox(width: 8),
-            SkeletonLoader(
-              width: 80,
-              height: 32,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ],
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        borderRadius: themeService.borderRadius,
+        boxShadow: [themeService.cardShadow],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              SkeletonLoader(
+                width: 24,
+                height: 24,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(width: 12),
+              SkeletonLoader(
+                width: 120,
+                height: 18,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Discussion content
+          SkeletonText(
+            lines: 3,
+            height: 14,
+            spacing: 8,
+          ),
+          const SizedBox(height: 12),
+          
+          // Action buttons
+          Row(
+            children: [
+              SkeletonLoader(
+                width: 80,
+                height: 32,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              const SizedBox(width: 8),
+              SkeletonLoader(
+                width: 80,
+                height: 32,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
