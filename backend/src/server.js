@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const http = require('http');
 const WebSocket = require('ws');
 const crypto = require('crypto');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -41,6 +42,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files (uploaded images)
 app.use('/uploads', express.static('uploads'));
+
+// Serve admin dashboard
+app.get('/admin-dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin-dashboard.html'));
+});
 
 // Database connection
 const connectDB = async () => {
