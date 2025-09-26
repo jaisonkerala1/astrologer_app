@@ -105,6 +105,36 @@ wss.on('connection', (ws) => {
     data: Array.from(activeStreams.values())
   }));
 
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      console.log('📨 WebSocket message received:', data.type);
+      
+      // Handle different message types
+      switch (data.type) {
+        case 'request_active_streams':
+          // Send current active streams to client
+          const activeStreamsList = Array.from(activeStreams.values());
+          ws.send(JSON.stringify({
+            type: 'active_streams',
+            data: activeStreamsList
+          }));
+          console.log(`📡 Sent ${activeStreamsList.length} active streams to client`);
+          break;
+        case 'join_stream':
+          // Client wants to join a specific stream
+          break;
+        case 'leave_stream':
+          // Client wants to leave a stream
+          break;
+        default:
+          console.log('⚠️ Unknown message type:', data.type);
+      }
+    } catch (error) {
+      console.error('❌ Error parsing WebSocket message:', error);
+    }
+  });
+
   ws.on('close', () => {
     console.log('🔌 WebSocket client disconnected');
     connectedClients.delete(ws);
@@ -134,6 +164,65 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Live streams health check and monitoring
+app.get('/api/live-streams/status', (req, res) => {
+  try {
+    const activeStreamsList = Array.from(activeStreams.values());
+    
+    res.json({
+      success: true,
+      data: {
+        totalActiveStreams: activeStreamsList.length,
+        streams: activeStreamsList.map(stream => ({
+          id: stream.id,
+          astrologerId: stream.astrologerId,
+          astrologerName: stream.astrologerName,
+          title: stream.title,
+          status: stream.status,
+          channelName: stream.agoraChannelName,
+          viewerCount: stream.viewerCount,
+          startedAt: stream.startedAt,
+          duration: Math.floor((Date.now() - new Date(stream.startedAt).getTime()) / 1000)
+        })),
+        serverTime: new Date().toISOString(),
+        uptime: process.uptime()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting live streams status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Admin endpoint to get detailed stream information
+app.get('/api/admin/live-streams', (req, res) => {
+  try {
+    const activeStreamsList = Array.from(activeStreams.values());
+    
+    res.json({
+      success: true,
+      data: {
+        totalActiveStreams: activeStreamsList.length,
+        streams: activeStreamsList,
+        serverInfo: {
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+          timestamp: new Date().toISOString()
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting admin live streams data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 });
 
 // Routes
@@ -224,6 +313,22 @@ app.post('/api/live-streams/start', (req, res) => {
     });
 
     console.log(`🟢 Live stream started: ${streamId} by ${astrologerName}`);
+    console.log(`📊 Stream details:`);
+    console.log(`  - ID: ${streamId}`);
+    console.log(`  - Astrologer: ${astrologerName} (${astrologerId})`);
+    console.log(`  - Title: ${title}`);
+    console.log(`  - Channel: ${agoraChannelName}`);
+    console.log(`  - Status: ${stream.status}`);
+    console.log(`  - Quality: ${quality}`);
+    console.log(`  - Private: ${isPrivate}`);
+    console.log(`  - Tags: ${tags.join(', ')}`);
+    console.log(`📈 Active streams count: ${activeStreams.size}`);
+    
+    // Log all active streams for debugging
+    console.log(`📺 All active streams:`);
+    activeStreams.forEach((activeStream, id) => {
+      console.log(`  - ${id}: ${activeStream.title} by ${activeStream.astrologerName} (${activeStream.status})`);
+    });
 
     res.json({
       success: true,

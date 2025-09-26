@@ -355,6 +355,16 @@ class AgoraService extends ChangeNotifier {
         status: LiveStreamStatus.live,
       );
 
+      // Add to live streams list so it appears in dashboard
+      // Check if stream already exists to avoid duplicates
+      final existingIndex = _liveStreams.indexWhere((stream) => stream.id == _currentStream!.id);
+      if (existingIndex == -1) {
+        _liveStreams.add(_currentStream!);
+        debugPrint('📺 Added stream to live streams list: ${_currentStream!.title}');
+      } else {
+        debugPrint('📺 Stream already exists in live streams list: ${_currentStream!.title}');
+      }
+
       _startMockDataUpdates();
       notifyListeners();
 
@@ -394,6 +404,10 @@ class AgoraService extends ChangeNotifier {
         status: LiveStreamStatus.ended,
         endedAt: DateTime.now(),
       );
+
+      // Remove from live streams list
+      _liveStreams.removeWhere((stream) => stream.id == _currentStream!.id);
+      debugPrint('📺 Removed stream from live streams list: ${_currentStream!.title}');
 
       // Add to completed streams
       _liveStreams.insert(0, _currentStream!);
@@ -715,10 +729,13 @@ class AgoraService extends ChangeNotifier {
   Future<void> _loadLiveStreamsFromBackend() async {
     try {
       final streams = await _apiService.getActiveStreams();
-      if (streams != null) {
+      if (streams != null && streams.isNotEmpty) {
         _liveStreams = streams;
         notifyListeners();
         debugPrint('📊 Loaded ${streams.length} live streams from backend');
+      } else {
+        debugPrint('⚠️ No streams from backend, using mock data for testing');
+        _loadMockLiveStreams();
       }
     } catch (e) {
       debugPrint('Error loading live streams from backend: $e');

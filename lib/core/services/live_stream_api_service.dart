@@ -11,11 +11,8 @@ class LiveStreamApiService {
 
   // Base URL for the API
   String get _baseUrl {
-    if (kDebugMode) {
-      return 'http://localhost:3001/api'; // Local development
-    } else {
-      return 'https://astrologerapp-production.up.railway.app/api'; // Production
-    }
+    // Always use Railway API URL
+    return 'https://astrologerapp-production.up.railway.app/api';
   }
 
   // Headers for API requests

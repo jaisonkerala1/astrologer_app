@@ -17,9 +17,11 @@ class LiveStreamingPage extends StatefulWidget {
 
 class _LiveStreamingPageState extends State<LiveStreamingPage> {
   final TextEditingController _searchController = TextEditingController();
+  final AgoraService _agoraService = AgoraService();
   String _selectedCategory = 'All';
   String _searchQuery = '';
   bool _isSearching = false;
+  bool _isInitializing = false;
 
   final List<String> _categories = [
     'All',
@@ -40,6 +42,33 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
         _searchQuery = _searchController.text;
       });
     });
+    _initializeAgoraService();
+  }
+
+  Future<void> _initializeAgoraService() async {
+    if (_isInitializing) return;
+    
+    setState(() {
+      _isInitializing = true;
+    });
+
+    try {
+      debugPrint('🔧 Initializing Agora service for dashboard...');
+      final initialized = await _agoraService.initialize();
+      if (initialized) {
+        debugPrint('✅ Agora service initialized successfully');
+      } else {
+        debugPrint('❌ Failed to initialize Agora service');
+      }
+    } catch (e) {
+      debugPrint('❌ Error initializing Agora service: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -73,8 +102,7 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
 
   List<LiveStreamCardModel> _getFilteredStreams() {
     // Get real live streams from Agora service
-    final agoraService = AgoraService();
-    final liveStreams = agoraService.liveStreams;
+    final liveStreams = _agoraService.liveStreams;
     
     // Convert LiveStreamModel to LiveStreamCardModel
     List<LiveStreamCardModel> streams = liveStreams.map((stream) => LiveStreamCardModel(
@@ -230,7 +258,7 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
                   ],
                 ),
                 ListenableBuilder(
-                  listenable: AgoraService(),
+                  listenable: _agoraService,
                   builder: (context, child) {
                     final liveCount = _getFilteredStreams().length;
                     return Text(
@@ -274,8 +302,27 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
   }
 
   Widget _buildContent(ThemeService themeService) {
+    if (_isInitializing) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Loading live streams...',
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListenableBuilder(
-      listenable: AgoraService(),
+      listenable: _agoraService,
       builder: (context, child) {
         final filteredStreams = _getFilteredStreams();
         
@@ -287,8 +334,7 @@ class _LiveStreamingPageState extends State<LiveStreamingPage> {
           onRefresh: () async {
             HapticFeedback.lightImpact();
             // Refresh live streams from Agora service
-            final agoraService = AgoraService();
-            await agoraService.getLiveStreams();
+            await _agoraService.getLiveStreams();
           },
           child: GridView.builder(
             padding: const EdgeInsets.all(16),

@@ -28,33 +28,53 @@ class WebSocketService extends ChangeNotifier {
   // Initialize WebSocket connection
   Future<bool> connect({String? serverUrl}) async {
     try {
+      // Always use Railway WebSocket URL
       _serverUrl = serverUrl ?? 'wss://astrologerapp-production.up.railway.app/ws/live-streams';
       
-      // For development, use local WebSocket
-      if (kDebugMode) {
-        _serverUrl = 'ws://localhost:3001/ws/live-streams';
-      }
-
+      debugPrint('🔌 Using WebSocket URL: $_serverUrl');
       debugPrint('🔌 Connecting to WebSocket: $_serverUrl');
 
-      _channel = IOWebSocketChannel.connect(_serverUrl!);
+      // Disconnect existing connection if any
+      await disconnect();
+
+      _channel = IOWebSocketChannel.connect(
+        _serverUrl!,
+        protocols: ['live-streams'],
+      );
       
       _subscription = _channel!.stream.listen(
         _onMessage,
         onError: _onError,
         onDone: _onDone,
+        cancelOnError: false, // Don't cancel on error, let us handle it
       );
+
+      // Wait a moment to ensure connection is established
+      await Future.delayed(const Duration(milliseconds: 500));
 
       _isConnected = true;
       notifyListeners();
       
       debugPrint('✅ WebSocket connected successfully');
+      
+      // Request active streams after connection
+      _requestActiveStreams();
+      
       return true;
 
     } catch (e) {
       debugPrint('❌ WebSocket connection failed: $e');
       _isConnected = false;
       notifyListeners();
+      
+      // Retry connection after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (!_isConnected) {
+          debugPrint('🔄 Retrying WebSocket connection...');
+          connect(serverUrl: _serverUrl);
+        }
+      });
+      
       return false;
     }
   }
@@ -195,11 +215,34 @@ class WebSocketService extends ChangeNotifier {
     }
   }
 
+  // Request active streams from server
+  void _requestActiveStreams() {
+    if (_channel != null && _isConnected) {
+      try {
+        _channel!.sink.add(jsonEncode({
+          'type': 'request_active_streams',
+          'timestamp': DateTime.now().toIso8601String(),
+        }));
+        debugPrint('📡 Requested active streams from server');
+      } catch (e) {
+        debugPrint('❌ Error requesting active streams: $e');
+      }
+    }
+  }
+
   // Handle WebSocket errors
   void _onError(dynamic error) {
     debugPrint('❌ WebSocket error: $error');
     _isConnected = false;
     notifyListeners();
+    
+    // Retry connection after error
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!_isConnected) {
+        debugPrint('🔄 Retrying WebSocket connection after error...');
+        connect(serverUrl: _serverUrl);
+      }
+    });
   }
 
   // Handle WebSocket connection closed
