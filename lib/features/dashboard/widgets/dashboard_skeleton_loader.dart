@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -557,10 +558,14 @@ class DashboardSkeletonLoader extends StatelessWidget {
           // Header
           Row(
             children: [
-              SkeletonLoader(
+              SvgPicture.asset(
+                'assets/icons/discussion_icon.svg',
                 width: 24,
                 height: 24,
-                borderRadius: BorderRadius.circular(4),
+                colorFilter: ColorFilter.mode(
+                  themeService.textPrimary.withOpacity(0.3),
+                  BlendMode.srcIn,
+                ),
               ),
               const SizedBox(width: 12),
               SkeletonLoader(
