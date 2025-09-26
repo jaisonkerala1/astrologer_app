@@ -66,18 +66,59 @@ class DashboardSkeletonLoader extends StatelessWidget {
   Widget _buildHeaderSkeleton() {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
+        // Dynamic gradient based on theme
+        LinearGradient headerGradient;
+        
+        if (themeService.isVedicMode()) {
+          // Vedic theme: Saffron gradient
+          headerGradient = const LinearGradient(
+            colors: [
+              Color(0xFFD97706), // Saffron
+              Color(0xFFB45309), // Dark saffron
+              Color(0xFF92400E), // Brown
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: [0.0, 0.5, 1.0],
+          );
+        } else if (themeService.isDarkMode()) {
+          // Dark theme: Elegant dark gradient
+          headerGradient = LinearGradient(
+            colors: [
+              themeService.primaryColor.withOpacity(0.9),
+              themeService.primaryColor.withOpacity(0.7),
+              themeService.backgroundColor,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: const [0.0, 0.6, 1.0],
+          );
+        } else {
+          // Light theme: Original blue gradient
+          headerGradient = const LinearGradient(
+            colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        }
+
         return Container(
           width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            gradient: headerGradient,
+            borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(24),
               bottomRight: Radius.circular(24),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: themeService.isVedicMode() 
+                    ? const Color(0xFFD97706).withOpacity(0.3) // Saffron shadow
+                    : themeService.primaryColor.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
@@ -196,35 +237,46 @@ class DashboardSkeletonLoader extends StatelessWidget {
   }
 
   Widget _buildMinimalAvailabilityToggleSkeleton() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Row(
-        children: [
-          SkeletonLoader(
-            width: 20,
-            height: 20,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const SizedBox(width: 12),
-          SkeletonLoader(
-            width: 120,
-            height: 16,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const Spacer(),
-          SkeletonLoader(
-            width: 60,
-            height: 24,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: themeService.borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              SkeletonLoader(
+                width: 20,
+                height: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(width: 12),
+              SkeletonLoader(
+                width: 120,
+                height: 16,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const Spacer(),
+              SkeletonLoader(
+                width: 60,
+                height: 24,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

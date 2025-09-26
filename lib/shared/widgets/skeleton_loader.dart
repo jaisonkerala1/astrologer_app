@@ -69,13 +69,17 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         final baseColor = widget.baseColor ?? 
-            (themeService.isDarkMode() 
-                ? Colors.grey[800]! 
-                : Colors.grey[300]!);
+            (themeService.isVedicMode()
+                ? const Color(0xFFFED7AA).withOpacity(0.3) // Light saffron for Vedic
+                : themeService.isDarkMode() 
+                    ? Colors.grey[800]! 
+                    : Colors.grey[300]!);
         final highlightColor = widget.highlightColor ?? 
-            (themeService.isDarkMode() 
-                ? Colors.grey[700]! 
-                : Colors.grey[100]!);
+            (themeService.isVedicMode()
+                ? const Color(0xFFFED7AA).withOpacity(0.6) // Saffron highlight for Vedic
+                : themeService.isDarkMode() 
+                    ? Colors.grey[700]! 
+                    : Colors.grey[100]!);
 
         return AnimatedBuilder(
           animation: _animation,
