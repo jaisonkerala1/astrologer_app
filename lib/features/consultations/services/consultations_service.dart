@@ -618,6 +618,40 @@ class ConsultationsService {
     }
   }
 
+  Future<ConsultationModel> rescheduleConsultation(String consultationId, DateTime newScheduledTime) async {
+    try {
+      print('Rescheduling consultation $consultationId to ${newScheduledTime.toIso8601String()}');
+      
+      final response = await _apiService.patch(
+        '/api/consultation/reschedule/$consultationId',
+        data: {
+          'scheduledTime': newScheduledTime.toIso8601String(),
+          'status': 'scheduled',
+        },
+      );
+
+      if (response.data['success'] == true) {
+        final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
+        
+        // Update local cache
+        final consultationIndex = _consultations.indexWhere(
+          (c) => c.id == consultationId,
+        );
+        if (consultationIndex != -1) {
+          _consultations[consultationIndex] = updatedConsultation;
+        }
+        
+        print('Successfully rescheduled consultation to ${updatedConsultation.scheduledTime}');
+        return updatedConsultation;
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to reschedule consultation');
+      }
+    } catch (e) {
+      print('Error rescheduling consultation: $e');
+      throw Exception('Failed to reschedule consultation: $e');
+    }
+  }
+
   // Mock data for development
   List<ConsultationModel> _getMockConsultations() {
     final now = DateTime.now();

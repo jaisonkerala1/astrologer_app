@@ -63,6 +63,9 @@ router.patch('/astrologer-rating/:consultationId', consultationController.addAst
 // PATCH /api/consultation/share/:consultationId - Track consultation share
 router.patch('/share/:consultationId', consultationController.trackConsultationShare);
 
+// PATCH /api/consultation/reschedule/:consultationId - Reschedule consultation
+router.patch('/reschedule/:consultationId', consultationController.rescheduleConsultation);
+
 // DELETE /api/consultation/:consultationId - Delete a consultation
 router.delete('/:consultationId', consultationController.deleteConsultation);
 

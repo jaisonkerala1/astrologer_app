@@ -1117,6 +1117,91 @@ const trackConsultationShare = async (req, res) => {
   }
 };
 
+// Reschedule consultation
+const rescheduleConsultation = async (req, res) => {
+  try {
+    const { consultationId } = req.params;
+    const { scheduledTime, status } = req.body;
+
+    console.log(`Rescheduling consultation ${consultationId} to ${scheduledTime}`);
+
+    if (!mongoose.Types.ObjectId.isValid(consultationId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid consultation ID'
+      });
+    }
+
+    if (!scheduledTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Scheduled time is required'
+      });
+    }
+
+    const newScheduledTime = new Date(scheduledTime);
+    
+    // Validate that the new time is not in the past
+    if (newScheduledTime < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot schedule consultation in the past'
+      });
+    }
+
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Consultation not found'
+      });
+    }
+
+    // Only allow rescheduling of scheduled or completed consultations
+    if (!['scheduled', 'completed'].includes(consultation.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only reschedule scheduled or completed consultations'
+      });
+    }
+
+    const updateData = {
+      scheduledTime: newScheduledTime,
+      status: status || 'scheduled',
+      updatedAt: new Date()
+    };
+
+    // Reset timestamps if rescheduling
+    if (status === 'scheduled') {
+      updateData.startedAt = undefined;
+      updateData.completedAt = undefined;
+      updateData.cancelledAt = undefined;
+    }
+
+    const updatedConsultation = await Consultation.findByIdAndUpdate(
+      consultationId,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('astrologerId', 'name phone email');
+
+    console.log(`Successfully rescheduled consultation to ${updatedConsultation.scheduledTime}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Consultation rescheduled successfully',
+      data: updatedConsultation
+    });
+
+  } catch (error) {
+    console.error('Error rescheduling consultation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reschedule consultation',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   getConsultations,
   getConsultationById,
@@ -1137,5 +1222,6 @@ module.exports = {
   addConsultationRating,
   addAstrologerRating,
   trackConsultationShare,
+  rescheduleConsultation,
   fixStartedAt
 };
