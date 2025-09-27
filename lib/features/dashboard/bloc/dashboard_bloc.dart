@@ -37,6 +37,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           todayCount: statsData['callsToday'] ?? 0, // Using callsToday as todayCount
         );
         
+        print('📊 Dashboard stats from backend: $statsData');
+        
         emit(DashboardLoadedState(realStats));
         print('✅ Dashboard stats loaded from database');
       } else {
@@ -44,6 +46,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       }
     } catch (e) {
       print('❌ Error loading dashboard stats: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      print('❌ Stack trace: ${StackTrace.current}');
+      
       // Fallback to mock data if API fails
       final mockStats = DashboardStatsModel(
         todayEarnings: 1250.0,
@@ -64,11 +69,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
   Future<void> _onUpdateOnlineStatus(UpdateOnlineStatusEvent event, Emitter<DashboardState> emit) async {
     try {
+      print('🔄 Updating online status to: ${event.isOnline}');
+      
       // Call real backend API to update online status
       final response = await _apiService.put(
         '${ApiConstants.baseUrl}/api/dashboard/status',
         data: {'isOnline': event.isOnline},
       );
+
+      print('📡 API Response: ${response.statusCode}');
+      print('📡 Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         // Update the current state with new online status from backend
@@ -85,6 +95,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       }
     } catch (e) {
       print('❌ Error updating online status: $e');
+      print('❌ Error type: ${e.runtimeType}');
       emit(DashboardErrorState('Failed to update status: ${e.toString()}'));
     }
   }
