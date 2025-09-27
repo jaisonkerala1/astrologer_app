@@ -260,13 +260,6 @@ class ConsultationActionsWidget extends StatelessWidget {
         backgroundColor: Color(0xFF10B981),
       ),
     );
-    
-    // Force refresh after a short delay to ensure UI updates
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (context.mounted) {
-        context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
-      }
-    });
   }
 
   void _completeConsultation(BuildContext context) {
@@ -371,222 +364,110 @@ class ConsultationActionsWidget extends StatelessWidget {
   }
 
   void _rescheduleConsultation(BuildContext context) {
-    _showRescheduleDialog(context);
-  }
-
-  void _showRescheduleDialog(BuildContext context) {
-    DateTime selectedDate = consultation.scheduledTime;
-    TimeOfDay selectedTime = TimeOfDay.fromDateTime(consultation.scheduledTime);
-    
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Reschedule Consultation',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Select new date and time for the consultation',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Date picker
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFE2E8F0),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Date',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: const ColorScheme.light(
-                                  primary: Color(0xFF3B82F6),
-                                  onPrimary: Colors.white,
-                                  surface: Colors.white,
-                                  onSurface: Color(0xFF1E293B),
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (pickedDate != null) {
-                          setState(() {
-                            selectedDate = pickedDate;
-                          });
-                        }
-                      },
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 20,
-                            color: Color(0xFF3B82F6),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Time picker
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFE2E8F0),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Time',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final pickedTime = await showTimePicker(
-                          context: context,
-                          initialTime: selectedTime,
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: const ColorScheme.light(
-                                  primary: Color(0xFF3B82F6),
-                                  onPrimary: Colors.white,
-                                  surface: Colors.white,
-                                  onSurface: Color(0xFF1E293B),
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (pickedTime != null) {
-                          setState(() {
-                            selectedTime = pickedTime;
-                          });
-                        }
-                      },
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            size: 20,
-                            color: Color(0xFF3B82F6),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            selectedTime.format(context),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _performReschedule(context, selectedDate, selectedTime);
-              },
-              child: const Text(
-                'Reschedule',
-                style: TextStyle(
-                  color: Color(0xFF3B82F6),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
+        title: const Text(
+          'Reschedule Consultation',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+        content: const Text(
+          'Select a new date and time for this consultation.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showDateTimePicker(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Select Time',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  void _showDateTimePicker(BuildContext context) async {
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF3B82F6),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF1E293B),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (selectedDate != null && context.mounted) {
+      final TimeOfDay? selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF3B82F6),
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: Color(0xFF1E293B),
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (selectedTime != null && context.mounted) {
+        await _performReschedule(context, selectedDate, selectedTime);
+      }
+    }
+  }
+
   Future<void> _performReschedule(BuildContext context, DateTime selectedDate, TimeOfDay selectedTime) async {
     try {
-      // Combine date and time
       final newScheduledTime = DateTime(
         selectedDate.year,
         selectedDate.month,
@@ -595,74 +476,56 @@ class ConsultationActionsWidget extends StatelessWidget {
         selectedTime.minute,
       );
 
-      // Check if the new time is in the future
       if (newScheduledTime.isBefore(DateTime.now())) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a future date and time'),
-            backgroundColor: Color(0xFFEF4444),
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot schedule consultation in the past'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        }
         return;
       }
 
-      // Show loading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 16),
-              Text('Rescheduling consultation...'),
-            ],
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
           ),
-          backgroundColor: Color(0xFF3B82F6),
-          duration: Duration(seconds: 2),
         ),
       );
 
-      // Import the consultations service
       final consultationsService = ConsultationsService();
-      
-      // Update consultation with new scheduled time
       await consultationsService.updateConsultationById(
         consultation.id,
         {
           'scheduledTime': newScheduledTime.toIso8601String(),
-          'status': 'scheduled', // Ensure status is scheduled after reschedule
+          'status': 'scheduled',
         },
       );
 
-      // Show success message
       if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Consultation rescheduled successfully'),
             backgroundColor: Color(0xFF10B981),
           ),
         );
-      }
-
-      // Refresh the consultation data
-      if (context.mounted) {
-        // Trigger a refresh of the consultation data
+        
+        // Refresh consultations
         context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
       }
-
     } catch (e) {
-      print('Error rescheduling consultation: $e');
-      
       if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to reschedule: ${e.toString()}'),
+            content: Text('Failed to reschedule consultation: ${e.toString()}'),
             backgroundColor: const Color(0xFFEF4444),
           ),
         );

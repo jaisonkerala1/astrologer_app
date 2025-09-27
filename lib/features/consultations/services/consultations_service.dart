@@ -262,56 +262,6 @@ class ConsultationsService {
     }
   }
 
-  Future<ConsultationModel> updateConsultationById(String consultationId, Map<String, dynamic> updateData) async {
-    try {
-      final response = await _apiService.put(
-        '/api/consultation/$consultationId',
-        data: updateData,
-      );
-
-      if (response.data['success'] == true) {
-        final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
-        
-        // Update local cache
-        final consultationIndex = _consultations.indexWhere(
-          (c) => c.id == consultationId,
-        );
-        if (consultationIndex != -1) {
-          _consultations[consultationIndex] = updatedConsultation;
-        }
-        
-        return updatedConsultation;
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to update consultation');
-      }
-    } catch (e) {
-      print('Error updating consultation: $e');
-      // Fallback to local update for development
-      final consultationIndex = _consultations.indexWhere(
-        (c) => c.id == consultationId,
-      );
-      
-      if (consultationIndex != -1) {
-        final existingConsultation = _consultations[consultationIndex];
-        // Apply updates to existing consultation
-        final updatedConsultation = existingConsultation.copyWith(
-          scheduledTime: updateData['scheduledTime'] != null 
-              ? DateTime.parse(updateData['scheduledTime']) 
-              : existingConsultation.scheduledTime,
-          status: updateData['status'] != null 
-              ? ConsultationStatus.values.firstWhere(
-                  (s) => s.toString().split('.').last == updateData['status'],
-                  orElse: () => existingConsultation.status,
-                )
-              : existingConsultation.status,
-        );
-        _consultations[consultationIndex] = updatedConsultation;
-        return updatedConsultation;
-      }
-      throw Exception('Consultation not found');
-    }
-  }
-
   Future<void> deleteConsultation(String consultationId) async {
     try {
       final response = await _apiService.delete('/api/consultation/$consultationId');

@@ -75,9 +75,8 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ConsultationsBloc, ConsultationsState>(
+    return BlocListener<ConsultationsBloc, ConsultationsState>(
       listener: (context, state) {
-        // Update the current consultation when the consultation is updated
         if (state is ConsultationsLoaded) {
           final updatedConsultation = state.allConsultations.firstWhere(
             (c) => c.id == _currentConsultation.id,
@@ -89,7 +88,6 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
             });
           }
         } else if (state is ConsultationUpdated) {
-          // Handle individual consultation updates
           if (state.consultation.id == _currentConsultation.id) {
             setState(() {
               _currentConsultation = state.consultation;
@@ -97,62 +95,60 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
           }
         }
       },
-      builder: (context, state) {
-        return Consumer<ThemeService>(
-          builder: (context, themeService, child) {
-            return Scaffold(
-              backgroundColor: themeService.backgroundColor,
-              body: SafeArea(
-                child: Column(
-                  children: [
-                    // Header with back button and actions
-                    _buildHeader(themeService),
-                    
-                    // Main content
-                    Expanded(
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Consultation Info Card
-                                ConsultationInfoWidget(consultation: _currentConsultation),
-                                const SizedBox(height: 24),
-                                
-                                // Timer Widget (if in progress)
-                                if (_currentConsultation.status == ConsultationStatus.inProgress)
-                                  ConsultationTimerWidget(consultation: _currentConsultation),
-                                
-                                if (_currentConsultation.status == ConsultationStatus.inProgress)
-                                  const SizedBox(height: 24),
-                                
-                                // Notes Section
-                                ConsultationNotesWidget(consultation: _currentConsultation),
-                                const SizedBox(height: 24),
-                                
-                                // Actions Section
-                                ConsultationActionsWidget(consultation: _currentConsultation),
-                                const SizedBox(height: 24),
-                                
-                                // Status History
-                                _buildStatusHistory(themeService),
-                              ],
-                            ),
-                          ),
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Header with back button and actions
+                _buildHeader(themeService),
+                
+                // Main content
+                Expanded(
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Consultation Info Card
+                            ConsultationInfoWidget(consultation: _currentConsultation),
+                            const SizedBox(height: 24),
+                            
+                            // Timer Widget (if in progress)
+                            if (_currentConsultation.status == ConsultationStatus.inProgress)
+                              ConsultationTimerWidget(consultation: _currentConsultation),
+                            
+                            if (_currentConsultation.status == ConsultationStatus.inProgress)
+                              const SizedBox(height: 24),
+                            
+                            // Notes Section
+                            ConsultationNotesWidget(consultation: _currentConsultation),
+                            const SizedBox(height: 24),
+                            
+                            // Actions Section
+                            ConsultationActionsWidget(consultation: _currentConsultation),
+                            const SizedBox(height: 24),
+                            
+                            // Status History
+                            _buildStatusHistory(themeService),
+                          ],
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         );
-      },
+        },
+      ),
     );
   }
 
