@@ -81,15 +81,39 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       print('📡 Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        // Update the current state with new online status from backend
-        if (state is DashboardLoadedState) {
-          final currentStats = (state as DashboardLoadedState).stats;
-          final updatedStats = currentStats.copyWith(isOnline: event.isOnline);
-          emit(DashboardLoadedState(updatedStats));
-        }
-        
+        // Always reload dashboard stats after updating online status
         emit(StatusUpdatedState(event.isOnline));
         print('✅ Online status updated to ${event.isOnline ? 'ONLINE' : 'OFFLINE'} in database');
+        print('🔄 Triggering dashboard stats reload...');
+        
+        // Reload dashboard stats with updated online status
+        try {
+          final statsResponse = await _apiService.get(
+            '${ApiConstants.baseUrl}/api/dashboard/stats',
+          );
+
+          if (statsResponse.statusCode == 200 && statsResponse.data['success'] == true) {
+            final statsData = statsResponse.data['data'];
+            print('📊 Dashboard stats reloaded: $statsData');
+            
+            final realStats = DashboardStatsModel(
+              todayEarnings: (statsData['todayEarnings'] ?? 0).toDouble(),
+              totalEarnings: (statsData['totalEarnings'] ?? 0).toDouble(),
+              callsToday: statsData['callsToday'] ?? 0,
+              totalCalls: statsData['totalCalls'] ?? 0,
+              isOnline: statsData['isOnline'] ?? false,
+              totalSessions: statsData['totalSessions'] ?? 0,
+              averageSessionDuration: (statsData['averageSessionDuration'] ?? 0).toDouble(),
+              averageRating: (statsData['averageRating'] ?? 0).toDouble(),
+              todayCount: statsData['callsToday'] ?? 0,
+            );
+            
+            emit(DashboardLoadedState(realStats));
+            print('✅ Dashboard stats reloaded successfully after status update');
+          }
+        } catch (e) {
+          print('❌ Error reloading dashboard stats: $e');
+        }
       } else {
         throw Exception('Failed to update online status: ${response.data['message'] ?? 'Unknown error'}');
       }
