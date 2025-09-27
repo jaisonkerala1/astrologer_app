@@ -121,8 +121,14 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           ),
           
           _buildSection(
-            '8. Governing Law',
-            'These terms and conditions are governed by and construed in accordance with the laws of India and you irrevocably submit to the exclusive jurisdiction of the courts in that state or location.',
+            '8. Company Information',
+            'This application is operated by AXIOM LEAP. For any legal notices or correspondence, please contact us at support@axiomleap.com.',
+            themeService,
+          ),
+          
+          _buildSection(
+            '9. Governing Law',
+            'These terms and conditions are governed by and construed in accordance with the laws of India.',
             themeService,
           ),
           
@@ -202,8 +208,14 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           ),
           
           _buildSection(
-            '10. Contact Us',
-            'If you have any questions about this privacy policy, please contact us at privacy@example.com.',
+            '10. Company Information',
+            'This application is operated by AXIOM LEAP. We are committed to protecting your privacy and ensuring the security of your personal information.',
+            themeService,
+          ),
+          
+          _buildSection(
+            '11. Contact Us',
+            'If you have any questions about this privacy policy or our data practices, please contact us at support@axiomleap.com.',
             themeService,
           ),
           
@@ -342,12 +354,22 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'www.example.com',
+            'www.axiomleap.com',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: themeService.primaryColor,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'AXIOM LEAP',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: themeService.textSecondary,
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
@@ -372,7 +394,7 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Website: www.example.com'),
+        content: Text('Website: www.axiomleap.com'),
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: 3),
       ),

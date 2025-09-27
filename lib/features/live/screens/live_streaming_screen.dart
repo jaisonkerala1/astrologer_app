@@ -14,7 +14,7 @@ class LiveStreamingScreen extends StatefulWidget {
 
 class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     with TickerProviderStateMixin {
-  final LiveStreamService _liveService = LiveStreamService();
+  late final LiveStreamService _liveService;
   
   late AnimationController _pulseController;
   late AnimationController _fadeController;
@@ -34,6 +34,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   @override
   void initState() {
     super.initState();
+    _liveService = LiveStreamService(); // Get the singleton instance
     _initializeAnimations();
     _hideSystemUI();
     _startStream();
@@ -121,6 +122,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   Future<void> _startStream() async {
     // Simulate stream initialization
     await Future.delayed(const Duration(seconds: 1));
+    print('🎥 [LIVE_STREAMING] Current stream: ${_liveService.currentStream}');
     if (mounted) {
       setState(() {});
     }

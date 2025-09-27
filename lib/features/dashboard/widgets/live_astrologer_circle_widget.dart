@@ -212,17 +212,19 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 6),
+              const SizedBox(height: 4), // Reduced from 6
               
               // Astrologer name
-              SizedBox(
+              Container(
                 width: 70,
+                height: 14, // Reduced from 16
+                alignment: Alignment.center,
                 child: Text(
                   astrologer.name,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: themeService.textPrimary,
-                    fontSize: 11,
+                    fontSize: 10, // Reduced from 11
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -230,11 +232,11 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 2),
+              const SizedBox(height: 1), // Reduced from 2
               
               // Viewer count
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), // Reduced padding
                 decoration: BoxDecoration(
                   color: themeService.surfaceColor,
                   borderRadius: BorderRadius.circular(8),

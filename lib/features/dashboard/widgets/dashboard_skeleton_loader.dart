@@ -188,7 +188,7 @@ class DashboardSkeletonLoader extends StatelessWidget {
 
   Widget _buildLiveAstrologersStoriesSkeleton() {
     return Container(
-      height: 120, // Matches actual LiveAstrologersStoriesWidget height
+      height: 140, // Matches actual LiveAstrologersStoriesWidget height
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

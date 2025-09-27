@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:country_picker/country_picker.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/country_code_selector.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -22,6 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   bool _isLoading = false;
+  String _fullPhoneNumber = '';
+  String _countryCode = '+91';
+  String _phoneNumber = '';
 
   @override
   void dispose() {
@@ -53,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 builder: (context) => BlocProvider.value(
                   value: context.read<AuthBloc>(),
                   child: OtpVerificationScreen(
-                    phoneNumber: _phoneController.text,
+                    phoneNumber: _fullPhoneNumber,
                     otpId: state.otpId,
                   ),
                 ),
@@ -105,29 +110,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
                   
-                  // Phone Number Input
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: l10n.phoneNumber,
-                      hintText: '+91 9876543210',
-                      prefixIcon: const Icon(Icons.phone),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your phone number';
-                      }
-                      // Remove spaces and check if it starts with +
-                      String cleanValue = value.replaceAll(' ', '');
-                      if (!cleanValue.startsWith('+')) {
-                        return 'Please enter phone number with country code (e.g., +91)';
-                      }
-                      if (cleanValue.length < 12) { // +91 + 10 digits minimum
-                        return 'Please enter a valid phone number with country code';
-                      }
-                      return null;
+                  // Phone Number Input with Country Selector
+                  PhoneInputField(
+                    initialCountryCode: _countryCode,
+                    initialPhoneNumber: _phoneNumber,
+                    onPhoneChanged: (fullPhone, countryCode, phoneNumber) {
+                      setState(() {
+                        _fullPhoneNumber = fullPhone;
+                        _countryCode = countryCode;
+                        _phoneNumber = phoneNumber;
+                      });
                     },
+                    hintText: 'Enter your phone number',
                   ),
                   const SizedBox(height: 24),
                   
@@ -199,8 +193,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _sendOtp() {
-    if (_formKey.currentState!.validate()) {
-      context.read<AuthBloc>().add(SendOtpEvent(_phoneController.text.trim()));
+    if (_fullPhoneNumber.isNotEmpty && _phoneNumber.isNotEmpty) {
+      context.read<AuthBloc>().add(SendOtpEvent(_fullPhoneNumber.trim()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a valid phone number'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
   }
 }

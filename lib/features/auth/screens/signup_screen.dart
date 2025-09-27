@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:country_picker/country_picker.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/country_code_selector.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -22,6 +24,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _experienceController = TextEditingController();
   bool _isLoading = false;
+  String _fullPhoneNumber = '';
+  String _countryCode = '+91';
+  String _phoneNumber = '';
 
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
@@ -73,7 +78,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => OtpVerificationScreen(
-                    phoneNumber: _phoneController.text,
+                    phoneNumber: _fullPhoneNumber,
                     otpId: state.otpId,
                     isSignup: true,
                     signupData: {
@@ -257,26 +262,31 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Phone Field
-                          _buildTextField(
-                            controller: _phoneController,
-                            label: 'Phone Number',
-                            icon: Icons.phone,
-                            keyboardType: TextInputType.phone,
-                            hint: '+91 98765 43210',
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your phone number';
-                              }
-                              String cleanValue = value.replaceAll(' ', '');
-                              if (!cleanValue.startsWith('+')) {
-                                return 'Please enter phone number with country code (e.g., +91)';
-                              }
-                              if (cleanValue.length < 12) {
-                                return 'Please enter a valid phone number with country code';
-                              }
-                              return null;
-                            },
+                          // Phone Field with Country Selector
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Phone Number',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              PhoneInputField(
+                                initialCountryCode: _countryCode,
+                                initialPhoneNumber: _phoneNumber,
+                                onPhoneChanged: (fullPhone, countryCode, phoneNumber) {
+                                  setState(() {
+                                    _fullPhoneNumber = fullPhone;
+                                    _countryCode = countryCode;
+                                    _phoneNumber = phoneNumber;
+                                  });
+                                },
+                                hintText: 'Enter your phone number',
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
 
@@ -596,7 +606,19 @@ class _SignupScreenState extends State<SignupScreen> {
       });
 
       // Send OTP for signup
-      context.read<AuthBloc>().add(SendOtpEvent(_phoneController.text));
+      if (_fullPhoneNumber.isNotEmpty && _phoneNumber.isNotEmpty) {
+        context.read<AuthBloc>().add(SendOtpEvent(_fullPhoneNumber.trim()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please enter a valid phone number'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 }

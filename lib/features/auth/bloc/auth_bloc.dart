@@ -38,7 +38,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Try API call first
       final response = await _apiService.post(
         ApiConstants.sendOtp,
-        data: {'phone': event.phoneNumber.replaceAll(' ', '')},
+        data: {'phone': event.phoneNumber.trim()},
       );
       
       if (response.statusCode == 200) {
@@ -75,7 +75,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final response = await _apiService.post(
         ApiConstants.verifyOtp,
         data: {
-          'phone': event.phoneNumber.replaceAll(' ', ''),
+          'phone': event.phoneNumber.trim(),
           'otp': event.otp,
           if (event.otpId != null) 'otpId': event.otpId,
         },
@@ -88,7 +88,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           await _storageService.setAuthToken(authResponse.token!);
           await _storageService.setUserData(jsonEncode(authResponse.astrologer!.toJson()));
           await _storageService.setIsLoggedIn(true);
-          await _storageService.setPhoneNumber(event.phoneNumber.replaceAll(' ', ''));
+          await _storageService.setPhoneNumber(event.phoneNumber.trim());
           
           // Set auth token for API calls
           _apiService.setAuthToken(authResponse.token!);
@@ -126,7 +126,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final response = await _apiService.post(
         ApiConstants.signup,
         data: {
-          'phone': event.phoneNumber.replaceAll(' ', ''),
+          'phone': event.phoneNumber.trim(),
           'otp': event.otp,
           if (event.otpId != null) 'otpId': event.otpId,
           'name': event.name,
@@ -144,7 +144,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           await _storageService.setAuthToken(authResponse.token!);
           await _storageService.setUserData(jsonEncode(authResponse.astrologer!.toJson()));
           await _storageService.setIsLoggedIn(true);
-          await _storageService.setPhoneNumber(event.phoneNumber.replaceAll(' ', ''));
+          await _storageService.setPhoneNumber(event.phoneNumber.trim());
           
           // Set auth token for API calls
           _apiService.setAuthToken(authResponse.token!);

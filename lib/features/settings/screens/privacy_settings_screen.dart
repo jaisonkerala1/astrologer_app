@@ -365,7 +365,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           style: TextStyle(color: themeService.textPrimary),
         ),
         content: Text(
-          'Our privacy policy outlines how we collect, use, and protect your personal information. We are committed to maintaining the privacy and security of your data.',
+          'AXIOM LEAP is committed to protecting your privacy and personal information. Our privacy policy outlines how we collect, use, and protect your data in compliance with Indian data protection laws. For detailed information, please contact us at support@axiomleap.com.',
           style: TextStyle(color: themeService.textSecondary),
         ),
         actions: [
@@ -384,7 +384,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   void _exportData(ThemeService themeService) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Data export initiated. You will receive an email with your data.'),
+        content: const Text('Data export initiated. You will receive an email with your data from AXIOM LEAP.'),
         backgroundColor: themeService.successColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -404,7 +404,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           style: TextStyle(color: themeService.textPrimary),
         ),
         content: Text(
-          'This action cannot be undone. All your data will be permanently deleted.',
+          'This action cannot be undone. All your data will be permanently deleted from AXIOM LEAP servers. For assistance, contact us at support@axiomleap.com.',
           style: TextStyle(color: themeService.textSecondary),
         ),
         actions: [
@@ -421,7 +421,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               // Implement account deletion logic
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Account deletion request submitted.'),
+                  content: const Text('Account deletion request submitted to AXIOM LEAP.'),
                   backgroundColor: themeService.errorColor,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
@@ -440,5 +440,6 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     );
   }
 }
+
 
 

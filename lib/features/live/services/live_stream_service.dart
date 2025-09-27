@@ -347,6 +347,8 @@ class LiveStreamService extends ChangeNotifier {
       );
       
       _currentLikes = 0;
+      print('🎥 [LIVE_SERVICE] Stream created: ${_currentStream?.id}');
+      print('🎥 [LIVE_SERVICE] Stream title: ${_currentStream?.title}');
       notifyListeners();
       
       // Mock successful stream start

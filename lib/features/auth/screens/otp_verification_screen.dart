@@ -130,9 +130,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   // Top section with icon and title
                   Expanded(
                     flex: 2,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                         // OTP Icon
                         Container(
                           padding: const EdgeInsets.all(20),
@@ -174,7 +175,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   
@@ -245,9 +247,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   // Bottom section with buttons - Always visible
                   Expanded(
                     flex: 1,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
                         // Verify Button - Professional Design
                         SizedBox(
                           width: double.infinity,
@@ -314,7 +317,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],

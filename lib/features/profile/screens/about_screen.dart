@@ -141,6 +141,29 @@ class _AboutScreenState extends State<AboutScreen> {
               fontSize: 16,
             ),
           ),
+          
+          const SizedBox(height: 16),
+          
+          // Company Info
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              'Powered by AXIOM LEAP',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -309,21 +332,15 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
               const SizedBox(height: 16),
               _buildContactItem(
+                icon: Icons.business,
+                title: 'Company',
+                value: 'AXIOM LEAP',
+                themeService: themeService,
+              ),
+              _buildContactItem(
                 icon: Icons.email,
                 title: 'Email',
-                value: 'support@astrologerapp.com',
-                themeService: themeService,
-              ),
-              _buildContactItem(
-                icon: Icons.phone,
-                title: 'Phone',
-                value: '+1 (555) 123-4567',
-                themeService: themeService,
-              ),
-              _buildContactItem(
-                icon: Icons.web,
-                title: 'Website',
-                value: 'www.astrologerapp.com',
+                value: 'support@axiomleap.com',
                 themeService: themeService,
               ),
             ],
@@ -388,9 +405,18 @@ class _AboutScreenState extends State<AboutScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '© 2024 Astrologer App. All rights reserved.',
+            '© 2024 AXIOM LEAP. All rights reserved.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: themeService.textSecondary.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'India',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: themeService.textSecondary.withOpacity(0.6),
+              fontSize: 12,
             ),
             textAlign: TextAlign.center,
           ),

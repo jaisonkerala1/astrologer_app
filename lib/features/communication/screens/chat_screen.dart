@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import 'video_call_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String contactName;
@@ -108,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: Icon(Icons.phone, color: themeService.successColor),
           ),
           IconButton(
-            onPressed: () => _showMoreOptions(),
+            onPressed: () => _showOptionsMenu(),
             icon: Icon(Icons.more_vert, color: themeService.textPrimary),
           ),
         ],
@@ -295,6 +296,91 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _showOptionsMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.videocam, color: Colors.blue),
+              title: const Text('Video Call'),
+              onTap: () {
+                Navigator.pop(context);
+                _initiateVideoCall();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.call, color: Colors.green),
+              title: const Text('Voice Call'),
+              onTap: () {
+                Navigator.pop(context);
+                _makeCall();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.orange),
+              title: const Text('Contact Info'),
+              onTap: () {
+                Navigator.pop(context);
+                _showContactInfo();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block, color: Colors.red),
+              title: const Text('Block Contact'),
+              onTap: () {
+                Navigator.pop(context);
+                _blockContact();
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _initiateVideoCall() {
+    print('🎥 Video call initiated for: ${widget.contactName}');
+    
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoCallScreen(
+            contactName: widget.contactName,
+            isIncoming: false,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('❌ Error opening video call: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening video call: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _makeCall() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -304,62 +390,59 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showMoreOptions() {
-    showModalBottomSheet(
+  void _showContactInfo() {
+    // Show contact info dialog
+    showDialog(
       context: context,
-      builder: (context) => Consumer<ThemeService>(
-        builder: (context, themeService, child) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: themeService.cardColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.call, color: themeService.successColor),
-                  title: Text('Call', style: TextStyle(color: themeService.textPrimary)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _makeCall();
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.videocam, color: themeService.primaryColor),
-                  title: Text('Video Call', style: TextStyle(color: themeService.textPrimary)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Implement video call
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.info, color: themeService.infoColor),
-                  title: Text('Contact Info', style: TextStyle(color: themeService.textPrimary)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Show contact info
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.block, color: themeService.errorColor),
-                  title: Text('Block Contact', style: TextStyle(color: themeService.textPrimary)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Block contact
-                  },
-                ),
-              ],
-            ),
-          );
-        },
+      builder: (context) => AlertDialog(
+        title: const Text('Contact Info'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Name: ${widget.contactName}'),
+            const Text('Phone: +91 98765 43210'),
+            const Text('Last seen: Just now'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
+
+  void _blockContact() {
+    // Show block contact confirmation
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Block Contact'),
+        content: Text('Are you sure you want to block ${widget.contactName}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${widget.contactName} has been blocked'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 

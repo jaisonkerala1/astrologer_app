@@ -15,7 +15,7 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Container(
-          height: 120,
+          height: 140, // Increased from 120 to accommodate content
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -19,16 +19,18 @@ class ProfileAvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageProvider = _getImageProvider();
+    
     return CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor ?? Colors.white,
-      backgroundImage: _getImageProvider(),
-      onBackgroundImageError: (exception, stackTrace) {
+      backgroundImage: imageProvider,
+      onBackgroundImageError: imageProvider != null ? (exception, stackTrace) {
         print('🖼️ [PROFILE_AVATAR] Image loading error: $exception');
         print('🖼️ [PROFILE_AVATAR] Image path: $imagePath');
         print('🖼️ [PROFILE_AVATAR] This is expected for Railway ephemeral storage');
-      },
-      child: _getImageProvider() == null 
+      } : null,
+      child: imageProvider == null 
           ? Text(
               fallbackText ?? 'A',
               style: TextStyle(

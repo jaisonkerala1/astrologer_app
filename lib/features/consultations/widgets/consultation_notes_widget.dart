@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/consultation_model.dart';
+import '../services/consultations_service.dart';
 import '../../../shared/theme/services/theme_service.dart';
 
 class ConsultationNotesWidget extends StatefulWidget {
@@ -271,19 +272,57 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
     });
   }
 
-  void _saveNotes() {
+  void _saveNotes() async {
     HapticFeedback.lightImpact();
-    // TODO: Save notes to backend
-    setState(() {
-      _isEditing = false;
-    });
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notes saved successfully'),
-        backgroundColor: Color(0xFF10B981),
-      ),
-    );
+    try {
+      // Show loading indicator
+      setState(() {
+        _isEditing = false;
+      });
+      
+      // Import the consultations service
+      final consultationsService = ConsultationsService();
+      
+      // Save notes to backend
+      await consultationsService.addConsultationNotes(
+        widget.consultation.id,
+        _notesController.text.trim(),
+      );
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notes saved successfully'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+      
+      // Refresh the consultation data
+      if (mounted) {
+        // Trigger a refresh of the consultation data
+        // The parent widget should listen to this and update accordingly
+      }
+      
+    } catch (e) {
+      print('Error saving notes: $e');
+      
+      // Revert editing state on error
+      setState(() {
+        _isEditing = true;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save notes: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
   }
 }
 
