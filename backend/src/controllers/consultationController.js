@@ -371,11 +371,23 @@ const updateConsultationStatus = async (req, res) => {
       if (cancellationReason) updateData.cancellationReason = cancellationReason;
     }
 
+    // Add to status history
+    const statusHistoryEntry = {
+      status: status,
+      timestamp: new Date(),
+      notes: notes || null,
+      scheduledTime: consultation.scheduledTime
+    };
+
+    console.log('Adding status history entry:', statusHistoryEntry);
     console.log('Update data:', updateData);
 
     const updatedConsultation = await Consultation.findByIdAndUpdate(
       consultationId,
-      updateData,
+      {
+        ...updateData,
+        $push: { statusHistory: statusHistoryEntry }
+      },
       { new: true, runValidators: true }
     ).populate('astrologerId', 'name phone email');
 
