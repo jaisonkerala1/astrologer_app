@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/services/status_service.dart';
-import '../bloc/dashboard_bloc.dart';
-import '../bloc/dashboard_event.dart';
 
 class MinimalAvailabilityToggleWidget extends StatelessWidget {
   const MinimalAvailabilityToggleWidget({super.key});
@@ -62,21 +59,9 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                     onTap: () {
                       HapticFeedback.lightImpact();
                       try {
-                        print('🔄 Toggle pressed - Current status: ${statusService.isOnline}');
-                        
-                        // Update local status service
                         statusService.setOnlineStatus(!statusService.isOnline);
-                        print('🔄 Local status updated to: ${statusService.isOnline}');
-                        
-                        // Update backend database via DashboardBloc
-                        print('🔄 Calling DashboardBloc with UpdateOnlineStatusEvent: ${!statusService.isOnline}');
-                        context.read<DashboardBloc>().add(
-                          UpdateOnlineStatusEvent(!statusService.isOnline)
-                        );
-                        print('✅ DashboardBloc event dispatched successfully');
                       } catch (e) {
-                        print('❌ Error toggling status: $e');
-                        print('❌ Error type: ${e.runtimeType}');
+                        print('Error toggling status: $e');
                       }
                     },
                     child: Container(

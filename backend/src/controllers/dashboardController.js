@@ -1,5 +1,5 @@
 const Astrologer = require('../models/Astrologer');
-const Consultation = require('../models/Consultation');
+const Session = require('../models/Session');
 
 // Get dashboard stats
 const getDashboardStats = async (req, res) => {
@@ -21,47 +21,47 @@ const getDashboardStats = async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Get today's consultations
-    const todaysConsultations = await Consultation.find({
+    // Get today's sessions
+    const todaysSessions = await Session.find({
       astrologerId,
-      scheduledTime: { $gte: today, $lt: tomorrow },
+      startTime: { $gte: today, $lt: tomorrow },
       status: 'completed'
     });
 
     // Calculate today's earnings
-    const todayEarnings = todaysConsultations.reduce((sum, consultation) => sum + (consultation.amount || 0), 0);
+    const todayEarnings = todaysSessions.reduce((sum, session) => sum + session.earnings, 0);
 
-    // Get total consultations count
-    const totalConsultations = await Consultation.countDocuments({
+    // Get total sessions count
+    const totalSessions = await Session.countDocuments({
       astrologerId,
       status: 'completed'
     });
 
-    // Calculate average consultation duration
-    const avgDuration = todaysConsultations.length > 0 
-      ? todaysConsultations.reduce((sum, consultation) => sum + (consultation.duration || 0), 0) / todaysConsultations.length
+    // Calculate average session duration
+    const avgDuration = todaysSessions.length > 0 
+      ? todaysSessions.reduce((sum, session) => sum + session.duration, 0) / todaysSessions.length
       : 0;
 
     // Calculate average rating
-    const consultationsWithRating = await Consultation.find({
+    const sessionsWithRating = await Session.find({
       astrologerId,
       status: 'completed',
-      astrologerRating: { $exists: true, $ne: null }
+      rating: { $exists: true, $ne: null }
     });
 
-    const avgRating = consultationsWithRating.length > 0
-      ? consultationsWithRating.reduce((sum, consultation) => sum + (consultation.astrologerRating || 0), 0) / consultationsWithRating.length
+    const avgRating = sessionsWithRating.length > 0
+      ? sessionsWithRating.reduce((sum, session) => sum + session.rating, 0) / sessionsWithRating.length
       : 0;
 
     res.json({
       success: true,
       data: {
         todayEarnings,
-        totalEarnings: astrologer.totalEarnings || 0,
-        callsToday: todaysConsultations.length,
-        totalCalls: totalConsultations,
+        totalEarnings: astrologer.totalEarnings,
+        callsToday: todaysSessions.length,
+        totalCalls: totalSessions,
         isOnline: astrologer.isOnline,
-        totalSessions: totalConsultations,
+        totalSessions,
         averageSessionDuration: avgDuration,
         averageRating: avgRating
       }
@@ -110,22 +110,22 @@ const updateOnlineStatus = async (req, res) => {
   }
 };
 
-// Get recent consultations
+// Get recent sessions
 const getRecentSessions = async (req, res) => {
   try {
     const { astrologerId } = req.user;
     const { limit = 10, page = 1 } = req.query;
 
-    const consultations = await Consultation.find({
+    const sessions = await Session.find({
       astrologerId,
       status: 'completed'
     })
-    .sort({ scheduledTime: -1 })
+    .sort({ startTime: -1 })
     .limit(limit * 1)
     .skip((page - 1) * limit)
-    .select('clientName clientPhone duration amount scheduledTime type astrologerRating');
+    .select('clientName clientPhone duration earnings startTime type rating');
 
-    const totalConsultations = await Consultation.countDocuments({
+    const totalSessions = await Session.countDocuments({
       astrologerId,
       status: 'completed'
     });
@@ -133,21 +133,21 @@ const getRecentSessions = async (req, res) => {
     res.json({
       success: true,
       data: {
-        sessions: consultations, // Keep same field name for frontend compatibility
+        sessions,
         pagination: {
           currentPage: parseInt(page),
-          totalPages: Math.ceil(totalConsultations / limit),
-          totalSessions: totalConsultations,
-          hasNext: page * limit < totalConsultations,
+          totalPages: Math.ceil(totalSessions / limit),
+          totalSessions,
+          hasNext: page * limit < totalSessions,
           hasPrev: page > 1
         }
       }
     });
   } catch (error) {
-    console.error('Get recent consultations error:', error);
+    console.error('Get recent sessions error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get recent consultations'
+      message: 'Failed to get recent sessions'
     });
   }
 };

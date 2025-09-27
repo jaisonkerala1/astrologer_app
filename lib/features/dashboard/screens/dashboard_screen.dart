@@ -357,13 +357,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               );
-            } else if (state is StatusUpdatedState) {
-              // Handle status update - reload dashboard stats
-              print('🔄 Status updated, reloading dashboard stats');
-              context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
-              return const DashboardSkeletonLoader();
             } else {
-              // Fallback for any other unhandled states
+              // Fallback for any unhandled states (like StatusUpdatedState)
               return const DashboardSkeletonLoader();
             }
           },
