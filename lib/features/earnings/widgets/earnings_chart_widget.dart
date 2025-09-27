@@ -392,3 +392,4 @@ class EarningsBarChartWidget extends StatelessWidget {
 
 
 
+
