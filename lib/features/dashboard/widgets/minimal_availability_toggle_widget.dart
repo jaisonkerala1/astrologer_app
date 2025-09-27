@@ -62,15 +62,21 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                     onTap: () {
                       HapticFeedback.lightImpact();
                       try {
+                        print('🔄 Toggle pressed - Current status: ${statusService.isOnline}');
+                        
                         // Update local status service
                         statusService.setOnlineStatus(!statusService.isOnline);
+                        print('🔄 Local status updated to: ${statusService.isOnline}');
                         
                         // Update backend database via DashboardBloc
+                        print('🔄 Calling DashboardBloc with UpdateOnlineStatusEvent: ${!statusService.isOnline}');
                         context.read<DashboardBloc>().add(
                           UpdateOnlineStatusEvent(!statusService.isOnline)
                         );
+                        print('✅ DashboardBloc event dispatched successfully');
                       } catch (e) {
-                        print('Error toggling status: $e');
+                        print('❌ Error toggling status: $e');
+                        print('❌ Error type: ${e.runtimeType}');
                       }
                     },
                     child: Container(
