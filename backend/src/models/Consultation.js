@@ -136,6 +136,39 @@ const consultationSchema = new mongoose.Schema({
     type: Date
   },
   
+  // Reschedule tracking fields
+  rescheduleCount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  lastRescheduledAt: {
+    type: Date
+  },
+  originalScheduledTime: {
+    type: Date
+  },
+  
+  // Status history tracking
+  statusHistory: [{
+    status: {
+      type: String,
+      enum: ['scheduled', 'inProgress', 'completed', 'cancelled', 'noShow', 'rescheduled'],
+      required: true
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    notes: {
+      type: String,
+      trim: true
+    },
+    scheduledTime: {
+      type: Date
+    }
+  }],
+  
   // Reminder settings
   reminderSent: {
     type: Boolean,

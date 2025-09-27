@@ -282,35 +282,93 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
   }
 
   Widget _buildStatusTimeline(ThemeService themeService) {
-    final statuses = [
-      {
-        'status': 'Scheduled',
-        'time': _currentConsultation.scheduledTime,
-        'icon': Icons.schedule,
-        'color': themeService.primaryColor,
-      },
-      if (_currentConsultation.startedAt != null)
+    // Use status history if available, otherwise fallback to current status
+    final statusHistory = _currentConsultation.statusHistory;
+    
+    if (statusHistory.isEmpty) {
+      // Fallback for consultations without status history
+      final statuses = [
         {
-          'status': 'Started',
-          'time': _currentConsultation.startedAt!,
-          'icon': Icons.play_arrow,
-          'color': themeService.successColor,
+          'status': 'Scheduled',
+          'time': _currentConsultation.scheduledTime,
+          'icon': Icons.schedule,
+          'color': themeService.primaryColor,
+          'notes': 'Consultation scheduled',
         },
-      if (_currentConsultation.status == ConsultationStatus.completed)
-        {
-          'status': 'Completed',
-          'time': _currentConsultation.completedAt ?? DateTime.now(),
-          'icon': Icons.check_circle,
-          'color': themeService.successColor,
-        },
-      if (_currentConsultation.status == ConsultationStatus.cancelled)
-        {
-          'status': 'Cancelled',
-          'time': _currentConsultation.cancelledAt ?? DateTime.now(),
-          'icon': Icons.cancel,
-          'color': themeService.errorColor,
-        },
-    ];
+        if (_currentConsultation.startedAt != null)
+          {
+            'status': 'Started',
+            'time': _currentConsultation.startedAt!,
+            'icon': Icons.play_arrow,
+            'color': themeService.successColor,
+            'notes': 'Consultation started',
+          },
+        if (_currentConsultation.status == ConsultationStatus.completed)
+          {
+            'status': 'Completed',
+            'time': _currentConsultation.completedAt ?? DateTime.now(),
+            'icon': Icons.check_circle,
+            'color': themeService.successColor,
+            'notes': 'Consultation completed',
+          },
+        if (_currentConsultation.status == ConsultationStatus.cancelled)
+          {
+            'status': 'Cancelled',
+            'time': _currentConsultation.cancelledAt ?? DateTime.now(),
+            'icon': Icons.cancel,
+            'color': themeService.errorColor,
+            'notes': 'Consultation cancelled',
+          },
+      ];
+      
+      return _buildTimelineFromStatuses(statuses, themeService);
+    }
+    
+    // Build timeline from status history
+    final statuses = statusHistory.map((entry) {
+      IconData icon;
+      Color color;
+      
+      switch (entry.status) {
+        case 'scheduled':
+          icon = Icons.schedule;
+          color = themeService.primaryColor;
+          break;
+        case 'rescheduled':
+          icon = Icons.schedule_send;
+          color = const Color(0xFF3B82F6);
+          break;
+        case 'inProgress':
+          icon = Icons.play_arrow;
+          color = themeService.successColor;
+          break;
+        case 'completed':
+          icon = Icons.check_circle;
+          color = themeService.successColor;
+          break;
+        case 'cancelled':
+          icon = Icons.cancel;
+          color = themeService.errorColor;
+          break;
+        default:
+          icon = Icons.info;
+          color = themeService.textSecondary;
+      }
+      
+      return {
+        'status': entry.status,
+        'time': entry.timestamp,
+        'icon': icon,
+        'color': color,
+        'notes': entry.notes,
+        'scheduledTime': entry.scheduledTime,
+      };
+    }).toList();
+    
+    return _buildTimelineFromStatuses(statuses, themeService);
+  }
+
+  Widget _buildTimelineFromStatuses(List<Map<String, dynamic>> statuses, ThemeService themeService) {
 
     return Column(
       children: statuses.asMap().entries.map((entry) {
@@ -352,7 +410,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    status['status'] as String,
+                    _formatStatusName(status['status'] as String),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -367,6 +425,35 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                       color: themeService.textSecondary,
                     ),
                   ),
+                  if (status['notes'] != null && (status['notes'] as String).isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      status['notes'] as String,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: themeService.textSecondary.withOpacity(0.8),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                  if (status['scheduledTime'] != null && status['status'] == 'rescheduled') ...[
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'New time: ${DateFormat('MMM dd, hh:mm a').format(status['scheduledTime'] as DateTime)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF3B82F6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -374,6 +461,25 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
         );
       }).toList(),
     );
+  }
+
+  String _formatStatusName(String status) {
+    switch (status.toLowerCase()) {
+      case 'scheduled':
+        return 'Scheduled';
+      case 'rescheduled':
+        return 'Rescheduled';
+      case 'inprogress':
+        return 'Started';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'noshow':
+        return 'No Show';
+      default:
+        return status;
+    }
   }
 
   String _formatDateTime(DateTime dateTime) {

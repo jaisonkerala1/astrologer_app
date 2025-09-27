@@ -478,7 +478,7 @@ class ConsultationActionsWidget extends StatelessWidget {
     }
   }
 
-  void _showDateTimePicker(BuildContext context) async {
+  Future<void> _showDateTimePicker(BuildContext context) async {
     // Step 1: Select Date
     final DateTime? selectedDate = await showDatePicker(
       context: context,

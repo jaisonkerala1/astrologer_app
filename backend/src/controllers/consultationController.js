@@ -207,7 +207,14 @@ const createConsultation = async (req, res) => {
       ...consultationData,
       astrologerId,
       isManual: true,
-      source: 'app'
+      source: 'app',
+      originalScheduledTime: consultationData.scheduledTime,
+      statusHistory: [{
+        status: 'scheduled',
+        timestamp: new Date(),
+        notes: 'Consultation initially scheduled',
+        scheduledTime: consultationData.scheduledTime
+      }]
     });
 
     await consultation.save();
@@ -1165,10 +1172,17 @@ const rescheduleConsultation = async (req, res) => {
       });
     }
 
+    // Store original scheduled time if this is the first reschedule
+    const isFirstReschedule = !consultation.originalScheduledTime;
+    const originalScheduledTime = isFirstReschedule ? consultation.scheduledTime : consultation.originalScheduledTime;
+
     const updateData = {
       scheduledTime: newScheduledTime,
       status: status || 'scheduled',
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      $inc: { rescheduleCount: 1 },
+      lastRescheduledAt: new Date(),
+      originalScheduledTime: originalScheduledTime
     };
 
     // Reset timestamps if rescheduling
@@ -1177,6 +1191,16 @@ const rescheduleConsultation = async (req, res) => {
       updateData.completedAt = undefined;
       updateData.cancelledAt = undefined;
     }
+
+    // Add to status history
+    const statusHistoryEntry = {
+      status: 'rescheduled',
+      timestamp: new Date(),
+      notes: `Rescheduled from ${consultation.scheduledTime.toISOString()} to ${newScheduledTime.toISOString()}`,
+      scheduledTime: newScheduledTime
+    };
+
+    updateData.$push = { statusHistory: statusHistoryEntry };
 
     const updatedConsultation = await Consultation.findByIdAndUpdate(
       consultationId,

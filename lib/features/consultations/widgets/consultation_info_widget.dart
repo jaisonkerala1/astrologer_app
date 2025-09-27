@@ -115,6 +115,14 @@ class ConsultationInfoWidget extends StatelessWidget {
             const SizedBox(height: 16),
             _buildShareRow(),
           ],
+          
+          // Reschedule Count (if rescheduled)
+          if (consultation.rescheduleCount > 0) ...[
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 16),
+            _buildRescheduleRow(),
+          ],
         ],
       ),
     );
@@ -318,6 +326,53 @@ class ConsultationInfoWidget extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRescheduleRow() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.schedule_send,
+              size: 16,
+              color: const Color(0xFF3B82F6),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Rescheduled ${consultation.rescheduleCount} time${consultation.rescheduleCount == 1 ? '' : 's'}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF64748B),
+              ),
+            ),
+            if (consultation.lastRescheduledAt != null) ...[
+              const Spacer(),
+              Text(
+                _formatDateTime(consultation.lastRescheduledAt!),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (consultation.originalScheduledTime != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Original time: ${_formatDateTime(consultation.originalScheduledTime!)}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],

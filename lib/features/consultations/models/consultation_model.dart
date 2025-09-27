@@ -1,3 +1,37 @@
+class StatusHistoryEntry {
+  final String status;
+  final DateTime timestamp;
+  final String? notes;
+  final DateTime? scheduledTime;
+
+  const StatusHistoryEntry({
+    required this.status,
+    required this.timestamp,
+    this.notes,
+    this.scheduledTime,
+  });
+
+  factory StatusHistoryEntry.fromJson(Map<String, dynamic> json) {
+    return StatusHistoryEntry(
+      status: json['status'] ?? '',
+      timestamp: DateTime.parse(json['timestamp']),
+      notes: json['notes'],
+      scheduledTime: json['scheduledTime'] != null 
+          ? DateTime.parse(json['scheduledTime'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'timestamp': timestamp.toIso8601String(),
+      'notes': notes,
+      'scheduledTime': scheduledTime?.toIso8601String(),
+    };
+  }
+}
+
 class ConsultationModel {
   final String id;
   final String clientName;
@@ -21,6 +55,14 @@ class ConsultationModel {
   // Share tracking fields
   final int shareCount; // Number of times shared
   final DateTime? lastSharedAt; // Last time it was shared
+  
+  // Reschedule tracking fields
+  final int rescheduleCount; // Number of times rescheduled
+  final DateTime? lastRescheduledAt; // Last time it was rescheduled
+  final DateTime? originalScheduledTime; // Original scheduled time
+  
+  // Status history
+  final List<StatusHistoryEntry> statusHistory;
 
   const ConsultationModel({
     required this.id,
@@ -41,6 +83,10 @@ class ConsultationModel {
     this.astrologerRatedAt,
     this.shareCount = 0,
     this.lastSharedAt,
+    this.rescheduleCount = 0,
+    this.lastRescheduledAt,
+    this.originalScheduledTime,
+    this.statusHistory = const [],
   });
 
   factory ConsultationModel.fromJson(Map<String, dynamic> json) {
@@ -83,6 +129,16 @@ class ConsultationModel {
       lastSharedAt: json['lastSharedAt'] != null 
           ? DateTime.parse(json['lastSharedAt'])
           : null,
+      rescheduleCount: json['rescheduleCount'] ?? 0,
+      lastRescheduledAt: json['lastRescheduledAt'] != null 
+          ? DateTime.parse(json['lastRescheduledAt'])
+          : null,
+      originalScheduledTime: json['originalScheduledTime'] != null 
+          ? DateTime.parse(json['originalScheduledTime'])
+          : null,
+      statusHistory: (json['statusHistory'] as List<dynamic>?)
+          ?.map((entry) => StatusHistoryEntry.fromJson(entry))
+          .toList() ?? [],
     );
   }
 
@@ -106,6 +162,10 @@ class ConsultationModel {
       'astrologerRatedAt': astrologerRatedAt?.toIso8601String(),
       'shareCount': shareCount,
       'lastSharedAt': lastSharedAt?.toIso8601String(),
+      'rescheduleCount': rescheduleCount,
+      'lastRescheduledAt': lastRescheduledAt?.toIso8601String(),
+      'originalScheduledTime': originalScheduledTime?.toIso8601String(),
+      'statusHistory': statusHistory.map((entry) => entry.toJson()).toList(),
     };
   }
 
@@ -128,6 +188,10 @@ class ConsultationModel {
     DateTime? astrologerRatedAt,
     int? shareCount,
     DateTime? lastSharedAt,
+    int? rescheduleCount,
+    DateTime? lastRescheduledAt,
+    DateTime? originalScheduledTime,
+    List<StatusHistoryEntry>? statusHistory,
   }) {
     return ConsultationModel(
       id: id ?? this.id,
@@ -148,6 +212,10 @@ class ConsultationModel {
       astrologerRatedAt: astrologerRatedAt ?? this.astrologerRatedAt,
       shareCount: shareCount ?? this.shareCount,
       lastSharedAt: lastSharedAt ?? this.lastSharedAt,
+      rescheduleCount: rescheduleCount ?? this.rescheduleCount,
+      lastRescheduledAt: lastRescheduledAt ?? this.lastRescheduledAt,
+      originalScheduledTime: originalScheduledTime ?? this.originalScheduledTime,
+      statusHistory: statusHistory ?? this.statusHistory,
     );
   }
 }
