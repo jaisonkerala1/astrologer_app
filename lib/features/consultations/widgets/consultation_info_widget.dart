@@ -99,6 +99,22 @@ class ConsultationInfoWidget extends StatelessWidget {
               ),
             ),
           ],
+          
+          // Astrologer Rating (if rated)
+          if (consultation.astrologerRating != null) ...[
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 16),
+            _buildRatingRow(),
+          ],
+          
+          // Share Count (if shared)
+          if (consultation.shareCount > 0) ...[
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 16),
+            _buildShareRow(),
+          ],
         ],
       ),
     );
@@ -236,5 +252,76 @@ class ConsultationInfoWidget extends StatelessWidget {
       'Friday', 'Saturday', 'Sunday'
     ];
     return weekdays[weekday - 1];
+  }
+
+  Widget _buildRatingRow() {
+    return Row(
+      children: [
+        Icon(
+          Icons.star,
+          size: 16,
+          color: const Color(0xFFF59E0B),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Astrologer Rating',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        const Spacer(),
+        Row(
+          children: List.generate(5, (index) {
+            return Icon(
+              index < consultation.astrologerRating! ? Icons.star : Icons.star_border,
+              size: 16,
+              color: const Color(0xFFF59E0B),
+            );
+          }),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '${consultation.astrologerRating}/5',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShareRow() {
+    return Row(
+      children: [
+        Icon(
+          Icons.share,
+          size: 16,
+          color: const Color(0xFF8B5CF6),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Shared ${consultation.shareCount} time${consultation.shareCount == 1 ? '' : 's'}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        if (consultation.lastSharedAt != null) ...[
+          const Spacer(),
+          Text(
+            _formatDateTime(consultation.lastSharedAt!),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }

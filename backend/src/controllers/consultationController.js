@@ -1003,6 +1003,120 @@ const addConsultationRating = async (req, res) => {
   }
 };
 
+// Add astrologer rating to consultation
+const addAstrologerRating = async (req, res) => {
+  try {
+    const { consultationId } = req.params;
+    const { astrologerRating, astrologerFeedback } = req.body;
+
+    console.log(`Adding astrologer rating for consultation ${consultationId}: ${astrologerRating} stars`);
+
+    if (!mongoose.Types.ObjectId.isValid(consultationId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid consultation ID'
+      });
+    }
+
+    if (!astrologerRating || astrologerRating < 1 || astrologerRating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Astrologer rating must be between 1 and 5'
+      });
+    }
+
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Consultation not found'
+      });
+    }
+
+    if (consultation.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only rate completed consultations'
+      });
+    }
+
+    const updatedConsultation = await Consultation.findByIdAndUpdate(
+      consultationId,
+      { 
+        astrologerRating: parseInt(astrologerRating),
+        astrologerFeedback: astrologerFeedback ? astrologerFeedback.trim() : '',
+        astrologerRatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    ).populate('astrologerId', 'name phone email');
+
+    console.log(`Successfully added astrologer rating: ${updatedConsultation.astrologerRating} stars`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Astrologer rating added successfully',
+      data: updatedConsultation
+    });
+
+  } catch (error) {
+    console.error('Error adding astrologer rating:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add astrologer rating',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Track consultation share
+const trackConsultationShare = async (req, res) => {
+  try {
+    const { consultationId } = req.params;
+
+    console.log(`Tracking share for consultation ${consultationId}`);
+
+    if (!mongoose.Types.ObjectId.isValid(consultationId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid consultation ID'
+      });
+    }
+
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Consultation not found'
+      });
+    }
+
+    const updatedConsultation = await Consultation.findByIdAndUpdate(
+      consultationId,
+      { 
+        $inc: { shareCount: 1 },
+        lastSharedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    ).populate('astrologerId', 'name phone email');
+
+    console.log(`Successfully tracked share. New share count: ${updatedConsultation.shareCount}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Share tracked successfully',
+      data: updatedConsultation
+    });
+
+  } catch (error) {
+    console.error('Error tracking consultation share:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to track consultation share',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   getConsultations,
   getConsultationById,
@@ -1021,5 +1135,7 @@ module.exports = {
   getAllTimeConsultations,
   addConsultationNotes,
   addConsultationRating,
+  addAstrologerRating,
+  trackConsultationShare,
   fixStartedAt
 };

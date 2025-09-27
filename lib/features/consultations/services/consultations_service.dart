@@ -554,6 +554,70 @@ class ConsultationsService {
     }
   }
 
+  Future<ConsultationModel> addAstrologerRating(String consultationId, int rating, String? feedback) async {
+    try {
+      print('Adding astrologer rating: $rating stars for consultation $consultationId');
+      
+      final response = await _apiService.patch(
+        '/api/consultation/astrologer-rating/$consultationId',
+        data: {
+          'astrologerRating': rating,
+          if (feedback != null) 'astrologerFeedback': feedback,
+        },
+      );
+
+      if (response.data['success'] == true) {
+        final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
+        
+        // Update local cache
+        final consultationIndex = _consultations.indexWhere(
+          (c) => c.id == consultationId,
+        );
+        if (consultationIndex != -1) {
+          _consultations[consultationIndex] = updatedConsultation;
+        }
+        
+        print('Successfully added astrologer rating: ${updatedConsultation.astrologerRating} stars');
+        return updatedConsultation;
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to add astrologer rating');
+      }
+    } catch (e) {
+      print('Error adding astrologer rating: $e');
+      throw Exception('Failed to add astrologer rating: $e');
+    }
+  }
+
+  Future<ConsultationModel> trackConsultationShare(String consultationId) async {
+    try {
+      print('Tracking share for consultation $consultationId');
+      
+      final response = await _apiService.patch(
+        '/api/consultation/share/$consultationId',
+      );
+
+      if (response.data['success'] == true) {
+        final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
+        
+        // Update local cache
+        final consultationIndex = _consultations.indexWhere(
+          (c) => c.id == consultationId,
+        );
+        if (consultationIndex != -1) {
+          _consultations[consultationIndex] = updatedConsultation;
+        }
+        
+        print('Successfully tracked share. New count: ${updatedConsultation.shareCount}');
+        return updatedConsultation;
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to track consultation share');
+      }
+    } catch (e) {
+      print('Error tracking consultation share: $e');
+      throw Exception('Failed to track consultation share: $e');
+    }
+  }
+
   // Mock data for development
   List<ConsultationModel> _getMockConsultations() {
     final now = DateTime.now();

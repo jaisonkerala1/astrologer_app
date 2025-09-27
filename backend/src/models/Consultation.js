@@ -99,7 +99,7 @@ const consultationSchema = new mongoose.Schema({
     maxlength: 200
   },
   
-  // Rating and feedback
+  // Rating and feedback (from clients - will be implemented later)
   rating: {
     type: Number,
     min: 1,
@@ -109,6 +109,31 @@ const consultationSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 500
+  },
+  
+  // Astrologer rating fields (separate from client rating)
+  astrologerRating: {
+    type: Number,
+    min: 1,
+    max: 5
+  },
+  astrologerFeedback: {
+    type: String,
+    trim: true,
+    maxlength: 500
+  },
+  astrologerRatedAt: {
+    type: Date
+  },
+  
+  // Share tracking fields
+  shareCount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  lastSharedAt: {
+    type: Date
   },
   
   // Reminder settings

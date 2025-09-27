@@ -54,8 +54,14 @@ router.patch('/status/:consultationId', consultationController.updateConsultatio
 // PATCH /api/consultation/notes/:consultationId - Add notes to consultation
 router.patch('/notes/:consultationId', consultationController.addConsultationNotes);
 
-// PATCH /api/consultation/rating/:consultationId - Add rating and feedback
+// PATCH /api/consultation/rating/:consultationId - Add rating and feedback (from clients)
 router.patch('/rating/:consultationId', consultationController.addConsultationRating);
+
+// PATCH /api/consultation/astrologer-rating/:consultationId - Add astrologer rating
+router.patch('/astrologer-rating/:consultationId', consultationController.addAstrologerRating);
+
+// PATCH /api/consultation/share/:consultationId - Track consultation share
+router.patch('/share/:consultationId', consultationController.trackConsultationShare);
 
 // DELETE /api/consultation/:consultationId - Delete a consultation
 router.delete('/:consultationId', consultationController.deleteConsultation);

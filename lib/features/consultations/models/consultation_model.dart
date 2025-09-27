@@ -12,6 +12,15 @@ class ConsultationModel {
   final DateTime? startedAt;
   final DateTime? completedAt;
   final DateTime? cancelledAt;
+  
+  // Astrologer rating fields (separate from consultation rating)
+  final int? astrologerRating; // 1-5 stars from astrologer
+  final String? astrologerFeedback; // Optional feedback from astrologer
+  final DateTime? astrologerRatedAt; // When astrologer rated the session
+  
+  // Share tracking fields
+  final int shareCount; // Number of times shared
+  final DateTime? lastSharedAt; // Last time it was shared
 
   const ConsultationModel({
     required this.id,
@@ -27,6 +36,11 @@ class ConsultationModel {
     this.startedAt,
     this.completedAt,
     this.cancelledAt,
+    this.astrologerRating,
+    this.astrologerFeedback,
+    this.astrologerRatedAt,
+    this.shareCount = 0,
+    this.lastSharedAt,
   });
 
   factory ConsultationModel.fromJson(Map<String, dynamic> json) {
@@ -60,6 +74,15 @@ class ConsultationModel {
       cancelledAt: json['cancelledAt'] != null 
           ? DateTime.parse(json['cancelledAt'])
           : null,
+      astrologerRating: json['astrologerRating'],
+      astrologerFeedback: json['astrologerFeedback'],
+      astrologerRatedAt: json['astrologerRatedAt'] != null 
+          ? DateTime.parse(json['astrologerRatedAt'])
+          : null,
+      shareCount: json['shareCount'] ?? 0,
+      lastSharedAt: json['lastSharedAt'] != null 
+          ? DateTime.parse(json['lastSharedAt'])
+          : null,
     );
   }
 
@@ -78,6 +101,11 @@ class ConsultationModel {
       'startedAt': startedAt?.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'cancelledAt': cancelledAt?.toIso8601String(),
+      'astrologerRating': astrologerRating,
+      'astrologerFeedback': astrologerFeedback,
+      'astrologerRatedAt': astrologerRatedAt?.toIso8601String(),
+      'shareCount': shareCount,
+      'lastSharedAt': lastSharedAt?.toIso8601String(),
     };
   }
 
@@ -95,6 +123,11 @@ class ConsultationModel {
     DateTime? startedAt,
     DateTime? completedAt,
     DateTime? cancelledAt,
+    int? astrologerRating,
+    String? astrologerFeedback,
+    DateTime? astrologerRatedAt,
+    int? shareCount,
+    DateTime? lastSharedAt,
   }) {
     return ConsultationModel(
       id: id ?? this.id,
@@ -110,6 +143,11 @@ class ConsultationModel {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       cancelledAt: cancelledAt ?? this.cancelledAt,
+      astrologerRating: astrologerRating ?? this.astrologerRating,
+      astrologerFeedback: astrologerFeedback ?? this.astrologerFeedback,
+      astrologerRatedAt: astrologerRatedAt ?? this.astrologerRatedAt,
+      shareCount: shareCount ?? this.shareCount,
+      lastSharedAt: lastSharedAt ?? this.lastSharedAt,
     );
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import '../models/consultation_model.dart';
 import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
 import '../services/consultations_service.dart';
+import 'rating_dialog.dart';
 
 class ConsultationActionsWidget extends StatelessWidget {
   final ConsultationModel consultation;
@@ -524,23 +527,102 @@ class ConsultationActionsWidget extends StatelessWidget {
     }
   }
 
-  void _rateConsultation(BuildContext context) {
-    // TODO: Implement rating functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Rating functionality coming soon'),
-        backgroundColor: Color(0xFFF59E0B),
+  void _rateConsultation(BuildContext context) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => RatingDialog(
+        consultationId: consultation.id,
+        clientName: consultation.clientName,
+        currentRating: consultation.astrologerRating,
+        currentFeedback: consultation.astrologerFeedback,
       ),
     );
+
+    if (result != null && mounted) {
+      try {
+        final consultationsService = ConsultationsService();
+        await consultationsService.addAstrologerRating(
+          consultation.id,
+          result['rating'] as int,
+          result['feedback'] as String?,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Rating submitted successfully'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+
+        // Refresh consultations
+        context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit rating: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
   }
 
-  void _shareConsultation(BuildContext context) {
-    // TODO: Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share functionality coming soon'),
-        backgroundColor: Color(0xFF8B5CF6),
-      ),
-    );
+  void _shareConsultation(BuildContext context) async {
+    try {
+      // Create share content
+      final shareContent = _createShareContent();
+      
+      // Use native share functionality
+      await Share.share(
+        shareContent,
+        subject: 'Consultation Details - ${consultation.clientName}',
+      );
+
+      // Track the share
+      final consultationsService = ConsultationsService();
+      await consultationsService.trackConsultationShare(consultation.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Consultation shared successfully'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+
+        // Refresh consultations to update share count
+        context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share consultation: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  String _createShareContent() {
+    final date = DateFormat('MMM dd, yyyy').format(consultation.scheduledTime);
+    final time = DateFormat('hh:mm a').format(consultation.scheduledTime);
+    
+    return '''
+🌟 Consultation Details
+
+👤 Client: ${consultation.clientName}
+📅 Date: $date
+⏰ Time: $time
+⏱️ Duration: ${consultation.duration} minutes
+💰 Amount: ₹${consultation.amount.toStringAsFixed(0)}
+📱 Type: ${consultation.type.toString().split('.').last.toUpperCase()}
+📊 Status: ${consultation.status.displayName}
+
+${consultation.notes != null && consultation.notes!.isNotEmpty ? '📝 Notes: ${consultation.notes}' : ''}
+
+Shared via Astrologer App
+    ''';
   }
 }
