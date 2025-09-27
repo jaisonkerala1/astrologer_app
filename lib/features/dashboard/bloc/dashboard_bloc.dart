@@ -66,7 +66,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     try {
       // Call real backend API to update online status
       final response = await _apiService.put(
-        '${ApiConstants.baseUrl}/api/dashboard/online-status',
+        '${ApiConstants.baseUrl}/api/dashboard/status',
         data: {'isOnline': event.isOnline},
       );
 
