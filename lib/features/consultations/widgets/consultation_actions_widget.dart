@@ -129,15 +129,6 @@ class ConsultationActionsWidget extends StatelessWidget {
           ] else if (consultation.status == ConsultationStatus.completed) ...[
             _buildActionButton(
               context: context,
-              icon: Icons.replay,
-              label: 'Reschedule',
-              description: 'Schedule another session',
-              color: const Color(0xFF3B82F6),
-              onTap: () => _rescheduleConsultation(context),
-            ),
-            const SizedBox(height: 12),
-            _buildActionButton(
-              context: context,
               icon: Icons.star_outline,
               label: 'Rate Session',
               description: 'Rate this consultation',

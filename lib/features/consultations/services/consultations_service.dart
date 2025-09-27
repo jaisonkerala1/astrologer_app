@@ -487,7 +487,7 @@ class ConsultationsService {
 
   Future<ConsultationModel> addConsultationNotes(String consultationId, String notes) async {
     try {
-      final response = await _apiService.put(
+      final response = await _apiService.patch(
         '/api/consultation/notes/$consultationId',
         data: {'notes': notes},
       );
