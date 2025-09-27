@@ -304,6 +304,7 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
       if (mounted) {
         // Trigger a refresh of the consultation data
         // The parent widget should listen to this and update accordingly
+        // Note: The BlocConsumer in the parent will automatically update when the state changes
       }
       
     } catch (e) {

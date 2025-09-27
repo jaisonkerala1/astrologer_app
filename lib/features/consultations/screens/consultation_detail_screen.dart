@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
+import '../bloc/consultations_state.dart';
 import '../models/consultation_model.dart';
 import '../widgets/consultation_timer_widget.dart';
 import '../widgets/consultation_notes_widget.dart';
@@ -29,10 +30,13 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
   late AnimationController _fadeController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
+  late ConsultationModel _currentConsultation;
 
   @override
   void initState() {
     super.initState();
+    _currentConsultation = widget.consultation;
+    
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -71,57 +75,82 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Scaffold(
-          backgroundColor: themeService.backgroundColor,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Header with back button and actions
-                _buildHeader(themeService),
-                
-                // Main content
-                Expanded(
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Consultation Info Card
-                            ConsultationInfoWidget(consultation: widget.consultation),
-                            const SizedBox(height: 24),
-                            
-                            // Timer Widget (if in progress)
-                            if (widget.consultation.status == ConsultationStatus.inProgress)
-                              ConsultationTimerWidget(consultation: widget.consultation),
-                            
-                            if (widget.consultation.status == ConsultationStatus.inProgress)
-                              const SizedBox(height: 24),
-                            
-                            // Notes Section
-                            ConsultationNotesWidget(consultation: widget.consultation),
-                            const SizedBox(height: 24),
-                            
-                            // Actions Section
-                            ConsultationActionsWidget(consultation: widget.consultation),
-                            const SizedBox(height: 24),
-                            
-                            // Status History
-                            _buildStatusHistory(themeService),
-                          ],
+    return BlocConsumer<ConsultationsBloc, ConsultationsState>(
+      listener: (context, state) {
+        // Update the current consultation when the consultation is updated
+        if (state is ConsultationsLoaded) {
+          final updatedConsultation = state.allConsultations.firstWhere(
+            (c) => c.id == _currentConsultation.id,
+            orElse: () => _currentConsultation,
+          );
+          if (updatedConsultation != _currentConsultation) {
+            setState(() {
+              _currentConsultation = updatedConsultation;
+            });
+          }
+        } else if (state is ConsultationUpdated) {
+          // Handle individual consultation updates
+          if (state.consultation.id == _currentConsultation.id) {
+            setState(() {
+              _currentConsultation = state.consultation;
+            });
+          }
+        }
+      },
+      builder: (context, state) {
+        return Consumer<ThemeService>(
+          builder: (context, themeService, child) {
+            return Scaffold(
+              backgroundColor: themeService.backgroundColor,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    // Header with back button and actions
+                    _buildHeader(themeService),
+                    
+                    // Main content
+                    Expanded(
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Consultation Info Card
+                                ConsultationInfoWidget(consultation: _currentConsultation),
+                                const SizedBox(height: 24),
+                                
+                                // Timer Widget (if in progress)
+                                if (_currentConsultation.status == ConsultationStatus.inProgress)
+                                  ConsultationTimerWidget(consultation: _currentConsultation),
+                                
+                                if (_currentConsultation.status == ConsultationStatus.inProgress)
+                                  const SizedBox(height: 24),
+                                
+                                // Notes Section
+                                ConsultationNotesWidget(consultation: _currentConsultation),
+                                const SizedBox(height: 24),
+                                
+                                // Actions Section
+                                ConsultationActionsWidget(consultation: _currentConsultation),
+                                const SizedBox(height: 24),
+                                
+                                // Status History
+                                _buildStatusHistory(themeService),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -177,7 +206,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                   ),
                 ),
                 Text(
-                  widget.consultation.clientName,
+                  _currentConsultation.clientName,
                   style: TextStyle(
                     fontSize: 14,
                     color: themeService.textSecondary,
@@ -260,28 +289,28 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
     final statuses = [
       {
         'status': 'Scheduled',
-        'time': widget.consultation.scheduledTime,
+        'time': _currentConsultation.scheduledTime,
         'icon': Icons.schedule,
         'color': themeService.primaryColor,
       },
-      if (widget.consultation.startedAt != null)
+      if (_currentConsultation.startedAt != null)
         {
           'status': 'Started',
-          'time': widget.consultation.startedAt!,
+          'time': _currentConsultation.startedAt!,
           'icon': Icons.play_arrow,
           'color': themeService.successColor,
         },
-      if (widget.consultation.status == ConsultationStatus.completed)
+      if (_currentConsultation.status == ConsultationStatus.completed)
         {
           'status': 'Completed',
-          'time': widget.consultation.completedAt ?? DateTime.now(),
+          'time': _currentConsultation.completedAt ?? DateTime.now(),
           'icon': Icons.check_circle,
           'color': themeService.successColor,
         },
-      if (widget.consultation.status == ConsultationStatus.cancelled)
+      if (_currentConsultation.status == ConsultationStatus.cancelled)
         {
           'status': 'Cancelled',
-          'time': widget.consultation.cancelledAt ?? DateTime.now(),
+          'time': _currentConsultation.cancelledAt ?? DateTime.now(),
           'icon': Icons.cancel,
           'color': themeService.errorColor,
         },
@@ -523,7 +552,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               Navigator.pop(context);
               // TODO: Delete consultation
               context.read<ConsultationsBloc>().add(
-                DeleteConsultationEvent(consultationId: widget.consultation.id),
+                DeleteConsultationEvent(consultationId: _currentConsultation.id),
               );
               Navigator.pop(context);
             },

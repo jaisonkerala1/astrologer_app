@@ -260,6 +260,13 @@ class ConsultationActionsWidget extends StatelessWidget {
         backgroundColor: Color(0xFF10B981),
       ),
     );
+    
+    // Force refresh after a short delay to ensure UI updates
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (context.mounted) {
+        context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+      }
+    });
   }
 
   void _completeConsultation(BuildContext context) {
@@ -646,7 +653,7 @@ class ConsultationActionsWidget extends StatelessWidget {
       // Refresh the consultation data
       if (context.mounted) {
         // Trigger a refresh of the consultation data
-        // The parent widget should listen to this and update accordingly
+        context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
       }
 
     } catch (e) {
