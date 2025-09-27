@@ -687,8 +687,8 @@ class ConsultationActionsWidget extends StatelessWidget {
 
       if (newScheduledTime.isBefore(DateTime.now())) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
               content: Text('Cannot schedule consultation in the past'),
               backgroundColor: Color(0xFFEF4444),
               duration: Duration(seconds: 3),

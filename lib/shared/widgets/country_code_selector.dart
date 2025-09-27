@@ -19,60 +19,43 @@ class CountryCodeSelector extends StatelessWidget {
     final themeService = ThemeService();
     
     return Container(
-      height: 56,
+      height: 48,
       decoration: BoxDecoration(
         border: Border.all(
           color: themeService.borderColor,
-          width: 1.5,
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         color: themeService.cardColor,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: enabled ? () => _showCountryPicker(context) : null,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Country Flag
-                Container(
-                  width: 24,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: Text(
-                      selectedCountry.flagEmoji,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
+                Text(
+                  selectedCountry.flagEmoji,
+                  style: const TextStyle(fontSize: 14),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 
                 // Country Code
                 Text(
                   '+${selectedCountry.phoneCode}',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: themeService.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: enabled ? themeService.textPrimary : themeService.textSecondary,
                   ),
                 ),
                 
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 
                 // Dropdown Arrow
                 Icon(
@@ -80,12 +63,12 @@ class CountryCodeSelector extends StatelessWidget {
                   color: enabled 
                     ? themeService.textSecondary 
                     : themeService.textSecondary.withOpacity(0.5),
-                  size: 20,
+                  size: 16,
                 ),
                 
                 // Divider
                 Container(
-                  height: 24,
+                  height: 20,
                   width: 1,
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   color: themeService.borderColor,
@@ -102,35 +85,22 @@ class CountryCodeSelector extends StatelessWidget {
     showCountryPicker(
       context: context,
       showPhoneCode: true,
-      showSearch: true,
-      searchAutofocus: true,
+      showSearch: false, // Removed search functionality
       onSelect: onCountryChanged,
       countryListTheme: CountryListThemeData(
-        flagSize: 24,
-        backgroundColor: Theme.of(context).cardColor,
+        flagSize: 20,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         textStyle: TextStyle(
           color: Theme.of(context).textTheme.bodyLarge?.color,
-          fontSize: 16,
-        ),
-        inputDecoration: InputDecoration(
-          labelText: 'Search country',
-          hintText: 'Start typing to search',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-              width: 1.5,
-            ),
-          ),
+          fontSize: 14,
         ),
         bottomSheetHeight: MediaQuery.of(context).size.height * 0.7,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
         ),
       ),
-      favorite: ['IN', 'US', 'GB', 'AU', 'CA'], // Most common countries for astrologers
+      favorite: ['IN', 'US', 'GB', 'AU', 'CA', 'AE', 'SG', 'MY'], // Common countries for astrologers
       exclude: <String>[], // No countries excluded
     );
   }

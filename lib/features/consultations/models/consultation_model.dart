@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class StatusHistoryEntry {
   final String status;
   final DateTime timestamp;
@@ -291,6 +293,45 @@ extension ConsultationTypeExtension on ConsultationType {
         return 'person';
       case ConsultationType.chat:
         return 'chat';
+    }
+  }
+
+  IconData get iconData {
+    switch (this) {
+      case ConsultationType.phone:
+        return Icons.phone;
+      case ConsultationType.video:
+        return Icons.videocam;
+      case ConsultationType.inPerson:
+        return Icons.person;
+      case ConsultationType.chat:
+        return Icons.chat;
+    }
+  }
+
+  Color get backgroundColor {
+    switch (this) {
+      case ConsultationType.phone:
+        return const Color(0xFFEFF6FF); // Blue
+      case ConsultationType.video:
+        return const Color(0xFFFEF3C7); // Amber
+      case ConsultationType.inPerson:
+        return const Color(0xFFECFDF5); // Green
+      case ConsultationType.chat:
+        return const Color(0xFFF3E8FF); // Purple
+    }
+  }
+
+  Color get textColor {
+    switch (this) {
+      case ConsultationType.phone:
+        return const Color(0xFF2563EB); // Blue
+      case ConsultationType.video:
+        return const Color(0xFFD97706); // Amber
+      case ConsultationType.inPerson:
+        return const Color(0xFF059669); // Green
+      case ConsultationType.chat:
+        return const Color(0xFF7C3AED); // Purple
     }
   }
 }

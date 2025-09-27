@@ -73,6 +73,32 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
     super.dispose();
   }
 
+  /// Find the next scheduled consultation after the current one
+  ConsultationModel? _findNextConsultation() {
+    final bloc = context.read<ConsultationsBloc>();
+    final state = bloc.state;
+    
+    if (state is! ConsultationsLoaded) return null;
+    
+    final now = DateTime.now();
+    final currentScheduledTime = _currentConsultation.scheduledTime;
+    
+    // Find consultations that are scheduled after the current one
+    final upcomingConsultations = state.allConsultations
+        .where((consultation) =>
+            consultation.id != _currentConsultation.id &&
+            consultation.status == ConsultationStatus.scheduled &&
+            consultation.scheduledTime.isAfter(currentScheduledTime) &&
+            consultation.scheduledTime.isAfter(now))
+        .toList();
+    
+    if (upcomingConsultations.isEmpty) return null;
+    
+    // Sort by scheduled time and return the earliest
+    upcomingConsultations.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+    return upcomingConsultations.first;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ConsultationsBloc, ConsultationsState>(
@@ -153,6 +179,8 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
   }
 
   Widget _buildHeader(ThemeService themeService) {
+    final nextConsultation = _findNextConsultation();
+    
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
       decoration: BoxDecoration(
@@ -164,77 +192,215 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
           ),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Back button
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              Navigator.pop(context);
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: themeService.cardColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new,
-                size: 18,
-                color: themeService.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          
-          // Title
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Consultation Details',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: themeService.textPrimary,
+          Row(
+            children: [
+              // Back button
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: themeService.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 18,
+                    color: themeService.textSecondary,
                   ),
                 ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Title
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Consultation Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _currentConsultation.clientName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: themeService.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // More actions
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showMoreOptions(themeService);
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: themeService.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.more_horiz,
+                    size: 20,
+                    color: themeService.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // Next Consultation Button
+          if (nextConsultation != null) ...[
+            const SizedBox(height: 12),
+            _buildNextConsultationButton(nextConsultation, themeService),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextConsultationButton(ConsultationModel nextConsultation, ThemeService themeService) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ConsultationDetailScreen(consultation: nextConsultation),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              themeService.primaryColor.withOpacity(0.1),
+              themeService.primaryColor.withOpacity(0.05),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: themeService.primaryColor.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: themeService.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.schedule,
+                size: 16,
+                color: themeService.primaryColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Next Consultation',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: themeService.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    nextConsultation.clientName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: themeService.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  _currentConsultation.clientName,
+                  _formatTime(nextConsultation.scheduledTime),
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: themeService.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(nextConsultation.scheduledTime),
+                  style: TextStyle(
+                    fontSize: 10,
                     color: themeService.textSecondary,
                   ),
                 ),
               ],
             ),
-          ),
-          
-          // More actions
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              _showMoreOptions(themeService);
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: themeService.cardColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.more_horiz,
-                size: 20,
-                color: themeService.textSecondary,
-              ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: themeService.primaryColor,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:$minute $period';
+  }
+
+  String _formatDate(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    
+    final difference = targetDate.difference(today).inDays;
+    
+    if (difference == 0) {
+      return 'Today';
+    } else if (difference == 1) {
+      return 'Tomorrow';
+    } else if (difference < 7) {
+      return 'In $difference days';
+    } else {
+      return '${dateTime.day}/${dateTime.month}';
+    }
   }
 
   Widget _buildStatusHistory(ThemeService themeService) {
@@ -445,7 +611,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'New time: ${DateFormat('MMM dd, hh:mm a').format(status['scheduledTime'] as DateTime)}',
+                        'New time: ${_formatDateTime(status['scheduledTime'] as DateTime)}',
                         style: TextStyle(
                           fontSize: 10,
                           color: const Color(0xFF3B82F6),

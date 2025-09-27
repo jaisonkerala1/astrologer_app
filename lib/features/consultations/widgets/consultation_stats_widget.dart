@@ -4,6 +4,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/consultation_model.dart';
 import '../screens/consultation_analytics_screen.dart';
+import '../screens/consultation_detail_screen.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 
 class ConsultationStatsWidget extends StatelessWidget {
@@ -145,7 +146,14 @@ class ConsultationStatsWidget extends StatelessWidget {
       shadowColor: themeService.primaryColor.withOpacity(0.2),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to consultation detail
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ConsultationDetailScreen(
+                consultation: nextConsultation!,
+              ),
+            ),
+          );
         },
         borderRadius: themeService.borderRadius,
         splashColor: themeService.primaryColor.withOpacity(0.15),

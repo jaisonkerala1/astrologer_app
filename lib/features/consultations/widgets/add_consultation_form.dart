@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:country_picker/country_picker.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/country_code_selector.dart';
 import '../models/consultation_model.dart';
 
 class AddConsultationForm extends StatefulWidget {
@@ -30,6 +32,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
   ConsultationType _selectedType = ConsultationType.phone;
   DateTime _selectedDate = DateTime.now().add(const Duration(hours: 1));
   TimeOfDay _selectedTime = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
+  Country _selectedCountry = Country.parse('IN'); // Default to India
 
   @override
   void dispose() {
@@ -96,44 +99,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                   ),
 
                   // Client Phone
-                  _buildTextField(
-                    controller: _clientPhoneController,
-                    label: 'Client Phone',
-                    hint: 'Enter phone number (e.g., +919876543210)',
-                    keyboardType: TextInputType.phone,
-                    themeService: themeService,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                      LengthLimitingTextInputFormatter(15),
-                    ],
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Phone number is required';
-                      }
-                      final trimmedValue = value.trim();
-                      if (trimmedValue.length > 15) {
-                        return 'Phone number must be maximum 15 characters';
-                      }
-                      if (trimmedValue.length < 10) {
-                        return 'Phone number must be at least 10 characters';
-                      }
-                      // Check if it starts with + and contains only digits after that
-                      if (trimmedValue.startsWith('+')) {
-                        if (!RegExp(r'^\+[0-9]+$').hasMatch(trimmedValue)) {
-                          return 'Invalid phone number format';
-                        }
-                        if (trimmedValue.length < 11) { // +1 + country code + 9 digits minimum
-                          return 'Phone number too short';
-                        }
-                      } else {
-                        // If no +, should contain only digits
-                        if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
-                          return 'Phone number must contain only digits or start with +';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
+                  _buildPhoneField(themeService),
 
                   // Consultation Type
                   _buildSectionTitle('Consultation Type', themeService),
@@ -283,6 +249,86 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
       );
   }
 
+  Widget _buildPhoneField(ThemeService themeService) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Client Phone',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: themeService.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // Country Code Selector
+              CountryCodeSelector(
+                selectedCountry: _selectedCountry,
+                onCountryChanged: (country) {
+                  setState(() {
+                    _selectedCountry = country;
+                  });
+                },
+              ),
+              const SizedBox(width: 12),
+              // Phone Number Input
+              Expanded(
+                child: TextFormField(
+                  controller: _clientPhoneController,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(15),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Phone number is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (trimmedValue.length < 7) {
+                      return 'Phone number too short';
+                    }
+                    if (trimmedValue.length > 15) {
+                      return 'Phone number too long';
+                    }
+                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                      return 'Phone number must contain only digits';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter phone number',
+                    hintStyle: TextStyle(color: themeService.textHint),
+                    border: OutlineInputBorder(
+                      borderRadius: themeService.borderRadius,
+                      borderSide: BorderSide(color: themeService.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: themeService.borderRadius,
+                      borderSide: BorderSide(color: themeService.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: themeService.borderRadius,
+                      borderSide: BorderSide(color: themeService.primaryColor, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: themeService.surfaceColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -339,7 +385,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
 
   Widget _buildTypeSelector(ThemeService themeService) {
     return Container(
-      height: 50,
+      height: 40,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: ConsultationType.values.length,
@@ -348,7 +394,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
           final isSelected = _selectedType == type;
           
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -356,22 +402,35 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
                   _selectedType = type;
                 });
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? themeService.primaryColor : themeService.cardColor,
-                  borderRadius: themeService.borderRadius,
+                  color: isSelected ? type.textColor : type.backgroundColor,
+                  borderRadius: BorderRadius.circular(20), // Fully rounded pill shape
                   border: Border.all(
-                    color: isSelected ? themeService.primaryColor : themeService.borderColor,
+                    color: isSelected ? type.textColor : type.textColor.withOpacity(0.3),
+                    width: 1,
                   ),
                 ),
-                child: Text(
-                  type.displayName,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : themeService.textPrimary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 14,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      type.iconData,
+                      size: 14,
+                      color: isSelected ? Colors.white : type.textColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      type.displayName,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : type.textColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -527,10 +586,13 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
         _selectedTime.minute,
       );
 
+      // Combine country code with phone number
+      final fullPhoneNumber = '+${_selectedCountry.phoneCode}${_clientPhoneController.text.trim()}';
+      
       final consultation = ConsultationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         clientName: _clientNameController.text.trim(),
-        clientPhone: _clientPhoneController.text.trim(),
+        clientPhone: fullPhoneNumber,
         scheduledTime: scheduledDateTime,
         duration: int.parse(_durationController.text.trim()),
         amount: double.parse(_amountController.text.trim()),
@@ -554,3 +616,4 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
     }
   }
 }
+
