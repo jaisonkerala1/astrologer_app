@@ -71,8 +71,8 @@ class ConsultationsService {
     DateTime? endDate,
     int page = 1,
     int limit = 20,
-    String sortBy = 'scheduledTime',
-    String sortOrder = 'asc',
+    String sortBy = 'createdAt',
+    String sortOrder = 'desc',
   }) async {
     try {
       final astrologerId = await _getAstrologerId();
@@ -630,5 +630,34 @@ class ConsultationsService {
         createdAt: now.subtract(const Duration(hours: 12)),
       ),
     ];
+  }
+
+  // Update consultation by ID with specific fields
+  Future<ConsultationModel> updateConsultationById(String consultationId, Map<String, dynamic> updateData) async {
+    try {
+      final astrologerId = await _getAstrologerId();
+      final response = await _apiService.put(
+        '/api/consultation/$consultationId',
+        data: updateData,
+      );
+
+      if (response.data['success'] == true) {
+        final consultationData = response.data['data'];
+        final updatedConsultation = ConsultationModel.fromJson(consultationData);
+        
+        // Update local cache
+        final index = _consultations.indexWhere((c) => c.id == consultationId);
+        if (index != -1) {
+          _consultations[index] = updatedConsultation;
+        }
+        
+        return updatedConsultation;
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to update consultation');
+      }
+    } catch (e) {
+      print('Error updating consultation: $e');
+      rethrow;
+    }
   }
 }
