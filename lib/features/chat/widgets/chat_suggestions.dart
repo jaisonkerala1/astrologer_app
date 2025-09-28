@@ -115,4 +115,3 @@ class ChatSuggestions extends StatelessWidget {
 
 
 
-

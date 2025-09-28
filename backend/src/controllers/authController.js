@@ -150,44 +150,7 @@ const verifyOTP = async (req, res) => {
 // Signup new astrologer
 const signup = async (req, res) => {
   try {
-    const { 
-      phone, 
-      otp, 
-      otpId, 
-      name, 
-      email, 
-      experience, 
-      specializations, 
-      languages,
-      bio,
-      education,
-      certifications,
-      awards,
-      responseTime,
-      workingDays
-    } = req.body;
-
-    // Validate mandatory fields
-    if (!bio || bio.trim().length < 50) {
-      return res.status(400).json({
-        success: false,
-        message: 'Bio must be at least 50 characters long'
-      });
-    }
-
-    if (!certifications || certifications.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'At least one certification is required'
-      });
-    }
-
-    if (!awards || awards.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'At least one award is required'
-      });
-    }
+    const { phone, otp, otpId, name, email, experience, specializations, languages } = req.body;
 
     // Verify OTP first
     const otpRecord = await Otp.findOne({
@@ -230,35 +193,7 @@ const signup = async (req, res) => {
       experience: experience || 0,
       ratePerMinute: 50,
       isOnline: false,
-      totalEarnings: 0,
-      // New mandatory fields
-      bio: bio.trim(),
-      education: education || [],
-      certifications: certifications,
-      awards: awards,
-      responseTime: responseTime || 'Responds in 2 hours',
-      successRate: 95.0,
-      totalConsultations: 0,
-      averageRating: 0,
-      reviewCount: 0,
-      followerCount: 0,
-      isVerified: false,
-      videoIntroduction: null,
-      portfolio: [],
-      availability: {
-        timezone: 'Asia/Kolkata',
-        workingHours: {
-          start: '09:00',
-          end: '21:00'
-        },
-        workingDays: workingDays || [1, 2, 3, 4, 5, 6, 7],
-        breaks: []
-      },
-      socialLinks: {},
-      specialOffers: [],
-      tags: [],
-      featured: false,
-      priority: 5
+      totalEarnings: 0
     });
 
     // Save astrologer to MongoDB
@@ -283,17 +218,6 @@ const signup = async (req, res) => {
         ratePerMinute: astrologer.ratePerMinute,
         isOnline: astrologer.isOnline,
         totalEarnings: astrologer.totalEarnings,
-        bio: astrologer.bio,
-        education: astrologer.education,
-        certifications: astrologer.certifications,
-        awards: astrologer.awards,
-        responseTime: astrologer.responseTime,
-        successRate: astrologer.successRate,
-        totalConsultations: astrologer.totalConsultations,
-        averageRating: astrologer.averageRating,
-        reviewCount: astrologer.reviewCount,
-        followerCount: astrologer.followerCount,
-        isVerified: astrologer.isVerified,
         createdAt: astrologer.createdAt,
         updatedAt: astrologer.updatedAt
       }
