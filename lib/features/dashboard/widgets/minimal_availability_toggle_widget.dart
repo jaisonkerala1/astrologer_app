@@ -56,7 +56,7 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                   
                   // Minimal toggle switch
                   GestureDetector(
-                    onTap: () {
+                    onTap: statusService.isUpdating ? null : () {
                       HapticFeedback.lightImpact();
                       try {
                         statusService.setOnlineStatus(!statusService.isOnline);
@@ -103,13 +103,26 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: Icon(
-                            statusService.isOnline ? Icons.check : Icons.close,
-                            size: 14,
-                            color: statusService.isOnline 
-                                ? themeService.primaryColor
-                                : themeService.textSecondary,
-                          ),
+                          child: statusService.isUpdating
+                              ? SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      statusService.isOnline 
+                                          ? themeService.primaryColor
+                                          : themeService.textSecondary,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  statusService.isOnline ? Icons.check : Icons.close,
+                                  size: 14,
+                                  color: statusService.isOnline 
+                                      ? themeService.primaryColor
+                                      : themeService.textSecondary,
+                                ),
                         ),
                       ),
                     ),

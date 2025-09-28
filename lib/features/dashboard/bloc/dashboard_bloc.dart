@@ -18,23 +18,28 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     emit(DashboardLoading());
     
     try {
-      // For MVP, we'll use mock data since backend isn't ready yet
-      // In production, this would call the actual API
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      // Call the actual backend API
+      final response = await _apiService.get(ApiConstants.dashboardStats);
       
-      final mockStats = DashboardStatsModel(
-        todayEarnings: 1250.0,
-        totalEarnings: 15600.0,
-        callsToday: 8,
-        totalCalls: 156,
-        isOnline: false,
-        totalSessions: 156,
-        averageSessionDuration: 15.5,
-        averageRating: 4.7,
-        todayCount: 12,
-      );
-      
-      emit(DashboardLoadedState(mockStats));
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'];
+        
+        final stats = DashboardStatsModel(
+          todayEarnings: (data['todayEarnings'] ?? 0).toDouble(),
+          totalEarnings: (data['totalEarnings'] ?? 0).toDouble(),
+          callsToday: data['callsToday'] ?? 0,
+          totalCalls: data['totalCalls'] ?? 0,
+          isOnline: data['isOnline'] ?? false,
+          totalSessions: data['totalSessions'] ?? 0,
+          averageSessionDuration: (data['averageSessionDuration'] ?? 0).toDouble(),
+          averageRating: (data['averageRating'] ?? 0).toDouble(),
+          todayCount: data['todayCount'] ?? 0,
+        );
+        
+        emit(DashboardLoadedState(stats));
+      } else {
+        throw Exception('Failed to load dashboard stats: ${response.data['message'] ?? 'Unknown error'}');
+      }
     } catch (e) {
       emit(DashboardErrorState(e.toString()));
     }
@@ -42,18 +47,24 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
   Future<void> _onUpdateOnlineStatus(UpdateOnlineStatusEvent event, Emitter<DashboardState> emit) async {
     try {
-      // For MVP, we'll simulate the API call
-      // In production, this would call the actual API
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Call the actual backend API to update status
+      final response = await _apiService.put(
+        ApiConstants.updateStatus,
+        data: {'isOnline': event.isOnline},
+      );
       
-      // Update the current state with new online status
-      if (state is DashboardLoadedState) {
-        final currentStats = (state as DashboardLoadedState).stats;
-        final updatedStats = currentStats.copyWith(isOnline: event.isOnline);
-        emit(DashboardLoadedState(updatedStats));
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        // Update the current state with new online status
+        if (state is DashboardLoadedState) {
+          final currentStats = (state as DashboardLoadedState).stats;
+          final updatedStats = currentStats.copyWith(isOnline: event.isOnline);
+          emit(DashboardLoadedState(updatedStats));
+        }
+        
+        emit(StatusUpdatedState(event.isOnline));
+      } else {
+        throw Exception('Failed to update status: ${response.data['message'] ?? 'Unknown error'}');
       }
-      
-      emit(StatusUpdatedState(event.isOnline));
     } catch (e) {
       emit(DashboardErrorState('Failed to update status: ${e.toString()}'));
     }
