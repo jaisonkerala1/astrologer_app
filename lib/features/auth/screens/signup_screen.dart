@@ -17,19 +17,31 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _experienceController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _educationController = TextEditingController();
+  final _certificationController = TextEditingController();
+  final _awardController = TextEditingController();
+  
   bool _isLoading = false;
   String _fullPhoneNumber = '';
   String _countryCode = '+91';
   String _phoneNumber = '';
+  int _currentStep = 0;
+  late PageController _pageController;
+  late AnimationController _animationController;
 
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
+  List<String> _educationList = [];
+  List<String> _certificationsList = [];
+  List<String> _awardsList = [];
+  List<int> _selectedWorkingDays = [1, 2, 3, 4, 5, 6, 7]; // Monday to Sunday
 
   final List<String> _specializations = [
     'Vedic Astrology',
@@ -56,11 +68,27 @@ class _SignupScreenState extends State<SignupScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _experienceController.dispose();
+    _bioController.dispose();
+    _educationController.dispose();
+    _certificationController.dispose();
+    _awardController.dispose();
+    _pageController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -87,6 +115,17 @@ class _SignupScreenState extends State<SignupScreen> {
                       'experience': int.tryParse(_experienceController.text) ?? 0,
                       'specializations': _selectedSpecializations,
                       'languages': _selectedLanguages,
+                      'bio': _bioController.text,
+                      'education': _educationController.text.trim().isNotEmpty 
+                          ? [_educationController.text.trim()] 
+                          : [],
+                      'certifications': _certificationController.text.trim().isNotEmpty 
+                          ? [_certificationController.text.trim()] 
+                          : [],
+                      'awards': _awardController.text.trim().isNotEmpty 
+                          ? [_awardController.text.trim()] 
+                          : [],
+                      'workingDays': _selectedWorkingDays,
                     },
                   ),
                 ),
@@ -312,6 +351,108 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Professional Information Card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Professional Information',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppTheme.textColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Bio Field (Mandatory)
+                          _buildTextAreaField(
+                            controller: _bioController,
+                            label: 'Professional Bio *',
+                            icon: Icons.description,
+                            hint: 'Tell us about your astrology expertise, experience, and what makes you unique. (Minimum 50 characters)',
+                            maxLines: 4,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Bio is required';
+                              }
+                              if (value.trim().length < 50) {
+                                return 'Bio must be at least 50 characters long';
+                              }
+                              if (value.trim().length > 1000) {
+                                return 'Bio must not exceed 1000 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Education Field
+                          _buildTextField(
+                            controller: _educationController,
+                            label: 'Education',
+                            icon: Icons.school,
+                            hint: 'e.g., Bachelor of Arts in Philosophy, Diploma in Vedic Astrology',
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty && value.trim().length < 10) {
+                                return 'Please provide a more detailed education background';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Certifications Field (Mandatory)
+                          _buildTextField(
+                            controller: _certificationController,
+                            label: 'Certifications *',
+                            icon: Icons.verified,
+                            hint: 'e.g., Certified Vedic Astrologer, Tarot Reading Certification',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'At least one certification is required';
+                              }
+                              if (value.trim().length < 10) {
+                                return 'Please provide detailed certification information';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Awards Field (Mandatory)
+                          _buildTextField(
+                            controller: _awardController,
+                            label: 'Awards & Recognition *',
+                            icon: Icons.emoji_events,
+                            hint: 'e.g., Best Astrologer 2023, Certified by International Astrology Association',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'At least one award or recognition is required';
+                              }
+                              if (value.trim().length < 10) {
+                                return 'Please provide detailed award information';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // Specializations Card
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -512,6 +653,56 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  Widget _buildTextAreaField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? hint,
+    int maxLines = 4,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      validator: validator,
+      style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(bottom: 60),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+        ),
+        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        filled: true,
+        fillColor: Colors.grey[50],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.errorColor),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        alignLabelWithHint: true,
+      ),
+    );
+  }
+
   Widget _buildMultiSelectSection({
     required String title,
     required String subtitle,
@@ -580,6 +771,52 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _handleSignup() {
     if (_formKey.currentState!.validate()) {
+      // Validate bio
+      if (_bioController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Professional bio is required'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      if (_bioController.text.trim().length < 50) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Bio must be at least 50 characters long'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
+      // Validate certifications
+      if (_certificationController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('At least one certification is required'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
+      // Validate awards
+      if (_awardController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('At least one award or recognition is required'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
       if (_selectedSpecializations.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

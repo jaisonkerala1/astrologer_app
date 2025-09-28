@@ -31,6 +31,11 @@ class SignupEvent extends AuthEvent {
   final int experience;
   final List<String> specializations;
   final List<String> languages;
+  final String bio;
+  final List<String> education;
+  final List<String> certifications;
+  final List<String> awards;
+  final List<int> workingDays;
   
   SignupEvent({
     required this.phoneNumber,
@@ -41,6 +46,11 @@ class SignupEvent extends AuthEvent {
     required this.experience,
     required this.specializations,
     required this.languages,
+    required this.bio,
+    required this.education,
+    required this.certifications,
+    required this.awards,
+    required this.workingDays,
   });
 }
 
