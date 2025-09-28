@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/theme/services/theme_service.dart';
+import '../../../../shared/widgets/transition_animations.dart';
 
 class StatsCardWidget extends StatelessWidget {
   final String title;
@@ -24,34 +25,35 @@ class StatsCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        if (onTap != null) {
-          return Material(
-            color: themeService.cardColor,
-            elevation: 2,
-            borderRadius: themeService.borderRadius,
-            shadowColor: Colors.black.withOpacity(0.1),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: themeService.borderRadius,
-              splashColor: color.withOpacity(0.15),
-              highlightColor: color.withOpacity(0.1),
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: _buildCardContent(context, themeService),
-              ),
-            ),
-          );
-        } else {
-          return Container(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            decoration: BoxDecoration(
-              color: themeService.cardColor,
-              borderRadius: themeService.borderRadius,
-              boxShadow: [themeService.cardShadow],
-            ),
-            child: _buildCardContent(context, themeService),
-          );
-        }
+        return TransitionAnimations.fadeIn(
+          duration: const Duration(milliseconds: 300),
+          child: onTap != null
+              ? Material(
+                  color: themeService.cardColor,
+                  elevation: 2,
+                  borderRadius: themeService.borderRadius,
+                  shadowColor: Colors.black.withOpacity(0.1),
+                  child: InkWell(
+                    onTap: onTap,
+                    borderRadius: themeService.borderRadius,
+                    splashColor: color.withOpacity(0.15),
+                    highlightColor: color.withOpacity(0.1),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                      child: _buildCardContent(context, themeService),
+                    ),
+                  ),
+                )
+              : Container(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  decoration: BoxDecoration(
+                    color: themeService.cardColor,
+                    borderRadius: themeService.borderRadius,
+                    boxShadow: [themeService.cardShadow],
+                  ),
+                  child: _buildCardContent(context, themeService),
+                ),
+        );
       },
     );
   }

@@ -143,16 +143,20 @@ class _AnimatedButtonState extends State<AnimatedButton>
                       Icon(
                         widget.icon,
                         color: widget.foregroundColor ?? Colors.white,
-                        size: 20,
+                        size: 18,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                     ],
-                    Text(
-                      widget.text,
-                      style: TextStyle(
-                        color: widget.foregroundColor ?? Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        widget.text,
+                        style: TextStyle(
+                          color: widget.foregroundColor ?? Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],

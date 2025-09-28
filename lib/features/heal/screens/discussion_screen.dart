@@ -3,10 +3,12 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
+import '../../../shared/widgets/animated_button.dart';
 import 'discussion_detail_screen.dart';
 import 'favorites_screen.dart';
 import '../services/discussion_service.dart';
 import '../models/discussion_models.dart';
+import '../widgets/facebook_create_post_bottom_sheet.dart';
 
 class DiscussionScreen extends StatefulWidget {
   const DiscussionScreen({super.key});
@@ -17,7 +19,6 @@ class DiscussionScreen extends StatefulWidget {
 
 class _DiscussionScreenState extends State<DiscussionScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _postController = TextEditingController();
   final List<DiscussionPost> _posts = [];
   String _searchQuery = '';
 
@@ -148,11 +149,19 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () {
-              _showCreatePostDialog();
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: AnimatedButton(
+              onPressed: () {
+                _showCreatePostBottomSheet();
+              },
+              text: 'Post',
+              icon: Icons.add,
+              backgroundColor: Colors.white,
+              foregroundColor: AppTheme.primaryColor,
+              width: 100,
+              height: 40,
+            ),
           ),
         ],
       ),
@@ -393,45 +402,15 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     );
   }
 
-  void _showCreatePostDialog() {
-    showDialog(
+  void _showCreatePostBottomSheet() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Post'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _postController,
-              decoration: const InputDecoration(
-                hintText: 'Post title...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 1,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Write your post content...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 4,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _createPost();
-              Navigator.pop(context);
-            },
-            child: const Text('Post'),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => FacebookCreatePostBottomSheet(
+        onSubmit: (title, content, category, privacy) {
+          _createPost(title, content, category, privacy);
+        },
       ),
     );
   }
@@ -445,19 +424,17 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     );
   }
 
-  void _createPost() async {
-    if (_postController.text.trim().isEmpty) return;
+  void _createPost(String title, String content, String category, String privacy) async {
+    if (title.trim().isEmpty || content.trim().isEmpty) return;
 
     final newPost = DiscussionPost(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _postController.text.trim().length > 50
-          ? '${_postController.text.trim().substring(0, 50)}...'
-          : _postController.text.trim(),
-      content: _postController.text.trim(),
+      title: title.trim(),
+      content: content.trim(),
       author: 'You',
       authorInitial: 'Y',
       timeAgo: 'Just now',
-      category: 'General',
+      category: category,
       likes: 0,
       isLiked: false,
       createdAt: DateTime.now(),
@@ -465,7 +442,6 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
 
     setState(() {
       _posts.insert(0, newPost);
-      _postController.clear();
     });
     
     // Save to database

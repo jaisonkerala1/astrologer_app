@@ -37,6 +37,8 @@ import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
 import '../../live/screens/live_preparation_screen.dart';
+import '../../../shared/widgets/transition_animations.dart';
+import '../../../shared/widgets/animated_button.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -382,138 +384,128 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 minHeight: constraints.maxHeight,
                 maxWidth: constraints.maxWidth,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-            // Header (includes status toggle) - Full width
-            _buildHeader(_currentUser),
-            
-            // Live Astrologers Stories Widget - Instagram Style
-            const LiveAstrologersStoriesWidget(),
-            
-            // Minimal Availability Toggle - Above Earnings Card
-            const MinimalAvailabilityToggleWidget(),
-            
-            // Content with padding
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-            
-            // Earnings Card
-            EarningsCardWidget(
-              todayEarnings: stats.todayEarnings,
-              totalEarnings: stats.totalEarnings,
-              onRefresh: () {
-                context.read<DashboardBloc>().add(RefreshDashboardEvent());
-              },
-              onTap: () {
-                // Navigate to earnings screen
-                setState(() {
-                  _selectedIndex = 3; // Earnings tab (updated index)
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // Communication Cards
-            Row(
-              children: [
-                Expanded(
-                  child: StatsCardWidget(
-                    title: 'Calls Today',
-                    value: stats.callsToday.toString(),
-                    icon: Icons.phone,
-                    color: AppTheme.callsColor,
-                    onTap: () => _openCommunicationScreen('calls'),
-                  ),
+              child: TransitionAnimations.fadeIn(
+                duration: const Duration(milliseconds: 400),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header (includes status toggle) - Full width
+                    _buildHeader(_currentUser),
+                    
+                    // Live Astrologers Stories Widget - Instagram Style
+                    const LiveAstrologersStoriesWidget(),
+                    
+                    // Minimal Availability Toggle - Above Earnings Card
+                    const MinimalAvailabilityToggleWidget(),
+                    
+                    // Content with padding
+                    Padding(
+                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                      child: TransitionAnimations.staggeredList(
+                        children: [
+                          // Earnings Card
+                          EarningsCardWidget(
+                            todayEarnings: stats.todayEarnings,
+                            totalEarnings: stats.totalEarnings,
+                            onRefresh: () {
+                              context.read<DashboardBloc>().add(RefreshDashboardEvent());
+                            },
+                            onTap: () {
+                              // Navigate to earnings screen
+                              setState(() {
+                                _selectedIndex = 3; // Earnings tab (updated index)
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Communication Cards
+                          Row(
+                            children: [
+                              Expanded(
+                                child: StatsCardWidget(
+                                  title: 'Calls Today',
+                                  value: stats.callsToday.toString(),
+                                  icon: Icons.phone,
+                                  color: AppTheme.callsColor,
+                                  onTap: () => _openCommunicationScreen('calls'),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: StatsCardWidget(
+                                  title: 'Messages Today',
+                                  value: '12', // Mock data - replace with actual messages today
+                                  icon: Icons.message,
+                                  color: AppTheme.primaryColor,
+                                  onTap: () => _openCommunicationScreen('messages'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          Row(
+                            children: [
+                              Expanded(
+                                child: StatsCardWidget(
+                                  title: 'Avg Rating',
+                                  value: stats.averageRating.toStringAsFixed(1),
+                                  icon: Icons.star,
+                                  color: AppTheme.ratingColor,
+                                  onTap: () => _openReviewsScreen(),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: StatsCardWidget(
+                                  title: 'Avg Duration',
+                                  value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
+                                  icon: Icons.timer,
+                                  color: AppTheme.secondaryColor,
+                                  onTap: () {
+                                    // TODO: Add navigation for average duration
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Calendar Card
+                          CalendarCardWidget(
+                            onTap: () {
+                              // Navigate to calendar screen
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CalendarScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Discussion Card
+                          _buildDiscussionCard(),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Temporary Test Button for Incoming Call
+                          AnimatedButton(
+                            onPressed: _simulateIncomingCall,
+                            text: 'Test Incoming Call',
+                            icon: Icons.call_received,
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            width: double.infinity,
+                            height: 56,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: StatsCardWidget(
-                    title: 'Messages Today',
-                    value: '12', // Mock data - replace with actual messages today
-                    icon: Icons.message,
-                    color: AppTheme.primaryColor,
-                    onTap: () => _openCommunicationScreen('messages'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            Row(
-              children: [
-                Expanded(
-                  child: StatsCardWidget(
-                    title: 'Avg Rating',
-                    value: stats.averageRating.toStringAsFixed(1),
-                    icon: Icons.star,
-                    color: AppTheme.ratingColor,
-                    onTap: () => _openReviewsScreen(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: StatsCardWidget(
-                    title: 'Avg Duration',
-                    value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
-                    icon: Icons.timer,
-                    color: AppTheme.secondaryColor,
-                    onTap: () {
-                      // TODO: Add navigation for average duration
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // Calendar Card
-            CalendarCardWidget(
-              onTap: () {
-                // Navigate to calendar screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CalendarScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            
-            // Discussion Card
-            _buildDiscussionCard(),
-            
-            const SizedBox(height: 16),
-            
-            // Temporary Test Button for Incoming Call
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              child: ElevatedButton.icon(
-                onPressed: _simulateIncomingCall,
-                icon: const Icon(Icons.call_received, color: Colors.white),
-                label: const Text(
-                  'Test Incoming Call',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
-              ),
-            ),
-                ],
-              ),
-            ),
-                ],
               ),
             ),
           );
