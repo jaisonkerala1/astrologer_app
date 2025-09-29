@@ -257,6 +257,12 @@ const signup = async (req, res) => {
     console.log('Certifications before save:', astrologer.certifications);
     console.log('Awards before save:', astrologer.awards);
     
+    // Check schema paths
+    console.log('🔍 SIGNUP DEBUG - Schema paths:', Object.keys(astrologer.schema.paths));
+    console.log('🔍 SIGNUP DEBUG - Bio path exists:', 'bio' in astrologer.schema.paths);
+    console.log('🔍 SIGNUP DEBUG - Certifications path exists:', 'certifications' in astrologer.schema.paths);
+    console.log('🔍 SIGNUP DEBUG - Awards path exists:', 'awards' in astrologer.schema.paths);
+    
     try {
       await astrologer.save();
       console.log('🔍 SIGNUP DEBUG - Save completed successfully');
@@ -299,9 +305,25 @@ const signup = async (req, res) => {
     await testAstrologer.save();
     console.log('🔍 SIGNUP DEBUG - Test astrologer created with bio:', testAstrologer.bio);
     
-    // Clean up test astrologer
+    // Test direct MongoDB insertion
+    console.log('🔍 SIGNUP DEBUG - Testing direct MongoDB insertion...');
+    const db = astrologer.db;
+    const collection = db.collection('astrologers');
+    const directInsert = await collection.insertOne({
+      phone: '+919999999998',
+      name: 'Direct Test',
+      email: 'direct@test.com',
+      experience: 1,
+      bio: 'DIRECT_MONGO_BIO',
+      certifications: ['DIRECT_CERT'],
+      awards: ['DIRECT_AWARD']
+    });
+    console.log('🔍 SIGNUP DEBUG - Direct insert result:', directInsert.insertedId);
+    
+    // Clean up test astrologers
     await Astrologer.findByIdAndDelete(testAstrologer._id);
-    console.log('🔍 SIGNUP DEBUG - Test astrologer cleaned up');
+    await collection.deleteOne({ _id: directInsert.insertedId });
+    console.log('🔍 SIGNUP DEBUG - Test astrologers cleaned up');
 
     // Generate token
     const token = generateToken(astrologer.id);
