@@ -32,6 +32,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneController = TextEditingController();
   final _experienceController = TextEditingController();
   final _rateController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _awardsController = TextEditingController();
+  final _certificatesController = TextEditingController();
   
   final StorageService _storageService = StorageService();
   final ApiService _apiService = ApiService();
@@ -78,6 +81,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _phoneController.text = widget.currentUser!.phone;
       _experienceController.text = widget.currentUser!.experience.toString();
       _rateController.text = widget.currentUser!.ratePerMinute.toString();
+      _bioController.text = widget.currentUser!.bio;
+      _awardsController.text = widget.currentUser!.awards;
+      _certificatesController.text = widget.currentUser!.certificates;
       _selectedSpecializations = List.from(widget.currentUser!.specializations);
       _selectedLanguages = List.from(widget.currentUser!.languages);
     }
@@ -90,6 +96,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.dispose();
     _experienceController.dispose();
     _rateController.dispose();
+    _bioController.dispose();
+    _awardsController.dispose();
+    _certificatesController.dispose();
     super.dispose();
   }
 
@@ -221,6 +230,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 32),
               
+              // Bio Information
+              _buildSectionTitle('Bio Information'),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _bioController,
+                label: 'Bio',
+                icon: Icons.person_outline,
+                maxLines: 4,
+                maxLength: 1000,
+                hintText: 'Tell us about yourself, your experience, and what makes you unique...',
+                validator: (value) {
+                  if (value != null && value.length > 1000) {
+                    return 'Bio cannot exceed 1000 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _awardsController,
+                label: 'Awards & Recognition',
+                icon: Icons.emoji_events,
+                maxLength: 500,
+                hintText: 'List your awards, recognitions, or achievements...',
+                validator: (value) {
+                  if (value != null && value.length > 500) {
+                    return 'Awards description cannot exceed 500 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _certificatesController,
+                label: 'Certifications',
+                icon: Icons.school,
+                maxLength: 500,
+                hintText: 'List your certifications, degrees, or qualifications...',
+                validator: (value) {
+                  if (value != null && value.length > 500) {
+                    return 'Certificates description cannot exceed 500 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 32),
+              
               // Specializations
               _buildSectionTitle('Specializations'),
               const SizedBox(height: 16),
@@ -342,14 +398,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     TextInputType? keyboardType,
     bool enabled = true,
     String? Function(String?)? validator,
+    int? maxLines = 1,
+    int? maxLength,
+    String? hintText,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       enabled: enabled,
       validator: validator,
+      maxLines: maxLines,
+      maxLength: maxLength,
       decoration: InputDecoration(
         labelText: label,
+        hintText: hintText,
         prefixIcon: Icon(icon),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -368,6 +430,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         filled: !enabled,
         fillColor: enabled ? null : AppTheme.textColor.withOpacity(0.05),
+        counterText: maxLength != null ? null : '',
       ),
     );
   }
@@ -516,6 +579,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'languages': _selectedLanguages,
         'experience': int.parse(_experienceController.text.trim()),
         'ratePerMinute': double.parse(_rateController.text.trim()),
+        'bio': _bioController.text.trim(),
+        'awards': _awardsController.text.trim(),
+        'certificates': _certificatesController.text.trim(),
         if (profilePictureUrl != null) 'profilePicture': profilePictureUrl,
       };
 

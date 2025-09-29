@@ -40,6 +40,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         ratePerMinute: 75.0,
         isOnline: false,
         totalEarnings: 15600.0,
+        bio: 'Experienced Vedic astrologer with 8+ years of practice in traditional Indian astrology, tarot reading, and numerology.',
+        awards: 'Best Astrologer 2023, Vedic Excellence Award, Client Choice Award',
+        certificates: 'Certified Vedic Astrologer, Jyotish Acharya, Advanced Tarot Certification',
         createdAt: DateTime.now().subtract(const Duration(days: 365)),
         updatedAt: DateTime.now(),
       );

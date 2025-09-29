@@ -10,6 +10,9 @@ class AstrologerModel {
   final double ratePerMinute;
   final bool isOnline;
   final double totalEarnings;
+  final String bio;
+  final String awards;
+  final String certificates;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +28,9 @@ class AstrologerModel {
     required this.ratePerMinute,
     required this.isOnline,
     required this.totalEarnings,
+    required this.bio,
+    required this.awards,
+    required this.certificates,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -42,6 +48,9 @@ class AstrologerModel {
       ratePerMinute: (json['ratePerMinute'] ?? 0).toDouble(),
       isOnline: json['isOnline'] ?? false,
       totalEarnings: (json['totalEarnings'] ?? 0).toDouble(),
+      bio: json['bio'] ?? '',
+      awards: json['awards'] ?? '',
+      certificates: json['certificates'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -60,6 +69,9 @@ class AstrologerModel {
       'ratePerMinute': ratePerMinute,
       'isOnline': isOnline,
       'totalEarnings': totalEarnings,
+      'bio': bio,
+      'awards': awards,
+      'certificates': certificates,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -77,6 +89,9 @@ class AstrologerModel {
     double? ratePerMinute,
     bool? isOnline,
     double? totalEarnings,
+    String? bio,
+    String? awards,
+    String? certificates,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -92,6 +107,9 @@ class AstrologerModel {
       ratePerMinute: ratePerMinute ?? this.ratePerMinute,
       isOnline: isOnline ?? this.isOnline,
       totalEarnings: totalEarnings ?? this.totalEarnings,
+      bio: bio ?? this.bio,
+      awards: awards ?? this.awards,
+      certificates: certificates ?? this.certificates,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

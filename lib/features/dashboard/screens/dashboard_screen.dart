@@ -133,6 +133,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ratePerMinute: 0.0,
           isOnline: false,
           totalEarnings: 0.0,
+          bio: '',
+          awards: '',
+          certificates: '',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
