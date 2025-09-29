@@ -40,6 +40,7 @@ dependencies:
   
   # HTTP & Storage
   dio: ^5.3.2
+  http: ^1.1.0
   shared_preferences: ^2.0.15
   image_picker: ^1.0.4
   animations: ^2.0.8

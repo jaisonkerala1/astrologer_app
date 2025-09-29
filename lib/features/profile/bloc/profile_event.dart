@@ -33,3 +33,9 @@ class UpdateRateEvent extends ProfileEvent {
   
   UpdateRateEvent(this.ratePerMinute);
 }
+
+class UpdateBioEvent extends ProfileEvent {
+  final String bio;
+  
+  UpdateBioEvent(this.bio);
+}

@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -17,6 +19,7 @@ import '../../auth/bloc/auth_state.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import 'edit_profile_screen.dart';
+import 'bio_enhancer_screen.dart';
 import '../../settings/screens/language_selection_screen.dart';
 import '../../chat/widgets/floating_chat_button.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
@@ -47,14 +50,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
+
   Future<void> _loadUserData() async {
     try {
+      // First try to load from API to get latest data
+      final token = await _storageService.getAuthToken();
+      if (token != null) {
+        try {
+          // Set auth token for API calls
+          final apiService = ApiService();
+          apiService.setAuthToken(token);
+          
+          // Fetch latest profile data from API
+          final response = await apiService.get(ApiConstants.profile);
+          
+          if (response.statusCode == 200) {
+            final userData = response.data['data'];
+            final latestUser = AstrologerModel.fromJson(userData);
+            
+            // Update local storage with latest data
+            await _storageService.setUserData(jsonEncode(latestUser.toJson()));
+            
+            setState(() {
+              _currentUser = latestUser;
+            });
+            
+            print('Loaded latest profile data from API: specializations=${latestUser.specializations}, languages=${latestUser.languages}');
+            print('Current user after setState: specializations=${_currentUser?.specializations}, languages=${_currentUser?.languages}');
+            return;
+          }
+        } catch (apiError) {
+          print('API call failed, falling back to local storage: $apiError');
+        }
+      }
+      
+      // Fallback to local storage if API fails
       final userData = await _storageService.getUserData();
       if (userData != null) {
         final userDataMap = jsonDecode(userData);
         setState(() {
           _currentUser = AstrologerModel.fromJson(userDataMap);
         });
+        print('Loaded profile data from local storage: specializations=${_currentUser?.specializations}, languages=${_currentUser?.languages}');
+        print('User data map specializations: ${userDataMap['specializations']}');
+        print('User data map languages: ${userDataMap['languages']}');
       }
     } catch (e) {
       print('Error loading user data: $e');
@@ -153,8 +192,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Professional Details',
                           [
                             _buildInfoTile(Icons.school, 'Experience', '${_currentUser?.experience ?? 0} Years', themeService),
-                            _buildInfoTile(Icons.star, 'Specializations', _currentUser?.specializations.join(', ') ?? 'Loading...', themeService),
-                            _buildInfoTile(Icons.language, 'Languages', _currentUser?.languages.join(', ') ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.star, 'Specializations', () {
+                              final specs = _currentUser?.specializations?.join(', ') ?? 'Loading...';
+                              print('Displaying specializations: $specs');
+                              return specs;
+                            }(), themeService),
+                            _buildInfoTile(Icons.language, 'Languages', () {
+                              final langs = _currentUser?.languages?.join(', ') ?? 'Loading...';
+                              print('Displaying languages: $langs');
+                              return langs;
+                            }(), themeService),
                             _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${_currentUser?.ratePerMinute ?? 0}', themeService),
                           ],
                           themeService,
@@ -165,6 +212,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildProfileSection(
                           AppLocalizations.of(context)!.settings,
                           [
+                            _buildSettingsTile(Icons.auto_awesome, 'Bio Enhancer', 'Enhance your bio with AI', () async {
+                              final result = await Navigator.push<bool>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BioEnhancerScreen(
+                                    currentUser: _currentUser!,
+                                    onBioUpdated: _onProfileUpdated,
+                                  ),
+                                ),
+                              );
+                              
+                              if (result == true) {
+                                // Bio was updated, refresh the profile
+                                _loadUserData();
+                              }
+                            }, themeService),
                             _buildSettingsTile(Icons.notifications_outlined, AppLocalizations.of(context)!.notifications, 'Manage your notifications', () {
                               Navigator.push(
                                 context,

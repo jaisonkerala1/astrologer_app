@@ -36,6 +36,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _awardsController = TextEditingController();
   final _certificatesController = TextEditingController();
   
+  // Store the latest user data
+  AstrologerModel? _latestUser;
+  
   final StorageService _storageService = StorageService();
   final ApiService _apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
@@ -71,21 +74,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeFields();
+    _loadLatestProfileData();
+  }
+
+  @override
+  void didUpdateWidget(EditProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh fields when currentUser is updated
+    if (widget.currentUser != oldWidget.currentUser) {
+      _initializeFields();
+    }
+  }
+
+  Future<void> _loadLatestProfileData() async {
+    try {
+      // Get auth token
+      final token = await _storageService.getAuthToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      // Set auth token for API calls
+      _apiService.setAuthToken(token);
+
+      // Fetch latest profile data from API
+      final response = await _apiService.get(ApiConstants.profile);
+      
+      if (response.statusCode == 200) {
+        final userData = response.data['data'];
+        _latestUser = AstrologerModel.fromJson(userData);
+        
+        // Initialize fields with latest data
+        _initializeFields();
+        
+        print('Loaded latest profile data: name=${_latestUser!.name}, email=${_latestUser!.email}, phone=${_latestUser!.phone}');
+      } else {
+        // Fallback to passed user data if API fails
+        _initializeFields();
+      }
+    } catch (e) {
+      print('Error loading latest profile data: $e');
+      // Fallback to passed user data if API fails
+      _initializeFields();
+    }
   }
 
   void _initializeFields() {
-    if (widget.currentUser != null) {
-      _nameController.text = widget.currentUser!.name;
-      _emailController.text = widget.currentUser!.email;
-      _phoneController.text = widget.currentUser!.phone;
-      _experienceController.text = widget.currentUser!.experience.toString();
-      _rateController.text = widget.currentUser!.ratePerMinute.toString();
-      _bioController.text = widget.currentUser!.bio;
-      _awardsController.text = widget.currentUser!.awards;
-      _certificatesController.text = widget.currentUser!.certificates;
-      _selectedSpecializations = List.from(widget.currentUser!.specializations);
-      _selectedLanguages = List.from(widget.currentUser!.languages);
+    // Use latest user data if available, otherwise fallback to widget data
+    final userData = _latestUser ?? widget.currentUser;
+    
+    if (userData != null) {
+      _nameController.text = userData.name;
+      _emailController.text = userData.email;
+      _phoneController.text = userData.phone;
+      _experienceController.text = userData.experience.toString();
+      _rateController.text = userData.ratePerMinute.toString();
+      _bioController.text = userData.bio;
+      _awardsController.text = userData.awards;
+      _certificatesController.text = userData.certificates;
+      _selectedSpecializations = List.from(userData.specializations);
+      _selectedLanguages = List.from(userData.languages);
     }
   }
 
@@ -338,10 +386,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                   backgroundImage: _selectedImage?.path != null
                       ? FileImage(File(_selectedImage!.path))
-                      : (widget.currentUser?.profilePicture != null && widget.currentUser!.profilePicture!.isNotEmpty
-                          ? _getImageProvider(widget.currentUser!.profilePicture!)
+                      : ((_latestUser ?? widget.currentUser)?.profilePicture != null && (_latestUser ?? widget.currentUser)!.profilePicture!.isNotEmpty
+                          ? _getImageProvider((_latestUser ?? widget.currentUser)!.profilePicture!)
                           : null),
-                  child: _selectedImage?.path == null && (widget.currentUser?.profilePicture == null || widget.currentUser!.profilePicture!.isEmpty)
+                  child: _selectedImage?.path == null && ((_latestUser ?? widget.currentUser)?.profilePicture == null || (_latestUser ?? widget.currentUser)!.profilePicture!.isEmpty)
                       ? Icon(
                           Icons.person,
                           size: 60,
@@ -575,6 +623,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final updateData = {
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
         'specializations': _selectedSpecializations,
         'languages': _selectedLanguages,
         'experience': int.parse(_experienceController.text.trim()),
@@ -593,7 +642,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (response.statusCode == 200) {
         // Parse the updated user data from API response
         final updatedUserData = response.data['data'];
+        print('Updated user data from API: $updatedUserData');
         final updatedUser = AstrologerModel.fromJson(updatedUserData);
+        print('Parsed user model: name=${updatedUser.name}, email=${updatedUser.email}, phone=${updatedUser.phone}');
 
         // Save to local storage
         await _storageService.setUserData(jsonEncode(updatedUser.toJson()));
