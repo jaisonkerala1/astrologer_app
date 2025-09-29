@@ -162,6 +162,7 @@ const signup = async (req, res) => {
     console.log('Full body:', req.body);
 
     // Verify OTP first
+    console.log('🔍 SIGNUP DEBUG - Verifying OTP for phone:', phone, 'OTP:', otp);
     const otpRecord = await Otp.findOne({
       phone,
       otp,
@@ -170,7 +171,19 @@ const signup = async (req, res) => {
       attempts: { $lt: 3 }
     }).sort({ createdAt: -1 });
 
+    console.log('🔍 SIGNUP DEBUG - OTP record found:', otpRecord ? 'YES' : 'NO');
+    if (otpRecord) {
+      console.log('🔍 SIGNUP DEBUG - OTP record details:', {
+        phone: otpRecord.phone,
+        otp: otpRecord.otp,
+        isUsed: otpRecord.isUsed,
+        expiresAt: otpRecord.expiresAt,
+        attempts: otpRecord.attempts
+      });
+    }
+
     if (!otpRecord) {
+      console.log('🔍 SIGNUP DEBUG - OTP verification failed - returning error');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired OTP'
