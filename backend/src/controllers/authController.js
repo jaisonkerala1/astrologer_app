@@ -252,7 +252,18 @@ const signup = async (req, res) => {
     console.log('Awards:', astrologer.awards);
 
     // Save astrologer to MongoDB
-    await astrologer.save();
+    console.log('🔍 SIGNUP DEBUG - About to save astrologer...');
+    console.log('Bio before save:', astrologer.bio);
+    console.log('Certifications before save:', astrologer.certifications);
+    console.log('Awards before save:', astrologer.awards);
+    
+    try {
+      await astrologer.save();
+      console.log('🔍 SIGNUP DEBUG - Save completed successfully');
+    } catch (saveError) {
+      console.log('🔍 SIGNUP DEBUG - Save error:', saveError);
+      throw saveError;
+    }
     
     console.log('🔍 SIGNUP DEBUG - Astrologer saved successfully');
     console.log('Saved Bio:', astrologer.bio);
@@ -265,6 +276,32 @@ const signup = async (req, res) => {
     console.log('DB Bio:', savedAstrologer.bio);
     console.log('DB Certifications:', savedAstrologer.certifications);
     console.log('DB Awards:', savedAstrologer.awards);
+    
+    // Try to manually update the bio field
+    console.log('🔍 SIGNUP DEBUG - Attempting manual bio update...');
+    savedAstrologer.bio = 'MANUAL_TEST_BIO';
+    await savedAstrologer.save();
+    
+    // Fetch again to see if manual update worked
+    const updatedAstrologer = await Astrologer.findById(astrologer._id);
+    console.log('🔍 SIGNUP DEBUG - After manual update:');
+    console.log('Updated Bio:', updatedAstrologer.bio);
+    
+    // Test creating a new astrologer with just bio field
+    console.log('🔍 SIGNUP DEBUG - Testing bio field creation...');
+    const testAstrologer = new Astrologer({
+      phone: '+919999999999',
+      name: 'Test Bio',
+      email: 'test@bio.com',
+      experience: 1,
+      bio: 'TEST_BIO_FIELD'
+    });
+    await testAstrologer.save();
+    console.log('🔍 SIGNUP DEBUG - Test astrologer created with bio:', testAstrologer.bio);
+    
+    // Clean up test astrologer
+    await Astrologer.findByIdAndDelete(testAstrologer._id);
+    console.log('🔍 SIGNUP DEBUG - Test astrologer cleaned up');
 
     // Generate token
     const token = generateToken(astrologer.id);
