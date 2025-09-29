@@ -258,6 +258,13 @@ const signup = async (req, res) => {
     console.log('Saved Bio:', astrologer.bio);
     console.log('Saved Certifications:', astrologer.certifications);
     console.log('Saved Awards:', astrologer.awards);
+    
+    // Try to fetch the record from database to verify it was saved
+    const savedAstrologer = await Astrologer.findById(astrologer._id);
+    console.log('🔍 SIGNUP DEBUG - Fetched from database:');
+    console.log('DB Bio:', savedAstrologer.bio);
+    console.log('DB Certifications:', savedAstrologer.certifications);
+    console.log('DB Awards:', savedAstrologer.awards);
 
     // Generate token
     const token = generateToken(astrologer.id);
