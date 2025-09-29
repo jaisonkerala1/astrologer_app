@@ -23,6 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _experienceController = TextEditingController();
+  final _bioController = TextEditingController();
   bool _isLoading = false;
   String _fullPhoneNumber = '';
   String _countryCode = '+91';
@@ -30,6 +31,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
+  List<String> _certifications = [];
+  List<String> _awards = [];
 
   final List<String> _specializations = [
     'Vedic Astrology',
@@ -61,6 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _experienceController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -87,6 +91,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       'experience': int.tryParse(_experienceController.text) ?? 0,
                       'specializations': _selectedSpecializations,
                       'languages': _selectedLanguages,
+                      'bio': _bioController.text,
+                      'certifications': _certifications,
+                      'awards': _awards,
                     },
                   ),
                 ),
@@ -366,6 +373,89 @@ class _SignupScreenState extends State<SignupScreen> {
                         },
                       ),
                     ),
+                    const SizedBox(height: 24),
+
+                    // Bio and Professional Information Card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Professional Information',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppTheme.textColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Bio Field
+                          _buildTextField(
+                            controller: _bioController,
+                            label: 'Bio (Optional)',
+                            icon: Icons.description,
+                            hint: 'Tell us about yourself and your expertise...',
+                            maxLines: 4,
+                            validator: (value) {
+                              if (value != null && value.length > 1000) {
+                                return 'Bio must be less than 1000 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Certifications Section
+                          _buildDynamicListSection(
+                            title: 'Certifications (Optional)',
+                            subtitle: 'Add your professional certifications',
+                            items: _certifications,
+                            onAdd: (item) {
+                              setState(() {
+                                _certifications.add(item);
+                              });
+                            },
+                            onRemove: (index) {
+                              setState(() {
+                                _certifications.removeAt(index);
+                              });
+                            },
+                            hintText: 'Enter certification name',
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Awards Section
+                          _buildDynamicListSection(
+                            title: 'Awards (Optional)',
+                            subtitle: 'Add any awards or recognitions',
+                            items: _awards,
+                            onAdd: (item) {
+                              setState(() {
+                                _awards.add(item);
+                              });
+                            },
+                            onRemove: (index) {
+                              setState(() {
+                                _awards.removeAt(index);
+                              });
+                            },
+                            hintText: 'Enter award name',
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 32),
 
                     // Signup Button
@@ -473,11 +563,13 @@ class _SignupScreenState extends State<SignupScreen> {
     String? hint,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    int? maxLines,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      maxLines: maxLines ?? 1,
       style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
@@ -620,5 +712,125 @@ class _SignupScreenState extends State<SignupScreen> {
         });
       }
     }
+  }
+
+  Widget _buildDynamicListSection({
+    required String title,
+    required String subtitle,
+    required List<String> items,
+    required Function(String) onAdd,
+    required Function(int) onRemove,
+    required String hintText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: AppTheme.textColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Add new item input
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onFieldSubmitted: (value) {
+                  if (value.trim().isNotEmpty) {
+                    onAdd(value.trim());
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                onPressed: () {
+                  // This will be handled by the onFieldSubmitted above
+                },
+              ),
+            ),
+          ],
+        ),
+        
+        // Display items
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item,
+                      style: const TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => onRemove(index),
+                      child: Icon(
+                        Icons.close,
+                        color: AppTheme.primaryColor,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
   }
 }

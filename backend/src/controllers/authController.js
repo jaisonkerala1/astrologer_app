@@ -150,7 +150,7 @@ const verifyOTP = async (req, res) => {
 // Signup new astrologer
 const signup = async (req, res) => {
   try {
-    const { phone, otp, otpId, name, email, experience, specializations, languages } = req.body;
+    const { phone, otp, otpId, name, email, experience, specializations, languages, bio, certifications, awards } = req.body;
 
     // Verify OTP first
     const otpRecord = await Otp.findOne({
@@ -193,7 +193,10 @@ const signup = async (req, res) => {
       experience: experience || 0,
       ratePerMinute: 50,
       isOnline: false,
-      totalEarnings: 0
+      totalEarnings: 0,
+      bio: bio || '',
+      certifications: certifications || [],
+      awards: awards || []
     });
 
     // Save astrologer to MongoDB
@@ -218,6 +221,9 @@ const signup = async (req, res) => {
         ratePerMinute: astrologer.ratePerMinute,
         isOnline: astrologer.isOnline,
         totalEarnings: astrologer.totalEarnings,
+        bio: astrologer.bio,
+        certifications: astrologer.certifications,
+        awards: astrologer.awards,
         createdAt: astrologer.createdAt,
         updatedAt: astrologer.updatedAt
       }
