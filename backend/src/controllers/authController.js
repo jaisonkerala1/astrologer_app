@@ -134,6 +134,9 @@ const verifyOTP = async (req, res) => {
         ratePerMinute: astrologer.ratePerMinute,
         isOnline: astrologer.isOnline,
         totalEarnings: astrologer.totalEarnings,
+        bio: astrologer.bio,
+        awards: astrologer.awards,
+        certificates: astrologer.certificates,
         createdAt: astrologer.createdAt,
         updatedAt: astrologer.updatedAt
       }
@@ -182,7 +185,7 @@ const signup = async (req, res) => {
       });
     }
 
-    // Create new astrologer with provided data
+    // Create new astrologer with provided data including bio fields
     astrologer = new Astrologer({
       phone,
       name: name || 'Astrologer',
@@ -193,7 +196,11 @@ const signup = async (req, res) => {
       experience: experience || 0,
       ratePerMinute: 50,
       isOnline: false,
-      totalEarnings: 0
+      totalEarnings: 0,
+      // Initialize bio fields for all new astrologers
+      bio: '',
+      awards: '',
+      certificates: ''
     });
 
     // Save astrologer to MongoDB
@@ -218,6 +225,9 @@ const signup = async (req, res) => {
         ratePerMinute: astrologer.ratePerMinute,
         isOnline: astrologer.isOnline,
         totalEarnings: astrologer.totalEarnings,
+        bio: astrologer.bio,
+        awards: astrologer.awards,
+        certificates: astrologer.certificates,
         createdAt: astrologer.createdAt,
         updatedAt: astrologer.updatedAt
       }
