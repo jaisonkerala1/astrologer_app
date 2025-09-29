@@ -205,6 +205,14 @@ const signup = async (req, res) => {
     }
 
     // Create new astrologer with provided data
+    console.log('🔍 SIGNUP DEBUG - Creating astrologer with values:');
+    console.log('bio value:', bio);
+    console.log('certifications value:', certifications);
+    console.log('awards value:', awards);
+    console.log('req.body.bio:', req.body.bio);
+    console.log('req.body.certifications:', req.body.certifications);
+    console.log('req.body.awards:', req.body.awards);
+    
     astrologer = new Astrologer({
       phone,
       name: name || 'Astrologer',
@@ -216,9 +224,9 @@ const signup = async (req, res) => {
       ratePerMinute: 50,
       isOnline: false,
       totalEarnings: 0,
-      bio: bio || '',
-      certifications: certifications || [],
-      awards: awards || []
+      bio: req.body.bio || '',
+      certifications: req.body.certifications || [],
+      awards: req.body.awards || []
     });
 
     console.log('🔍 SIGNUP DEBUG - Astrologer object before save:');
