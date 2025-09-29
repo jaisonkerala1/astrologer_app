@@ -208,8 +208,18 @@ const signup = async (req, res) => {
       awards: awards || []
     });
 
+    console.log('🔍 SIGNUP DEBUG - Astrologer object before save:');
+    console.log('Bio:', astrologer.bio);
+    console.log('Certifications:', astrologer.certifications);
+    console.log('Awards:', astrologer.awards);
+
     // Save astrologer to MongoDB
     await astrologer.save();
+    
+    console.log('🔍 SIGNUP DEBUG - Astrologer saved successfully');
+    console.log('Saved Bio:', astrologer.bio);
+    console.log('Saved Certifications:', astrologer.certifications);
+    console.log('Saved Awards:', astrologer.awards);
 
     // Generate token
     const token = generateToken(astrologer.id);

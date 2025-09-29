@@ -765,9 +765,14 @@ class _DynamicListSectionState extends State<_DynamicListSection> {
 
   void _addItem() {
     final value = _controller.text.trim();
+    print('🔍 DYNAMIC LIST DEBUG - Trying to add item: "$value"');
     if (value.isNotEmpty) {
+      print('🔍 DYNAMIC LIST DEBUG - Adding item: "$value"');
       widget.onAdd(value);
       _controller.clear();
+      print('🔍 DYNAMIC LIST DEBUG - Item added successfully');
+    } else {
+      print('🔍 DYNAMIC LIST DEBUG - Empty value, not adding');
     }
   }
 
