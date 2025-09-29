@@ -722,11 +722,62 @@ class _SignupScreenState extends State<SignupScreen> {
     required Function(int) onRemove,
     required String hintText,
   }) {
+    return _DynamicListSection(
+      title: title,
+      subtitle: subtitle,
+      items: items,
+      onAdd: onAdd,
+      onRemove: onRemove,
+      hintText: hintText,
+    );
+  }
+}
+
+class _DynamicListSection extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final List<String> items;
+  final Function(String) onAdd;
+  final Function(int) onRemove;
+  final String hintText;
+
+  const _DynamicListSection({
+    required this.title,
+    required this.subtitle,
+    required this.items,
+    required this.onAdd,
+    required this.onRemove,
+    required this.hintText,
+  });
+
+  @override
+  State<_DynamicListSection> createState() => _DynamicListSectionState();
+}
+
+class _DynamicListSectionState extends State<_DynamicListSection> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _addItem() {
+    final value = _controller.text.trim();
+    if (value.isNotEmpty) {
+      widget.onAdd(value);
+      _controller.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          widget.title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: AppTheme.textColor,
             fontWeight: FontWeight.w600,
@@ -734,7 +785,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          subtitle,
+          widget.subtitle,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.grey[600],
           ),
@@ -746,8 +797,9 @@ class _SignupScreenState extends State<SignupScreen> {
           children: [
             Expanded(
               child: TextFormField(
+                controller: _controller,
                 decoration: InputDecoration(
-                  hintText: hintText,
+                  hintText: widget.hintText,
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -765,11 +817,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                onFieldSubmitted: (value) {
-                  if (value.trim().isNotEmpty) {
-                    onAdd(value.trim());
-                  }
-                },
+                onFieldSubmitted: (value) => _addItem(),
               ),
             ),
             const SizedBox(width: 8),
@@ -780,21 +828,19 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               child: IconButton(
                 icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                onPressed: () {
-                  // This will be handled by the onFieldSubmitted above
-                },
+                onPressed: _addItem,
               ),
             ),
           ],
         ),
         
         // Display items
-        if (items.isNotEmpty) ...[
+        if (widget.items.isNotEmpty) ...[
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: items.asMap().entries.map((entry) {
+            children: widget.items.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
               return Container(
@@ -817,7 +863,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: () => onRemove(index),
+                      onTap: () => widget.onRemove(index),
                       child: Icon(
                         Icons.close,
                         color: AppTheme.primaryColor,

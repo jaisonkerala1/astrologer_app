@@ -29,8 +29,8 @@ class AstrologerModel {
     required this.isOnline,
     required this.totalEarnings,
     this.bio,
-    required this.certifications,
-    required this.awards,
+    this.certifications = const [],
+    this.awards = const [],
     required this.createdAt,
     required this.updatedAt,
   });
