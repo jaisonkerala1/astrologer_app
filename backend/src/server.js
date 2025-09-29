@@ -7,10 +7,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = 7566; // Force port 7566
-console.log('🚀 Server starting - force redeploy 2025-09-29 v3');
-
-// Trust proxy for Railway deployment (fixes rate limiting issue)
-app.set('trust proxy', 1);
+console.log('🚀 Server starting - force redeploy 2025-09-20 v2');
 
 // Security middleware
 app.use(helmet());
