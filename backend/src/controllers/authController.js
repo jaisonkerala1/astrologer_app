@@ -213,7 +213,7 @@ const signup = async (req, res) => {
     console.log('req.body.certifications:', req.body.certifications);
     console.log('req.body.awards:', req.body.awards);
     
-    astrologer = new Astrologer({
+    const astrologerData = {
       phone,
       name: name || 'Astrologer',
       email: email || `${phone}@astrologer.com`,
@@ -227,9 +227,26 @@ const signup = async (req, res) => {
       bio: req.body.bio || '',
       certifications: req.body.certifications || [],
       awards: req.body.awards || []
-    });
+    };
+    
+    console.log('🔍 SIGNUP DEBUG - Astrologer data object:');
+    console.log('bio in data:', astrologerData.bio);
+    console.log('certifications in data:', astrologerData.certifications);
+    console.log('awards in data:', astrologerData.awards);
+    
+    astrologer = new Astrologer(astrologerData);
 
     console.log('🔍 SIGNUP DEBUG - Astrologer object before save:');
+    console.log('Bio:', astrologer.bio);
+    console.log('Certifications:', astrologer.certifications);
+    console.log('Awards:', astrologer.awards);
+    
+    // Try setting the fields manually after creation
+    astrologer.bio = req.body.bio || '';
+    astrologer.certifications = req.body.certifications || [];
+    astrologer.awards = req.body.awards || [];
+    
+    console.log('🔍 SIGNUP DEBUG - After manual assignment:');
     console.log('Bio:', astrologer.bio);
     console.log('Certifications:', astrologer.certifications);
     console.log('Awards:', astrologer.awards);
