@@ -151,6 +151,15 @@ const verifyOTP = async (req, res) => {
 const signup = async (req, res) => {
   try {
     const { phone, otp, otpId, name, email, experience, specializations, languages, bio, certifications, awards } = req.body;
+    
+    console.log('🔍 SIGNUP DEBUG - Data received:');
+    console.log('Phone:', phone);
+    console.log('Name:', name);
+    console.log('Email:', email);
+    console.log('Bio:', bio);
+    console.log('Certifications:', certifications);
+    console.log('Awards:', awards);
+    console.log('Full body:', req.body);
 
     // Verify OTP first
     const otpRecord = await Otp.findOne({
