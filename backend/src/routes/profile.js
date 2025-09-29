@@ -65,6 +65,11 @@ router.put('/languages', auth, profileController.updateLanguages);
 // @access  Private
 router.put('/rate', auth, profileController.updateRate);
 
+// @route   PUT /api/profile/bio
+// @desc    Update bio, awards, and certificates fields
+// @access  Private
+router.put('/bio', auth, profileController.updateBioFields);
+
 module.exports = router;
 
 

@@ -56,6 +56,44 @@ const astrologerSchema = new mongoose.Schema({
   lastSeen: {
     type: Date,
     default: Date.now
+  },
+  // Professional profile fields with UX-optimized validation
+  bio: {
+    type: String,
+    maxlength: [1000, 'Bio cannot exceed 1000 characters'],
+    trim: true,
+    default: '',
+    validate: {
+      validator: function(v) {
+        // Allow empty string but validate length if provided
+        return v.length <= 1000;
+      },
+      message: 'Bio must be 1000 characters or less'
+    }
+  },
+  awards: {
+    type: String,
+    maxlength: [500, 'Awards description cannot exceed 500 characters'],
+    trim: true,
+    default: '',
+    validate: {
+      validator: function(v) {
+        return v.length <= 500;
+      },
+      message: 'Awards description must be 500 characters or less'
+    }
+  },
+  certificates: {
+    type: String,
+    maxlength: [500, 'Certificates description cannot exceed 500 characters'],
+    trim: true,
+    default: '',
+    validate: {
+      validator: function(v) {
+        return v.length <= 500;
+      },
+      message: 'Certificates description must be 500 characters or less'
+    }
   }
 }, {
   timestamps: true

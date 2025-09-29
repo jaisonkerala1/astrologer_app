@@ -34,17 +34,71 @@ const updateProfile = async (req, res) => {
     const { astrologerId } = req.user;
     const updates = req.body;
 
-    // Remove fields that shouldn't be updated directly
-    delete updates.phone;
-    delete updates.totalEarnings;
-    delete updates.createdAt;
-    delete updates.id;
+    // Professional field validation and sanitization
+    const allowedFields = [
+      'name', 'email', 'specializations', 'languages', 
+      'experience', 'ratePerMinute', 'bio', 'awards', 'certificates'
+    ];
 
-    // Update the astrologer in MongoDB
+    // Filter only allowed fields
+    const filteredUpdates = {};
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        filteredUpdates[field] = updates[field];
+      }
+    });
+
+    // Professional validation for bio fields
+    if (filteredUpdates.bio !== undefined) {
+      if (typeof filteredUpdates.bio !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Bio must be a text string'
+        });
+      }
+      if (filteredUpdates.bio.length > 1000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bio cannot exceed 1000 characters'
+        });
+      }
+    }
+
+    if (filteredUpdates.awards !== undefined) {
+      if (typeof filteredUpdates.awards !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Awards must be a text string'
+        });
+      }
+      if (filteredUpdates.awards.length > 500) {
+        return res.status(400).json({
+          success: false,
+          message: 'Awards description cannot exceed 500 characters'
+        });
+      }
+    }
+
+    if (filteredUpdates.certificates !== undefined) {
+      if (typeof filteredUpdates.certificates !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Certificates must be a text string'
+        });
+      }
+      if (filteredUpdates.certificates.length > 500) {
+        return res.status(400).json({
+          success: false,
+          message: 'Certificates description cannot exceed 500 characters'
+        });
+      }
+    }
+
+    // Update the astrologer in MongoDB with proper error handling
     const astrologer = await Astrologer.findByIdAndUpdate(
       astrologerId,
-      { ...updates, updatedAt: new Date() },
-      { new: true }
+      { ...filteredUpdates, updatedAt: new Date() },
+      { new: true, runValidators: true }
     );
 
     if (!astrologer) {
@@ -54,7 +108,9 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    console.log(`Profile updated for astrologer ID: ${astrologerId}`);
+    console.log(`Profile updated for astrologer ID: ${astrologerId}`, {
+      updatedFields: Object.keys(filteredUpdates)
+    });
 
     res.json({
       success: true,
@@ -63,6 +119,17 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    
+    // Handle Mongoose validation errors professionally
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validationErrors
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Failed to update profile'
@@ -250,13 +317,106 @@ const updateRate = async (req, res) => {
   }
 };
 
+// Update bio fields specifically (UX-optimized endpoint)
+const updateBioFields = async (req, res) => {
+  try {
+    const { astrologerId } = req.user;
+    const { bio, awards, certificates } = req.body;
+
+    // Professional validation
+    const validationErrors = [];
+
+    if (bio !== undefined) {
+      if (typeof bio !== 'string') {
+        validationErrors.push('Bio must be a text string');
+      } else if (bio.length > 1000) {
+        validationErrors.push('Bio cannot exceed 1000 characters');
+      }
+    }
+
+    if (awards !== undefined) {
+      if (typeof awards !== 'string') {
+        validationErrors.push('Awards must be a text string');
+      } else if (awards.length > 500) {
+        validationErrors.push('Awards description cannot exceed 500 characters');
+      }
+    }
+
+    if (certificates !== undefined) {
+      if (typeof certificates !== 'string') {
+        validationErrors.push('Certificates must be a text string');
+      } else if (certificates.length > 500) {
+        validationErrors.push('Certificates description cannot exceed 500 characters');
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validationErrors
+      });
+    }
+
+    // Build update object with only provided fields
+    const updateData = { updatedAt: new Date() };
+    if (bio !== undefined) updateData.bio = bio.trim();
+    if (awards !== undefined) updateData.awards = awards.trim();
+    if (certificates !== undefined) updateData.certificates = certificates.trim();
+
+    const astrologer = await Astrologer.findByIdAndUpdate(
+      astrologerId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Astrologer not found'
+      });
+    }
+
+    console.log(`Bio fields updated for astrologer ID: ${astrologerId}`, {
+      updatedFields: Object.keys(updateData).filter(key => key !== 'updatedAt')
+    });
+
+    res.json({
+      success: true,
+      message: 'Bio fields updated successfully',
+      data: {
+        bio: astrologer.bio,
+        awards: astrologer.awards,
+        certificates: astrologer.certificates
+      }
+    });
+  } catch (error) {
+    console.error('Update bio fields error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validationErrors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update bio fields'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   uploadProfilePicture,
   updateSpecializations,
   updateLanguages,
-  updateRate
+  updateRate,
+  updateBioFields
 };
 
 
