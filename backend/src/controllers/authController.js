@@ -150,19 +150,9 @@ const verifyOTP = async (req, res) => {
 // Signup new astrologer
 const signup = async (req, res) => {
   try {
-    const { phone, otp, otpId, name, email, experience, specializations, languages, bio, certifications, awards } = req.body;
-    
-    console.log('🔍 SIGNUP DEBUG - Data received:');
-    console.log('Phone:', phone);
-    console.log('Name:', name);
-    console.log('Email:', email);
-    console.log('Bio:', bio);
-    console.log('Certifications:', certifications);
-    console.log('Awards:', awards);
-    console.log('Full body:', req.body);
+    const { phone, otp, otpId, name, email, experience, specializations, languages } = req.body;
 
     // Verify OTP first
-    console.log('🔍 SIGNUP DEBUG - Verifying OTP for phone:', phone, 'OTP:', otp);
     const otpRecord = await Otp.findOne({
       phone,
       otp,
@@ -171,19 +161,7 @@ const signup = async (req, res) => {
       attempts: { $lt: 3 }
     }).sort({ createdAt: -1 });
 
-    console.log('🔍 SIGNUP DEBUG - OTP record found:', otpRecord ? 'YES' : 'NO');
-    if (otpRecord) {
-      console.log('🔍 SIGNUP DEBUG - OTP record details:', {
-        phone: otpRecord.phone,
-        otp: otpRecord.otp,
-        isUsed: otpRecord.isUsed,
-        expiresAt: otpRecord.expiresAt,
-        attempts: otpRecord.attempts
-      });
-    }
-
     if (!otpRecord) {
-      console.log('🔍 SIGNUP DEBUG - OTP verification failed - returning error');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired OTP'
@@ -205,15 +183,7 @@ const signup = async (req, res) => {
     }
 
     // Create new astrologer with provided data
-    console.log('🔍 SIGNUP DEBUG - Creating astrologer with values:');
-    console.log('bio value:', bio);
-    console.log('certifications value:', certifications);
-    console.log('awards value:', awards);
-    console.log('req.body.bio:', req.body.bio);
-    console.log('req.body.certifications:', req.body.certifications);
-    console.log('req.body.awards:', req.body.awards);
-    
-    const astrologerData = {
+    astrologer = new Astrologer({
       phone,
       name: name || 'Astrologer',
       email: email || `${phone}@astrologer.com`,
@@ -223,107 +193,11 @@ const signup = async (req, res) => {
       experience: experience || 0,
       ratePerMinute: 50,
       isOnline: false,
-      totalEarnings: 0,
-      bio: req.body.bio || '',
-      certifications: req.body.certifications || [],
-      awards: req.body.awards || []
-    };
-    
-    console.log('🔍 SIGNUP DEBUG - Astrologer data object:');
-    console.log('bio in data:', astrologerData.bio);
-    console.log('certifications in data:', astrologerData.certifications);
-    console.log('awards in data:', astrologerData.awards);
-    
-    astrologer = new Astrologer(astrologerData);
-
-    console.log('🔍 SIGNUP DEBUG - Astrologer object before save:');
-    console.log('Bio:', astrologer.bio);
-    console.log('Certifications:', astrologer.certifications);
-    console.log('Awards:', astrologer.awards);
-    
-    // Try setting the fields manually after creation
-    astrologer.bio = req.body.bio || '';
-    astrologer.certifications = req.body.certifications || [];
-    astrologer.awards = req.body.awards || [];
-    
-    console.log('🔍 SIGNUP DEBUG - After manual assignment:');
-    console.log('Bio:', astrologer.bio);
-    console.log('Certifications:', astrologer.certifications);
-    console.log('Awards:', astrologer.awards);
+      totalEarnings: 0
+    });
 
     // Save astrologer to MongoDB
-    console.log('🔍 SIGNUP DEBUG - About to save astrologer...');
-    console.log('Bio before save:', astrologer.bio);
-    console.log('Certifications before save:', astrologer.certifications);
-    console.log('Awards before save:', astrologer.awards);
-    
-    // Check schema paths
-    console.log('🔍 SIGNUP DEBUG - Schema paths:', Object.keys(astrologer.schema.paths));
-    console.log('🔍 SIGNUP DEBUG - Bio path exists:', 'bio' in astrologer.schema.paths);
-    console.log('🔍 SIGNUP DEBUG - Certifications path exists:', 'certifications' in astrologer.schema.paths);
-    console.log('🔍 SIGNUP DEBUG - Awards path exists:', 'awards' in astrologer.schema.paths);
-    
-    try {
-      await astrologer.save();
-      console.log('🔍 SIGNUP DEBUG - Save completed successfully');
-    } catch (saveError) {
-      console.log('🔍 SIGNUP DEBUG - Save error:', saveError);
-      throw saveError;
-    }
-    
-    console.log('🔍 SIGNUP DEBUG - Astrologer saved successfully');
-    console.log('Saved Bio:', astrologer.bio);
-    console.log('Saved Certifications:', astrologer.certifications);
-    console.log('Saved Awards:', astrologer.awards);
-    
-    // Try to fetch the record from database to verify it was saved
-    const savedAstrologer = await Astrologer.findById(astrologer._id);
-    console.log('🔍 SIGNUP DEBUG - Fetched from database:');
-    console.log('DB Bio:', savedAstrologer.bio);
-    console.log('DB Certifications:', savedAstrologer.certifications);
-    console.log('DB Awards:', savedAstrologer.awards);
-    
-    // Try to manually update the bio field
-    console.log('🔍 SIGNUP DEBUG - Attempting manual bio update...');
-    savedAstrologer.bio = 'MANUAL_TEST_BIO';
-    await savedAstrologer.save();
-    
-    // Fetch again to see if manual update worked
-    const updatedAstrologer = await Astrologer.findById(astrologer._id);
-    console.log('🔍 SIGNUP DEBUG - After manual update:');
-    console.log('Updated Bio:', updatedAstrologer.bio);
-    
-    // Test creating a new astrologer with just bio field
-    console.log('🔍 SIGNUP DEBUG - Testing bio field creation...');
-    const testAstrologer = new Astrologer({
-      phone: '+919999999999',
-      name: 'Test Bio',
-      email: 'test@bio.com',
-      experience: 1,
-      bio: 'TEST_BIO_FIELD'
-    });
-    await testAstrologer.save();
-    console.log('🔍 SIGNUP DEBUG - Test astrologer created with bio:', testAstrologer.bio);
-    
-    // Test direct MongoDB insertion
-    console.log('🔍 SIGNUP DEBUG - Testing direct MongoDB insertion...');
-    const db = astrologer.db;
-    const collection = db.collection('astrologers');
-    const directInsert = await collection.insertOne({
-      phone: '+919999999998',
-      name: 'Direct Test',
-      email: 'direct@test.com',
-      experience: 1,
-      bio: 'DIRECT_MONGO_BIO',
-      certifications: ['DIRECT_CERT'],
-      awards: ['DIRECT_AWARD']
-    });
-    console.log('🔍 SIGNUP DEBUG - Direct insert result:', directInsert.insertedId);
-    
-    // Clean up test astrologers
-    await Astrologer.findByIdAndDelete(testAstrologer._id);
-    await collection.deleteOne({ _id: directInsert.insertedId });
-    console.log('🔍 SIGNUP DEBUG - Test astrologers cleaned up');
+    await astrologer.save();
 
     // Generate token
     const token = generateToken(astrologer.id);
@@ -344,9 +218,6 @@ const signup = async (req, res) => {
         ratePerMinute: astrologer.ratePerMinute,
         isOnline: astrologer.isOnline,
         totalEarnings: astrologer.totalEarnings,
-        bio: astrologer.bio,
-        certifications: astrologer.certifications,
-        awards: astrologer.awards,
         createdAt: astrologer.createdAt,
         updatedAt: astrologer.updatedAt
       }

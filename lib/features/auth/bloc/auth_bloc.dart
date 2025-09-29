@@ -123,32 +123,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      final signupData = {
-        'phone': event.phoneNumber.trim(),
-        'otp': event.otp,
-        if (event.otpId != null) 'otpId': event.otpId,
-        'name': event.name,
-        'email': event.email,
-        'experience': event.experience,
-        'specializations': event.specializations,
-        'languages': event.languages,
-        if (event.bio != null) 'bio': event.bio,
-        'certifications': event.certifications,
-        'awards': event.awards,
-      };
-      
-      print('🔍 SIGNUP DEBUG - Data being sent:');
-      print('Phone: ${signupData['phone']}');
-      print('Name: ${signupData['name']}');
-      print('Email: ${signupData['email']}');
-      print('Bio: ${signupData['bio']}');
-      print('Certifications: ${signupData['certifications']}');
-      print('Awards: ${signupData['awards']}');
-      print('Full data: $signupData');
-      
       final response = await _apiService.post(
         ApiConstants.signup,
-        data: signupData,
+        data: {
+          'phone': event.phoneNumber.trim(),
+          'otp': event.otp,
+          if (event.otpId != null) 'otpId': event.otpId,
+          'name': event.name,
+          'email': event.email,
+          'experience': event.experience,
+          'specializations': event.specializations,
+          'languages': event.languages,
+        },
       );
       
       if (response.statusCode == 200) {

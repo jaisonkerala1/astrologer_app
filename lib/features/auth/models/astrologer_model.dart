@@ -10,9 +10,6 @@ class AstrologerModel {
   final double ratePerMinute;
   final bool isOnline;
   final double totalEarnings;
-  final String? bio;
-  final List<String> certifications;
-  final List<String> awards;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -28,9 +25,6 @@ class AstrologerModel {
     required this.ratePerMinute,
     required this.isOnline,
     required this.totalEarnings,
-    this.bio,
-    this.certifications = const [],
-    this.awards = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -48,9 +42,6 @@ class AstrologerModel {
       ratePerMinute: (json['ratePerMinute'] ?? 0).toDouble(),
       isOnline: json['isOnline'] ?? false,
       totalEarnings: (json['totalEarnings'] ?? 0).toDouble(),
-      bio: json['bio'],
-      certifications: List<String>.from(json['certifications'] ?? []),
-      awards: List<String>.from(json['awards'] ?? []),
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -69,9 +60,6 @@ class AstrologerModel {
       'ratePerMinute': ratePerMinute,
       'isOnline': isOnline,
       'totalEarnings': totalEarnings,
-      'bio': bio,
-      'certifications': certifications,
-      'awards': awards,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -89,9 +77,6 @@ class AstrologerModel {
     double? ratePerMinute,
     bool? isOnline,
     double? totalEarnings,
-    String? bio,
-    List<String>? certifications,
-    List<String>? awards,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -107,9 +92,6 @@ class AstrologerModel {
       ratePerMinute: ratePerMinute ?? this.ratePerMinute,
       isOnline: isOnline ?? this.isOnline,
       totalEarnings: totalEarnings ?? this.totalEarnings,
-      bio: bio ?? this.bio,
-      certifications: certifications ?? this.certifications,
-      awards: awards ?? this.awards,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

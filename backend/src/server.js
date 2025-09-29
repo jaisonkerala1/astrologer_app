@@ -102,7 +102,6 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/consultation', require('./routes/consultation'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/reviews', require('./routes/reviews'));
-app.use('/api/bio', require('./routes/bio'));
 app.use('/api/seed', require('./routes/seed'));
 
 
