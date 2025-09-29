@@ -345,6 +345,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           experience: widget.signupData!['experience'],
           specializations: List<String>.from(widget.signupData!['specializations']),
           languages: List<String>.from(widget.signupData!['languages']),
+          bio: widget.signupData!['bio'] ?? '',
+          awards: widget.signupData!['awards'] ?? '',
+          certificates: widget.signupData!['certificates'] ?? '',
         ));
       } else {
         // Handle login

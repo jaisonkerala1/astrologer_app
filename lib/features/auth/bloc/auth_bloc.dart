@@ -134,6 +134,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           'experience': event.experience,
           'specializations': event.specializations,
           'languages': event.languages,
+          'bio': event.bio,
+          'awards': event.awards,
+          'certificates': event.certificates,
         },
       );
       

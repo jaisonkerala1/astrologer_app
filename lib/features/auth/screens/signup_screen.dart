@@ -23,6 +23,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _experienceController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _awardsController = TextEditingController();
+  final _certificatesController = TextEditingController();
   bool _isLoading = false;
   String _fullPhoneNumber = '';
   String _countryCode = '+91';
@@ -61,6 +64,9 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _experienceController.dispose();
+    _bioController.dispose();
+    _awardsController.dispose();
+    _certificatesController.dispose();
     super.dispose();
   }
 
@@ -87,6 +93,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       'experience': int.tryParse(_experienceController.text) ?? 0,
                       'specializations': _selectedSpecializations,
                       'languages': _selectedLanguages,
+                      'bio': _bioController.text,
+                      'awards': _awardsController.text,
+                      'certificates': _certificatesController.text,
                     },
                   ),
                 ),
@@ -366,6 +375,123 @@ class _SignupScreenState extends State<SignupScreen> {
                         },
                       ),
                     ),
+                    const SizedBox(height: 24),
+
+                    // Bio Information Card - Google Material Design
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.person_outline,
+                                  color: AppTheme.primaryColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tell Us About Yourself',
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        color: AppTheme.textColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Help clients understand your expertise',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Bio Field (Mandatory)
+                          _buildBioTextField(
+                            controller: _bioController,
+                            label: 'Bio *',
+                            icon: Icons.description,
+                            maxLines: 3,
+                            maxLength: 1000,
+                            hintText: 'Describe your experience, specializations, and what makes you unique as an astrologer...',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Bio is required to help clients understand your expertise';
+                              }
+                              if (value.trim().length < 50) {
+                                return 'Please write at least 50 characters to describe yourself';
+                              }
+                              if (value.length > 1000) {
+                                return 'Bio cannot exceed 1000 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Awards Field (Optional)
+                          _buildBioTextField(
+                            controller: _awardsController,
+                            label: 'Awards & Recognition (Optional)',
+                            icon: Icons.emoji_events,
+                            maxLines: 1,
+                            maxLength: 500,
+                            hintText: 'List any awards, recognitions, or achievements...',
+                            validator: (value) {
+                              if (value != null && value.length > 500) {
+                                return 'Awards description cannot exceed 500 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Certificates Field (Optional)
+                          _buildBioTextField(
+                            controller: _certificatesController,
+                            label: 'Certifications (Optional)',
+                            icon: Icons.school,
+                            maxLines: 1,
+                            maxLength: 500,
+                            hintText: 'List your certifications, degrees, or qualifications...',
+                            validator: (value) {
+                              if (value != null && value.length > 500) {
+                                return 'Certificates description cannot exceed 500 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 32),
 
                     // Signup Button
@@ -463,6 +589,61 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
         );
       },
+    );
+  }
+
+  Widget _buildBioTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? hintText,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int? maxLines = 1,
+    int? maxLength,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
+        labelStyle: TextStyle(
+          color: Colors.grey[600], 
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        filled: true,
+        fillColor: Colors.grey[50],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.errorColor),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        counterText: maxLength != null ? null : '',
+      ),
     );
   }
 
@@ -594,6 +775,26 @@ class _SignupScreenState extends State<SignupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Please select at least one language'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      if (_bioController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please write a bio to help clients understand your expertise'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      if (_bioController.text.trim().length < 50) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please write at least 50 characters in your bio'),
             backgroundColor: AppTheme.errorColor,
             duration: const Duration(seconds: 3),
           ),

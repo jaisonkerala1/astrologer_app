@@ -153,7 +153,7 @@ const verifyOTP = async (req, res) => {
 // Signup new astrologer
 const signup = async (req, res) => {
   try {
-    const { phone, otp, otpId, name, email, experience, specializations, languages } = req.body;
+    const { phone, otp, otpId, name, email, experience, specializations, languages, bio, awards, certificates } = req.body;
 
     // Verify OTP first
     const otpRecord = await Otp.findOne({
@@ -197,10 +197,10 @@ const signup = async (req, res) => {
       ratePerMinute: 50,
       isOnline: false,
       totalEarnings: 0,
-      // Initialize bio fields for all new astrologers
-      bio: '',
-      awards: '',
-      certificates: ''
+      // Use provided bio fields or default to empty strings
+      bio: bio || '',
+      awards: awards || '',
+      certificates: certificates || ''
     });
 
     // Save astrologer to MongoDB
