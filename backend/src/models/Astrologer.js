@@ -56,6 +56,24 @@ const astrologerSchema = new mongoose.Schema({
   lastSeen: {
     type: Date,
     default: Date.now
+  },
+  bio: {
+    type: String,
+    maxlength: 1000,
+    trim: true,
+    default: ''
+  },
+  awards: {
+    type: String,
+    maxlength: 500,
+    trim: true,
+    default: ''
+  },
+  certificates: {
+    type: String,
+    maxlength: 500,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true

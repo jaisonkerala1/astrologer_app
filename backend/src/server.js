@@ -9,6 +9,9 @@ const app = express();
 const PORT = 7566; // Force port 7566
 console.log('🚀 Server starting - force redeploy 2025-09-20 v2');
 
+// Trust proxy for Railway deployment (fixes rate limiting issue)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
