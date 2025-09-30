@@ -420,22 +420,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardBody(stats) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<DashboardBloc>().add(RefreshDashboardEvent());
-      },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-                maxWidth: constraints.maxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+              maxWidth: constraints.maxWidth,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                   // Header (includes status toggle) - Full width
                   _buildHeader(_currentUser),
                   
@@ -540,8 +536,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             );
         },
-      ),
-    );
+      );
   }
 
   Widget _buildHeader(AstrologerModel? user) {
