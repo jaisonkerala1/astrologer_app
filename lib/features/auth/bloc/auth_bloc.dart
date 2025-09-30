@@ -123,7 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      final response = await _apiService.postMultipart(
+      final response = await _apiService.post(
         ApiConstants.signup,
         data: {
           'phone': event.phoneNumber.trim(),
@@ -137,9 +137,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           'bio': event.bio,
           'awards': event.awards,
           'certificates': event.certificates,
-        },
-        files: {
-          'profilePicture': event.profilePicture,
         },
       );
       
@@ -205,33 +202,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Set auth token for API calls
         _apiService.setAuthToken(token);
         
-        // Validate token with server by calling profile endpoint
+        // Parse user data from storage
         try {
-          print('AuthBloc: Validating token with server...');
-          final response = await _apiService.get(ApiConstants.profile);
+          final userDataMap = jsonDecode(userData);
+          final astrologer = AstrologerModel.fromJson(userDataMap);
           
-          if (response.statusCode == 200 && response.data['success'] == true) {
-            // Token is valid, get fresh user data from server
-            final serverUserData = response.data['data'];
-            final astrologer = AstrologerModel.fromJson(serverUserData);
-            
-            // Update local storage with fresh data
-            await _storageService.setUserData(jsonEncode(serverUserData));
-            
-            print('AuthBloc: Token valid, emitting AuthSuccessState with fresh data');
-            emit(AuthSuccessState(
-              astrologer: astrologer,
-              token: token,
-            ));
-          } else {
-            print('AuthBloc: Server returned invalid response, clearing auth data');
-            await _clearAuthData();
-            emit(AuthUnauthenticatedState());
-          }
+          print('AuthBloc: Emitting AuthSuccessState');
+          emit(AuthSuccessState(
+            astrologer: astrologer,
+            token: token,
+          ));
         } catch (e) {
-          print('AuthBloc: Token validation failed: $e');
-          // Token is invalid or server error, clear auth data
-          await _clearAuthData();
+          print('AuthBloc: Error parsing user data: $e');
+          // If parsing fails, emit unauthenticated state
           emit(AuthUnauthenticatedState());
         }
       } else {
@@ -241,16 +224,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       print('AuthBloc: Error checking auth status: $e');
       emit(AuthUnauthenticatedState());
-    }
-  }
-
-  Future<void> _clearAuthData() async {
-    try {
-      await _storageService.clearAuthData();
-      _apiService.clearAuthToken();
-      print('AuthBloc: Cleared all auth data due to invalid token');
-    } catch (e) {
-      print('AuthBloc: Error clearing auth data: $e');
     }
   }
 

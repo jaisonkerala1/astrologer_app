@@ -12,7 +12,6 @@ import '../widgets/consultation_stats_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
 import '../widgets/consultation_search_bar.dart';
-import '../widgets/consultations_skeleton_loader.dart';
 
 class ConsultationsScreen extends StatefulWidget {
   const ConsultationsScreen({super.key});
@@ -22,7 +21,7 @@ class ConsultationsScreen extends StatefulWidget {
 }
 
 class _ConsultationsScreenState extends State<ConsultationsScreen> 
-    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with TickerProviderStateMixin {
   late AnimationController _refreshAnimationController;
   bool _isRefreshing = false;
 
@@ -37,9 +36,6 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
   }
 
   @override
-  bool get wantKeepAlive => true; // Preserve state on tab switch
-
-  @override
   void dispose() {
     _refreshAnimationController.dispose();
     super.dispose();
@@ -47,7 +43,6 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
@@ -103,7 +98,9 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
         },
         builder: (context, state) {
           if (state is ConsultationsLoading) {
-            return const ConsultationsSkeletonLoader();
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
           if (state is ConsultationsError) {

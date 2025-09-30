@@ -21,18 +21,6 @@ class DashboardStatsModel {
     required this.todayCount,
   });
 
-  // Empty constructor for initial state
-  DashboardStatsModel.empty()
-      : todayEarnings = 0.0,
-        totalEarnings = 0.0,
-        callsToday = 0,
-        totalCalls = 0,
-        isOnline = false,
-        totalSessions = 0,
-        averageSessionDuration = 0.0,
-        averageRating = 0.0,
-        todayCount = 0;
-
   factory DashboardStatsModel.fromJson(Map<String, dynamic> json) {
     return DashboardStatsModel(
       todayEarnings: (json['todayEarnings'] ?? 0).toDouble(),

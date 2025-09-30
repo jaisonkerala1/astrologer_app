@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../services/discussion_service.dart';
 import '../models/discussion_models.dart';
@@ -22,21 +20,13 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   final List<DiscussionComment> _comments = [];
   bool _isLiked = false;
   int _likeCount = 0;
-  bool _isComposing = false;
 
   @override
   void initState() {
     super.initState();
     _isLiked = widget.post.isLiked;
     _likeCount = widget.post.likes;
-    _commentController.addListener(_onTextChanged);
     _loadComments();
-  }
-
-  void _onTextChanged() {
-    setState(() {
-      _isComposing = _commentController.text.trim().isNotEmpty;
-    });
   }
 
   Future<void> _loadComments() async {
@@ -95,74 +85,70 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Scaffold(
-          backgroundColor: themeService.primaryColor,
-          appBar: AppBar(
-            title: Text(
-              'Discussion',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            backgroundColor: themeService.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  _isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _isLiked ? Colors.red : Colors.white,
-                ),
-                onPressed: _toggleLike,
-              ),
-              IconButton(
-                icon: Icon(Icons.share, color: Colors.white),
-                onPressed: _sharePost,
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: const Color(0xFF6B46C1),
+      appBar: AppBar(
+        title: Text(
+          'Discussion',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
-          body: Column(
-            children: [
-              // Main Post
-              _buildMainPost(l10n, themeService),
-              // Comments Section
-              Expanded(
-                child: Container(
-                  color: themeService.primaryColor,
-                  child: _comments.isEmpty
-                      ? _buildEmptyComments(l10n, themeService)
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _comments.length,
-                          itemBuilder: (context, index) {
-                            final comment = _comments[index];
-                            return _buildCommentCard(comment, l10n, themeService);
-                          },
-                        ),
-                ),
-              ),
-              // Comment Input
-              _buildCommentInput(l10n, themeService),
-            ],
+        ),
+        backgroundColor: const Color(0xFF6B46C1),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isLiked ? Icons.favorite : Icons.favorite_border,
+              color: _isLiked ? Colors.red : Colors.white,
+            ),
+            onPressed: _toggleLike,
           ),
-        );
-      },
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.white),
+            onPressed: _sharePost,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Main Post
+          _buildMainPost(l10n),
+          // Comments Section
+          Expanded(
+            child: Container(
+              color: const Color(0xFF6B46C1),
+              child: _comments.isEmpty
+                  ? _buildEmptyComments(l10n)
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = _comments[index];
+                        return _buildCommentCard(comment, l10n);
+                      },
+                    ),
+            ),
+          ),
+          // Comment Input
+          _buildCommentInput(l10n),
+        ],
+      ),
     );
   }
 
-  Widget _buildMainPost(AppLocalizations l10n, ThemeService themeService) {
+  Widget _buildMainPost(AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -181,11 +167,11 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: themeService.accentColor,
+                  backgroundColor: const Color(0xFF8B4513),
                   radius: 20,
                   child: Text(
                     widget.post.authorInitial,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -199,17 +185,17 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     children: [
                       Text(
                         widget.post.author,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: themeService.textPrimary,
+                          color: Colors.black,
                         ),
                       ),
                       Text(
                         '${widget.post.timeAgo} • ${widget.post.category}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: themeService.textSecondary,
+                          color: Colors.grey,
                         ),
                       ),
                     ],
@@ -219,7 +205,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                   onTap: _toggleLike,
                   child: Icon(
                     _isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: _isLiked ? Colors.red : themeService.textSecondary,
+                    color: _isLiked ? Colors.red : Colors.grey,
                     size: 24,
                   ),
                 ),
@@ -228,18 +214,18 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
             const SizedBox(height: 16),
             Text(
               widget.post.title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: themeService.textPrimary,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               widget.post.content,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
-                color: themeService.textPrimary.withOpacity(0.87),
+                color: Colors.black87,
                 height: 1.4,
               ),
             ),
@@ -248,30 +234,30 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
               children: [
                 Icon(
                   _isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _isLiked ? Colors.red : themeService.textSecondary,
+                  color: _isLiked ? Colors.red : Colors.grey,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '$_likeCount likes',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
-                    color: themeService.textSecondary,
+                    color: Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(width: 24),
-                Icon(
+                const Icon(
                   Icons.chat_bubble_outline,
-                  color: themeService.textSecondary,
+                  color: Colors.grey,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '${_comments.length} comments',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
-                    color: themeService.textSecondary,
+                    color: Colors.grey,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -283,14 +269,14 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     );
   }
 
-  Widget _buildCommentCard(DiscussionComment comment, AppLocalizations l10n, ThemeService themeService) {
+  Widget _buildCommentCard(DiscussionComment comment, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor.withOpacity(0.5),
+        color: const Color(0xFFF8F9FA), // Light gray background
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: themeService.borderColor,
+          color: Colors.grey.shade200,
           width: 1,
         ),
       ),
@@ -301,11 +287,11 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
           children: [
             // Author avatar
             CircleAvatar(
-              backgroundColor: themeService.primaryColor,
+              backgroundColor: const Color(0xFF6B46C1), // Purple background
               radius: 14,
               child: Text(
                 comment.authorInitial,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 10,
@@ -323,18 +309,18 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     children: [
                       Text(
                         comment.author,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: themeService.primaryColor,
+                          color: Color(0xFF6B46C1),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         comment.timeAgo,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
-                          color: themeService.textSecondary,
+                          color: Colors.grey,
                         ),
                       ),
                     ],
@@ -343,9 +329,9 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                   // Comment text
                   Text(
                     comment.content,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
-                      color: themeService.textPrimary.withOpacity(0.87),
+                      color: Colors.black87,
                       height: 1.3,
                     ),
                   ),
@@ -359,7 +345,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                           children: [
                             Icon(
                               comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: comment.isLiked ? Colors.red : themeService.textSecondary,
+                              color: comment.isLiked ? Colors.red : Colors.grey.shade600,
                               size: 14,
                             ),
                             const SizedBox(width: 4),
@@ -367,7 +353,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                               comment.likes > 0 ? comment.likes.toString() : '',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: comment.isLiked ? Colors.red : themeService.textSecondary,
+                                color: comment.isLiked ? Colors.red : Colors.grey.shade600,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -384,7 +370,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                           children: [
                             Icon(
                               Icons.reply_outlined,
-                              color: themeService.textSecondary,
+                              color: Colors.grey.shade600,
                               size: 14,
                             ),
                             const SizedBox(width: 4),
@@ -392,7 +378,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                               'Reply',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: themeService.textSecondary,
+                                color: Colors.grey.shade600,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -410,7 +396,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     );
   }
 
-  Widget _buildEmptyComments(AppLocalizations l10n, ThemeService themeService) {
+  Widget _buildEmptyComments(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -423,10 +409,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
           const SizedBox(height: 16),
           Text(
             'No comments yet',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-                  color: Colors.white,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
@@ -443,126 +429,120 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     );
   }
 
-  Widget _buildCommentInput(AppLocalizations l10n, ThemeService themeService) {
+  Widget _buildCommentInput(AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor,
-        border: Border(
-          top: BorderSide(
-            color: themeService.borderColor.withOpacity(0.1),
-            width: 1,
-          ),
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
-      child: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF6B46C1),
+                  const Color(0xFF8B5CF6),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Center(
+              child: Text(
+                'U',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1.5,
+                ),
+              ),
               child: TextField(
                 controller: _commentController,
-                maxLines: null,
-                minLines: 1,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _addComment(),
                 decoration: InputDecoration(
                   hintText: 'Share your thoughts...',
                   hintStyle: TextStyle(
-                    color: themeService.textSecondary.withOpacity(0.6),
-                    fontSize: 16,
+                    color: const Color(0xFF718096).withOpacity(0.8),
+                    fontSize: 15,
                     fontWeight: FontWeight.w400,
                   ),
-                  filled: true,
-                  fillColor: themeService.surfaceColor.withOpacity(0.5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide(
-                      color: themeService.borderColor.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide(
-                      color: themeService.borderColor.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide(
-                      color: themeService.primaryColor.withOpacity(0.5),
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: themeService.textPrimary,
+                maxLines: null,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (value) => _addComment(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF2D3748),
                   fontWeight: FontWeight.w400,
-                  height: 1.4,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: _isComposing ? _addComment : null,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: _isComposing
-                      ? LinearGradient(
-                          colors: [
-                            themeService.primaryColor,
-                            themeService.primaryColor.withOpacity(0.8),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : LinearGradient(
-                          colors: [
-                            themeService.textSecondary.withOpacity(0.3),
-                            themeService.textSecondary.withOpacity(0.3),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  shape: BoxShape.circle,
-                  boxShadow: _isComposing
-                      ? [
-                          BoxShadow(
-                            color: themeService.primaryColor.withOpacity(0.3),
-                            blurRadius: 12,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+          ),
+          const SizedBox(width: 12),
+          SimpleTouchFeedback(
+            onTap: _addComment,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF6B46C1),
+                    const Color(0xFF8B5CF6),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Icon(
-                  Icons.send_rounded,
-                  color: _isComposing
-                      ? Colors.white
-                      : themeService.textSecondary.withOpacity(0.5),
-                  size: 22,
-                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6B46C1).withOpacity(0.3),
+                    spreadRadius: 0,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 20,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -643,7 +623,6 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     setState(() {
       _comments.insert(0, newComment);
       _commentController.clear();
-      _isComposing = false;
     });
     
     // Save to database

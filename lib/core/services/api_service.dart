@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'dart:io';
 import '../constants/api_constants.dart';
 
 class ApiService {
@@ -99,35 +98,6 @@ class ApiService {
       });
       
       final response = await _dio.post(path, data: formData);
-      return response;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // POST multipart request with files
-  Future<Response> postMultipart(String path, {
-    Map<String, dynamic>? data,
-    Map<String, File>? files,
-    Map<String, dynamic>? queryParameters
-  }) async {
-    try {
-      Map<String, dynamic> formDataMap = {};
-      
-      // Add regular data fields
-      if (data != null) {
-        formDataMap.addAll(data);
-      }
-      
-      // Add file fields
-      if (files != null) {
-        for (String key in files.keys) {
-          formDataMap[key] = await MultipartFile.fromFile(files[key]!.path);
-        }
-      }
-      
-      FormData formData = FormData.fromMap(formDataMap);
-      final response = await _dio.post(path, data: formData, queryParameters: queryParameters);
       return response;
     } on DioException catch (e) {
       throw _handleError(e);

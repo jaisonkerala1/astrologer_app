@@ -155,14 +155,6 @@ const signup = async (req, res) => {
   try {
     const { phone, otp, otpId, name, email, experience, specializations, languages, bio, awards, certificates } = req.body;
 
-    // Check if profile picture is uploaded
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Profile picture is required for signup'
-      });
-    }
-
     // Verify OTP first
     const otpRecord = await Otp.findOne({
       phone,
@@ -193,15 +185,12 @@ const signup = async (req, res) => {
       });
     }
 
-    // Get profile picture URL from uploaded file
-    const profilePictureUrl = `/uploads/${req.file.filename}`;
-
     // Create new astrologer with provided data including bio fields
     astrologer = new Astrologer({
       phone,
       name: name || 'Astrologer',
       email: email || `${phone}@astrologer.com`,
-      profilePicture: profilePictureUrl,
+      profilePicture: null,
       specializations: specializations || ['Vedic Astrology'],
       languages: languages || ['English'],
       experience: experience || 0,
