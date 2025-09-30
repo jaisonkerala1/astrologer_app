@@ -1,3 +1,5 @@
+import 'dart:io';
+
 abstract class AuthEvent {}
 
 class SendOtpEvent extends AuthEvent {
@@ -34,6 +36,7 @@ class SignupEvent extends AuthEvent {
   final String bio;
   final String awards;
   final String certificates;
+  final File profilePicture;
   
   SignupEvent({
     required this.phoneNumber,
@@ -47,6 +50,7 @@ class SignupEvent extends AuthEvent {
     required this.bio,
     required this.awards,
     required this.certificates,
+    required this.profilePicture,
   });
 }
 

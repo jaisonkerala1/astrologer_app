@@ -123,7 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      final response = await _apiService.post(
+      final response = await _apiService.postMultipart(
         ApiConstants.signup,
         data: {
           'phone': event.phoneNumber.trim(),
@@ -137,6 +137,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           'bio': event.bio,
           'awards': event.awards,
           'certificates': event.certificates,
+        },
+        files: {
+          'profilePicture': event.profilePicture,
         },
       );
       

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import 'discussion_detail_screen.dart';
 import '../services/discussion_service.dart';
@@ -98,51 +100,55 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: const Color(0xFF6B46C1),
-      appBar: AppBar(
-        title: Text(
-          'Favorites',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: const Color(0xFF6B46C1),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              // TODO: Implement search functionality
-            },
-          ),
-        ],
-      ),
-      body: _favoritePosts.isEmpty
-          ? _buildEmptyState(l10n)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _favoritePosts.length,
-              itemBuilder: (context, index) {
-                final post = _favoritePosts[index];
-                return _buildPostCard(post, l10n);
-              },
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.primaryColor,
+          appBar: AppBar(
+            title: Text(
+              'Favorites',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
             ),
+            backgroundColor: themeService.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.search, color: Colors.white),
+                onPressed: () {
+                  // TODO: Implement search functionality
+                },
+              ),
+            ],
+          ),
+          body: _favoritePosts.isEmpty
+              ? _buildEmptyState(l10n, themeService)
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _favoritePosts.length,
+                  itemBuilder: (context, index) {
+                    final post = _favoritePosts[index];
+                    return _buildPostCard(post, l10n, themeService);
+                  },
+                ),
+        );
+      },
     );
   }
 
-  Widget _buildPostCard(DiscussionPost post, AppLocalizations l10n) {
+  Widget _buildPostCard(DiscussionPost post, AppLocalizations l10n, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -176,18 +182,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       children: [
                         Text(
                           post.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: themeService.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${post.author} • ${post.timeAgo} • ${post.category}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: themeService.textSecondary,
                           ),
                         ),
                       ],
@@ -207,9 +213,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               const SizedBox(height: 16),
               Text(
                 post.content,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: themeService.textPrimary.withOpacity(0.87),
                   height: 1.4,
                 ),
                 maxLines: 3,
@@ -223,10 +229,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6B46C1),
+                      color: themeService.primaryColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_forward,
                       color: Colors.white,
                       size: 20,
@@ -235,11 +241,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   const Spacer(),
                   // Author avatar
                   CircleAvatar(
-                    backgroundColor: const Color(0xFF8B4513),
+                    backgroundColor: themeService.accentColor,
                     radius: 20,
                     child: Text(
                       post.authorInitial,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -255,7 +261,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildEmptyState(AppLocalizations l10n) {
+  Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -268,10 +274,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           const SizedBox(height: 16),
           Text(
             'No favorites yet',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+                      color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),

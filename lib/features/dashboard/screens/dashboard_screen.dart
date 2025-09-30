@@ -364,9 +364,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
             
             if (state is DashboardLoading) {
-              // Show existing content while refreshing instead of skeleton loader
-              // This prevents the flash animation during refresh
-              return _buildDashboardBody(_currentStats ?? DashboardStatsModel.empty());
+              // Show skeleton loader during initial load, existing content during refresh
+              if (_currentStats == null) {
+                return const DashboardSkeletonLoader();
+              } else {
+                // Show existing content during refresh to prevent flash animation
+                return _buildDashboardBody(_currentStats!);
+              }
             } else if (state is DashboardLoadedState) {
               _currentStats = state.stats; // Store current stats for refresh
               return _buildDashboardBody(state.stats);
@@ -420,18 +424,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardBody(stats) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-              maxWidth: constraints.maxWidth,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<DashboardBloc>().add(RefreshDashboardEvent());
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+                maxWidth: constraints.maxWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   // Header (includes status toggle) - Full width
                   _buildHeader(_currentUser),
                   
@@ -536,7 +544,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             );
         },
-      );
+      ),
+    );
   }
 
   Widget _buildHeader(AstrologerModel? user) {
@@ -936,96 +945,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   Widget _buildDiscussionCard() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)], // Purple to blue-purple gradient
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8B5CF6).withOpacity(0.3),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SimpleTouchFeedback(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DiscussionScreen(),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                themeService.primaryColor,
+                themeService.primaryColor.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          );
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: themeService.primaryColor.withOpacity(0.3),
+                spreadRadius: 1,
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DiscussionScreen(),
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
                   children: [
-                    const Text(
-                      'Discussion',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Discussion',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Discuss topics of interest with loved ones',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Discuss topics of interest with loved ones',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(width: 20),
+                    // 3D Illustration placeholder - you can replace this with an actual illustration
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(
-                        Icons.arrow_forward,
-                        size: 20,
+                        Icons.forum,
+                        size: 40,
                         color: Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
-              // 3D Illustration placeholder - you can replace this with an actual illustration
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.forum,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1043,13 +1063,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCallsCard(int callsToday) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return SimpleTouchFeedback(
+        return GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
             _openCommunicationScreen('calls');
           },
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 themeService.primaryColor,
@@ -1146,6 +1167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ],
+          ),
           ),
         );
       },
