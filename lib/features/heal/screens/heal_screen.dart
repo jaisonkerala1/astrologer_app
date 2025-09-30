@@ -6,11 +6,20 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../screens/service_management_screen.dart';
 import '../screens/service_requests_screen.dart';
 
-class HealScreen extends StatelessWidget {
+class HealScreen extends StatefulWidget {
   const HealScreen({super.key});
 
   @override
+  State<HealScreen> createState() => _HealScreenState();
+}
+
+class _HealScreenState extends State<HealScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true; // Preserve state on tab switch
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final l10n = AppLocalizations.of(context)!;
     
     return Consumer<ThemeService>(

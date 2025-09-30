@@ -13,6 +13,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
+import '../models/dashboard_stats_model.dart';
 import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
 import '../widgets/stats_card_widget.dart';
@@ -37,7 +38,6 @@ import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
 import '../../live/screens/live_preparation_screen.dart';
-import '../../../shared/widgets/transition_animations.dart';
 import '../../../shared/widgets/animated_button.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -56,6 +56,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Start with Dashboard (first tab) as default
   AstrologerModel? _currentUser;
   final StorageService _storageService = StorageService();
+  late PageController _pageController;
+  DashboardStatsModel? _currentStats;
 
   @override
   void initState() {
@@ -65,6 +67,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (widget.initialTabIndex != null) {
       _selectedIndex = widget.initialTabIndex!;
     }
+    
+    // Initialize PageController with smooth physics
+    _pageController = PageController(
+      initialPage: _selectedIndex,
+      viewportFraction: 1.0,
+    );
     
     // Set status bar style for transparent status bar
     SystemChrome.setSystemUIOverlayStyle(
@@ -146,6 +154,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Method to refresh user data when profile is updated
   void refreshUserData() {
     _loadUserData();
+  }
+
+  // Build page without double animation - PageView handles transitions
+  Widget _buildPageWithAnimation(int index) {
+    switch (index) {
+      case 0:
+        return _buildDashboardContent();
+      case 1:
+        return const ConsultationsScreen();
+      case 2:
+        return const HealScreen();
+      case 3:
+        return const EarningsScreen();
+      case 4:
+        return ProfileScreen(onProfileUpdated: refreshUserData);
+      default:
+        return _buildDashboardContent();
+    }
+  }
+
+  // Method to navigate to specific tab programmatically
+  void navigateToTab(int index) {
+    if (index != _selectedIndex) {
+      HapticFeedback.selectionClick();
+      _pageController.jumpToPage(index); // Instant jump - no sliding through tabs
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   // Go Live button method
@@ -234,15 +274,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, themeService, child) {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _buildDashboardContent(),
-              const ConsultationsScreen(),
-              const HealScreen(),
-              const EarningsScreen(),
-              ProfileScreen(onProfileUpdated: refreshUserData),
-            ],
+          body: PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            itemCount: 5,
+            itemBuilder: (context, index) {
+              return _buildPageWithAnimation(index);
+            },
           ),
           bottomNavigationBar: Container(
             height: 80, // Increased height for better touch targets
@@ -260,9 +303,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onTap: (index) {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
-                setState(() {
-                  _selectedIndex = index;
-                });
+                
+                // Jump to selected page - instant navigation for taps
+                _pageController.jumpToPage(index);
               },
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,
@@ -321,8 +364,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
             
             if (state is DashboardLoading) {
-              return const DashboardSkeletonLoader();
+              // Show skeleton loader during initial load, existing content during refresh
+              if (_currentStats == null) {
+                return const DashboardSkeletonLoader();
+              } else {
+                // Show existing content during refresh to prevent flash animation
+                return _buildDashboardBody(_currentStats!);
+              }
             } else if (state is DashboardLoadedState) {
+              _currentStats = state.stats; // Store current stats for refresh
               return _buildDashboardBody(state.stats);
             } else if (state is DashboardErrorState) {
               return Padding(
@@ -387,25 +437,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 minHeight: constraints.maxHeight,
                 maxWidth: constraints.maxWidth,
               ),
-              child: TransitionAnimations.fadeIn(
-                duration: const Duration(milliseconds: 400),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header (includes status toggle) - Full width
-                    _buildHeader(_currentUser),
-                    
-                    // Live Astrologers Stories Widget - Instagram Style
-                    const LiveAstrologersStoriesWidget(),
-                    
-                    // Minimal Availability Toggle - Above Earnings Card
-                    const MinimalAvailabilityToggleWidget(),
-                    
-                    // Content with padding
-                    Padding(
-                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                      child: TransitionAnimations.staggeredList(
-                        children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header (includes status toggle) - Full width
+                  _buildHeader(_currentUser),
+                  
+                  // Live Astrologers Stories Widget - Instagram Style
+                  const LiveAstrologersStoriesWidget(),
+                  
+                  // Minimal Availability Toggle - Above Earnings Card
+                  const MinimalAvailabilityToggleWidget(),
+                  
+                  // Content with padding
+                  Padding(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    child: Column(
+                      children: [
                           // Earnings Card
                           EarningsCardWidget(
                             todayEarnings: stats.todayEarnings,
@@ -415,9 +463,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                             onTap: () {
                               // Navigate to earnings screen
-                              setState(() {
-                                _selectedIndex = 3; // Earnings tab (updated index)
-                              });
+                              navigateToTab(3); // Earnings tab
                             },
                           ),
                           const SizedBox(height: 16),
@@ -496,8 +542,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-            ),
-          );
+            );
         },
       ),
     );
@@ -538,9 +583,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   GestureDetector(
                     onTap: () {
                       // Navigate to profile
-                      setState(() {
-                        _selectedIndex = 4; // Profile tab (updated index)
-                      });
+                      navigateToTab(4); // Profile tab
                     },
                     child: Container(
                       width: 60,
@@ -686,9 +729,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         GestureDetector(
                           onTap: () {
                             // Navigate to profile
-                            setState(() {
-                              _selectedIndex = 4; // Profile tab (updated index)
-                            });
+                            navigateToTab(4); // Profile tab
                           },
                           child: Container(
                             width: 60,
@@ -923,7 +964,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: SimpleTouchFeedback(
+      child: GestureDetector(
         onTap: () {
           Navigator.push(
             context,
@@ -932,8 +973,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
           padding: const EdgeInsets.all(24),
           child: Row(
             children: [
@@ -992,6 +1036,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -1011,13 +1056,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCallsCard(int callsToday) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return SimpleTouchFeedback(
+        return GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
             _openCommunicationScreen('calls');
           },
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 themeService.primaryColor,
@@ -1114,6 +1160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ],
+          ),
           ),
         );
       },
