@@ -1022,8 +1022,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.callsColor,
-                  AppTheme.callsColor.withOpacity(0.7),
+                  themeService.primaryColor,
+                  themeService.primaryColor.withOpacity(0.7),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1031,7 +1031,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.callsColor.withOpacity(0.3),
+                  color: themeService.primaryColor.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
