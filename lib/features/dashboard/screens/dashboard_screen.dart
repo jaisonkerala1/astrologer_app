@@ -155,54 +155,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadUserData();
   }
 
-  // Build page with smooth animation
+  // Build page without double animation - PageView handles transitions
   Widget _buildPageWithAnimation(int index) {
-    Widget page;
-    
     switch (index) {
       case 0:
-        page = _buildDashboardContent();
-        break;
+        return _buildDashboardContent();
       case 1:
-        page = const ConsultationsScreen();
-        break;
+        return const ConsultationsScreen();
       case 2:
-        page = const HealScreen();
-        break;
+        return const HealScreen();
       case 3:
-        page = const EarningsScreen();
-        break;
+        return const EarningsScreen();
       case 4:
-        page = ProfileScreen(onProfileUpdated: refreshUserData);
-        break;
+        return ProfileScreen(onProfileUpdated: refreshUserData);
       default:
-        page = _buildDashboardContent();
+        return _buildDashboardContent();
     }
-    
-    return _buildSmoothPageTransition(
-      key: ValueKey(index),
-      child: page,
-    );
-  }
-
-  // Light and fast page transition - fade only
-  Widget _buildSmoothPageTransition({
-    required Key key,
-    required Widget child,
-  }) {
-    return TweenAnimationBuilder<double>(
-      key: key,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: child,
-        );
-      },
-      child: child,
-    );
   }
 
   // Method to navigate to specific tab programmatically
@@ -211,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       HapticFeedback.selectionClick();
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
       );
     }
@@ -339,10 +307,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
                 
-                // Animate to the selected page with light transition
+                // Animate to the selected page - PageView handles smooth transition
                 _pageController.animateToPage(
                   index,
-                  duration: const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: 150),
                   curve: Curves.easeOut,
                 );
               },
