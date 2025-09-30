@@ -348,16 +348,190 @@ class DashboardSkeletonLoader extends StatelessWidget {
   }
 
   Widget _buildCommunicationCardsSkeleton() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatsCardSkeleton(),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatsCardSkeleton(),
-        ),
+        // Calls Today Card skeleton - New Design
+        _buildCallsCardSkeleton(),
+        const SizedBox(height: 12),
+        // Messages Today Card skeleton - New Design
+        _buildMessagesCardSkeleton(),
       ],
+    );
+  }
+
+  Widget _buildCallsCardSkeleton() {
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                themeService.primaryColor,
+                themeService.primaryColor.withOpacity(0.7),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: themeService.primaryColor.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Left side - Icon container
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: SkeletonLoader(
+                  width: 32,
+                  height: 32,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Middle - Number and label
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonLoader(
+                      width: 60,
+                      height: 36,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 4),
+                    SkeletonLoader(
+                      width: 100,
+                      height: 14,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                ),
+              ),
+              // Right side - VS YESTERDAY and percentage
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SkeletonLoader(
+                    width: 80,
+                    height: 10,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  const SizedBox(height: 4),
+                  SkeletonLoader(
+                    width: 50,
+                    height: 18,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMessagesCardSkeleton() {
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
+            border: Border.all(
+              color: themeService.borderColor,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: themeService.primaryColor.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Left side - Label, number, and trend badge
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonLoader(
+                      width: 80,
+                      height: 12,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 8),
+                    SkeletonLoader(
+                      width: 50,
+                      height: 48,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        // Trend badge skeleton
+                        SkeletonLoader(
+                          width: 50,
+                          height: 24,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        const SizedBox(width: 8),
+                        SkeletonLoader(
+                          width: 90,
+                          height: 12,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Right side - Rotated icon container
+              Transform.rotate(
+                angle: 0.2094, // 12 degrees
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        themeService.primaryColor,
+                        AppTheme.secondaryColor,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: SkeletonLoader(
+                      width: 36,
+                      height: 36,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
