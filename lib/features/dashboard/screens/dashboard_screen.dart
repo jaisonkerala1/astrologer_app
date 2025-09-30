@@ -56,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Start with Dashboard (first tab) as default
   AstrologerModel? _currentUser;
   final StorageService _storageService = StorageService();
+  late PageController _pageController;
 
   @override
   void initState() {
@@ -65,6 +66,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (widget.initialTabIndex != null) {
       _selectedIndex = widget.initialTabIndex!;
     }
+    
+    // Initialize PageController with smooth physics
+    _pageController = PageController(
+      initialPage: _selectedIndex,
+      viewportFraction: 1.0,
+    );
     
     // Set status bar style for transparent status bar
     SystemChrome.setSystemUIOverlayStyle(
@@ -146,6 +153,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Method to refresh user data when profile is updated
   void refreshUserData() {
     _loadUserData();
+  }
+
+  // Build page with smooth animation
+  Widget _buildPageWithAnimation(int index) {
+    Widget page;
+    
+    switch (index) {
+      case 0:
+        page = _buildDashboardContent();
+        break;
+      case 1:
+        page = const ConsultationsScreen();
+        break;
+      case 2:
+        page = const HealScreen();
+        break;
+      case 3:
+        page = const EarningsScreen();
+        break;
+      case 4:
+        page = ProfileScreen(onProfileUpdated: refreshUserData);
+        break;
+      default:
+        page = _buildDashboardContent();
+    }
+    
+    return _buildSmoothPageTransition(
+      key: ValueKey(index),
+      child: page,
+    );
+  }
+
+  // Custom smooth page transition
+  Widget _buildSmoothPageTransition({
+    required Key key,
+    required Widget child,
+  }) {
+    return TweenAnimationBuilder<double>(
+      key: key,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOutCubic,
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(30 * (1 - value), 0),
+          child: Transform.scale(
+            scale: 0.95 + (0.05 * value),
+            child: Opacity(
+              opacity: value,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Method to navigate to specific tab programmatically
+  void navigateToTab(int index) {
+    if (index != _selectedIndex) {
+      HapticFeedback.selectionClick();
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   // Go Live button method
@@ -234,15 +315,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, themeService, child) {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _buildDashboardContent(),
-              const ConsultationsScreen(),
-              const HealScreen(),
-              const EarningsScreen(),
-              ProfileScreen(onProfileUpdated: refreshUserData),
-            ],
+          body: PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            itemCount: 5,
+            itemBuilder: (context, index) {
+              return _buildPageWithAnimation(index);
+            },
           ),
           bottomNavigationBar: Container(
             height: 80, // Increased height for better touch targets
@@ -260,9 +344,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onTap: (index) {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
-                setState(() {
-                  _selectedIndex = index;
-                });
+                
+                // Animate to the selected page with smooth transition
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOutCubic,
+                );
               },
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,
@@ -415,9 +503,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                             onTap: () {
                               // Navigate to earnings screen
-                              setState(() {
-                                _selectedIndex = 3; // Earnings tab (updated index)
-                              });
+                              navigateToTab(3); // Earnings tab
                             },
                           ),
                           const SizedBox(height: 16),
@@ -538,9 +624,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   GestureDetector(
                     onTap: () {
                       // Navigate to profile
-                      setState(() {
-                        _selectedIndex = 4; // Profile tab (updated index)
-                      });
+                      navigateToTab(4); // Profile tab
                     },
                     child: Container(
                       width: 60,
@@ -686,9 +770,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         GestureDetector(
                           onTap: () {
                             // Navigate to profile
-                            setState(() {
-                              _selectedIndex = 4; // Profile tab (updated index)
-                            });
+                            navigateToTab(4); // Profile tab
                           },
                           child: Container(
                             width: 60,
