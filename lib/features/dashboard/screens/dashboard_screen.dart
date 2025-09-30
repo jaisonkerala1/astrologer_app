@@ -177,11 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void navigateToTab(int index) {
     if (index != _selectedIndex) {
       HapticFeedback.selectionClick();
-      _pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-      );
+      _pageController.jumpToPage(index); // Instant jump - no sliding through tabs
     }
   }
 
@@ -307,12 +303,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
                 
-                // Animate to the selected page - PageView handles smooth transition
-                _pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOut,
-                );
+                // Jump to selected page - instant navigation for taps
+                _pageController.jumpToPage(index);
               },
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,
