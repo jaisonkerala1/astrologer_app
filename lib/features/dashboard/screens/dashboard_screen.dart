@@ -13,6 +13,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
+import '../models/dashboard_stats_model.dart';
 import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
 import '../widgets/stats_card_widget.dart';
@@ -56,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   AstrologerModel? _currentUser;
   final StorageService _storageService = StorageService();
   late PageController _pageController;
+  DashboardStatsModel? _currentStats;
 
   @override
   void initState() {
@@ -362,8 +364,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
             
             if (state is DashboardLoading) {
-              return const DashboardSkeletonLoader();
+              // Show existing content while refreshing instead of skeleton loader
+              // This prevents the flash animation during refresh
+              return _buildDashboardBody(_currentStats ?? DashboardStatsModel.empty());
             } else if (state is DashboardLoadedState) {
+              _currentStats = state.stats; // Store current stats for refresh
               return _buildDashboardBody(state.stats);
             } else if (state is DashboardErrorState) {
               return Padding(
