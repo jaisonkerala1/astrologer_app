@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/theme/services/theme_service.dart';
-import '../../../../shared/widgets/transition_animations.dart';
 
 class StatsCardWidget extends StatelessWidget {
   final String title;
@@ -25,9 +24,7 @@ class StatsCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return TransitionAnimations.fadeIn(
-          duration: const Duration(milliseconds: 300),
-          child: onTap != null
+        return onTap != null
               ? Material(
                   color: themeService.cardColor,
                   elevation: 2,
@@ -52,8 +49,7 @@ class StatsCardWidget extends StatelessWidget {
                     boxShadow: [themeService.cardShadow],
                   ),
                   child: _buildCardContent(context, themeService),
-                ),
-        );
+                );
       },
     );
   }

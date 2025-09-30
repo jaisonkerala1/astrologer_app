@@ -37,7 +37,6 @@ import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
 import '../../live/screens/live_preparation_screen.dart';
-import '../../../shared/widgets/transition_animations.dart';
 import '../../../shared/widgets/animated_button.dart';
 
 class DashboardScreen extends StatefulWidget {
