@@ -429,25 +429,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 minHeight: constraints.maxHeight,
                 maxWidth: constraints.maxWidth,
               ),
-              child: TransitionAnimations.fadeIn(
-                duration: const Duration(milliseconds: 400),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header (includes status toggle) - Full width
-                    _buildHeader(_currentUser),
-                    
-                    // Live Astrologers Stories Widget - Instagram Style
-                    const LiveAstrologersStoriesWidget(),
-                    
-                    // Minimal Availability Toggle - Above Earnings Card
-                    const MinimalAvailabilityToggleWidget(),
-                    
-                    // Content with padding
-                    Padding(
-                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                      child: TransitionAnimations.staggeredList(
-                        children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header (includes status toggle) - Full width
+                  _buildHeader(_currentUser),
+                  
+                  // Live Astrologers Stories Widget - Instagram Style
+                  const LiveAstrologersStoriesWidget(),
+                  
+                  // Minimal Availability Toggle - Above Earnings Card
+                  const MinimalAvailabilityToggleWidget(),
+                  
+                  // Content with padding
+                  Padding(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    child: Column(
+                      children: [
                           // Earnings Card
                           EarningsCardWidget(
                             todayEarnings: stats.todayEarnings,
@@ -536,8 +534,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-            ),
-          );
+            );
         },
       ),
     );
