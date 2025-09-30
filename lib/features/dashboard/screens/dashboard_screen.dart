@@ -1147,34 +1147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Stack(
-                children: [
-                  // Decorative gradient circle in top-right corner
-                  Positioned(
-                    top: -30,
-                    right: -30,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            themeService.primaryColor,
-                            AppTheme.secondaryColor,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      foregroundDecoration: BoxDecoration(
-                        color: themeService.surfaceColor.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  // Main content
-                  Row(
+              child: Row(
                     children: [
                       // Left side - Label, number, and trend badge
                       Expanded(
@@ -1265,8 +1238,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                ],
-              ),
             ),
           ),
         );
