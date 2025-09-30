@@ -17,7 +17,6 @@ class ApiConstants {
   // Profile endpoints
   static const String profile = '/api/profile';
   static const String updateProfile = '/api/profile';
-  static const String updateBio = '/api/profile/bio';
   static const String uploadImage = '/api/profile/upload-image';
   
   // Chat endpoints

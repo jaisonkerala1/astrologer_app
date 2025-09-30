@@ -36,7 +36,7 @@ const updateProfile = async (req, res) => {
 
     // Professional field validation and sanitization
     const allowedFields = [
-      'name', 'email', 'phone', 'specializations', 'languages', 
+      'name', 'email', 'specializations', 'languages', 
       'experience', 'ratePerMinute', 'bio', 'awards', 'certificates'
     ];
 

@@ -18,7 +18,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<UpdateSpecializationsEvent>(_onUpdateSpecializations);
     on<UpdateLanguagesEvent>(_onUpdateLanguages);
     on<UpdateRateEvent>(_onUpdateRate);
-    on<UpdateBioEvent>(_onUpdateBio);
   }
 
   Future<void> _onLoadProfile(LoadProfileEvent event, Emitter<ProfileState> emit) async {
@@ -140,47 +139,5 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } catch (e) {
       emit(ProfileErrorState('Failed to update rate: ${e.toString()}'));
     }
-  }
-
-  Future<void> _onUpdateBio(UpdateBioEvent event, Emitter<ProfileState> emit) async {
-    emit(ProfileLoading());
-    
-    try {
-      // Call the actual API to update bio
-      final response = await _apiService.put(
-        ApiConstants.updateBio,
-        data: {
-          'bio': event.bio,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // Update local storage
-        await _storageService.setUserData(jsonEncode(response.data['data']));
-        
-        // Get current profile and update it
-        if (state is ProfileLoadedState) {
-          final currentAstrologer = (state as ProfileLoadedState).astrologer;
-          final updatedAstrologer = currentAstrologer.copyWith(
-            bio: event.bio,
-            updatedAt: DateTime.now(),
-          );
-          
-          emit(ProfileUpdatedState(
-            astrologer: updatedAstrologer,
-            message: 'Bio updated successfully',
-          ));
-        }
-      } else {
-        emit(ProfileErrorState('Failed to update bio: ${response.data['message'] ?? 'Unknown error'}'));
-      }
-    } catch (e) {
-      emit(ProfileErrorState('Failed to update bio: ${e.toString()}'));
-    }
-  }
-
-  // Helper method for bio updates from BioEnhancerScreen
-  Future<void> updateBio(String newBio) async {
-    add(UpdateBioEvent(newBio));
   }
 }
