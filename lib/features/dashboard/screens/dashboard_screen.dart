@@ -1011,112 +1011,109 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCallsCard(int callsToday) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return GestureDetector(
+        return SimpleTouchFeedback(
           onTap: () {
             HapticFeedback.selectionClick();
             _openCommunicationScreen('calls');
           },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  themeService.primaryColor,
-                  themeService.primaryColor.withOpacity(0.7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: themeService.primaryColor.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                themeService.primaryColor,
+                themeService.primaryColor.withOpacity(0.7),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: Row(
-              children: [
-                // Left side - Icon container with backdrop blur effect
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.phone,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: themeService.primaryColor.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Left side - Icon container with backdrop blur effect
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 20),
-                // Middle - Number and label
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        callsToday.toString(),
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1.0,
-                        ),
+                child: const Icon(
+                  Icons.phone,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Middle - Number and label
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      callsToday.toString(),
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.0,
                       ),
-                      const SizedBox(height: 4),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Calls Today',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Right side - VS YESTERDAY and percentage
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'VS YESTERDAY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withOpacity(0.7),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.arrow_upward,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 2),
                       const Text(
-                        'Calls Today',
+                        '12%',
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
-                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
                   ),
-                ),
-                // Right side - VS YESTERDAY and percentage
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'VS YESTERDAY',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withOpacity(0.7),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.arrow_upward,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 2),
-                        const Text(
-                          '12%',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         );
       },
@@ -1127,151 +1124,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMessagesCard() {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _openCommunicationScreen('messages');
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: themeService.surfaceColor,
-              border: Border.all(
-                color: themeService.borderColor,
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: themeService.primaryColor.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+        return Material(
+          color: themeService.surfaceColor,
+          elevation: 2,
+          borderRadius: BorderRadius.circular(20),
+          shadowColor: themeService.primaryColor.withOpacity(0.1),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _openCommunicationScreen('messages');
+            },
+            borderRadius: BorderRadius.circular(20),
+            splashColor: themeService.primaryColor.withOpacity(0.15),
+            highlightColor: themeService.primaryColor.withOpacity(0.1),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: themeService.borderColor,
+                  width: 1,
                 ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Decorative gradient circle in top-right corner
-                Positioned(
-                  top: -30,
-                  right: -30,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          themeService.primaryColor,
-                          AppTheme.secondaryColor,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Stack(
+                children: [
+                  // Decorative gradient circle in top-right corner
+                  Positioned(
+                    top: -30,
+                    right: -30,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            themeService.primaryColor,
+                            AppTheme.secondaryColor,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                      shape: BoxShape.circle,
-                    ),
-                    foregroundDecoration: BoxDecoration(
-                      color: themeService.surfaceColor.withOpacity(0.8),
-                      shape: BoxShape.circle,
+                      foregroundDecoration: BoxDecoration(
+                        color: themeService.surfaceColor.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
-                // Main content
-                Row(
-                  children: [
-                    // Left side - Label, number, and trend badge
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'MESSAGES',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: themeService.textSecondary,
-                              letterSpacing: 1.2,
+                  // Main content
+                  Row(
+                    children: [
+                      // Left side - Label, number, and trend badge
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'MESSAGES',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: themeService.textSecondary,
+                                letterSpacing: 1.2,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '12',
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w900,
-                              color: themeService.textPrimary,
-                              height: 1.0,
+                            const SizedBox(height: 8),
+                            Text(
+                              '12',
+                              style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.w900,
+                                color: themeService.textPrimary,
+                                height: 1.0,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              // Trend badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981), // emerald - success color
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.arrow_upward,
-                                      color: Colors.white,
-                                      size: 12,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    const Text(
-                                      '+8%',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                // Trend badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981), // emerald - success color
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.arrow_upward,
                                         color: Colors.white,
+                                        size: 12,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 2),
+                                      const Text(
+                                        '+8%',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'from last week',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: themeService.textSecondary,
+                                const SizedBox(width: 8),
+                                Text(
+                                  'from last week',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: themeService.textSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Right side - Rotated icon container
-                    Transform.rotate(
-                      angle: 0.2094, // 12 degrees in radians (12 * pi / 180)
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              themeService.primaryColor,
-                              AppTheme.secondaryColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.message,
-                          color: Colors.white,
-                          size: 36,
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      // Right side - Rotated icon container
+                      Transform.rotate(
+                        angle: 0.2094, // 12 degrees in radians (12 * pi / 180)
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                themeService.primaryColor,
+                                AppTheme.secondaryColor,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.message,
+                            color: Colors.white,
+                            size: 36,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
