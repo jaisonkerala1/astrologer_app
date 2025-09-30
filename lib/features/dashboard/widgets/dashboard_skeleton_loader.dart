@@ -502,29 +502,26 @@ class DashboardSkeletonLoader extends StatelessWidget {
                   ],
                 ),
               ),
-              // Right side - Rotated icon container
-              Transform.rotate(
-                angle: 0.2094, // 12 degrees
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        themeService.primaryColor,
-                        AppTheme.secondaryColor,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
+              // Right side - Icon container
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      themeService.primaryColor,
+                      AppTheme.secondaryColor,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Center(
-                    child: SkeletonLoader(
-                      width: 36,
-                      height: 36,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: SkeletonLoader(
+                    width: 36,
+                    height: 36,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),

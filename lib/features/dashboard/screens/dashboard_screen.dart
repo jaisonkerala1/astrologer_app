@@ -1242,28 +1242,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                       ),
-                      // Right side - Rotated icon container
-                      Transform.rotate(
-                        angle: 0.2094, // 12 degrees in radians (12 * pi / 180)
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                themeService.primaryColor,
-                                AppTheme.secondaryColor,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
+                      // Right side - Icon container
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              themeService.primaryColor,
+                              AppTheme.secondaryColor,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: const Icon(
-                            Icons.message,
-                            color: Colors.white,
-                            size: 36,
-                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.message,
+                          color: Colors.white,
+                          size: 36,
                         ),
                       ),
                     ],
