@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -348,6 +349,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           bio: widget.signupData!['bio'] ?? '',
           awards: widget.signupData!['awards'] ?? '',
           certificates: widget.signupData!['certificates'] ?? '',
+          profilePicture: widget.signupData!['profilePicture'] as File,
         ));
       } else {
         // Handle login

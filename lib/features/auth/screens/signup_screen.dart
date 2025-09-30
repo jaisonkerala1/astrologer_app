@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/country_code_selector.dart';
@@ -30,6 +32,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String _fullPhoneNumber = '';
   String _countryCode = '+91';
   String _phoneNumber = '';
+  File? _selectedImage;
 
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
@@ -70,6 +73,68 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
+  Future<void> _takePicture() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
+  void _showImagePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _takePicture();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
@@ -96,6 +161,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       'bio': _bioController.text,
                       'awards': _awardsController.text,
                       'certificates': _certificatesController.text,
+                      'profilePicture': _selectedImage,
                     },
                   ),
                 ),
@@ -251,6 +317,10 @@ class _SignupScreenState extends State<SignupScreen> {
                               return null;
                             },
                           ),
+                          const SizedBox(height: 16),
+
+                          // Profile Picture Field
+                          _buildProfilePictureField(themeService),
                           const SizedBox(height: 16),
 
                           // Email Field
@@ -647,6 +717,75 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  Widget _buildProfilePictureField(ThemeService themeService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Picture',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _showImagePicker,
+          child: Container(
+            width: double.infinity,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _selectedImage != null ? themeService.primaryColor : Colors.grey[300]!,
+                width: 2,
+              ),
+            ),
+            child: _selectedImage != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      _selectedImage!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_a_photo,
+                        size: 40,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap to add profile picture',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Required for signup',
+                        style: TextStyle(
+                          color: themeService.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -761,6 +900,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _handleSignup() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedImage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile picture is required for signup'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
       if (_selectedSpecializations.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

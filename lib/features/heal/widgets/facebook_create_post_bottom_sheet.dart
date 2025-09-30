@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/transition_animations.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../auth/bloc/auth_bloc.dart';
@@ -135,60 +136,64 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _fadeAnimation,
-      builder: (context, child) {
-        return Container(
-          color: Colors.black.withOpacity(0.5 * _fadeAnimation.value),
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.85,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildUserProfile(),
-                          const SizedBox(height: 20),
-                          _buildPrivacySelector(),
-                          const SizedBox(height: 20),
-                          _buildTitleInput(),
-                          const SizedBox(height: 16),
-                          _buildContentInput(),
-                          const SizedBox(height: 20),
-                          _buildCategorySelector(),
-                          const SizedBox(height: 20),
-                          _buildMediaOptions(),
-                        ],
-                      ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Container(
+              color: Colors.black.withOpacity(0.5 * _fadeAnimation.value),
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  decoration: BoxDecoration(
+                    color: themeService.surfaceColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
                     ),
                   ),
-                ],
+                  child: Column(
+                    children: [
+                      _buildHeader(themeService),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildUserProfile(themeService),
+                              const SizedBox(height: 20),
+                              _buildPrivacySelector(themeService),
+                              const SizedBox(height: 20),
+                              _buildTitleInput(themeService),
+                              const SizedBox(height: 16),
+                              _buildContentInput(themeService),
+                              const SizedBox(height: 20),
+                              _buildCategorySelector(themeService),
+                              const SizedBox(height: 20),
+                              _buildMediaOptions(themeService),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.surfaceColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -209,24 +214,24 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: themeService.surfaceColor.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.close,
                 size: 20,
-                color: Colors.grey,
+                color: themeService.textSecondary,
               ),
             ),
           ),
           const SizedBox(width: 16),
           // Title
-          const Text(
+          Text(
             'Create Post',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: themeService.textPrimary,
             ),
           ),
           const Spacer(),
@@ -235,7 +240,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
             onPressed: _isPosting ? null : _handlePost,
             text: _isPosting ? 'Posting...' : 'Post',
             icon: _isPosting ? null : Icons.send,
-            backgroundColor: _isPosting ? Colors.grey : AppTheme.primaryColor,
+            backgroundColor: _isPosting ? themeService.textSecondary : themeService.primaryColor,
             foregroundColor: Colors.white,
             width: 100,
             height: 40,
@@ -245,7 +250,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     );
   }
 
-  Widget _buildUserProfile() {
+  Widget _buildUserProfile(ThemeService themeService) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         return Consumer<StatusService>(
@@ -267,10 +272,10 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
+                        color: themeService.primaryColor,
                         borderRadius: BorderRadius.circular(25),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.person,
                         color: Colors.white,
                         size: 24,
@@ -287,13 +292,13 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                           color: isOnline ? Colors.green : Colors.red,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.white,
+                            color: themeService.surfaceColor,
                             width: 2,
                           ),
                         ),
                         child: Icon(
                           isOnline ? Icons.circle : Icons.circle,
-                          color: Colors.white,
+                          color: themeService.surfaceColor,
                           size: 8,
                         ),
                       ),
@@ -308,10 +313,10 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                     children: [
                       Text(
                         userName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: themeService.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -321,7 +326,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                             'Astrologer',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: themeService.textSecondary,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -329,7 +334,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                             '•',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: themeService.textSecondary,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -354,13 +359,13 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     );
   }
 
-  Widget _buildPrivacySelector() {
+  Widget _buildPrivacySelector(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: themeService.surfaceColor.withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: themeService.borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -368,24 +373,24 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
           Icon(
             _privacyOptions.firstWhere((option) => option['value'] == _selectedPrivacy)['icon']!,
             size: 16,
-            color: Colors.grey[600],
+            color: themeService.textSecondary,
           ),
           const SizedBox(width: 8),
           Text(
             _privacyOptions.firstWhere((option) => option['value'] == _selectedPrivacy)['label']!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(width: 4),
           GestureDetector(
             onTap: _showPrivacyOptions,
-            child: const Icon(
+            child: Icon(
               Icons.keyboard_arrow_down,
               size: 20,
-              color: Colors.grey,
+              color: themeService.textSecondary,
             ),
           ),
         ],
@@ -393,40 +398,40 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     );
   }
 
-  Widget _buildTitleInput() {
+  Widget _buildTitleInput(ThemeService themeService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Post Title',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: themeService.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: themeService.surfaceColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(color: themeService.borderColor),
           ),
           child: TextField(
             controller: _titleController,
             focusNode: _titleFocusNode,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'What\'s on your mind?',
               hintStyle: TextStyle(
-                color: Colors.grey,
+                color: themeService.textSecondary,
                 fontSize: 16,
               ),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.black,
+              color: themeService.textPrimary,
             ),
             maxLines: 1,
           ),
@@ -435,40 +440,40 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     );
   }
 
-  Widget _buildContentInput() {
+  Widget _buildContentInput(ThemeService themeService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Post Content',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: themeService.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: themeService.surfaceColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(color: themeService.borderColor),
           ),
           child: TextField(
             controller: _contentController,
             focusNode: _contentFocusNode,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Share your thoughts, experiences, or ask questions...',
               hintStyle: TextStyle(
-                color: Colors.grey,
+                color: themeService.textSecondary,
                 fontSize: 16,
               ),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.all(16),
+              contentPadding: const EdgeInsets.all(16),
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.black,
+              color: themeService.textPrimary,
             ),
             maxLines: 6,
             minLines: 3,
@@ -478,16 +483,16 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     );
   }
 
-  Widget _buildCategorySelector() {
+  Widget _buildCategorySelector(ThemeService themeService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Category',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: themeService.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -496,31 +501,31 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: themeService.surfaceColor.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: themeService.borderColor),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.category,
                   size: 20,
-                  color: Colors.grey,
+                  color: themeService.textSecondary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _selectedCategory,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black,
+                      color: themeService.textPrimary,
                     ),
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.keyboard_arrow_down,
                   size: 20,
-                  color: Colors.grey,
+                  color: themeService.textSecondary,
                 ),
               ],
             ),
@@ -530,16 +535,16 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     );
   }
 
-  Widget _buildMediaOptions() {
+  Widget _buildMediaOptions(ThemeService themeService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Add to your post',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: themeService.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -610,56 +615,64 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) => Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: themeService.surfaceColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Who can see your post?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: themeService.borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    'Who can see your post?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: themeService.textPrimary,
+                    ),
+                  ),
+                ),
+                ..._privacyOptions.map((option) => ListTile(
+                  leading: Icon(
+                    option['icon']!,
+                    size: 20,
+                    color: themeService.textSecondary,
+                  ),
+                  title: Text(
+                    option['label']!,
+                    style: TextStyle(color: themeService.textPrimary),
+                  ),
+                  trailing: _selectedPrivacy == option['value']
+                      ? Icon(Icons.check, color: themeService.primaryColor)
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedPrivacy = option['value']!;
+                    });
+                    Navigator.pop(context);
+                  },
+                )),
+                const SizedBox(height: 20),
+              ],
             ),
-            ..._privacyOptions.map((option) => ListTile(
-              leading: Icon(
-                option['icon']!,
-                size: 20,
-                color: Colors.grey[600],
-              ),
-              title: Text(option['label']!),
-              trailing: _selectedPrivacy == option['value']
-                  ? const Icon(Icons.check, color: AppTheme.primaryColor)
-                  : null,
-              onTap: () {
-                setState(() {
-                  _selectedPrivacy = option['value']!;
-                });
-                Navigator.pop(context);
-              },
-            )),
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -668,51 +681,59 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) => Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: themeService.surfaceColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Select Category',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: themeService.borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    'Select Category',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: themeService.textPrimary,
+                    ),
+                  ),
+                ),
+                ..._categories.map((category) => ListTile(
+                  title: Text(
+                    category,
+                    style: TextStyle(color: themeService.textPrimary),
+                  ),
+                  trailing: _selectedCategory == category
+                      ? Icon(Icons.check, color: themeService.primaryColor)
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                    Navigator.pop(context);
+                  },
+                )),
+                const SizedBox(height: 20),
+              ],
             ),
-            ..._categories.map((category) => ListTile(
-              title: Text(category),
-              trailing: _selectedCategory == category
-                  ? const Icon(Icons.check, color: AppTheme.primaryColor)
-                  : null,
-              onTap: () {
-                setState(() {
-                  _selectedCategory = category;
-                });
-                Navigator.pop(context);
-              },
-            )),
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -723,7 +744,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$type selection coming soon!'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
       ),
     );
   }
