@@ -13,7 +13,7 @@ class EarningsScreen extends StatefulWidget {
   State<EarningsScreen> createState() => _EarningsScreenState();
 }
 
-class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStateMixin {
+class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
   String _selectedPeriod = 'This Month';
 
@@ -24,6 +24,9 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
   }
 
   @override
+  bool get wantKeepAlive => true; // Preserve state on tab switch
+
+  @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
@@ -31,6 +34,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final l10n = AppLocalizations.of(context)!;
     
     return Consumer<ThemeService>(
