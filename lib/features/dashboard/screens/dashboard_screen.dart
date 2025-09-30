@@ -185,26 +185,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Custom smooth page transition
+  // Light and fast page transition - fade only
   Widget _buildSmoothPageTransition({
     required Key key,
     required Widget child,
   }) {
     return TweenAnimationBuilder<double>(
       key: key,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOutCubic,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
       tween: Tween(begin: 0.0, end: 1.0),
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(30 * (1 - value), 0),
-          child: Transform.scale(
-            scale: 0.95 + (0.05 * value),
-            child: Opacity(
-              opacity: value,
-              child: child,
-            ),
-          ),
+        return Opacity(
+          opacity: value,
+          child: child,
         );
       },
       child: child,
@@ -217,8 +211,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       HapticFeedback.selectionClick();
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
       );
     }
   }
@@ -345,11 +339,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
                 
-                // Animate to the selected page with smooth transition
+                // Animate to the selected page with light transition
                 _pageController.animateToPage(
                   index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOutCubic,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
                 );
               },
               type: BottomNavigationBarType.fixed,
