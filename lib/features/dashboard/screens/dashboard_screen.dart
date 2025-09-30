@@ -1020,15 +1020,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF06B6D4)], // blue-600 to cyan-500
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.callsColor,
+                  AppTheme.callsColor.withOpacity(0.7),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2563EB).withOpacity(0.3),
+                  color: AppTheme.callsColor.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -1094,7 +1097,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.arrow_upward,
                           color: Colors.white,
                           size: 16,
@@ -1133,15 +1136,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B), // slate-800
+              color: themeService.surfaceColor,
               border: Border.all(
-                color: const Color(0xFF334155), // slate-700
+                color: themeService.borderColor,
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: themeService.primaryColor.withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1157,16 +1160,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFA855F7), Color(0xFFEC4899)], // purple-500 to pink-500
+                      gradient: LinearGradient(
+                        colors: [
+                          themeService.primaryColor,
+                          AppTheme.secondaryColor,
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       shape: BoxShape.circle,
-                      // opacity is applied via the gradient colors below
                     ),
                     foregroundDecoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8), // Creates 20% opacity effect
+                      color: themeService.surfaceColor.withOpacity(0.8),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1179,22 +1184,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'MESSAGES',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF9CA3AF), // gray-400
+                              color: themeService.textSecondary,
                               letterSpacing: 1.2,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             '12',
                             style: TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: themeService.textPrimary,
                               height: 1.0,
                             ),
                           ),
@@ -1205,7 +1210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981), // emerald
+                                  color: const Color(0xFF10B981), // emerald - success color
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
@@ -1228,11 +1233,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'from last week',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF9CA3AF), // gray-400
+                                  color: themeService.textSecondary,
                                 ),
                               ),
                             ],
@@ -1247,8 +1252,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFA855F7), Color(0xFFEC4899)], // purple-500 to pink-500
+                          gradient: LinearGradient(
+                            colors: [
+                              themeService.primaryColor,
+                              AppTheme.secondaryColor,
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
