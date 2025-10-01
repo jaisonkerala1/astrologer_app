@@ -55,15 +55,23 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     try {
       final userDataString = await StorageService().getUserData();
       if (userDataString != null) {
-        final userData = jsonDecode(userDataString);
-        if (userData['id'] != null) {
-          setState(() {
-            _astrologerId = userData['id'].toString();
-          });
-          _loadConsultations();
+        final decoded = jsonDecode(userDataString);
+        if (decoded is Map<String, dynamic>) {
+          final sanitized = Map<String, dynamic>.from(decoded);
+          final astrologerId = sanitized['id'] ?? sanitized['_id'];
+          if (astrologerId != null && astrologerId.toString().isNotEmpty) {
+            setState(() {
+              _astrologerId = astrologerId.toString();
+            });
+            _loadConsultations();
+          } else {
+            setState(() {
+              _loadingState = CalendarLoadingModel.error('User ID not found');
+            });
+          }
         } else {
           setState(() {
-            _loadingState = CalendarLoadingModel.error('User ID not found');
+            _loadingState = CalendarLoadingModel.error('Invalid user data format');
           });
         }
       } else {

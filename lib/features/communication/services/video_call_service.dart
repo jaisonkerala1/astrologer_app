@@ -147,7 +147,7 @@ class VideoCallService {
     }
 
     final userDataMap = jsonDecode(userData);
-    return userDataMap['id'];
+    return userDataMap['id'] ?? userDataMap['_id'];
   }
 
   /// Cleanup resources

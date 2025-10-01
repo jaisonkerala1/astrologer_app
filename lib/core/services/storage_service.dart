@@ -167,4 +167,19 @@ class StorageService {
     await remove('phone_number');
     return true;
   }
+
+  // Force clear ALL data (nuclear option)
+  Future<bool> forceClearAllData() async {
+    try {
+      if (_prefs != null) {
+        await _prefs!.clear();
+        print('StorageService: FORCE CLEARED ALL DATA - Fresh start!');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('StorageService: Error force clearing data: $e');
+      return false;
+    }
+  }
 }

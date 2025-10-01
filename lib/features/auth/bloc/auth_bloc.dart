@@ -86,7 +86,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (authResponse.success && authResponse.astrologer != null && authResponse.token != null) {
           // Save auth data
           await _storageService.setAuthToken(authResponse.token!);
-          await _storageService.setUserData(jsonEncode(authResponse.astrologer!.toJson()));
+          await _persistUserData(authResponse.astrologer!.toJson());
           await _storageService.setIsLoggedIn(true);
           await _storageService.setPhoneNumber(event.phoneNumber.trim());
           
@@ -146,11 +146,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (response.statusCode == 200) {
         final authResponse = AuthResponseModel.fromJson(response.data);
         if (authResponse.success && authResponse.astrologer != null && authResponse.token != null) {
-          // Save auth data
-          await _storageService.setAuthToken(authResponse.token!);
-          await _storageService.setUserData(jsonEncode(authResponse.astrologer!.toJson()));
           await _storageService.setIsLoggedIn(true);
-          await _storageService.setPhoneNumber(event.phoneNumber.trim());
+          await _storageService.setAuthToken(authResponse.token!);
+          await _persistUserData(authResponse.astrologer!.toJson());
           
           // Set auth token for API calls
           _apiService.setAuthToken(authResponse.token!);
@@ -201,6 +199,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       print('AuthBloc: isLoggedIn=$isLoggedIn, hasToken=${token != null}, hasUserData=${userData != null}');
       
+      // If no valid auth data, clear everything and go to login
+      if (isLoggedIn != true || token == null || userData == null) {
+        print('AuthBloc: No valid auth data found, clearing all data');
+        await _clearAuthData();
+        emit(AuthUnauthenticatedState());
+        return;
+      }
+      
       if (isLoggedIn == true && token != null && userData != null) {
         // Set auth token for API calls
         _apiService.setAuthToken(token);
@@ -216,7 +222,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             final astrologer = AstrologerModel.fromJson(serverUserData);
             
             // Update local storage with fresh data
-            await _storageService.setUserData(jsonEncode(serverUserData));
+            await _persistUserData(serverUserData);
             
             print('AuthBloc: Token valid, emitting AuthSuccessState with fresh data');
             emit(AuthSuccessState(
@@ -246,11 +252,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _clearAuthData() async {
     try {
-      await _storageService.clearAuthData();
+      // Force clear ALL data (nuclear option)
+      await _storageService.forceClearAllData();
       _apiService.clearAuthToken();
-      print('AuthBloc: Cleared all auth data due to invalid token');
+      
+      print('AuthBloc: FORCE CLEARED ALL DATA - Fresh start!');
     } catch (e) {
       print('AuthBloc: Error clearing auth data: $e');
+    }
+  }
+
+  Future<void> _persistUserData(Map<String, dynamic> data) async {
+    try {
+      final mutableData = Map<String, dynamic>.from(data);
+      final idValue = mutableData['id'] ?? mutableData['_id'];
+      if (idValue != null) {
+        mutableData['id'] = idValue;
+        mutableData['_id'] = idValue;
+      }
+      await _storageService.setUserData(jsonEncode(mutableData));
+    } catch (e) {
+      print('AuthBloc: Error persisting user data: $e');
+      await _storageService.setUserData(jsonEncode(data));
     }
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../app/routes.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -13,6 +14,8 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
+import '../../auth/bloc/auth_bloc.dart';
+import '../../auth/bloc/auth_state.dart';
 import '../models/dashboard_stats_model.dart';
 import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
@@ -103,15 +106,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final userData = await _storageService.getUserData();
       print('👤 [DASHBOARD] User data from storage: $userData');
       if (userData != null && userData.isNotEmpty && mounted) {
-        final userDataMap = jsonDecode(userData);
-        print('👤 [DASHBOARD] Parsed user data: $userDataMap');
-        
-        // Validate that the user data contains required fields
-        if (userDataMap is Map<String, dynamic> && userDataMap.containsKey('id')) {
-          setState(() {
-            _currentUser = AstrologerModel.fromJson(userDataMap);
-            print('👤 [DASHBOARD] Current user profile picture: ${_currentUser?.profilePicture}');
-          });
+        final decoded = jsonDecode(userData);
+        print('👤 [DASHBOARD] Parsed user data: $decoded');
+
+        if (decoded is Map<String, dynamic>) {
+          try {
+            final sanitized = Map<String, dynamic>.from(decoded);
+            final idValue = sanitized['id'] ?? sanitized['_id'];
+            if (idValue != null) {
+              sanitized['id'] = idValue;
+              sanitized['_id'] = idValue;
+            }
+            final astrologer = AstrologerModel.fromJson(sanitized);
+            setState(() {
+              _currentUser = astrologer;
+              print('👤 [DASHBOARD] Current user profile picture: ${_currentUser?.profilePicture}');
+            });
+          } catch (e) {
+            print('👤 [DASHBOARD] Error parsing user data: $e');
+            _setFallbackUser();
+          }
         } else {
           print('👤 [DASHBOARD] Invalid user data format, using fallback');
           _setFallbackUser();
@@ -154,6 +168,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Method to refresh user data when profile is updated
   void refreshUserData() {
     _loadUserData();
+  }
+
+  // Update user data from auth state
+  void _updateUserFromAuthState(AuthSuccessState authState) {
+    if (mounted) {
+      setState(() {
+        _currentUser = authState.astrologer;
+        print('👤 [DASHBOARD] Updated user from auth state: ${_currentUser?.name}');
+      });
+    }
   }
 
   // Build page without double animation - PageView handles transitions
@@ -356,8 +380,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Container(
           width: double.infinity,
           height: double.infinity,
-        child: BlocBuilder<DashboardBloc, DashboardState>(
-          builder: (context, state) {
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, authState) {
+            if (authState is AuthUnauthenticatedState) {
+              // User is not authenticated, redirect to login
+              Navigator.pushReplacementNamed(context, AppRoutes.login);
+            } else if (authState is AuthSuccessState) {
+              // User is authenticated, update current user data
+              _updateUserFromAuthState(authState);
+            }
+          },
+          child: BlocBuilder<DashboardBloc, DashboardState>(
+            builder: (context, state) {
             // Always show loading if user data is not ready yet
             if (_currentUser == null) {
               return const DashboardSkeletonLoader();
@@ -417,6 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return const DashboardSkeletonLoader();
             }
           },
+          ),
         ),
         ),
       ),

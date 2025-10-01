@@ -16,9 +16,12 @@ class ConsultationsService {
       final userData = await _storageService.getUserData();
       if (userData != null) {
         final userDataMap = jsonDecode(userData);
-        final astrologerId = userDataMap['id'] as String;
-        print('Using astrologer ID from storage: $astrologerId');
-        return astrologerId;
+        // Try both 'id' and '_id' fields
+        final astrologerId = userDataMap['id'] ?? userDataMap['_id'] as String?;
+        if (astrologerId != null) {
+          print('Using astrologer ID from storage: $astrologerId');
+          return astrologerId;
+        }
       }
       
       // If no user data, try to get from JWT token
