@@ -49,7 +49,7 @@ void main() async {
   ]);
   
   runApp(RestartWidget(
-    child: App(
+    child: AstrologerApp(
       languageService: languageService, 
       statusService: statusService,
       notificationService: notificationService,

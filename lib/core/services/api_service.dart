@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'dart:io';
 import '../constants/api_constants.dart';
+import 'storage_service.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -8,6 +9,7 @@ class ApiService {
   ApiService._internal();
 
   late Dio _dio;
+  String? _sessionId;
 
   void initialize() {
     _dio = Dio(BaseOptions(

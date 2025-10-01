@@ -1,13 +1,15 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 const Astrologer = require('../models/Astrologer');
 const Otp = require('../models/Otp');
 const twilioService = require('../services/twilioService');
+const normalizeAstrologer = require('../utils/astrologerResponse');
 
 // Generate JWT token
-const generateToken = (astrologerId) => {
+const generateToken = (astrologerId, sessionId) => {
   return jwt.sign(
-    { astrologerId },
+    { astrologerId, sessionId },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
@@ -116,30 +118,29 @@ const verifyOTP = async (req, res) => {
     }
 
     // Generate token
-    const token = generateToken(astrologer.id);
+    const sessionId = crypto.randomUUID();
+    astrologer.activeSession = {
+      sessionId,
+      deviceInfo: {
+        userAgent: req.headers['user-agent'] || null,
+        platform: req.headers['sec-ch-ua-platform'] || null,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || null
+      },
+      createdAt: new Date(),
+      lastSeenAt: new Date()
+    };
+    astrologer.isOnline = true;
+    await astrologer.save();
+
+    const token = generateToken(astrologer.id, sessionId);
 
     res.json({
       success: true,
       message: 'Login successful',
       token,
-      astrologer: {
-        id: astrologer.id,
-        phone: astrologer.phone,
-        name: astrologer.name,
-        email: astrologer.email,
-        profilePicture: astrologer.profilePicture,
-        specializations: astrologer.specializations,
-        languages: astrologer.languages,
-        experience: astrologer.experience,
-        ratePerMinute: astrologer.ratePerMinute,
-        isOnline: astrologer.isOnline,
-        totalEarnings: astrologer.totalEarnings,
-        bio: astrologer.bio,
-        awards: astrologer.awards,
-        certificates: astrologer.certificates,
-        createdAt: astrologer.createdAt,
-        updatedAt: astrologer.updatedAt
-      }
+      astrologer: normalizeAstrologer(astrologer),
+      sessionId,
+      activeSession: astrologer.activeSession
     });
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -218,30 +219,29 @@ const signup = async (req, res) => {
     await astrologer.save();
 
     // Generate token
-    const token = generateToken(astrologer.id);
+    const sessionId = crypto.randomUUID();
+    astrologer.activeSession = {
+      sessionId,
+      deviceInfo: {
+        userAgent: req.headers['user-agent'] || null,
+        platform: req.headers['sec-ch-ua-platform'] || null,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || null
+      },
+      createdAt: new Date(),
+      lastSeenAt: new Date()
+    };
+    astrologer.isOnline = true;
+    await astrologer.save();
+
+    const token = generateToken(astrologer.id, sessionId);
 
     res.json({
       success: true,
       message: 'Account created successfully',
       token,
-      astrologer: {
-        id: astrologer.id,
-        phone: astrologer.phone,
-        name: astrologer.name,
-        email: astrologer.email,
-        profilePicture: astrologer.profilePicture,
-        specializations: astrologer.specializations,
-        languages: astrologer.languages,
-        experience: astrologer.experience,
-        ratePerMinute: astrologer.ratePerMinute,
-        isOnline: astrologer.isOnline,
-        totalEarnings: astrologer.totalEarnings,
-        bio: astrologer.bio,
-        awards: astrologer.awards,
-        certificates: astrologer.certificates,
-        createdAt: astrologer.createdAt,
-        updatedAt: astrologer.updatedAt
-      }
+      astrologer: normalizeAstrologer(astrologer),
+      sessionId,
+      activeSession: astrologer.activeSession
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -255,7 +255,7 @@ const signup = async (req, res) => {
 // Refresh token
 const refreshToken = async (req, res) => {
   try {
-    const { astrologerId } = req.user;
+    const { astrologerId, sessionId } = req.user;
     
     const astrologer = await Astrologer.findById(astrologerId);
     if (!astrologer) {
@@ -265,12 +265,25 @@ const refreshToken = async (req, res) => {
       });
     }
 
-    const token = generateToken(astrologer.id);
+    if (!astrologer.activeSession || astrologer.activeSession.sessionId !== sessionId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Session expired. Please log in again.'
+      });
+    }
+
+    astrologer.activeSession.lastSeenAt = new Date();
+    await astrologer.save();
+
+    const token = generateToken(astrologer.id, astrologer.activeSession.sessionId);
 
     res.json({
       success: true,
       message: 'Token refreshed successfully',
-      token
+      token,
+      astrologer: normalizeAstrologer(astrologer),
+      sessionId: astrologer.activeSession.sessionId,
+      activeSession: astrologer.activeSession
     });
   } catch (error) {
     console.error('Refresh token error:', error);
@@ -284,8 +297,16 @@ const refreshToken = async (req, res) => {
 // Logout
 const logout = async (req, res) => {
   try {
-    // For JWT, logout is handled client-side by removing the token
-    // In a more complex system, you might maintain a blacklist of tokens
+    const { astrologerId } = req.user;
+    const astrologer = await Astrologer.findById(astrologerId);
+
+    if (astrologer?.activeSession) {
+      astrologer.activeSession = null;
+      astrologer.isOnline = false;
+      astrologer.lastSeen = new Date();
+      await astrologer.save();
+    }
+
     res.json({
       success: true,
       message: 'Logout successful'

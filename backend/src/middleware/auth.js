@@ -22,7 +22,17 @@ const auth = async (req, res, next) => {
       });
     }
 
-    req.user = { astrologerId: astrologer._id };
+    if (!astrologer.activeSession || astrologer.activeSession.sessionId !== decoded.sessionId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Session invalid or expired. Please log in again.'
+      });
+    }
+
+    astrologer.activeSession.lastSeenAt = new Date();
+    await astrologer.save();
+
+    req.user = { astrologerId: astrologer._id, sessionId: decoded.sessionId };
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

@@ -86,7 +86,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (authResponse.success && authResponse.astrologer != null && authResponse.token != null) {
           // Save auth data
           await _storageService.setAuthToken(authResponse.token!);
-          await _persistUserData(authResponse.astrologer!.toJson());
+          await _persistUserData({
+            ...authResponse.astrologer!.toJson(),
+            if (authResponse.sessionId != null) 'sessionId': authResponse.sessionId,
+          });
+          await _storageService.setSessionId(authResponse.sessionId ?? authResponse.astrologer!.sessionId);
           await _storageService.setIsLoggedIn(true);
           await _storageService.setPhoneNumber(event.phoneNumber.trim());
           
@@ -96,6 +100,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthSuccessState(
             astrologer: authResponse.astrologer!,
             token: authResponse.token!,
+            sessionId: authResponse.sessionId ?? authResponse.astrologer!.sessionId,
           ));
         } else {
           emit(AuthErrorState(authResponse.message));
@@ -148,7 +153,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (authResponse.success && authResponse.astrologer != null && authResponse.token != null) {
           await _storageService.setIsLoggedIn(true);
           await _storageService.setAuthToken(authResponse.token!);
-          await _persistUserData(authResponse.astrologer!.toJson());
+          await _persistUserData({
+            ...authResponse.astrologer!.toJson(),
+            if (authResponse.sessionId != null) 'sessionId': authResponse.sessionId,
+          });
+          await _storageService.setSessionId(authResponse.sessionId ?? authResponse.astrologer!.sessionId);
           
           // Set auth token for API calls
           _apiService.setAuthToken(authResponse.token!);
@@ -156,6 +165,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthSuccessState(
             astrologer: authResponse.astrologer!,
             token: authResponse.token!,
+            sessionId: authResponse.sessionId ?? authResponse.astrologer!.sessionId,
           ));
         } else {
           emit(AuthErrorState(authResponse.message));
@@ -195,19 +205,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final isLoggedIn = await _storageService.getIsLoggedIn();
       final token = await _storageService.getAuthToken();
+      final sessionId = await _storageService.getSessionId();
       final userData = await _storageService.getUserData();
       
       print('AuthBloc: isLoggedIn=$isLoggedIn, hasToken=${token != null}, hasUserData=${userData != null}');
       
       // If no valid auth data, clear everything and go to login
-      if (isLoggedIn != true || token == null || userData == null) {
+      if (isLoggedIn != true || token == null || userData == null || sessionId == null) {
         print('AuthBloc: No valid auth data found, clearing all data');
         await _clearAuthData();
         emit(AuthUnauthenticatedState());
         return;
       }
       
-      if (isLoggedIn == true && token != null && userData != null) {
+      if (isLoggedIn == true && token != null && userData != null && sessionId != null) {
         // Set auth token for API calls
         _apiService.setAuthToken(token);
         
@@ -222,12 +233,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             final astrologer = AstrologerModel.fromJson(serverUserData);
             
             // Update local storage with fresh data
+            await _storageService.setSessionId(serverUserData['sessionId'] ?? sessionId);
             await _persistUserData(serverUserData);
             
             print('AuthBloc: Token valid, emitting AuthSuccessState with fresh data');
             emit(AuthSuccessState(
               astrologer: astrologer,
               token: token,
+              sessionId: sessionId,
             ));
           } else {
             print('AuthBloc: Server returned invalid response, clearing auth data');

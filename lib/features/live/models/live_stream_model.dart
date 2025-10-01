@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 enum LiveStreamCategory {
   general,
   astrology,
@@ -185,11 +183,11 @@ class LiveStreamModel {
     }
   }
 
+  int get commentsCount => likes; // placeholder for mock data consistency
+
   String get formattedDuration {
-    if (startedAt == null) return '0:00';
-    
     final now = DateTime.now();
-    final difference = now.difference(startedAt!);
+    final difference = now.difference(startedAt);
     
     final hours = difference.inHours;
     final minutes = difference.inMinutes % 60;

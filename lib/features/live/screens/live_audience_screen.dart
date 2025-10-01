@@ -22,7 +22,6 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   
-  bool _showControls = true;
   bool _isFollowing = false;
 
   @override

@@ -140,6 +140,17 @@ class StorageService {
     return await getString('user_data');
   }
 
+  Future<bool> setSessionId(String? sessionId) async {
+    if (sessionId == null) {
+      return await remove('session_id');
+    }
+    return await setString('session_id', sessionId);
+  }
+
+  Future<String?> getSessionId() async {
+    return await getString('session_id');
+  }
+
   Future<bool> setIsLoggedIn(bool isLoggedIn) async {
     print('StorageService: Setting isLoggedIn to $isLoggedIn (WILL PERSIST ACROSS APP RESTARTS!)');
     return await setBool('is_logged_in', isLoggedIn);
@@ -165,6 +176,7 @@ class StorageService {
     await remove('user_data');
     await remove('is_logged_in');
     await remove('phone_number');
+    await remove('session_id');
     return true;
   }
 

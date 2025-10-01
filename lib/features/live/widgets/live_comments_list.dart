@@ -166,18 +166,18 @@ class _LiveCommentsListState extends State<LiveCommentsList> {
                 if (comment.isComment) ...[
                   const SizedBox(height: 2),
                   Text(
-                    comment.message ?? '',
+                    comment.message,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                     ),
                   ),
-                ] else if (comment.isReaction) ...[
+                ] else if (comment.isReaction && comment.reaction != null) ...[
                   const SizedBox(height: 2),
                   Row(
                     children: [
                       Icon(
-                        _getReactionIcon(comment.reaction),
+                        _getReactionIcon(comment.reaction!),
                         color: Colors.red,
                         size: 16,
                       ),
@@ -195,9 +195,9 @@ class _LiveCommentsListState extends State<LiveCommentsList> {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      if (comment.giftIcon != null)
+                      if (comment.giftIcon.isNotEmpty)
                         Text(
-                          comment.giftIcon!,
+                          comment.giftIcon,
                           style: const TextStyle(fontSize: 16),
                         ),
                       const SizedBox(width: 4),
@@ -228,7 +228,7 @@ class _LiveCommentsListState extends State<LiveCommentsList> {
     );
   }
 
-  IconData _getReactionIcon(LiveReactionType? reaction) {
+  IconData _getReactionIcon(LiveReactionType reaction) {
     switch (reaction) {
       case LiveReactionType.heart:
         return Icons.favorite;
@@ -242,8 +242,6 @@ class _LiveCommentsListState extends State<LiveCommentsList> {
         return Icons.sentiment_satisfied;
       case LiveReactionType.love:
         return Icons.favorite_border;
-      case null:
-        return Icons.favorite;
     }
   }
 }

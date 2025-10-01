@@ -4,6 +4,7 @@ import '../../../core/constants/api_constants.dart';
 import '../models/dashboard_stats_model.dart';
 import 'dashboard_event.dart';
 import 'dashboard_state.dart';
+import '../../auth/models/astrologer_model.dart';
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final ApiService _apiService = ApiService();
@@ -34,6 +35,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           averageSessionDuration: (data['averageSessionDuration'] ?? 0).toDouble(),
           averageRating: (data['averageRating'] ?? 0).toDouble(),
           todayCount: data['todayCount'] ?? 0,
+          astrologer: data['astrologer'] != null ? AstrologerModel.fromJson(data['astrologer']) : null,
         );
         
         emit(DashboardLoadedState(stats));

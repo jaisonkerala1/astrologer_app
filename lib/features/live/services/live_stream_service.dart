@@ -20,6 +20,12 @@ class LiveStreamService extends ChangeNotifier {
   LiveStreamModel? get currentStream => _currentStream;
   int get currentLikes => _currentLikes;
 
+  List<LiveCommentModel> get comments {
+    final streamId = _currentStream?.id;
+    if (streamId == null) return const [];
+    return List.unmodifiable(_comments[streamId] ?? []);
+  }
+
   // Mock data for live streams
   List<LiveStreamModel> getMockLiveStreams() {
     return [
@@ -272,10 +278,11 @@ class LiveStreamService extends ChangeNotifier {
       userProfilePicture: null,
       message: message,
       timestamp: DateTime.now(),
-      isFromViewer: true,
+      isHost: false,
     );
     
     _comments[streamId] = (_comments[streamId] ?? [])..add(comment);
+    notifyListeners();
   }
 
   Future<List<LiveReactionModel>> getReactions(String streamId) async {
@@ -295,6 +302,7 @@ class LiveStreamService extends ChangeNotifier {
     );
     
     _reactions[streamId] = (_reactions[streamId] ?? [])..add(reaction);
+    notifyListeners();
   }
 
   Future<List<LiveGiftModel>> getGifts(String streamId) async {
@@ -305,6 +313,7 @@ class LiveStreamService extends ChangeNotifier {
   Future<void> sendGift(String streamId, LiveGiftModel gift) async {
     await Future.delayed(const Duration(milliseconds: 300));
     _gifts[streamId] = (_gifts[streamId] ?? [])..add(gift);
+    notifyListeners();
   }
 
   void incrementLikes() {
@@ -347,14 +356,18 @@ class LiveStreamService extends ChangeNotifier {
       );
       
       _currentLikes = 0;
-      print('🎥 [LIVE_SERVICE] Stream created: ${_currentStream?.id}');
-      print('🎥 [LIVE_SERVICE] Stream title: ${_currentStream?.title}');
+      if (kDebugMode) {
+        debugPrint('🎥 [LIVE_SERVICE] Stream created: ${_currentStream?.id}');
+        debugPrint('🎥 [LIVE_SERVICE] Stream title: ${_currentStream?.title}');
+      }
       notifyListeners();
       
       // Mock successful stream start
       return true;
     } catch (e) {
-      print('Error starting live stream: $e');
+      if (kDebugMode) {
+        debugPrint('Error starting live stream: $e');
+      }
       return false;
     }
   }
@@ -393,7 +406,9 @@ class LiveStreamService extends ChangeNotifier {
       // Mock successful stream end
       return true;
     } catch (e) {
-      print('Error ending live stream: $e');
+      if (kDebugMode) {
+        debugPrint('Error ending live stream: $e');
+      }
       return false;
     }
   }
@@ -409,7 +424,7 @@ class LiveStreamService extends ChangeNotifier {
           userProfilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
           message: 'Amazing reading! Thank you so much! 🙏',
           timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-          isFromViewer: false,
+          isHost: false,
         ),
         LiveCommentModel(
           id: '2',
@@ -419,17 +434,17 @@ class LiveStreamService extends ChangeNotifier {
           userProfilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
           message: 'Can you read my chart next?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
-          isFromViewer: false,
+          isHost: false,
         ),
         LiveCommentModel(
           id: '3',
           streamId: streamId,
-          userId: 'user_3',
-          userName: 'Emma L.',
-          userProfilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-          message: 'This is so accurate! ✨',
+          userId: 'host',
+          userName: 'You',
+          userProfilePicture: null,
+          message: 'Welcome everyone! Let me know your questions.',
           timestamp: DateTime.now().subtract(const Duration(minutes: 1)),
-          isFromViewer: false,
+          isHost: true,
         ),
       ];
     }
@@ -443,22 +458,6 @@ class LiveStreamService extends ChangeNotifier {
           userName: 'Sarah M.',
           emoji: '❤️',
           timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
-        ),
-        LiveReactionModel(
-          id: '2',
-          streamId: streamId,
-          userId: 'user_2',
-          userName: 'Mike R.',
-          emoji: '👏',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
-        ),
-        LiveReactionModel(
-          id: '3',
-          streamId: streamId,
-          userId: 'user_3',
-          userName: 'Emma L.',
-          emoji: '✨',
-          timestamp: DateTime.now().subtract(const Duration(seconds: 30)),
         ),
       ];
     }
@@ -474,16 +473,6 @@ class LiveStreamService extends ChangeNotifier {
           giftEmoji: '🌹',
           giftValue: 10,
           timestamp: DateTime.now().subtract(const Duration(minutes: 6)),
-        ),
-        LiveGiftModel(
-          id: '2',
-          streamId: streamId,
-          userId: 'user_2',
-          userName: 'Mike R.',
-          giftName: 'Star',
-          giftEmoji: '⭐',
-          giftValue: 25,
-          timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
         ),
       ];
     }

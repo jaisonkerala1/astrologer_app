@@ -56,10 +56,12 @@ class PerformanceOptimizations {
   static Widget memoizedBuilder({
     required Widget Function(BuildContext context, Animation<double> animation) builder,
     required Animation<double> animation,
+    Widget? child,
   }) {
     return AnimatedBuilder(
       animation: animation,
-      builder: builder,
+      child: child,
+      builder: (context, _) => builder(context, animation),
     );
   }
 }
@@ -134,6 +136,7 @@ class _OptimizedShimmerEffectState extends State<OptimizedShimmerEffect>
 
     return PerformanceOptimizations.memoizedBuilder(
       animation: _animation,
+      child: widget.child,
       builder: (context, animation) {
         return ShaderMask(
           blendMode: BlendMode.srcATop,

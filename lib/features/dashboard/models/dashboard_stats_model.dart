@@ -1,3 +1,5 @@
+import '../../auth/models/astrologer_model.dart';
+
 class DashboardStatsModel {
   final double todayEarnings;
   final double totalEarnings;
@@ -8,6 +10,7 @@ class DashboardStatsModel {
   final double averageSessionDuration;
   final double averageRating;
   final int todayCount;
+  final AstrologerModel? astrologer;
 
   DashboardStatsModel({
     required this.todayEarnings,
@@ -19,6 +22,7 @@ class DashboardStatsModel {
     required this.averageSessionDuration,
     required this.averageRating,
     required this.todayCount,
+    this.astrologer,
   });
 
   // Empty constructor for initial state
@@ -31,7 +35,8 @@ class DashboardStatsModel {
         totalSessions = 0,
         averageSessionDuration = 0.0,
         averageRating = 0.0,
-        todayCount = 0;
+        todayCount = 0,
+        astrologer = null;
 
   factory DashboardStatsModel.fromJson(Map<String, dynamic> json) {
     return DashboardStatsModel(
@@ -44,6 +49,7 @@ class DashboardStatsModel {
       averageSessionDuration: (json['averageSessionDuration'] ?? 0).toDouble(),
       averageRating: (json['averageRating'] ?? 0).toDouble(),
       todayCount: json['todayCount'] ?? 0,
+      astrologer: json['astrologer'] != null ? AstrologerModel.fromJson(json['astrologer']) : null,
     );
   }
 
@@ -71,6 +77,7 @@ class DashboardStatsModel {
     double? averageSessionDuration,
     double? averageRating,
     int? todayCount,
+    AstrologerModel? astrologer,
   }) {
     return DashboardStatsModel(
       todayEarnings: todayEarnings ?? this.todayEarnings,
@@ -82,6 +89,7 @@ class DashboardStatsModel {
       averageSessionDuration: averageSessionDuration ?? this.averageSessionDuration,
       averageRating: averageRating ?? this.averageRating,
       todayCount: todayCount ?? this.todayCount,
+      astrologer: astrologer ?? this.astrologer,
     );
   }
 }

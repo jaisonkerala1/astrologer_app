@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
 import 'live_streaming_screen.dart';
@@ -16,22 +17,11 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _tagsController = TextEditingController();
 
   LiveStreamCategory _selectedCategory = LiveStreamCategory.astrology;
-  LiveStreamQuality _selectedQuality = LiveStreamQuality.medium;
-  bool _isPrivate = false;
   bool _isLoading = false;
 
   final LiveStreamService _liveService = LiveStreamService();
-
-  final List<String> _availableTags = [
-    'tarot', 'palmistry', 'numerology', 'astrology', 'meditation',
-    'healing', 'spiritual', 'love', 'career', 'health', 'family',
-    'relationships', 'future', 'guidance', 'wisdom'
-  ];
-
-  List<String> _selectedTags = [];
 
   @override
   void initState() {
@@ -43,121 +33,174 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _tagsController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Go Live',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        final theme = themeService;
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness:
+                theme.isDarkMode() ? Brightness.light : Brightness.dark,
+            statusBarBrightness:
+                theme.isDarkMode() ? Brightness.light : Brightness.dark,
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _buildHeader(),
-              const SizedBox(height: 32),
-              
-              // Stream Title
-              _buildTitleField(),
-              const SizedBox(height: 24),
-              
-              // Description
-              _buildDescriptionField(),
-              const SizedBox(height: 24),
-              
-              // Category Selection
-              _buildCategorySelection(),
-              const SizedBox(height: 24),
-              
-              // Quality Selection
-              _buildQualitySelection(),
-              const SizedBox(height: 24),
-              
-              // Tags Selection
-              _buildTagsSelection(),
-              const SizedBox(height: 24),
-              
-              // Privacy Settings
-              _buildPrivacySettings(),
-              const SizedBox(height: 40),
-              
-              // Start Live Button
-              _buildStartLiveButton(),
-              const SizedBox(height: 20),
-            ],
+          child: Scaffold(
+            backgroundColor: theme.backgroundColor,
+            appBar: AppBar(
+              elevation: 0,
+              backgroundColor: theme.surfaceColor,
+              leading: IconButton(
+                icon: Icon(Icons.close, color: theme.textPrimary),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                'Go Live',
+                style: TextStyle(
+                  color: theme.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              centerTitle: true,
+            ),
+            body: Container(
+              decoration: BoxDecoration(gradient: theme.backgroundGradient),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeroCard(theme),
+                      const SizedBox(height: 28),
+                      _buildInfoBanner(theme),
+                      const SizedBox(height: 24),
+                      _buildTitleField(theme),
+                      const SizedBox(height: 20),
+                      _buildDescriptionField(theme),
+                      const SizedBox(height: 28),
+                      _buildCategorySection(theme),
+                      const SizedBox(height: 32),
+                      _buildStartLiveButton(theme),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeroCard(ThemeService theme) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.red.withOpacity(0.8), Colors.pink.withOpacity(0.6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
+        gradient: theme.primaryGradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [theme.cardShadow],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Icon(
-              Icons.videocam,
-              color: Colors.white,
-              size: 30,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.videocam_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Ready to start streaming?',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Set up the perfect session before going live.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 20),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            padding: const EdgeInsets.all(18),
+            child: Row(
               children: [
-                const Text(
-                  'Ready to go live?',
-                  style: TextStyle(
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'LIVE',
+                    style: TextStyle(
+                      color: theme.primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Share your wisdom with the world',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Your audience is waiting',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Craft a compelling title and description. Focus on the transformation viewers will experience.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -168,383 +211,226 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
     );
   }
 
-  Widget _buildTitleField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Stream Title *',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _titleController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Enter your stream title',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.1),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-            prefixIcon: const Icon(Icons.title, color: Colors.white70),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter a stream title';
-            }
-            if (value.length > 100) {
-              return 'Title must be less than 100 characters';
-            }
-            return null;
-          },
-          maxLength: 100,
-          maxLines: 1,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Description (Optional)',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _descriptionController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Tell viewers what to expect from your stream',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.1),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-            prefixIcon: const Icon(Icons.description, color: Colors.white70),
-          ),
-          maxLength: 500,
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategorySelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Category',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: LiveStreamCategory.values.map((category) {
-              final isSelected = _selectedCategory == category;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedCategory = category;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.red : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? Colors.red : Colors.white.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    _getCategoryDisplayName(category),
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQualitySelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Stream Quality',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: LiveStreamQuality.values.map((quality) {
-              final isSelected = _selectedQuality == quality;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedQuality = quality;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.red : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? Colors.red : Colors.white.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    _getQualityDisplayName(quality),
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTagsSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tags (Optional)',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Add tags to help viewers find your stream',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _availableTags.map((tag) {
-              final isSelected = _selectedTags.contains(tag);
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (isSelected) {
-                      _selectedTags.remove(tag);
-                    } else if (_selectedTags.length < 5) {
-                      _selectedTags.add(tag);
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.red.withOpacity(0.8) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? Colors.red : Colors.white.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    '#$tag',
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        if (_selectedTags.length >= 5)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Maximum 5 tags selected',
-              style: TextStyle(
-                color: Colors.orange.withOpacity(0.8),
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPrivacySettings() {
+  Widget _buildInfoBanner(ThemeService theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        color: theme.infoColor.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.infoColor.withOpacity(0.18)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            _isPrivate ? Icons.lock : Icons.public,
-            color: Colors.white70,
-            size: 20,
-          ),
+          Icon(Icons.lightbulb, color: theme.infoColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Privacy',
+                Text(
+                  'Make it discoverable',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
+                    color: theme.textPrimary,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  _isPrivate ? 'Private stream (invite only)' : 'Public stream (anyone can watch)',
+                  'Use clear, benefit-driven titles so the right viewers can find you quickly.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
+                    color: theme.textSecondary,
+                    fontSize: 13,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
-          ),
-          Switch(
-            value: _isPrivate,
-            onChanged: (value) {
-              setState(() {
-                _isPrivate = value;
-              });
-            },
-            activeColor: Colors.red,
-            activeTrackColor: Colors.red.withOpacity(0.3),
-            inactiveThumbColor: Colors.white70,
-            inactiveTrackColor: Colors.white.withOpacity(0.2),
-          ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildStartLiveButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _startLiveStream,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+  Widget _buildTitleField(ThemeService theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Stream title *',
+          style: TextStyle(
+            color: theme.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.videocam, size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Start Live Stream',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _titleController,
+          style: TextStyle(color: theme.textPrimary, fontSize: 16),
+          decoration: _inputDecoration(
+            theme,
+            hint: 'Example: Live Tarot for upcoming relationships',
+            icon: Icons.title_rounded,
+          ),
+          maxLength: 80,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please add a title';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionField(ThemeService theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description (optional)',
+          style: TextStyle(
+            color: theme.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _descriptionController,
+          style: TextStyle(color: theme.textPrimary, fontSize: 15, height: 1.4),
+          decoration: _inputDecoration(
+            theme,
+            hint: 'Outline what you will cover and highlight the outcomes viewers will receive.',
+            icon: Icons.short_text_rounded,
+          ),
+          maxLines: 4,
+          maxLength: 400,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySection(ThemeService theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.category_outlined, color: theme.textSecondary, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Category',
+              style: TextStyle(
+                color: theme.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          children: LiveStreamCategory.values.map((category) {
+            final isSelected = _selectedCategory == category;
+            return ChoiceChip(
+              label: Text(
+                _getCategoryDisplayName(category),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : theme.textSecondary,
+                ),
+              ),
+              avatar: Icon(
+                _getCategoryIcon(category),
+                size: 18,
+                color: isSelected ? Colors.white : theme.textSecondary,
+              ),
+              selected: isSelected,
+              onSelected: (_) {
+                setState(() {
+                  _selectedCategory = category;
+                });
+              },
+              selectedColor: theme.primaryColor,
+              backgroundColor: theme.surfaceColor,
+              side: BorderSide(
+                color: isSelected
+                    ? theme.primaryColor
+                    : theme.borderColor.withOpacity(0.8),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              pressElevation: 0,
+              elevation: 0,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStartLiveButton(ThemeService theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 60,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _startLiveStream,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              elevation: 6,
+              shadowColor: theme.primaryColor.withOpacity(0.35),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.radio_button_checked_rounded, size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'Start live stream',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Your stream will be public. Adjust advanced settings once you are live.',
+          style: TextStyle(
+            color: theme.textSecondary,
+            fontSize: 12,
+            height: 1.4,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -569,16 +455,24 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
     }
   }
 
-  String _getQualityDisplayName(LiveStreamQuality quality) {
-    switch (quality) {
-      case LiveStreamQuality.low:
-        return 'Low (360p)';
-      case LiveStreamQuality.medium:
-        return 'Medium (720p)';
-      case LiveStreamQuality.high:
-        return 'High (1080p)';
-      case LiveStreamQuality.ultra:
-        return 'Ultra (4K)';
+  IconData _getCategoryIcon(LiveStreamCategory category) {
+    switch (category) {
+      case LiveStreamCategory.general:
+        return Icons.auto_awesome;
+      case LiveStreamCategory.astrology:
+        return Icons.nights_stay;
+      case LiveStreamCategory.healing:
+        return Icons.self_improvement;
+      case LiveStreamCategory.meditation:
+        return Icons.spa;
+      case LiveStreamCategory.tarot:
+        return Icons.filter_frames;
+      case LiveStreamCategory.numerology:
+        return Icons.calculate;
+      case LiveStreamCategory.palmistry:
+        return Icons.pan_tool_alt;
+      case LiveStreamCategory.spiritual:
+        return Icons.brightness_high;
     }
   }
 
@@ -598,13 +492,12 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
             ? null
             : _descriptionController.text.trim(),
         category: _selectedCategory,
-        quality: _selectedQuality,
-        isPrivate: _isPrivate,
-        tags: _selectedTags,
+        quality: LiveStreamQuality.high,
+        isPrivate: false,
+        tags: const [],
       );
 
       if (success && mounted) {
-        // Navigate to live streaming screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => const LiveStreamingScreen(),
@@ -614,7 +507,6 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to start live stream. Please try again.'),
-            backgroundColor: Colors.red,
           ),
         );
       }
@@ -623,7 +515,6 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
           ),
         );
       }
@@ -634,5 +525,44 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
         });
       }
     }
+  }
+
+  InputDecoration _inputDecoration(
+    ThemeService theme, {
+    required String hint,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: theme.textHint,
+        fontSize: 14,
+      ),
+      prefixIcon: Icon(icon, color: theme.textSecondary),
+      filled: true,
+      fillColor: theme.surfaceColor,
+      counterStyle: TextStyle(color: theme.textHint),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: theme.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: theme.borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: theme.primaryColor, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: theme.errorColor),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: theme.errorColor, width: 1.5),
+      ),
+    );
   }
 }

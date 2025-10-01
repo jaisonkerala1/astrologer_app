@@ -35,16 +35,10 @@ class LiveControlsOverlay extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildControlButton(
-                icon: stream.status == LiveStreamStatus.paused
-                    ? Icons.play_arrow
-                    : Icons.pause,
-                label: stream.status == LiveStreamStatus.paused
-                    ? 'Resume'
-                    : 'Pause',
+                icon: Icons.pause,
+                label: 'Pause',
                 onTap: onTogglePause,
-                color: stream.status == LiveStreamStatus.paused
-                    ? Colors.green
-                    : Colors.orange,
+                color: Colors.orange,
               ),
               const SizedBox(width: 12),
               _buildControlButton(
@@ -105,13 +99,13 @@ class LiveControlsOverlay extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.chat,
+              Icons.chat_bubble_outline,
               color: Colors.blue.withOpacity(0.8),
               size: 16,
             ),
             const SizedBox(width: 6),
             Text(
-              '${stream.comments} comments',
+              '${stream.commentsCount} comments',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 12,

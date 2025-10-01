@@ -1,5 +1,6 @@
 const Astrologer = require('../models/Astrologer');
 const Session = require('../models/Session');
+const normalizeAstrologer = require('../utils/astrologerResponse');
 
 // Get dashboard stats
 const getDashboardStats = async (req, res) => {
@@ -63,7 +64,8 @@ const getDashboardStats = async (req, res) => {
         isOnline: astrologer.isOnline,
         totalSessions,
         averageSessionDuration: avgDuration,
-        averageRating: avgRating
+        averageRating: avgRating,
+        astrologer: normalizeAstrologer(astrologer)
       }
     });
   } catch (error) {

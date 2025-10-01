@@ -10,9 +10,10 @@ class CalendarService {
   Future<List<AvailabilityModel>> getAvailability(String astrologerId) async {
     try {
       final response = await _apiService.get('/api/calendar/availability/$astrologerId');
-      if (response['success'] == true) {
-        final List<dynamic> data = response['data'] ?? [];
-        return data.map((json) => AvailabilityModel.fromJson(json)).toList();
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        final List<dynamic> items = data['data'] ?? [];
+        return items.map((json) => AvailabilityModel.fromJson(json)).toList();
       }
       throw Exception('Failed to load availability');
     } catch (e) {
@@ -27,8 +28,9 @@ class CalendarService {
         '/api/calendar/availability',
         data: availability.toJson(),
       );
-      if (response['success'] == true) {
-        return AvailabilityModel.fromJson(response['data']);
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        return AvailabilityModel.fromJson(data['data']);
       }
       throw Exception('Failed to create availability');
     } catch (e) {
@@ -43,8 +45,9 @@ class CalendarService {
         '/api/calendar/availability/$id',
         data: availability.toJson(),
       );
-      if (response['success'] == true) {
-        return AvailabilityModel.fromJson(response['data']);
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        return AvailabilityModel.fromJson(data['data']);
       }
       throw Exception('Failed to update availability');
     } catch (e) {
@@ -56,7 +59,8 @@ class CalendarService {
   Future<void> deleteAvailability(String id) async {
     try {
       final response = await _apiService.delete('/api/calendar/availability/$id');
-      if (response['success'] != true) {
+      final data = response.data as Map<String, dynamic>?;
+      if (data == null || data['success'] != true) {
         throw Exception('Failed to delete availability');
       }
     } catch (e) {
@@ -70,9 +74,10 @@ class CalendarService {
     try {
       final dateStr = date.toIso8601String().split('T')[0];
       final response = await _apiService.get('/api/calendar/time-slots/$astrologerId/$dateStr');
-      if (response['success'] == true) {
-        final List<dynamic> data = response['data'] ?? [];
-        return data.map((json) => TimeSlotModel.fromJson(json)).toList();
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        final List<dynamic> items = data['data'] ?? [];
+        return items.map((json) => TimeSlotModel.fromJson(json)).toList();
       }
       throw Exception('Failed to load time slots');
     } catch (e) {
@@ -91,9 +96,10 @@ class CalendarService {
           'date': dateStr,
         },
       );
-      if (response['success'] == true) {
-        final List<dynamic> data = response['data'] ?? [];
-        return data.map((json) => TimeSlotModel.fromJson(json)).toList();
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        final List<dynamic> items = data['data'] ?? [];
+        return items.map((json) => TimeSlotModel.fromJson(json)).toList();
       }
       throw Exception('Failed to generate time slots');
     } catch (e) {
@@ -111,8 +117,9 @@ class CalendarService {
           'consultationId': consultationId,
         },
       );
-      if (response['success'] == true) {
-        return TimeSlotModel.fromJson(response['data']);
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        return TimeSlotModel.fromJson(data['data']);
       }
       throw Exception('Failed to book time slot');
     } catch (e) {
@@ -127,7 +134,8 @@ class CalendarService {
         '/api/calendar/cancel-booking',
         data: {'slotId': slotId},
       );
-      if (response['success'] != true) {
+      final data = response.data as Map<String, dynamic>?;
+      if (data == null || data['success'] != true) {
         throw Exception('Failed to cancel booking');
       }
     } catch (e) {
@@ -140,9 +148,10 @@ class CalendarService {
   Future<List<HolidayModel>> getHolidays(String astrologerId) async {
     try {
       final response = await _apiService.get('/api/calendar/holidays/$astrologerId');
-      if (response['success'] == true) {
-        final List<dynamic> data = response['data'] ?? [];
-        return data.map((json) => HolidayModel.fromJson(json)).toList();
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        final List<dynamic> items = data['data'] ?? [];
+        return items.map((json) => HolidayModel.fromJson(json)).toList();
       }
       throw Exception('Failed to load holidays');
     } catch (e) {
@@ -157,8 +166,9 @@ class CalendarService {
         '/api/calendar/holidays',
         data: holiday.toJson(),
       );
-      if (response['success'] == true) {
-        return HolidayModel.fromJson(response['data']);
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['success'] == true) {
+        return HolidayModel.fromJson(data['data']);
       }
       throw Exception('Failed to create holiday');
     } catch (e) {
@@ -170,7 +180,8 @@ class CalendarService {
   Future<void> deleteHoliday(String id) async {
     try {
       final response = await _apiService.delete('/api/calendar/holidays/$id');
-      if (response['success'] != true) {
+      final data = response.data as Map<String, dynamic>?;
+      if (data == null || data['success'] != true) {
         throw Exception('Failed to delete holiday');
       }
     } catch (e) {

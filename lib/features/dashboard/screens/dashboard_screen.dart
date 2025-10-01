@@ -104,31 +104,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadUserData() async {
     try {
       final userData = await _storageService.getUserData();
-      print('👤 [DASHBOARD] User data from storage: $userData');
-      if (userData != null && userData.isNotEmpty && mounted) {
-        final decoded = jsonDecode(userData);
-        print('👤 [DASHBOARD] Parsed user data: $decoded');
+      final sessionId = await _storageService.getSessionId();
+      
+      print('Dashboard: Loading userIs: $userData');
+      
+      if (userData != null) {
+        final Map<String, dynamic> data = jsonDecode(userData);
+        final idValue = data['id'] ?? data['_id'];
+        if (idValue != null) {
+          data['id'] = idValue;
+          data['_id'] = idValue;
+        }
+        if (sessionId != null) {
+          data['sessionId'] = sessionId;
+        }
+        setState(() {
+          _currentUser = AstrologerModel.fromJson(data);
+        });
 
-        if (decoded is Map<String, dynamic>) {
-          try {
-            final sanitized = Map<String, dynamic>.from(decoded);
-            final idValue = sanitized['id'] ?? sanitized['_id'];
-            if (idValue != null) {
-              sanitized['id'] = idValue;
-              sanitized['_id'] = idValue;
-            }
-            final astrologer = AstrologerModel.fromJson(sanitized);
-            setState(() {
-              _currentUser = astrologer;
-              print('👤 [DASHBOARD] Current user profile picture: ${_currentUser?.profilePicture}');
-            });
-          } catch (e) {
-            print('👤 [DASHBOARD] Error parsing user data: $e');
-            _setFallbackUser();
-          }
-        } else {
-          print('👤 [DASHBOARD] Invalid user data format, using fallback');
-          _setFallbackUser();
+        if (_currentStats?.astrologer != null) {
+          _currentUser = _currentStats!.astrologer;
         }
       } else {
         print('👤 [DASHBOARD] No user data found, using fallback');
@@ -160,6 +155,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           certificates: '',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+          sessionId: null,
         );
       });
     }
@@ -407,6 +403,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
             } else if (state is DashboardLoadedState) {
               _currentStats = state.stats; // Store current stats for refresh
+              if (state.stats.astrologer != null) {
+                _currentUser = state.stats.astrologer;
+              }
               return _buildDashboardBody(state.stats);
             } else if (state is DashboardErrorState) {
               return Padding(

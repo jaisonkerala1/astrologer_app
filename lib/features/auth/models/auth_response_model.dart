@@ -6,6 +6,7 @@ class AuthResponseModel {
   final String? token;
   final AstrologerModel? astrologer;
   final String? otpId;
+  final String? sessionId;
 
   AuthResponseModel({
     required this.success,
@@ -13,6 +14,7 @@ class AuthResponseModel {
     this.token,
     this.astrologer,
     this.otpId,
+    this.sessionId,
   });
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class AuthResponseModel {
           ? AstrologerModel.fromJson(json['astrologer']) 
           : null,
       otpId: json['otpId'],
+      sessionId: json['astrologer']?['sessionId'] ?? json['sessionId'],
     );
   }
 
@@ -34,6 +37,7 @@ class AuthResponseModel {
       'token': token,
       'astrologer': astrologer?.toJson(),
       'otpId': otpId,
+      'sessionId': sessionId,
     };
   }
 }

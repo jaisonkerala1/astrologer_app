@@ -53,6 +53,34 @@ const astrologerSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  activeSession: {
+    sessionId: {
+      type: String,
+      default: null
+    },
+    deviceInfo: {
+      userAgent: {
+        type: String,
+        default: null
+      },
+      platform: {
+        type: String,
+        default: null
+      },
+      ipAddress: {
+        type: String,
+        default: null
+      }
+    },
+    createdAt: {
+      type: Date,
+      default: null
+    },
+    lastSeenAt: {
+      type: Date,
+      default: null
+    }
+  },
   lastSeen: {
     type: Date,
     default: Date.now
@@ -104,6 +132,7 @@ astrologerSchema.index({ phone: 1 });
 astrologerSchema.index({ email: 1 });
 astrologerSchema.index({ isOnline: 1 });
 astrologerSchema.index({ isActive: 1 });
+astrologerSchema.index({ 'activeSession.sessionId': 1 });
 
 // Virtual for formatted phone number
 astrologerSchema.virtual('formattedPhone').get(function() {
@@ -113,6 +142,9 @@ astrologerSchema.virtual('formattedPhone').get(function() {
 // Method to update last seen
 astrologerSchema.methods.updateLastSeen = function() {
   this.lastSeen = new Date();
+  if (this.activeSession) {
+    this.activeSession.lastSeenAt = new Date();
+  }
   return this.save();
 };
 
@@ -120,6 +152,9 @@ astrologerSchema.methods.updateLastSeen = function() {
 astrologerSchema.methods.toggleOnlineStatus = function() {
   this.isOnline = !this.isOnline;
   this.lastSeen = new Date();
+  if (this.activeSession) {
+    this.activeSession.lastSeenAt = new Date();
+  }
   return this.save();
 };
 

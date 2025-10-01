@@ -8,23 +8,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:astrologer_app/main.dart';
+import 'package:astrologer_app/app/app.dart';
+import 'package:astrologer_app/core/services/language_service.dart';
+import 'package:astrologer_app/core/services/status_service.dart';
+import 'package:astrologer_app/features/notifications/services/notification_service.dart';
+import 'package:astrologer_app/features/live/services/live_stream_service.dart';
+import 'package:astrologer_app/shared/theme/services/theme_service.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('App builds without crashing', (tester) async {
+    await tester.pumpWidget(AstrologerApp(
+      languageService: LanguageService(),
+      statusService: StatusService(),
+      notificationService: NotificationService(),
+      liveStreamService: LiveStreamService(),
+      themeService: ThemeService(),
+    ));
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

@@ -1,3 +1,14 @@
+import '../models/live_gift_model.dart';
+
+enum LiveReactionType {
+  heart,
+  fire,
+  clap,
+  laugh,
+  wow,
+  love,
+}
+
 class LiveCommentModel {
   final String id;
   final String streamId;
@@ -6,7 +17,9 @@ class LiveCommentModel {
   final String? userProfilePicture;
   final String message;
   final DateTime timestamp;
-  final bool isFromViewer;
+  final bool isHost;
+  final LiveReactionType? reaction;
+  final LiveGiftModel? gift;
 
   LiveCommentModel({
     required this.id,
@@ -16,7 +29,9 @@ class LiveCommentModel {
     this.userProfilePicture,
     required this.message,
     required this.timestamp,
-    required this.isFromViewer,
+    this.isHost = false,
+    this.reaction,
+    this.gift,
   });
 
   factory LiveCommentModel.fromJson(Map<String, dynamic> json) {
@@ -28,7 +43,14 @@ class LiveCommentModel {
       userProfilePicture: json['userProfilePicture'],
       message: json['message'] ?? '',
       timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
-      isFromViewer: json['isFromViewer'] ?? false,
+      isHost: json['isHost'] ?? false,
+      reaction: json['reaction'] != null
+          ? LiveReactionType.values.firstWhere(
+              (type) => type.toString() == 'LiveReactionType.${json['reaction']}',
+              orElse: () => LiveReactionType.heart,
+            )
+          : null,
+      gift: json['gift'] != null ? LiveGiftModel.fromJson(json['gift']) : null,
     );
   }
 
@@ -41,7 +63,9 @@ class LiveCommentModel {
       'userProfilePicture': userProfilePicture,
       'message': message,
       'timestamp': timestamp.toIso8601String(),
-      'isFromViewer': isFromViewer,
+      'isHost': isHost,
+      'reaction': reaction?.toString().split('.').last,
+      'gift': gift?.toJson(),
     };
   }
 
@@ -59,4 +83,24 @@ class LiveCommentModel {
       return '${difference.inDays}d';
     }
   }
+
+  bool get isFromHost => isHost;
+
+  bool get isComment => reaction == null && gift == null && message.isNotEmpty;
+
+  bool get isReaction => reaction != null;
+
+  bool get isGift => gift != null;
+
+  String get displayText {
+    if (isReaction) {
+      return '$userName reacted';
+    }
+    if (isGift && gift != null) {
+      return '$userName sent ${gift!.giftName}';
+    }
+    return message;
+  }
+
+  String get giftIcon => gift?.giftEmoji ?? '';
 }

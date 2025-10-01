@@ -1,6 +1,7 @@
 const Astrologer = require('../models/Astrologer');
 const path = require('path');
 const fs = require('fs');
+const normalizeAstrologer = require('../utils/astrologerResponse');
 
 // Get profile
 const getProfile = async (req, res) => {
@@ -17,7 +18,7 @@ const getProfile = async (req, res) => {
 
     res.json({
       success: true,
-      data: astrologer
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -115,7 +116,7 @@ const updateProfile = async (req, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: astrologer
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -178,9 +179,7 @@ const uploadProfilePicture = async (req, res) => {
     res.json({
       success: true,
       message: 'Profile picture uploaded successfully',
-      data: {
-        profilePicture: imageUrl
-      }
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Upload profile picture error:', error);
@@ -220,9 +219,7 @@ const updateSpecializations = async (req, res) => {
     res.json({
       success: true,
       message: 'Specializations updated successfully',
-      data: {
-        specializations: astrologer.specializations
-      }
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Update specializations error:', error);
@@ -262,9 +259,7 @@ const updateLanguages = async (req, res) => {
     res.json({
       success: true,
       message: 'Languages updated successfully',
-      data: {
-        languages: astrologer.languages
-      }
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Update languages error:', error);
@@ -304,9 +299,7 @@ const updateRate = async (req, res) => {
     res.json({
       success: true,
       message: 'Rate updated successfully',
-      data: {
-        ratePerMinute: astrologer.ratePerMinute
-      }
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Update rate error:', error);
@@ -384,11 +377,7 @@ const updateBioFields = async (req, res) => {
     res.json({
       success: true,
       message: 'Bio fields updated successfully',
-      data: {
-        bio: astrologer.bio,
-        awards: astrologer.awards,
-        certificates: astrologer.certificates
-      }
+      data: normalizeAstrologer(astrologer)
     });
   } catch (error) {
     console.error('Update bio fields error:', error);

@@ -15,6 +15,7 @@ class AstrologerModel {
   final String certificates;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? sessionId;
 
   AstrologerModel({
     required this.id,
@@ -33,6 +34,7 @@ class AstrologerModel {
     required this.certificates,
     required this.createdAt,
     required this.updatedAt,
+    this.sessionId,
   });
 
   factory AstrologerModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class AstrologerModel {
       certificates: json['certificates'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      sessionId: json['sessionId'] ?? json['activeSession']?['sessionId'],
     );
   }
 
@@ -74,6 +77,7 @@ class AstrologerModel {
       'certificates': certificates,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'sessionId': sessionId,
     };
   }
 
@@ -94,6 +98,7 @@ class AstrologerModel {
     String? certificates,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? sessionId,
   }) {
     return AstrologerModel(
       id: id ?? this.id,
@@ -112,6 +117,7 @@ class AstrologerModel {
       certificates: certificates ?? this.certificates,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      sessionId: sessionId ?? this.sessionId,
     );
   }
 }

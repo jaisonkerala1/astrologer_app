@@ -19,10 +19,12 @@ class OtpSentState extends AuthState {
 class AuthSuccessState extends AuthState {
   final AstrologerModel astrologer;
   final String token;
+  final String? sessionId;
   
   AuthSuccessState({
     required this.astrologer,
     required this.token,
+    this.sessionId,
   });
 }
 
