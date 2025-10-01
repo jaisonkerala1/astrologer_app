@@ -47,6 +47,7 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   permission_handler: ^11.3.1
   package_info_plus: ^4.2.0
+  flutter_svg: ^1.1.6
   
   # Video Calling (Mock Implementation)
   # flutter_webrtc: ^0.9.44  # Commented out for mock implementation
@@ -91,6 +92,9 @@ flutter:
 
   # Enable generation of localization files
   generate: true
+
+  assets:
+    - assets/icons/folded_hands.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

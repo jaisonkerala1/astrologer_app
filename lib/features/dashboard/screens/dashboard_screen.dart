@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../app/routes.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
@@ -319,12 +321,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             child: BottomNavigationBar(
+              selectedIconTheme: const IconThemeData(size: 26),
+              unselectedIconTheme: const IconThemeData(size: 22),
               currentIndex: _selectedIndex,
               onTap: (index) {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
                 
                 // Jump to selected page - instant navigation for taps
+                if (index == 2) {
+                  HapticFeedback.mediumImpact();
+                }
                 _pageController.jumpToPage(index);
               },
               type: BottomNavigationBarType.fixed,
@@ -339,13 +346,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.dashboard_outlined),
                     label: l10n.dashboard,
-                  ),
+                   ),
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.chat_bubble_outline),
                     label: l10n.consultations,
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.healing_outlined),
+                    icon: SvgPicture.asset(
+                      AppAssets.healIcon,
+                      width: 28,
+                      height: 28,
+                      color: _selectedIndex == 2
+                          ? themeService.primaryColor
+                          : themeService.textSecondary,
+                    ),
                     label: l10n.heal,
                   ),
                   BottomNavigationBarItem(

@@ -353,6 +353,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
                 color: isSelected ? Colors.white : theme.textSecondary,
               ),
               selected: isSelected,
+              showCheckmark: false,
               onSelected: (_) {
                 setState(() {
                   _selectedCategory = category;
@@ -386,38 +387,52 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _startLiveStream,
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primaryColor,
+              padding: EdgeInsets.zero,
+              backgroundColor: Colors.transparent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
-              elevation: 6,
-              shadowColor: theme.primaryColor.withOpacity(0.35),
+              elevation: 8,
+              shadowColor: const Color(0xFFFF2D55).withOpacity(0.45),
             ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.radio_button_checked_rounded, size: 22),
-                      SizedBox(width: 10),
-                      Text(
-                        'Start live stream',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF5F6D), Color(0xFFFF2D55)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Container(
+                alignment: Alignment.center,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.radio_button_checked_rounded, size: 22),
+                          SizedBox(width: 10),
+                          Text(
+                            'Start live stream',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
