@@ -60,6 +60,14 @@ class DeleteProfileEvent extends AuthEvent {}
 
 class DeleteAccountEvent extends AuthEvent {}
 
+class AuthUnauthorizedEvent extends AuthEvent {
+  final String message;
+
+  AuthUnauthorizedEvent(this.message);
+}
+
+class InitializeAuthEvent extends AuthEvent {}
+
 
 
 

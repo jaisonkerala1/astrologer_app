@@ -15,11 +15,15 @@ class AuthGateScreen extends StatefulWidget {
 }
 
 class _AuthGateScreenState extends State<AuthGateScreen> {
+  bool _initialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    // Check authentication status when the screen loads
-    context.read<AuthBloc>().add(CheckAuthStatusEvent());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      context.read<AuthBloc>().add(CheckAuthStatusEvent());
+    }
   }
 
   @override
@@ -34,7 +38,6 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
             ),
           );
         } else if (state is AuthUnauthenticatedState) {
-          // User is not authenticated, navigate to login
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const LoginScreen(),

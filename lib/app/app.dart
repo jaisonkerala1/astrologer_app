@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../core/services/api_service.dart';
 import '../core/services/language_service.dart';
 import '../core/services/status_service.dart';
 import '../features/notifications/services/notification_service.dart';
@@ -18,6 +17,8 @@ import '../features/reviews/repository/reviews_repository.dart';
 import '../features/auth/screens/auth_gate_screen.dart';
 import '../shared/theme/app_theme.dart';
 import 'routes.dart';
+import '../features/auth/bloc/auth_event.dart';
+import '../core/services/api_service.dart';
 
 class AstrologerApp extends StatefulWidget {
   final LanguageService languageService;
@@ -83,7 +84,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc(),
+            create: (context) => AuthBloc()..add(InitializeAuthEvent()),
           ),
           BlocProvider<DashboardBloc>(
             create: (context) => DashboardBloc(),

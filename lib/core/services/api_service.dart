@@ -1,7 +1,7 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
-import 'storage_service.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -9,7 +9,10 @@ class ApiService {
   ApiService._internal();
 
   late Dio _dio;
-  String? _sessionId;
+  final _unauthorizedController = StreamController<String>.broadcast();
+  bool _hasNotifiedUnauthorized = false;
+
+  Stream<String> get unauthorizedStream => _unauthorizedController.stream;
 
   void initialize() {
     _dio = Dio(BaseOptions(
@@ -19,7 +22,6 @@ class ApiService {
       headers: ApiConstants.defaultHeaders,
     ));
 
-    // Add interceptors
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
@@ -27,23 +29,25 @@ class ApiService {
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // Add auth token if available
-        // This will be implemented when we add token management
-        handler.next(options);
-      },
       onError: (error, handler) {
-        // Handle common errors
         if (error.response?.statusCode == 401) {
-          // Handle unauthorized access
-          print('Unauthorized access - redirecting to login');
+          final message = error.response?.data is Map<String, dynamic>
+              ? (error.response?.data['message'] as String?)
+              : null;
+          _notifyUnauthorized(message);
         }
         handler.next(error);
       },
     ));
   }
 
-  // GET request
+  void _notifyUnauthorized(String? message) {
+    if (!_hasNotifiedUnauthorized) {
+      _hasNotifiedUnauthorized = true;
+      _unauthorizedController.add(message ?? 'Session expired. Please log in again.');
+    }
+  }
+
   Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
@@ -53,7 +57,6 @@ class ApiService {
     }
   }
 
-  // POST request
   Future<Response> post(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.post(path, data: data, queryParameters: queryParameters);
@@ -63,7 +66,6 @@ class ApiService {
     }
   }
 
-  // PUT request
   Future<Response> put(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.put(path, data: data, queryParameters: queryParameters);
@@ -73,7 +75,6 @@ class ApiService {
     }
   }
 
-  // PATCH request
   Future<Response> patch(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.patch(path, data: data, queryParameters: queryParameters);
@@ -83,7 +84,6 @@ class ApiService {
     }
   }
 
-  // DELETE request
   Future<Response> delete(String path, {Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.delete(path, queryParameters: queryParameters);
@@ -93,13 +93,11 @@ class ApiService {
     }
   }
 
-  // Upload file
   Future<Response> uploadFile(String path, String filePath, {String fieldName = 'file'}) async {
     try {
       FormData formData = FormData.fromMap({
         fieldName: await MultipartFile.fromFile(filePath),
       });
-      
       final response = await _dio.post(path, data: formData);
       return response;
     } on DioException catch (e) {
@@ -107,7 +105,6 @@ class ApiService {
     }
   }
 
-  // POST multipart request with files
   Future<Response> postMultipart(String path, {
     Map<String, dynamic>? data,
     Map<String, File>? files,
@@ -115,19 +112,17 @@ class ApiService {
   }) async {
     try {
       Map<String, dynamic> formDataMap = {};
-      
-      // Add regular data fields
+
       if (data != null) {
         formDataMap.addAll(data);
       }
-      
-      // Add file fields
+
       if (files != null) {
         for (String key in files.keys) {
           formDataMap[key] = await MultipartFile.fromFile(files[key]!.path);
         }
       }
-      
+
       FormData formData = FormData.fromMap(formDataMap);
       final response = await _dio.post(path, data: formData, queryParameters: queryParameters);
       return response;
@@ -136,11 +131,10 @@ class ApiService {
     }
   }
 
-  // Error handling
   String _handleError(DioException error) {
     print('API Error: ${error.type} - ${error.message}');
     print('Request URL: ${error.requestOptions.uri}');
-    
+
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
         return 'Connection timeout. Make sure backend server is running on port 7566.';
@@ -163,14 +157,20 @@ class ApiService {
     }
   }
 
-  // Set auth token
   void setAuthToken(String token) {
+    _hasNotifiedUnauthorized = false;
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
-  // Clear auth token
   void clearAuthToken() {
     _dio.options.headers.remove('Authorization');
+    _hasNotifiedUnauthorized = false;
+  }
+
+  void dispose() {
+    if (!_unauthorizedController.isClosed) {
+      _unauthorizedController.close();
+    }
   }
 }
 

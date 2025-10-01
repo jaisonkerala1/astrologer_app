@@ -7,10 +7,12 @@ import '../models/auth_response_model.dart';
 import '../models/astrologer_model.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import 'dart:async';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
+  StreamSubscription<String>? _unauthorizedSubscription;
 
   AuthBloc() : super(AuthInitial()) {
     on<SendOtpEvent>(_onSendOtp);
@@ -21,6 +23,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RefreshTokenEvent>(_onRefreshToken);
     on<DeleteProfileEvent>(_onDeleteProfile);
     on<DeleteAccountEvent>(_onDeleteAccount);
+    on<InitializeAuthEvent>(_onInitializeAuth);
+    on<AuthUnauthorizedEvent>(_onUnauthorized);
     
     // Initialize storage service
     _initializeStorage();
@@ -29,6 +33,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _initializeStorage() async {
     await _storageService.initialize();
     _apiService.initialize();
+    add(InitializeAuthEvent());
+  }
+
+  Future<void> _onInitializeAuth(InitializeAuthEvent event, Emitter<AuthState> emit) async {
+    _unauthorizedSubscription?.cancel();
+    _unauthorizedSubscription = _apiService.unauthorizedStream.listen((message) {
+      add(AuthUnauthorizedEvent(message));
+    });
+  }
+
+  Future<void> _onUnauthorized(AuthUnauthorizedEvent event, Emitter<AuthState> emit) async {
+    await _clearAuthData();
+    _apiService.clearAuthToken();
+    emit(AuthUnauthenticatedState());
   }
 
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AuthState> emit) async {
@@ -190,12 +208,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       // Clear API token
       _apiService.clearAuthToken();
+      add(InitializeAuthEvent());
       
       emit(AuthLoggedOutState());
     } catch (e) {
       // Even if there's an error, we should still log out locally
       await _storageService.clearAuthData();
       _apiService.clearAuthToken();
+      add(InitializeAuthEvent());
       emit(AuthLoggedOutState());
     }
   }
@@ -268,6 +288,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Force clear ALL data (nuclear option)
       await _storageService.forceClearAllData();
       _apiService.clearAuthToken();
+      add(InitializeAuthEvent());
       
       print('AuthBloc: FORCE CLEARED ALL DATA - Fresh start!');
     } catch (e) {
@@ -370,5 +391,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       emit(AccountDeletedState(message: 'Account deletion requested. You have been logged out.'));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _unauthorizedSubscription?.cancel();
+    return super.close();
   }
 }
