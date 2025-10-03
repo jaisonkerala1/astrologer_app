@@ -5,6 +5,8 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/constants/app_constants.dart';
 import 'chat_screen.dart';
 import 'dialer_screen.dart';
+import '../services/communication_service.dart';
+import '../widgets/tab_badge.dart';
 
 class CommunicationScreen extends StatefulWidget {
   final String? initialTab;
@@ -30,9 +32,24 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Clear badges when viewing the active tab
+    final commService = Provider.of<CommunicationService>(context, listen: false);
+    if (_selectedTab == 0) {
+      // Clear missed calls badge when viewing calls tab
+      Future.delayed(const Duration(milliseconds: 500), () {
+        commService.clearMissedCalls();
+      });
+    } else if (_selectedTab == 1) {
+      // Note: Messages are cleared individually when opened
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
+    return Consumer2<ThemeService, CommunicationService>(
+      builder: (context, themeService, commService, child) {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
@@ -40,6 +57,48 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             foregroundColor: themeService.textPrimary,
+            actions: [
+              // Test badge system button (remove in production)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'test_message':
+                      commService.simulateNewMessage();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Simulated new message')),
+                      );
+                      break;
+                    case 'test_call':
+                      commService.simulateMissedCall();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Simulated missed call')),
+                      );
+                      break;
+                    case 'reset':
+                      commService.resetUnreadCounts();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Reset all badges')),
+                      );
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'test_message',
+                    child: Text('Test New Message'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'test_call',
+                    child: Text('Test Missed Call'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'reset',
+                    child: Text('Reset Badges'),
+                  ),
+                ],
+              ),
+            ],
           ),
       body: Column(
         children: [
@@ -55,7 +114,13 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedTab = 0),
+                    onTap: () {
+                      setState(() => _selectedTab = 0);
+                      // Clear missed calls badge when switching to calls tab
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        commService.clearMissedCalls();
+                      });
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
@@ -65,13 +130,12 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                             ? [themeService.cardShadow]
                             : null,
                       ),
-                      child: Text(
-                        'Calls',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _selectedTab == 0 ? themeService.primaryColor : themeService.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: TabBadge(
+                        label: 'Calls',
+                        count: commService.missedCallsCount,
+                        isActive: _selectedTab == 0,
+                        activeColor: themeService.primaryColor,
+                        inactiveColor: themeService.textSecondary,
                       ),
                     ),
                   ),
@@ -88,13 +152,12 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                             ? [themeService.cardShadow]
                             : null,
                       ),
-                      child: Text(
-                        'Messages',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _selectedTab == 1 ? themeService.primaryColor : themeService.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: TabBadge(
+                        label: 'Messages',
+                        count: commService.unreadMessagesCount,
+                        isActive: _selectedTab == 1,
+                        activeColor: themeService.primaryColor,
+                        inactiveColor: themeService.textSecondary,
                       ),
                     ),
                   ),
@@ -104,7 +167,9 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
           ),
           // Content
           Expanded(
-            child: _selectedTab == 0 ? _buildCallsList(themeService) : _buildMessagesList(themeService),
+            child: _selectedTab == 0 
+                ? _buildCallsList(themeService, commService) 
+                : _buildMessagesList(themeService, commService),
           ),
         ],
       ),
@@ -124,30 +189,17 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     );
   }
 
-  Widget _buildCallsList(ThemeService themeService) {
-    final calls = [
-      {
-        'name': 'Sarah Miller',
-        'type': 'Incoming',
-        'time': '2m ago',
-        'status': 'answered',
-        'avatar': 'SM',
-      },
-      {
-        'name': 'Raj Kumar',
-        'type': 'Missed',
-        'time': '1h ago',
-        'status': 'missed',
-        'avatar': 'RK',
-      },
-      {
-        'name': 'Anita Nair',
-        'type': 'Outgoing',
-        'time': '3h ago',
-        'status': 'outgoing',
-        'avatar': 'AN',
-      },
-    ];
+  Widget _buildCallsList(ThemeService themeService, CommunicationService commService) {
+    final calls = commService.calls;
+
+    if (calls.isEmpty) {
+      return Center(
+        child: Text(
+          'No calls yet',
+          style: TextStyle(color: themeService.textSecondary),
+        ),
+      );
+    }
 
     return ListView.builder(
       itemCount: calls.length,
@@ -229,44 +281,28 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     );
   }
 
-  Widget _buildMessagesList(ThemeService themeService) {
-    final messages = [
-      {
-        'name': 'Sarah Miller',
-        'preview': 'Thank you for the reading! When is the best time to...',
-        'time': '2m',
-        'unread': 2,
-        'avatar': 'SM',
-        'isOnline': true,
-      },
-      {
-        'name': 'Raj Kumar',
-        'preview': 'I need guidance about my career transition...',
-        'time': '1h',
-        'unread': 0,
-        'avatar': 'RK',
-        'isOnline': false,
-      },
-      {
-        'name': 'Anita Nair',
-        'preview': 'The consultation was amazing! ⭐',
-        'time': '3h',
-        'unread': 0,
-        'avatar': 'AN',
-        'isOnline': false,
-      },
-    ];
+  Widget _buildMessagesList(ThemeService themeService, CommunicationService commService) {
+    final messages = commService.messages;
+
+    if (messages.isEmpty) {
+      return Center(
+        child: Text(
+          'No messages yet',
+          style: TextStyle(color: themeService.textSecondary),
+        ),
+      );
+    }
 
     return ListView.builder(
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
-        return _buildMessageItem(message, themeService);
+        return _buildMessageItem(message, themeService, commService);
       },
     );
   }
 
-  Widget _buildMessageItem(Map<String, dynamic> message, ThemeService themeService) {
+  Widget _buildMessageItem(Map<String, dynamic> message, ThemeService themeService, CommunicationService commService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -275,7 +311,11 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         boxShadow: [themeService.cardShadow],
       ),
       child: ListTile(
-        onTap: () => _openChat(message['name']),
+        onTap: () {
+          // Mark message as read when opened
+          commService.markMessageAsRead(message['name']);
+          _openChat(message['name']);
+        },
         leading: Stack(
           children: [
             CircleAvatar(
