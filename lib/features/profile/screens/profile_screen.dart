@@ -17,7 +17,6 @@ import '../../auth/bloc/auth_state.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import 'edit_profile_screen.dart';
-import '../../earnings/screens/earnings_screen.dart';
 import '../../settings/screens/language_selection_screen.dart';
 import '../../chat/widgets/floating_chat_button.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
@@ -139,10 +138,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                       children: [
                         // Profile Stats
                         _buildProfileStats(themeService),
-                        const SizedBox(height: 24),
-                        
-                        // Earnings Section - Quick Access
-                        _buildEarningsQuickAccess(themeService),
                         const SizedBox(height: 24),
                         
                         // Profile Sections
@@ -438,103 +433,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEarningsQuickAccess(ThemeService themeService) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EarningsScreen(),
-            ),
-          );
-        },
-        borderRadius: themeService.borderRadius,
-        splashColor: themeService.successColor.withOpacity(0.15),
-        highlightColor: themeService.successColor.withOpacity(0.1),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                themeService.successColor,
-                themeService.successColor.withOpacity(0.8),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: themeService.borderRadius,
-            boxShadow: [
-              BoxShadow(
-                color: themeService.successColor.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icon container
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Earnings & Payments',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'View your income and transaction history',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Arrow icon
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_forward,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

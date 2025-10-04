@@ -7,7 +7,6 @@ import '../core/services/language_service.dart';
 import '../core/services/status_service.dart';
 import '../features/notifications/services/notification_service.dart';
 import '../features/live/services/live_stream_service.dart';
-import '../features/communication/services/communication_service.dart';
 import '../shared/theme/services/theme_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
@@ -77,9 +76,6 @@ class _AstrologerAppState extends State<AstrologerApp> {
         ),
         Provider<LiveStreamService>(
           create: (context) => LiveStreamService(),
-        ),
-        ChangeNotifierProvider<CommunicationService>(
-          create: (context) => CommunicationService(),
         ),
         ChangeNotifierProvider<ThemeService>(
           create: (context) => widget.themeService,

@@ -179,22 +179,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Build page without double animation - PageView handles transitions
-  // Bottom Nav Structure:
-  // 0: Dashboard - Overview with stats and quick actions
-  // 1: Communication - Live calls and messages (real-time)
-  // 2: Heal - Community and content feature
-  // 3: Consultations - Scheduled/pre-booked appointments (calendar-based)
-  // 4: Profile - Account settings and earnings
   Widget _buildPageWithAnimation(int index) {
     switch (index) {
       case 0:
         return _buildDashboardContent();
       case 1:
-        return const CommunicationScreen();
+        return const ConsultationsScreen();
       case 2:
         return const HealScreen();
       case 3:
-        return const ConsultationsScreen();
+        return const EarningsScreen();
       case 4:
         return ProfileScreen(onProfileUpdated: refreshUserData);
       default:
@@ -354,8 +348,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     label: l10n.dashboard,
                    ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.phone_outlined),
-                    label: 'Communication',
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: l10n.consultations,
                   ),
                   BottomNavigationBarItem(
                     icon: SvgPicture.asset(
@@ -369,8 +363,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     label: l10n.heal,
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.calendar_today_outlined),
-                    label: l10n.consultations,
+                    icon: const Icon(Icons.trending_up_outlined),
+                    label: l10n.earnings,
                   ),
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.account_circle_outlined),
@@ -517,12 +511,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                             onTap: () {
                               // Navigate to earnings screen
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const EarningsScreen(),
-                                ),
-                              );
+                              navigateToTab(3); // Earnings tab
                             },
                           ),
                           const SizedBox(height: 16),
