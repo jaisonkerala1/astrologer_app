@@ -6,6 +6,7 @@ import '../models/consultation_model.dart';
 import '../screens/consultation_analytics_screen.dart';
 import '../screens/consultation_detail_screen.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
+import '../../earnings/screens/earnings_screen.dart';
 
 class ConsultationStatsWidget extends StatelessWidget {
   final int todayCount;
@@ -272,13 +273,11 @@ class ConsultationStatsWidget extends StatelessWidget {
         ),
       );
     } else if (subtitle == 'Earnings') {
-      // Navigate to earnings tab in main dashboard
+      // Navigate to earnings screen directly
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const DashboardScreen(
-            initialTabIndex: 3, // Earnings tab (index 3)
-          ),
+          builder: (context) => const EarningsScreen(),
         ),
       );
     }
