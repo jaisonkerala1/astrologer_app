@@ -8,7 +8,6 @@ import '../core/services/status_service.dart';
 import '../features/notifications/services/notification_service.dart';
 import '../features/live/services/live_stream_service.dart';
 import '../features/communication/services/communication_service.dart';
-import '../features/onboarding/services/tutorial_service.dart';
 import '../shared/theme/services/theme_service.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
@@ -28,7 +27,6 @@ class AstrologerApp extends StatefulWidget {
   final NotificationService notificationService;
   final LiveStreamService liveStreamService;
   final ThemeService themeService;
-  final TutorialService tutorialService;
   
   const AstrologerApp({
     super.key, 
@@ -37,7 +35,6 @@ class AstrologerApp extends StatefulWidget {
     required this.notificationService,
     required this.liveStreamService,
     required this.themeService,
-    required this.tutorialService,
   });
 
   @override
@@ -86,9 +83,6 @@ class _AstrologerAppState extends State<AstrologerApp> {
         ),
         ChangeNotifierProvider<ThemeService>(
           create: (context) => widget.themeService,
-        ),
-        ChangeNotifierProvider<TutorialService>(
-          create: (context) => widget.tutorialService,
         ),
       ],
       child: MultiBlocProvider(

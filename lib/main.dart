@@ -9,7 +9,6 @@ import 'core/services/status_service.dart';
 import 'core/services/app_restart_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/live/services/live_stream_service.dart';
-import 'features/onboarding/services/tutorial_service.dart';
 import 'shared/theme/services/theme_service.dart';
 import 'app/app.dart';
 import 'shared/theme/app_theme.dart';
@@ -40,8 +39,6 @@ void main() async {
   final liveStreamService = LiveStreamService();
   final themeService = ThemeService();
   await themeService.initialize();
-  final tutorialService = TutorialService();
-  await tutorialService.initialize();
   
   print('Main: Language service initialized with locale: ${languageService.currentLocale}');
   
@@ -58,7 +55,6 @@ void main() async {
       notificationService: notificationService,
       liveStreamService: liveStreamService,
       themeService: themeService,
-      tutorialService: tutorialService,
     ),
   ));
 }
