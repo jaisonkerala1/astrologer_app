@@ -71,266 +71,348 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(
-            'Terms of Service',
+            'Astrologer Terms of Service',
             'Last updated: January 1, 2025',
             Icons.description_outlined,
             themeService,
           ),
           const SizedBox(height: 24),
           
-          // CRITICAL DISCLAIMER - PROMINENT
-          _buildCriticalDisclaimer(themeService),
+          // CRITICAL ACKNOWLEDGMENT - PROMINENT
+          _buildCriticalAcknowledgment(themeService),
           const SizedBox(height: 24),
           
           _buildSection(
             '1. Acceptance of Terms',
-            'By accessing and using this application ("Platform"), you accept and agree to be bound by these terms and conditions. If you do not agree to these terms, please do not use the Platform. Your continued use of the Platform constitutes acceptance of any modifications to these terms.',
+            'By registering and using this Platform as an astrologer ("Service Provider"), you accept and agree to be bound by these Astrologer Terms of Service. These terms constitute a legally binding agreement between you (the astrologer) and AXIOM LEAP. If you do not agree to these terms, you must not register or use the Platform.\n\n'
+            'Your continued use of the Platform constitutes acceptance of any modifications to these terms.',
             themeService,
           ),
           
-          _buildSection(
-            '2. Use License',
-            'Permission is granted to temporarily download one copy of the materials on this Platform for personal, non-commercial transitory viewing only. This license shall automatically terminate if you violate any of these restrictions and may be terminated by AXIOM LEAP at any time.',
-            themeService,
-          ),
-          
-          // NEW: PLATFORM NATURE
+          // NEW: INDEPENDENT CONTRACTOR STATUS
           _buildHighlightedSection(
-            '2A. Platform Nature & Intermediary Status',
-            'AXIOM LEAP operates as an intermediary platform under the Information Technology Act, 2000, Section 79. We are a technology service provider that:\n\n'
-            '• Facilitates connections between users and independent astrologers\n'
-            '• Provides a digital marketplace for astrology services\n'
-            '• Does NOT provide astrology services directly\n'
-            '• Does NOT employ astrologers as staff members\n'
-            '• Acts solely as a technical facilitator and aggregator\n'
-            '• Does NOT endorse, verify, or guarantee any astrologer or their predictions\n\n'
-            'All astrology services are provided by independent third-party professionals who register on our Platform.',
+            '2. Independent Contractor Relationship',
+            'PROFESSIONAL INDEPENDENCE:\n\n'
+            'You acknowledge and agree that:\n\n'
+            '• You are an INDEPENDENT CONTRACTOR, not an employee, partner, or agent of AXIOM LEAP\n'
+            '• You provide astrology services in your own name and capacity\n'
+            '• You have complete control over how you provide your services\n'
+            '• You set your own rates, schedules, and service methods\n'
+            '• You are responsible for your own taxes, insurance, and professional obligations\n'
+            '• No employment relationship exists between you and the Platform\n'
+            '• You have no authority to bind or represent AXIOM LEAP\n'
+            '• You maintain your own independent business\n\n'
+            'PLATFORM\'S ROLE:\n'
+            'AXIOM LEAP operates as an intermediary platform under IT Act 2000, Section 79. We:\n'
+            '• Provide technology to connect you with users seeking astrology services\n'
+            '• Facilitate payments and communication\n'
+            '• Do NOT control, supervise, or direct your professional services\n'
+            '• Do NOT validate or certify your predictions or methods\n'
+            '• Act solely as a marketplace facilitator',
             themeService,
-            Icons.info_outline,
+            Icons.business_outlined,
           ),
           
-          // NEW: ASTROLOGER LIABILITY - MOST CRITICAL
+          // NEW: ASTROLOGER'S PROFESSIONAL RESPONSIBILITY - MOST CRITICAL
           _buildHighlightedSection(
-            '2B. Astrologer Services & Liability',
-            'INDEPENDENT PROFESSIONAL SERVICES:\n'
-            'All astrologers on this Platform are independent professionals who are solely and exclusively responsible for:\n\n'
-            '• Their predictions, readings, interpretations, and opinions\n'
-            '• The accuracy, quality, and reliability of their services\n'
-            '• Professional advice, guidance, and recommendations provided\n'
-            '• Methods, techniques, and calculations used in their practice\n'
-            '• Any consequences arising from their services or advice\n'
-            '• Compliance with applicable professional and ethical standards\n'
-            '• Their own professional liability and insurance\n\n'
-            'PLATFORM\'S LIMITED ROLE:\n'
-            'The Platform:\n'
-            '• Has NO control over the content of astrology services\n'
-            '• Does NOT validate, verify, or certify predictions or advice\n'
-            '• Does NOT supervise astrologer-user interactions\n'
-            '• Is NOT responsible for the quality or accuracy of services\n'
-            '• Cannot guarantee any outcomes or results\n'
-            '• Does NOT participate in service delivery\n\n'
-            'Users engage with astrologers entirely at their own discretion and risk. The Platform is not liable for any astrologer\'s actions, advice, or predictions.',
+            '3. Your Professional Responsibility & Liability',
+            'FULL PROFESSIONAL LIABILITY:\n\n'
+            'As an independent astrology professional, YOU ARE SOLELY AND EXCLUSIVELY RESPONSIBLE FOR:\n\n'
+            'SERVICE QUALITY:\n'
+            '• All predictions, readings, interpretations, and opinions you provide\n'
+            '• The accuracy, quality, and reliability of your astrology services\n'
+            '• Professional advice, guidance, and recommendations you give\n'
+            '• Methods, techniques, and calculations you use in your practice\n'
+            '• Birth chart calculations and astrological analysis\n'
+            '• Any remedies, solutions, or actions you suggest\n\n'
+            'LEGAL LIABILITY:\n'
+            '• Any and all consequences arising from your services or advice\n'
+            '• Professional negligence or malpractice claims\n'
+            '• Disputes with users regarding your services\n'
+            '• Compliance with applicable laws and professional standards\n'
+            '• Maintaining appropriate professional liability insurance (recommended)\n'
+            '• Any legal action brought against you by users\n\n'
+            'ETHICAL OBLIGATIONS:\n'
+            '• Providing honest, genuine, and professional services\n'
+            '• Not making guarantees about specific outcomes\n'
+            '• Respecting user privacy and confidentiality\n'
+            '• Not exploiting vulnerable users\n'
+            '• Following ethical astrology practices\n\n'
+            'PLATFORM DISCLAIMER:\n'
+            'The Platform has NO control over, responsibility for, or liability regarding your professional services. Users engage with YOU directly, and all liability rests with YOU.',
             themeService,
-            Icons.warning_amber_outlined,
+            Icons.gavel_outlined,
           ),
           
-          // NEW: NATURE OF ASTROLOGY
+          // NEW: INDEMNIFICATION - PROTECTING THE PLATFORM
           _buildHighlightedSection(
-            '2C. Nature of Astrology Services',
-            'IMPORTANT UNDERSTANDING:\n'
-            'Users acknowledge and understand that:\n\n'
-            '• Astrology is a BELIEF-BASED and INTERPRETATIVE practice\n'
-            '• Predictions are OPINIONS and INTERPRETATIONS, not facts or guarantees\n'
-            '• Results depend on individual belief, faith, and interpretation\n'
-            '• Services are for GUIDANCE and ENTERTAINMENT purposes only\n'
-            '• Astrological advice is NOT a substitute for professional medical, legal, financial, or psychological advice\n'
-            '• No astrologer can guarantee specific outcomes or events\n'
-            '• Past performance or testimonials do not guarantee future results\n\n'
-            'The Platform provides NO WARRANTY regarding:\n'
-            '• Accuracy of predictions or readings\n'
-            '• Effectiveness of remedies or solutions\n'
-            '• Outcomes of following astrological advice\n'
-            '• Timing or occurrence of predicted events',
+            '4. Indemnification & Hold Harmless',
+            'MANDATORY INDEMNIFICATION:\n\n'
+            'YOU AGREE TO INDEMNIFY, DEFEND, AND HOLD HARMLESS:\n'
+            '• AXIOM LEAP and its directors, officers, employees, and affiliates\n'
+            '• From and against ANY and ALL claims, damages, losses, liabilities, costs, and expenses (including legal fees)\n\n'
+            'ARISING FROM OR RELATED TO:\n'
+            '• Your astrology services, predictions, or advice\n'
+            '• Any user complaints or disputes regarding your services\n'
+            '• Your breach of these terms or applicable laws\n'
+            '• Your professional negligence or misconduct\n'
+            '• Any injury, loss, or damage suffered by users due to your services\n'
+            '• Your violation of user rights or data protection laws\n'
+            '• Any claims that your services were inaccurate or harmful\n'
+            '• Tax obligations or employment-related claims\n\n'
+            'LEGAL PROCEEDINGS:\n'
+            '• You will defend AXIOM LEAP in any legal action brought against us due to your services\n'
+            '• You will pay all settlements, judgments, and legal costs\n'
+            '• AXIOM LEAP has the right to participate in defense at your expense\n\n'
+            'This indemnification survives termination of your account.',
             themeService,
-            Icons.psychology_outlined,
+            Icons.shield_outlined,
           ),
           
-          // NEW: USER ACKNOWLEDGMENT
+          // NEW: SERVICE STANDARDS
+          _buildSection(
+            '5. Service Standards & Code of Conduct',
+            'PROFESSIONAL STANDARDS:\n\n'
+            'You agree to:\n\n'
+            'QUALITY COMMITMENTS:\n'
+            '• Provide professional, accurate, and timely services\n'
+            '• Honor all accepted consultation bookings\n'
+            '• Respond to user inquiries promptly\n'
+            '• Maintain professional behavior at all times\n'
+            '• Keep your availability calendar updated\n'
+            '• Complete consultations within scheduled time\n\n'
+            'PROHIBITED CONDUCT:\n'
+            'You must NOT:\n'
+            '• Make guaranteed predictions about specific outcomes\n'
+            '• Provide medical, legal, or financial advice (unless licensed)\n'
+            '• Exploit vulnerable or desperate users\n'
+            '• Demand additional payments outside the Platform\n'
+            '• Share user contact information with third parties\n'
+            '• Engage in fraudulent or deceptive practices\n'
+            '• Harass, abuse, or threaten users\n'
+            '• Post false credentials or qualifications\n'
+            '• Use bots or automated responses\n'
+            '• Solicit users to move off-platform\n\n'
+            'COMPLIANCE:\n'
+            '• Follow all applicable laws and regulations\n'
+            '• Respect user privacy and data protection laws\n'
+            '• Maintain professional ethics\n'
+            '• Cooperate with Platform investigations',
+            themeService,
+          ),
+          
+          // NEW: PAYMENT TERMS
+          _buildSection(
+            '6. Payment Terms & Commission',
+            'PAYMENT STRUCTURE:\n\n'
+            'COMMISSION:\n'
+            '• The Platform charges a service fee/commission on each consultation\n'
+            '• Commission rates are displayed in your dashboard\n'
+            '• Commission covers technology, payment processing, and support\n'
+            '• Rates may be updated with 30 days notice\n\n'
+            'PAYOUTS:\n'
+            '• Earnings are credited to your wallet after consultation completion\n'
+            '• Minimum withdrawal threshold may apply\n'
+            '• Withdrawals processed within 7-10 business days\n'
+            '• You are responsible for providing valid bank details\n'
+            '• Transaction fees may apply to withdrawals\n\n'
+            'REFUNDS:\n'
+            '• User refund requests are evaluated case-by-case\n'
+            '• Justified refunds (technical issues) are processed without affecting you\n'
+            '• Service quality disputes may result in refunds deducted from your earnings\n'
+            '• Excessive refund requests may lead to account review\n\n'
+            'TAXES:\n'
+            '• You are solely responsible for all tax obligations\n'
+            '• You must report income and pay taxes as per Indian laws\n'
+            '• Platform does NOT withhold taxes (you are not our employee)\n'
+            '• You may need to provide PAN/GST details',
+            themeService,
+          ),
+          
+          // NEW: DATA HANDLING BY ASTROLOGERS
           _buildHighlightedSection(
-            '2D. User Acknowledgment & Consent',
-            'BY USING THIS PLATFORM, YOU EXPRESSLY ACKNOWLEDGE AND AGREE THAT:\n\n'
-            '1. You are engaging with INDEPENDENT ASTROLOGERS, not the Platform\n'
-            '2. The Platform is NOT RESPONSIBLE for any astrologer\'s advice, predictions, or actions\n'
-            '3. You use all services ENTIRELY AT YOUR OWN RISK\n'
-            '4. You will NOT make critical life decisions based solely on astrological predictions\n'
-            '5. You will seek appropriate professional advice (medical, legal, financial) when needed\n'
-            '6. The Platform is NOT LIABLE for any direct, indirect, incidental, consequential, or punitive damages\n'
-            '7. You release the Platform from all claims arising from astrologer services\n'
-            '8. You understand the speculative and belief-based nature of astrology\n\n'
-            'This acknowledgment is a fundamental condition of using the Platform.',
+            '7. User Data Handling & Privacy Obligations',
+            'DATA YOU RECEIVE:\n\n'
+            'Through the Platform, you receive user personal information including:\n'
+            '• Names and contact details\n'
+            '• Birth details (date, time, place)\n'
+            '• Questions and consultation history\n'
+            '• Communication with users\n\n'
+            'YOUR OBLIGATIONS:\n\n'
+            'You MUST:\n'
+            '• Use data ONLY for providing astrology services\n'
+            '• Maintain strict confidentiality of user information\n'
+            '• Protect data with reasonable security measures\n'
+            '• Delete user data when no longer needed\n'
+            '• Comply with IT Act 2000 Section 43A and data protection laws\n'
+            '• Not share, sell, or misuse user data\n'
+            '• Not contact users outside the Platform without consent\n'
+            '• Not use data for marketing or other purposes\n\n'
+            'YOU MUST NOT:\n'
+            '• Store user data on insecure devices or platforms\n'
+            '• Share user information with third parties\n'
+            '• Use user data for any purpose other than consultations\n'
+            '• Retain data longer than necessary\n\n'
+            'CONSEQUENCES:\n'
+            'Violation of data privacy obligations may result in:\n'
+            '• Immediate account termination\n'
+            '• Legal action under IT Act and other laws\n'
+            '• You bearing full liability for data breaches\n'
+            '• Criminal prosecution for serious violations',
             themeService,
-            Icons.check_circle_outline,
+            Icons.privacy_tip_outlined,
           ),
           
           _buildSection(
-            '3. Disclaimer (Enhanced)',
-            'COMPREHENSIVE DISCLAIMER:\n\n'
-            'The Platform and all materials are provided on an "AS IS" and "AS AVAILABLE" basis. We make NO WARRANTIES, expressed or implied, including but not limited to:\n\n'
-            '• Merchantability or fitness for a particular purpose\n'
-            '• Accuracy, reliability, or completeness of any content\n'
-            '• Uninterrupted or error-free service\n'
-            '• Quality or accuracy of astrologer services\n'
-            '• Outcomes or results from using the Platform\n\n'
-            'SPECIFIC ASTROLOGY DISCLAIMERS:\n'
-            '• We do NOT guarantee the accuracy of any astrological predictions\n'
-            '• We do NOT endorse any astrologer\'s methods or advice\n'
-            '• We are NOT responsible for user-astrologer disputes\n'
-            '• We do NOT verify astrologers\' qualifications or credentials\n'
-            '• We do NOT control the quality of services provided\n\n'
-            'We hereby disclaim and negate all warranties and conditions, and expressly exclude liability for any astrologer\'s predictions, advice, or services.',
-            themeService,
-          ),
-          
-          _buildSection(
-            '4. Limitation of Liability (Enhanced)',
-            'MAXIMUM LIABILITY PROTECTION:\n\n'
-            'TO THE FULLEST EXTENT PERMITTED BY LAW:\n\n'
-            'The Platform, its operators, directors, employees, and affiliates SHALL NOT BE LIABLE for any damages whatsoever, including but not limited to:\n\n'
-            '• Direct, indirect, incidental, consequential, or punitive damages\n'
-            '• Loss of profits, data, revenue, or business opportunities\n'
-            '• Emotional distress or psychological harm\n'
-            '• Financial losses from following astrological advice\n'
-            '• Personal decisions made based on predictions\n'
-            '• Damages arising from astrologer misconduct or negligence\n'
-            '• Disputes between users and astrologers\n'
-            '• Service interruptions or technical failures\n'
-            '• Unauthorized access or data breaches\n\n'
-            'This limitation applies even if we have been notified of the possibility of such damages. Our total liability, if any, shall not exceed the amount you paid to the Platform in the preceding 30 days.\n\n'
-            'Some jurisdictions do not allow limitation of liability, so these limitations may not apply to you.',
+            '8. Intellectual Property',
+            'YOUR CONTENT:\n'
+            '• You retain ownership of your profile content, photos, and descriptions\n'
+            '• By uploading content, you grant AXIOM LEAP a license to display it on the Platform\n'
+            '• You represent that you own or have rights to all content you upload\n'
+            '• You are responsible for not infringing others\' intellectual property\n\n'
+            'PLATFORM PROPERTY:\n'
+            '• AXIOM LEAP owns all Platform technology, code, and features\n'
+            '• You may not copy, reverse engineer, or replicate Platform functionality\n'
+            '• Platform trademarks and branding remain our property\n'
+            '• You may use Platform branding only as permitted',
             themeService,
           ),
           
           _buildSection(
-            '5. Accuracy of Materials',
-            'The materials appearing on this Platform, including astrologer profiles, descriptions, and user reviews, could include technical, typographical, or photographic errors. We do not warrant that any materials are accurate, complete, or current. We may make changes to materials at any time without notice. We do not commit to updating materials.',
+            '9. Account Suspension & Termination',
+            'PLATFORM\'S RIGHT TO TERMINATE:\n\n'
+            'We may suspend or terminate your account:\n\n'
+            'IMMEDIATE TERMINATION (without notice) for:\n'
+            '• Fraudulent or deceptive practices\n'
+            '• Serious misconduct or user harassment\n'
+            '• Violation of data privacy obligations\n'
+            '• Criminal activity or illegal services\n'
+            '• Multiple user complaints about service quality\n'
+            '• Breach of professional standards\n\n'
+            'WITH NOTICE for:\n'
+            '• Repeated minor violations\n'
+            '• Poor service ratings or excessive refunds\n'
+            '• Inactive account (no services for 6+ months)\n'
+            '• Non-compliance with Platform policies\n\n'
+            'YOUR RIGHT TO TERMINATE:\n'
+            '• You may close your account at any time\n'
+            '• Must fulfill pending consultations before closure\n'
+            '• Pending payments will be processed\n'
+            '• Data retention as per legal requirements\n\n'
+            'CONSEQUENCES OF TERMINATION:\n'
+            '• Loss of access to Platform and earnings dashboard\n'
+            '• Pending withdrawals processed (if no disputes)\n'
+            '• User data must be deleted\n'
+            '• Indemnification obligations survive termination',
             themeService,
           ),
           
           _buildSection(
-            '6. Links to Third-Party Sites',
-            'We have not reviewed all sites linked to our Platform and are not responsible for the contents of any such linked site. The inclusion of any link does not imply endorsement by us. Use of any linked website is at the user\'s own risk.',
-            themeService,
-          ),
-          
-          _buildSection(
-            '7. Modifications to Terms',
-            'We reserve the right to revise these terms of service at any time without prior notice. By using this Platform, you agree to be bound by the then-current version of these terms. We encourage you to periodically review these terms. Your continued use after modifications constitutes acceptance of the revised terms.',
+            '10. Limitation of Platform Liability',
+            'PLATFORM\'S LIMITED LIABILITY:\n\n'
+            'TO THE MAXIMUM EXTENT PERMITTED BY LAW:\n\n'
+            '• AXIOM LEAP provides the Platform "AS IS" without warranties\n'
+            '• We do NOT guarantee uninterrupted service or freedom from errors\n'
+            '• We are NOT responsible for disputes between you and users\n'
+            '• We are NOT liable for lost earnings due to technical issues\n'
+            '• We do NOT validate your qualifications or service quality\n'
+            '• Our total liability to you shall not exceed the fees paid to you in the preceding 30 days\n\n'
+            'NO LIABILITY FOR:\n'
+            '• User complaints or negative reviews\n'
+            '• Service quality disputes\n'
+            '• Changes to Platform features or commission rates\n'
+            '• Account suspension or termination\n'
+            '• Third-party payment processor issues\n'
+            '• Data breaches on your end\n'
+            '• Your professional liability or legal costs',
             themeService,
           ),
           
           // NEW: GRIEVANCE REDRESSAL
           _buildHighlightedSection(
-            '8. Grievance Redressal Mechanism',
-            'COMPLIANCE WITH IT ACT 2000:\n\n'
-            'In accordance with the Information Technology Act, 2000 and Intermediary Guidelines and Digital Media Ethics Code Rules, 2021, we have appointed a Grievance Officer to address complaints.\n\n'
-            'GRIEVANCE OFFICER DETAILS:\n'
+            '11. Grievance Redressal & Dispute Resolution',
+            'FOR ASTROLOGER COMPLAINTS:\n\n'
+            'If you have concerns about the Platform:\n\n'
+            'GRIEVANCE OFFICER:\n'
             'Name: Grievance Redressal Officer\n'
             'Company: AXIOM LEAP\n'
             'Email: grievance@axiomleap.com\n'
             'Support Email: support@axiomleap.com\n\n'
-            'COMPLAINT PROCESS:\n'
+            'PROCESS:\n'
             '• Submit complaints via email with details\n'
-            '• Include your user ID and issue description\n'
-            '• We will acknowledge receipt within 24 hours\n'
-            '• Resolution will be provided within 15 days as per IT Act requirements\n\n'
-            'For urgent matters, you may also contact: support@axiomleap.com',
+            '• Include your astrologer ID and issue description\n'
+            '• Acknowledgment within 24 hours\n'
+            '• Resolution within 15 days (as per IT Act 2000)\n\n'
+            'USER COMPLAINTS AGAINST YOU:\n'
+            '• Users may file complaints about your services\n'
+            '• You will be notified and given opportunity to respond\n'
+            '• Platform may investigate and request information\n'
+            '• Repeated complaints may lead to account action\n'
+            '• Platform decisions on complaints are final\n\n'
+            'ARBITRATION:\n'
+            '• Disputes with Platform resolved through arbitration\n'
+            '• Governed by Indian Arbitration and Conciliation Act, 1996\n'
+            '• Arbitration in [Your City], India\n'
+            '• Language: English',
             themeService,
             Icons.support_agent_outlined,
           ),
           
-          // NEW: PROHIBITED USES
           _buildSection(
-            '9. Prohibited Uses',
-            'You agree NOT to use the Platform for:\n\n'
-            '• Any unlawful purpose or in violation of applicable laws\n'
-            '• Harassing, abusing, or threatening astrologers or other users\n'
-            '• Posting false, misleading, or defamatory content\n'
-            '• Attempting to gain unauthorized access to the Platform\n'
-            '• Reverse engineering or copying Platform features\n'
-            '• Commercial purposes without written consent\n'
-            '• Distributing viruses or harmful code\n'
-            '• Impersonating others or providing false information\n'
-            '• Violating intellectual property rights\n\n'
-            'Violation of these terms may result in immediate account termination and legal action.',
-            themeService,
-          ),
-          
-          // NEW: REFUND & DISPUTE POLICY
-          _buildSection(
-            '10. Refund & Dispute Resolution',
-            'REFUND POLICY:\n'
-            '• Refund requests must be submitted within 24 hours of service\n'
-            '• Each case is evaluated individually based on circumstances\n'
-            '• Technical failures qualify for refunds; service dissatisfaction may not\n'
-            '• Refunds are processed within 7-10 business days if approved\n\n'
-            'DISPUTE RESOLUTION:\n'
-            '• User-astrologer disputes should be resolved directly first\n'
-            '• Platform may offer mediation but is not obligated to do so\n'
-            '• Platform\'s mediation role is facilitative only, not binding\n'
-            '• Platform decisions on disputes are final\n\n'
-            'ARBITRATION:\n'
-            '• Disputes with the Platform shall be resolved through arbitration in accordance with Indian Arbitration and Conciliation Act, 1996\n'
-            '• Arbitration shall be conducted in [Your City], India\n'
-            '• Language of arbitration: English',
+            '12. Modifications to Terms',
+            'We reserve the right to modify these terms at any time. Changes may include:\n\n'
+            '• Commission rate adjustments\n'
+            '• Policy updates and new requirements\n'
+            '• Feature additions or removals\n'
+            '• Compliance with new laws\n\n'
+            'NOTIFICATION:\n'
+            '• Material changes will be notified via email and Platform notification\n'
+            '• 30 days notice for commission changes\n'
+            '• Continued use after changes constitutes acceptance\n'
+            '• If you disagree, you may terminate your account\n\n'
+            'You are responsible for regularly reviewing these terms.',
             themeService,
           ),
           
           _buildSection(
-            '11. Company Information',
+            '13. Company Information',
             'This Platform is operated by:\n\n'
             'Company Name: AXIOM LEAP\n'
             'Business Type: Technology Service Provider / Intermediary Platform\n'
             'Primary Contact: support@axiomleap.com\n'
             'Grievance Officer: grievance@axiomleap.com\n'
             'Website: www.axiomleap.com\n\n'
-            'For legal notices, correspondence, or official communication, please contact us at the above email addresses. We are committed to addressing your concerns promptly and professionally.',
+            'For professional queries, payments, or support, contact us at the above emails.',
             themeService,
           ),
           
           _buildSection(
-            '12. Governing Law & Jurisdiction',
+            '14. Governing Law & Jurisdiction',
             'APPLICABLE LAW:\n'
-            'These terms and conditions are governed by and construed in accordance with the laws of India, including but not limited to:\n\n'
+            'These terms are governed by the laws of India, including:\n\n'
             '• Information Technology Act, 2000 and amendments\n'
-            '• Intermediary Guidelines and Digital Media Ethics Code Rules, 2021\n'
-            '• Consumer Protection Act, 2019\n'
             '• Indian Contract Act, 1872\n'
-            '• Other applicable Indian laws and regulations\n\n'
+            '• Income Tax Act, 1961\n'
+            '• Consumer Protection Act, 2019\n'
+            '• Other applicable Indian laws\n\n'
             'JURISDICTION:\n'
-            '• Exclusive jurisdiction lies with the courts of [Your City], India\n'
-            '• Any legal proceedings must be initiated in these courts only\n'
-            '• You consent to the personal jurisdiction of these courts\n\n'
+            '• Exclusive jurisdiction: Courts of [Your City], India\n'
+            '• All legal proceedings must be in these courts\n'
+            '• You consent to jurisdiction of these courts\n\n'
             'COMPLIANCE:\n'
-            'We comply with all applicable Indian laws regarding data protection, consumer rights, and intermediary obligations.',
+            '• You must comply with all Indian laws\n'
+            '• Professional licensing requirements (if applicable)\n'
+            '• Tax obligations under Indian tax laws\n'
+            '• Data protection and privacy laws',
             themeService,
           ),
           
           _buildSection(
-            '13. Intellectual Property Rights',
-            'All content on the Platform, including but not limited to text, graphics, logos, icons, images, audio clips, video clips, and software, is the property of AXIOM LEAP or its content suppliers and is protected by Indian and international copyright, trademark, and other intellectual property laws.\n\n'
-            'You may not reproduce, modify, distribute, or exploit any content without express written permission.',
-            themeService,
-          ),
-          
-          _buildSection(
-            '14. Severability',
-            'If any provision of these terms is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, such provision shall be modified to the minimum extent necessary to make it enforceable, or if it cannot be made enforceable, it shall be severed from these terms. The remaining provisions shall continue in full force and effect.',
-            themeService,
-          ),
-          
-          _buildSection(
-            '15. Entire Agreement',
-            'These terms of service, together with our Privacy Policy and any other legal notices or policies published by us on the Platform, constitute the entire agreement between you and AXIOM LEAP regarding the use of the Platform and supersede all prior agreements and understandings.',
+            '15. Severability & Entire Agreement',
+            'SEVERABILITY:\n'
+            'If any provision is held invalid or unenforceable, it will be modified to the minimum extent necessary or severed. Remaining provisions remain in full effect.\n\n'
+            'ENTIRE AGREEMENT:\n'
+            'These terms, together with our Privacy Policy and other Platform policies, constitute the entire agreement between you and AXIOM LEAP regarding your use of the Platform as an astrologer.',
             themeService,
           ),
           
@@ -348,7 +430,7 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(
-            'Privacy Policy',
+            'Astrologer Privacy Policy',
             'Last updated: January 1, 2025',
             Icons.privacy_tip_outlined,
             themeService,
@@ -357,287 +439,328 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           
           _buildSection(
             'Introduction',
-            'AXIOM LEAP ("we", "our", "us") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, store, and protect your data when you use our Platform as an intermediary connecting users with independent astrologers.\n\n'
-            'By using our Platform, you consent to the data practices described in this policy.',
+            'AXIOM LEAP ("we", "our", "us") is committed to protecting the privacy of astrologers who use our Platform. This Privacy Policy explains how we collect, use, store, and protect YOUR personal information as a service provider on our Platform.\n\n'
+            'By registering as an astrologer, you consent to the data practices described in this policy.',
             themeService,
           ),
           
           _buildSection(
-            '1. Information We Collect',
-            'PERSONAL INFORMATION:\n'
-            'We collect information you provide directly to us, including:\n\n'
-            '• Account Information: Name, email address, phone number, date of birth, profile photo\n'
-            '• Birth Details: Date, time, and place of birth (for astrology services)\n'
-            '• Identity Verification: Government ID, professional certificates (for astrologers)\n'
-            '• Payment Information: Payment method details, transaction history\n'
-            '• Communication Data: Messages, reviews, ratings, feedback\n'
-            '• Preferences: Language, notification settings, service preferences\n\n'
-            'AUTOMATICALLY COLLECTED INFORMATION:\n'
-            '• Device information (device type, operating system, unique identifiers)\n'
-            '• Usage data (features accessed, time spent, interaction patterns)\n'
-            '• Location data (with your permission)\n'
-            '• Log data (IP address, browser type, access times)\n'
-            '• Cookies and tracking technologies',
+            '1. Information We Collect from Astrologers',
+            'REGISTRATION & PROFILE INFORMATION:\n'
+            '• Full name, date of birth, gender\n'
+            '• Email address and phone number\n'
+            '• Profile photo and bio\n'
+            '• Professional qualifications and experience\n'
+            '• Specializations and expertise areas\n'
+            '• Languages spoken\n'
+            '• Service rates and availability\n\n'
+            'IDENTITY VERIFICATION:\n'
+            '• Government-issued ID (Aadhaar, PAN, etc.)\n'
+            '• Professional certificates or credentials\n'
+            '• Background verification documents\n'
+            '• Address proof\n\n'
+            'FINANCIAL INFORMATION:\n'
+            '• Bank account details for payouts\n'
+            '• PAN card for tax purposes\n'
+            '• GST number (if applicable)\n'
+            '• Transaction history and earnings\n'
+            '• Withdrawal requests and payment details\n\n'
+            'SERVICE DATA:\n'
+            '• Consultation history and records\n'
+            '• User communications (chat, call logs)\n'
+            '• Service ratings and reviews\n'
+            '• Response times and availability\n'
+            '• Refund requests and disputes\n\n'
+            'DEVICE & USAGE DATA:\n'
+            '• Device information (type, OS, identifiers)\n'
+            '• App usage patterns and session duration\n'
+            '• Location data (with permission)\n'
+            '• Login times and IP addresses',
             themeService,
-          ),
-          
-          // NEW: DATA SHARING WITH ASTROLOGERS
-          _buildHighlightedSection(
-            '2. Data Shared with Astrologers',
-            'IMPORTANT DISCLOSURE:\n\n'
-            'As an intermediary platform, we share certain user information with astrologers to facilitate services:\n\n'
-            'INFORMATION SHARED:\n'
-            '• Your name and basic profile information\n'
-            '• Birth details (date, time, place) for chart preparation\n'
-            '• Contact information for service delivery\n'
-            '• Questions or concerns you submit\n'
-            '• Previous consultation history (with that astrologer)\n\n'
-            'ASTROLOGER DATA HANDLING:\n'
-            '• Astrologers are INDEPENDENT THIRD PARTIES\n'
-            '• Each astrologer has their own data practices\n'
-            '• We are NOT RESPONSIBLE for how astrologers use or store your data\n'
-            '• Astrologers must comply with applicable privacy laws independently\n'
-            '• We recommend reviewing astrologer-specific policies\n\n'
-            'USER CONSENT:\n'
-            'By using our services, you explicitly consent to sharing this information with astrologers for service delivery purposes.',
-            themeService,
-            Icons.share_outlined,
           ),
           
           _buildSection(
-            '3. How We Use Your Information',
-            'We use collected information for the following purposes:\n\n'
-            'SERVICE PROVISION:\n'
-            '• Facilitate connections between you and astrologers\n'
-            '• Process and manage consultations and bookings\n'
-            '• Enable communication between users and astrologers\n'
-            '• Process payments and maintain transaction records\n'
-            '• Provide customer support and resolve disputes\n\n'
+            '2. How We Use Your Information',
+            'ACCOUNT MANAGEMENT:\n'
+            '• Create and maintain your astrologer profile\n'
+            '• Verify your identity and credentials\n'
+            '• Display your services to users\n'
+            '• Process your availability and bookings\n\n'
+            'SERVICE FACILITATION:\n'
+            '• Connect you with users seeking astrology services\n'
+            '• Enable communication between you and users\n'
+            '• Process consultation bookings and payments\n'
+            '• Provide consultation platform (chat, call, video)\n\n'
+            'PAYMENTS & FINANCIAL:\n'
+            '• Calculate earnings and commission\n'
+            '• Process payout requests to your bank account\n'
+            '• Generate invoices and financial statements\n'
+            '• Comply with tax regulations (reporting)\n\n'
             'PLATFORM IMPROVEMENT:\n'
-            '• Analyze usage patterns and improve features\n'
-            '• Develop new services and functionality\n'
-            '• Conduct research and analytics\n'
-            '• Test and troubleshoot technical issues\n\n'
+            '• Analyze service quality and user satisfaction\n'
+            '• Improve matching algorithms\n'
+            '• Develop new features and functionality\n'
+            '• Conduct performance analytics\n\n'
             'COMMUNICATION:\n'
-            '• Send service-related notifications and updates\n'
-            '• Provide appointment reminders and confirmations\n'
-            '• Share promotional offers (with your consent)\n'
-            '• Request feedback and reviews\n\n'
-            'LEGAL COMPLIANCE:\n'
-            '• Comply with legal obligations and regulations\n'
-            '• Enforce terms of service and policies\n'
-            '• Prevent fraud and ensure platform security\n'
-            '• Respond to legal requests and court orders',
+            '• Send booking notifications and reminders\n'
+            '• Provide earnings and payout updates\n'
+            '• Share Platform updates and policy changes\n'
+            '• Send promotional opportunities (with consent)\n'
+            '• Customer support and assistance\n\n'
+            'QUALITY & COMPLIANCE:\n'
+            '• Monitor service quality and user feedback\n'
+            '• Investigate user complaints\n'
+            '• Ensure compliance with terms of service\n'
+            '• Prevent fraud and abuse\n'
+            '• Verify professional standards',
             themeService,
           ),
           
-          // NEW: INTERMEDIARY STATUS IN PRIVACY
+          // NEW: HOW USER DATA IS SHARED WITH ASTROLOGERS
           _buildHighlightedSection(
-            '4. Our Role as Intermediary',
-            'PLATFORM\'S LIMITED DATA PROCESSING:\n\n'
-            'As a technology intermediary under IT Act 2000:\n\n'
-            '• We process data ONLY to facilitate services\n'
-            '• We do NOT analyze or use consultation content\n'
-            '• We do NOT sell your personal data to third parties\n'
-            '• Our data processing is limited to technical operations\n\n'
-            'THIRD-PARTY ASTROLOGERS:\n'
-            '• Astrologers are independent data controllers\n'
-            '• They are responsible for their own data practices\n'
-            '• We cannot control their data handling\n'
-            '• They must comply with privacy laws independently\n\n'
-            'PLATFORM RESPONSIBILITY:\n'
-            '• We are responsible ONLY for data on our servers\n'
-            '• We ensure security of Platform-stored data\n'
-            '• We are NOT liable for astrologer data breaches',
+            '3. User Data Shared with You',
+            'INFORMATION YOU RECEIVE:\n\n'
+            'To facilitate consultations, we share user information with you:\n\n'
+            'USER DETAILS:\n'
+            '• User name and profile photo\n'
+            '• Birth details (date, time, place) for chart preparation\n'
+            '• Contact information (for consultation delivery)\n'
+            '• Questions and consultation requests\n'
+            '• Previous consultation history with you\n\n'
+            'YOUR RESPONSIBILITIES:\n\n'
+            'When handling user data, you MUST:\n'
+            '• Use data ONLY for providing astrology services\n'
+            '• Maintain strict confidentiality\n'
+            '• Protect data with reasonable security\n'
+            '• Delete data when no longer needed\n'
+            '• Comply with IT Act 2000, Section 43A\n'
+            '• Not share, sell, or misuse user data\n'
+            '• Not contact users outside Platform without consent\n\n'
+            'DATA BREACH LIABILITY:\n'
+            '• YOU are responsible for securing user data you receive\n'
+            '• YOU are liable for any data breaches on your end\n'
+            '• You must report breaches to us immediately\n'
+            '• You may face legal action for data misuse',
             themeService,
-            Icons.security_outlined,
+            Icons.warning_amber_outlined,
           ),
           
           _buildSection(
-            '5. Information Sharing & Disclosure',
-            'We do not sell, trade, or rent your personal information to third parties. However, we may share information in the following circumstances:\n\n'
-            'WITH ASTROLOGERS:\n'
-            '• Necessary information to provide requested services\n'
-            '• Birth details and consultation requests\n'
-            '• Communication for service delivery\n\n'
+            '4. How We Share Your Information',
+            'WITH USERS:\n'
+            '• Your public profile (name, photo, bio, ratings)\n'
+            '• Your specializations and experience\n'
+            '• Your availability and service rates\n'
+            '• General consultation history (anonymized stats)\n\n'
             'WITH SERVICE PROVIDERS:\n'
-            '• Payment processors for transaction handling\n'
-            '• Cloud hosting providers for data storage\n'
-            '• Analytics services for platform improvement\n'
-            '• Communication services for notifications\n\n'
-            'LEGAL REQUIREMENTS:\n'
-            '• Compliance with laws, regulations, or court orders\n'
-            '• Response to lawful government requests\n'
-            '• Protection of our rights and property\n'
-            '• Investigation of fraud or security issues\n\n'
+            '• Payment processors (for payouts)\n'
+            '• Cloud hosting providers (for data storage)\n'
+            '• Identity verification services\n'
+            '• Communication services (for calls/chat)\n'
+            '• Analytics providers (anonymized data)\n\n'
+            'LEGAL DISCLOSURE:\n'
+            '• Compliance with laws and court orders\n'
+            '• Response to legal requests from authorities\n'
+            '• Tax reporting to government (as required)\n'
+            '• Protection of Platform rights and safety\n'
+            '• Investigation of fraud or violations\n\n'
             'BUSINESS TRANSFERS:\n'
-            '• In case of merger, acquisition, or asset sale\n'
-            '• With your continued consent after notification\n\n'
+            '• In case of merger, acquisition, or sale\n'
+            '• With notification and continued consent\n\n'
             'WITH YOUR CONSENT:\n'
-            '• Any other sharing with your explicit permission',
+            '• Any other sharing with your explicit permission\n\n'
+            'WE DO NOT:\n'
+            '• Sell your personal information to third parties\n'
+            '• Share your financial details with users\n'
+            '• Disclose your ID documents publicly',
             themeService,
           ),
           
           _buildSection(
-            '6. Data Security',
-            'We implement comprehensive security measures to protect your personal information:\n\n'
+            '5. Data Security',
+            'SECURITY MEASURES:\n\n'
+            'We protect your information with:\n\n'
             'TECHNICAL SAFEGUARDS:\n'
             '• Encryption of data in transit (SSL/TLS)\n'
             '• Encryption of sensitive data at rest\n'
-            '• Secure authentication mechanisms\n'
+            '• Secure authentication and access controls\n'
             '• Regular security audits and updates\n'
-            '• Firewall and intrusion detection systems\n\n'
+            '• Firewall and intrusion detection\n'
+            '• Secure payment processing\n\n'
             'ORGANIZATIONAL MEASURES:\n'
-            '• Restricted access to personal data (need-to-know basis)\n'
-            '• Employee training on data protection\n'
-            '• Confidentiality agreements with staff and vendors\n'
-            '• Incident response and breach notification procedures\n\n'
+            '• Restricted employee access (need-to-know)\n'
+            '• Staff training on data protection\n'
+            '• Confidentiality agreements\n'
+            '• Incident response procedures\n'
+            '• Regular security assessments\n\n'
+            'YOUR RESPONSIBILITIES:\n'
+            '• Keep your login credentials confidential\n'
+            '• Use strong, unique passwords\n'
+            '• Enable two-factor authentication (if available)\n'
+            '• Protect devices used for Platform access\n'
+            '• Report suspicious activity immediately\n'
+            '• Secure user data you receive\n\n'
             'LIMITATIONS:\n'
-            'However, no method of transmission over the internet or electronic storage is 100% secure. While we strive to protect your information, we cannot guarantee absolute security. You are responsible for maintaining the confidentiality of your account credentials.',
+            'While we implement strong security, no system is 100% secure. We cannot guarantee absolute security.',
             themeService,
           ),
           
           _buildSection(
-            '7. Data Retention',
-            'We retain your personal information for as long as necessary to:\n\n'
-            '• Provide our services to you\n'
-            '• Comply with legal obligations (tax, accounting, auditing)\n'
-            '• Resolve disputes and enforce agreements\n'
-            '• Maintain records as required by law\n\n'
-            'RETENTION PERIODS:\n'
-            '• Active account data: Retained while account is active\n'
-            '• Transaction records: 7 years (as per Indian financial regulations)\n'
-            '• Communication logs: 90 days (unless required for disputes)\n'
-            '• Deleted account data: 30 days (for recovery) then permanently deleted\n\n'
-            'You may request deletion of your account and data, subject to legal retention requirements.',
+            '6. Data Retention',
+            'We retain your information as follows:\n\n'
+            'ACTIVE ACCOUNT:\n'
+            '• Profile and service data: While account is active\n'
+            '• Consultation records: 3 years (for dispute resolution)\n'
+            '• Communication logs: 90 days (unless needed for investigations)\n\n'
+            'FINANCIAL RECORDS:\n'
+            '• Transaction history: 7 years (Indian tax law requirement)\n'
+            '• Payment details: As long as payouts are pending\n'
+            '• Tax documents: As required by law\n\n'
+            'CLOSED ACCOUNT:\n'
+            '• Personal data deleted 30 days after account closure\n'
+            '• Financial records retained per legal requirements\n'
+            '• Anonymized analytics data may be retained\n'
+            '• Dispute-related data retained until resolution\n\n'
+            'LEGAL OBLIGATIONS:\n'
+            '• Some data retained longer for legal compliance\n'
+            '• Court-ordered data preservation\n'
+            '• Tax and audit requirements',
             themeService,
           ),
           
           _buildSection(
-            '8. Your Rights & Choices',
-            'You have the following rights regarding your personal information:\n\n'
+            '7. Your Rights & Choices',
             'ACCESS & PORTABILITY:\n'
-            '• Request a copy of your personal data\n'
-            '• Export your data in a portable format\n'
-            '• View your profile and account information anytime\n\n'
+            '• View your profile and account data anytime\n'
+            '• Request a copy of your personal information\n'
+            '• Export your data in portable format\n'
+            '• Access your earnings and transaction history\n\n'
             'CORRECTION & UPDATE:\n'
-            '• Update your profile information through settings\n'
-            '• Correct inaccurate or incomplete data\n'
-            '• Request correction of information we hold\n\n'
-            'DELETION & ERASURE:\n'
-            '• Delete your account at any time\n'
-            '• Request removal of specific information\n'
-            '• Right to be forgotten (subject to legal exceptions)\n\n'
-            'CONSENT WITHDRAWAL:\n'
-            '• Opt out of marketing communications\n'
+            '• Update your profile through app settings\n'
+            '• Correct inaccurate information\n'
+            '• Request corrections of data we hold\n'
+            '• Update bank and payment details\n\n'
+            'DELETION & ACCOUNT CLOSURE:\n'
+            '• Close your account at any time\n'
+            '• Request deletion of specific data\n'
+            '• Right to be forgotten (subject to legal exceptions)\n'
+            '• Complete pending consultations before closure\n\n'
+            'CONSENT MANAGEMENT:\n'
+            '• Opt out of promotional communications\n'
             '• Disable location tracking\n'
-            '• Revoke data sharing permissions\n\n'
+            '• Manage notification preferences\n'
+            '• Control data sharing settings\n\n'
             'RESTRICTION & OBJECTION:\n'
-            '• Restrict processing of your data\n'
-            '• Object to certain uses of your information\n'
-            '• Lodge complaints with data protection authorities\n\n'
-            'To exercise these rights, contact us at support@axiomleap.com',
+            '• Restrict certain data processing\n'
+            '• Object to specific uses of data\n'
+            '• Lodge complaints with authorities\n\n'
+            'To exercise these rights, contact: support@axiomleap.com',
             themeService,
           ),
           
           _buildSection(
-            '9. Cookies & Tracking Technologies',
-            'We use cookies and similar tracking technologies to:\n\n'
-            'ESSENTIAL COOKIES:\n'
-            '• Maintain your session and login status\n'
-            '• Remember your preferences and settings\n'
-            '• Enable core Platform functionality\n\n'
-            'ANALYTICS COOKIES:\n'
-            '• Understand how you use the Platform\n'
-            '• Analyze traffic and usage patterns\n'
-            '• Improve user experience and performance\n\n'
-            'MARKETING COOKIES:\n'
-            '• Deliver personalized content and offers\n'
-            '• Track campaign effectiveness\n'
-            '• Provide targeted advertisements\n\n'
-            'COOKIE MANAGEMENT:\n'
-            'You can control cookies through your browser settings. However, disabling cookies may limit Platform functionality. Most browsers allow you to:\n'
-            '• View and delete cookies\n'
-            '• Block third-party cookies\n'
-            '• Receive notifications when cookies are set\n'
-            '• Clear cookies when closing the browser',
+            '8. Cookies & Tracking',
+            'We use cookies and tracking technologies for:\n\n'
+            'ESSENTIAL:\n'
+            '• Maintain your login session\n'
+            '• Remember your preferences\n'
+            '• Enable Platform functionality\n\n'
+            'ANALYTICS:\n'
+            '• Understand Platform usage\n'
+            '• Monitor service performance\n'
+            '• Improve user experience\n\n'
+            'FUNCTIONAL:\n'
+            '• Personalize your dashboard\n'
+            '• Remember availability settings\n'
+            '• Track consultation metrics\n\n'
+            'COOKIE CONTROL:\n'
+            'You can manage cookies through browser settings, though this may limit functionality.',
             themeService,
           ),
           
           _buildSection(
-            '10. Children\'s Privacy',
-            'Our Platform is NOT intended for children under 18 years of age.\n\n'
-            '• We do not knowingly collect personal information from minors\n'
-            '• We require users to be 18+ to create accounts\n'
-            '• Parents/guardians must consent for users under 18\n'
-            '• If we discover data from a child under 18, we will delete it promptly\n\n'
-            'If you believe a child has provided us with information, please contact us immediately at support@axiomleap.com so we can take appropriate action.',
+            '9. Third-Party Services',
+            'INTEGRATED SERVICES:\n\n'
+            'We use third-party services for:\n\n'
+            'PAYMENT PROCESSING:\n'
+            '• Razorpay, PayU, or similar (for payouts)\n'
+            '• Subject to their privacy policies\n'
+            '• We don\'t store full bank account details\n\n'
+            'IDENTITY VERIFICATION:\n'
+            '• KYC verification partners\n'
+            '• Document verification services\n'
+            '• Background check providers\n\n'
+            'COMMUNICATION:\n'
+            '• Call/video service providers\n'
+            '• SMS/email notification services\n'
+            '• Push notification platforms\n\n'
+            'These third parties have their own privacy policies. We select vendors with strong data protection practices.',
             themeService,
           ),
           
           _buildSection(
-            '11. International Data Transfers',
-            'Your information may be transferred to and processed in countries other than India:\n\n'
-            '• We use cloud services that may store data internationally\n'
-            '• All transfers comply with applicable data protection laws\n'
-            '• We ensure adequate safeguards for international transfers\n'
-            '• Data is primarily stored in India or countries with adequate protection\n\n'
-            'By using our Platform, you consent to such transfers.',
+            '10. International Data Transfers',
+            'DATA STORAGE LOCATION:\n'
+            '• Primary storage in India\n'
+            '• May use international cloud services\n'
+            '• Transfers comply with Indian data protection laws\n'
+            '• Adequate safeguards for international transfers\n\n'
+            'By using the Platform, you consent to such transfers.',
             themeService,
           ),
           
           _buildSection(
-            '12. Changes to This Privacy Policy',
-            'We may update this Privacy Policy from time to time to reflect:\n\n'
-            '• Changes in our practices or services\n'
+            '11. Changes to Privacy Policy',
+            'We may update this policy to reflect:\n\n'
+            '• Changes in data practices\n'
+            '• New features or services\n'
             '• Legal or regulatory requirements\n'
-            '• Technological developments\n'
-            '• User feedback and industry best practices\n\n'
+            '• Industry best practices\n\n'
             'NOTIFICATION:\n'
-            '• Material changes will be notified via email or Platform notification\n'
-            '• Updated "Last updated" date will be posted\n'
-            '• Continued use after changes constitutes acceptance\n'
-            '• You are encouraged to review this policy periodically\n\n'
-            'For significant changes, we may require explicit consent before the changes take effect.',
+            '• Material changes notified via email\n'
+            '• Updated "Last updated" date\n'
+            '• Continued use = acceptance\n'
+            '• Review policy periodically\n\n'
+            'Significant changes may require explicit consent.',
             themeService,
           ),
           
           _buildSection(
-            '13. Grievance Redressal',
-            'For privacy-related concerns or complaints:\n\n'
+            '12. Grievance Redressal',
+            'For privacy concerns:\n\n'
             'GRIEVANCE OFFICER:\n'
             'Name: Grievance Redressal Officer\n'
             'Company: AXIOM LEAP\n'
             'Email: grievance@axiomleap.com\n'
-            'Support Email: support@axiomleap.com\n\n'
-            'RESPONSE TIME:\n'
+            'Support: support@axiomleap.com\n\n'
+            'RESPONSE:\n'
             '• Acknowledgment within 24 hours\n'
-            '• Resolution within 15 days (as per IT Act 2000)\n'
-            '• Escalation process for unresolved complaints\n\n'
-            'You also have the right to lodge a complaint with data protection authorities.',
+            '• Resolution within 15 days (IT Act 2000)\n'
+            '• Escalation for unresolved issues\n\n'
+            'You may also lodge complaints with data protection authorities.',
             themeService,
           ),
           
           _buildSection(
-            '14. Contact Information',
-            'For questions, concerns, or requests regarding this Privacy Policy or your personal information:\n\n'
+            '13. Contact Information',
+            'For questions or requests:\n\n'
             'Company: AXIOM LEAP\n'
             'Email: support@axiomleap.com\n'
             'Grievance Officer: grievance@axiomleap.com\n'
             'Website: www.axiomleap.com\n\n'
-            'We are committed to addressing your concerns promptly and professionally.',
+            'We are committed to protecting your privacy.',
             themeService,
           ),
           
           _buildSection(
-            '15. Legal Compliance',
+            '14. Legal Compliance',
             'This Privacy Policy complies with:\n\n'
             '• Information Technology Act, 2000, Section 43A\n'
-            '• Information Technology (Reasonable Security Practices) Rules, 2011\n'
-            '• Intermediary Guidelines and Digital Media Ethics Code Rules, 2021\n'
-            '• Consumer Protection Act, 2019\n'
-            '• Other applicable Indian privacy and data protection laws\n\n'
-            'We are committed to maintaining the highest standards of data protection and privacy.',
+            '• IT (Reasonable Security Practices) Rules, 2011\n'
+            '• Intermediary Guidelines Rules, 2021\n'
+            '• Income Tax Act, 1961 (for financial reporting)\n'
+            '• Other applicable Indian privacy laws\n\n'
+            'We maintain high standards of data protection and privacy.',
             themeService,
           ),
           
@@ -709,8 +832,8 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
     );
   }
 
-  // CRITICAL DISCLAIMER - Prominent visual treatment
-  Widget _buildCriticalDisclaimer(ThemeService themeService) {
+  // CRITICAL ACKNOWLEDGMENT for Astrologers - Prominent visual treatment
+  Widget _buildCriticalAcknowledgment(ThemeService themeService) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -718,8 +841,8 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.amber.withOpacity(0.15),
-            Colors.orange.withOpacity(0.1),
+            Colors.orange.withOpacity(0.15),
+            Colors.deepOrange.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -740,7 +863,7 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.warning_amber_rounded,
+                  Icons.check_circle_outline,
                   size: 28,
                   color: Colors.orange,
                 ),
@@ -748,7 +871,7 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  '⚠️ IMPORTANT DISCLAIMER',
+                  '⚠️ YOUR ACKNOWLEDGMENT',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -760,7 +883,7 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'PLEASE READ CAREFULLY:',
+            'BY REGISTERING AS AN ASTROLOGER, YOU ACKNOWLEDGE:',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -769,15 +892,15 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'This platform is an INTERMEDIARY that connects users with INDEPENDENT ASTROLOGERS. '
-            'All predictions, readings, and advice are provided by individual astrologers who are '
-            'SOLELY RESPONSIBLE for their services.\n\n'
-            '• The platform does NOT endorse, verify, or guarantee any predictions\n'
-            '• Astrology services are BELIEF-BASED and for GUIDANCE ONLY\n'
-            '• Astrologers are independent professionals, not our employees\n'
-            '• Users engage with astrologers ENTIRELY AT THEIR OWN RISK\n'
-            '• The platform is NOT LIABLE for any consequences of astrological advice\n\n'
-            'By using this platform, you acknowledge and accept these terms.',
+            '• You are an INDEPENDENT CONTRACTOR, not an employee\n'
+            '• You are SOLELY RESPONSIBLE for your predictions and advice\n'
+            '• You bear FULL LIABILITY for your professional services\n'
+            '• You INDEMNIFY the Platform from all claims related to your services\n'
+            '• The Platform is an INTERMEDIARY with no control over your services\n'
+            '• You must maintain professional standards and ethical conduct\n'
+            '• You are responsible for taxes and legal compliance\n'
+            '• You will protect user data and maintain confidentiality\n\n'
+            'These terms are legally binding. By using this Platform, you accept full professional responsibility for your astrology services.',
             style: TextStyle(
               fontSize: 14,
               color: themeService.textPrimary,
