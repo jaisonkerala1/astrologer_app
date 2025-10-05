@@ -45,6 +45,8 @@ import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
 import '../widgets/swipe_hint_indicator.dart';
 import '../../live/screens/live_preparation_screen.dart';
+import '../../onboarding/screens/quick_tutorial_overlay.dart';
+import '../../onboarding/services/tutorial_service.dart';
 import '../../../shared/widgets/animated_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -102,6 +104,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     // Check if we should show swipe hint
     _checkSwipeHintVisibility();
+    
+    // Show tutorial overlay on first launch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showTutorialIfNeeded();
+    });
   }
 
   Future<void> _initializeData() async {
@@ -290,6 +297,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Auto-dismiss hint after 3 successful swipes
     if (newCount >= 3) {
       _dismissSwipeHint();
+    }
+  }
+  
+  // Show tutorial overlay if first-time user
+  void _showTutorialIfNeeded() {
+    final tutorialService = context.read<TutorialService>();
+    
+    if (tutorialService.shouldShowTutorial()) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.transparent,
+        builder: (context) => QuickTutorialOverlay(
+          onComplete: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      );
     }
   }
 
