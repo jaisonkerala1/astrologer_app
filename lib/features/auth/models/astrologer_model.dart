@@ -16,6 +16,13 @@ class AstrologerModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? sessionId;
+  
+  // Terms acceptance tracking
+  final bool termsAccepted;
+  final DateTime? termsAcceptedAt;
+  final int acceptedTermsVersion;
+  final String? acceptanceIpAddress;
+  final String? acceptanceDeviceInfo;
 
   AstrologerModel({
     required this.id,
@@ -35,6 +42,11 @@ class AstrologerModel {
     required this.createdAt,
     required this.updatedAt,
     this.sessionId,
+    this.termsAccepted = false,
+    this.termsAcceptedAt,
+    this.acceptedTermsVersion = 0,
+    this.acceptanceIpAddress,
+    this.acceptanceDeviceInfo,
   });
 
   factory AstrologerModel.fromJson(Map<String, dynamic> json) {
@@ -56,6 +68,11 @@ class AstrologerModel {
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
       sessionId: json['sessionId'] ?? json['activeSession']?['sessionId'],
+      termsAccepted: json['termsAccepted'] ?? false,
+      termsAcceptedAt: json['termsAcceptedAt'] != null ? DateTime.parse(json['termsAcceptedAt']) : null,
+      acceptedTermsVersion: json['acceptedTermsVersion'] ?? 0,
+      acceptanceIpAddress: json['acceptanceIpAddress'],
+      acceptanceDeviceInfo: json['acceptanceDeviceInfo'],
     );
   }
 
@@ -78,6 +95,11 @@ class AstrologerModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'sessionId': sessionId,
+      'termsAccepted': termsAccepted,
+      'termsAcceptedAt': termsAcceptedAt?.toIso8601String(),
+      'acceptedTermsVersion': acceptedTermsVersion,
+      'acceptanceIpAddress': acceptanceIpAddress,
+      'acceptanceDeviceInfo': acceptanceDeviceInfo,
     };
   }
 
@@ -99,6 +121,11 @@ class AstrologerModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? sessionId,
+    bool? termsAccepted,
+    DateTime? termsAcceptedAt,
+    int? acceptedTermsVersion,
+    String? acceptanceIpAddress,
+    String? acceptanceDeviceInfo,
   }) {
     return AstrologerModel(
       id: id ?? this.id,
@@ -118,6 +145,11 @@ class AstrologerModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       sessionId: sessionId ?? this.sessionId,
+      termsAccepted: termsAccepted ?? this.termsAccepted,
+      termsAcceptedAt: termsAcceptedAt ?? this.termsAcceptedAt,
+      acceptedTermsVersion: acceptedTermsVersion ?? this.acceptedTermsVersion,
+      acceptanceIpAddress: acceptanceIpAddress ?? this.acceptanceIpAddress,
+      acceptanceDeviceInfo: acceptanceDeviceInfo ?? this.acceptanceDeviceInfo,
     );
   }
 }

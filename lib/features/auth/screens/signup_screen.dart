@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/country_code_selector.dart';
+import '../../../core/constants/platform_config.dart';
+import '../../settings/screens/terms_privacy_screen.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -33,6 +37,8 @@ class _SignupScreenState extends State<SignupScreen> {
   String _countryCode = '+91';
   String _phoneNumber = '';
   File? _selectedImage;
+  bool _termsAccepted = false;
+  bool _showTermsError = false;
 
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
@@ -140,11 +146,15 @@ class _SignupScreenState extends State<SignupScreen> {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is OtpSentState) {
               setState(() {
                 _isLoading = false;
               });
+              
+              // Get device info before navigation
+              final deviceInfo = await _getDeviceInfo();
+              
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -162,6 +172,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       'awards': _awardsController.text,
                       'certificates': _certificatesController.text,
                       'profilePicture': _selectedImage,
+                      'termsAccepted': _termsAccepted,
+                      'termsAcceptedAt': DateTime.now().toIso8601String(),
+                      'acceptedTermsVersion': PlatformConfig.CURRENT_TERMS_VERSION,
+                      'acceptanceDeviceInfo': deviceInfo,
                     },
                   ),
                 ),
@@ -564,6 +578,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 32),
 
+                    // Terms & Conditions Acceptance - Google Material Design 3
+                    _buildTermsAcceptanceCard(themeService),
+                    const SizedBox(height: 24),
+
                     // Signup Button
                     Container(
                       width: double.infinity,
@@ -898,8 +916,30 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  void _handleSignup() {
+  // Get device information for terms acceptance tracking
+  Future<String> _getDeviceInfo() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        return 'Android ${androidInfo.version.release} - ${androidInfo.model}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return 'iOS ${iosInfo.systemVersion} - ${iosInfo.model}';
+      }
+      return 'Unknown Device';
+    } catch (e) {
+      return 'Device Info Unavailable';
+    }
+  }
+
+  void _handleSignup() async {
     if (_formKey.currentState!.validate()) {
+      // Reset terms error
+      setState(() {
+        _showTermsError = false;
+      });
+      
       if (_selectedImage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -950,14 +990,37 @@ class _SignupScreenState extends State<SignupScreen> {
         );
         return;
       }
+      
+      // Check terms acceptance
+      if (!_termsAccepted) {
+        setState(() {
+          _showTermsError = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('You must accept the Terms of Service to continue'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        // Scroll to terms section
+        return;
+      }
 
       setState(() {
         _isLoading = true;
       });
+      
+      // Get device info for tracking
+      final deviceInfo = await _getDeviceInfo();
 
-      // Send OTP for signup
+      // Send OTP for signup with terms acceptance data
       if (_fullPhoneNumber.isNotEmpty && _phoneNumber.isNotEmpty) {
         context.read<AuthBloc>().add(SendOtpEvent(_fullPhoneNumber.trim()));
+        
+        // Store terms acceptance info in signup data for later
+        // This will be sent to backend after OTP verification
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -970,5 +1033,316 @@ class _SignupScreenState extends State<SignupScreen> {
         });
       }
     }
+  }
+
+  // Google Material Design 3 - Beautiful Terms Acceptance Card
+  Widget _buildTermsAcceptanceCard(ThemeService themeService) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _showTermsError
+                ? Colors.red.shade50
+                : AppTheme.primaryColor.withOpacity(0.05),
+            _showTermsError
+                ? Colors.red.shade50.withOpacity(0.3)
+                : AppTheme.primaryColor.withOpacity(0.02),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _showTermsError
+              ? Colors.red.shade400
+              : _termsAccepted
+                  ? AppTheme.primaryColor.withOpacity(0.5)
+                  : Colors.grey[300]!,
+          width: _showTermsError || _termsAccepted ? 2 : 1,
+        ),
+        boxShadow: [
+          if (_showTermsError)
+            BoxShadow(
+              color: Colors.red.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          else if (_termsAccepted)
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with icon
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _showTermsError
+                          ? Colors.red.withOpacity(0.1)
+                          : _termsAccepted
+                              ? Colors.green.withOpacity(0.1)
+                              : AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _showTermsError
+                          ? Icons.error_outline
+                          : _termsAccepted
+                              ? Icons.check_circle_outline
+                              : Icons.policy_outlined,
+                      color: _showTermsError
+                          ? Colors.red.shade700
+                          : _termsAccepted
+                              ? Colors.green.shade700
+                              : AppTheme.primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Legal Agreement',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: _showTermsError
+                                ? Colors.red.shade900
+                                : AppTheme.textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Please review and accept our terms',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Divider
+              Divider(
+                color: Colors.grey[300],
+                thickness: 1,
+              ),
+              const SizedBox(height: 16),
+
+              // Terms checkbox with formatted text
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _termsAccepted = !_termsAccepted;
+                    if (_termsAccepted) {
+                      _showTermsError = false;
+                    }
+                  });
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Custom animated checkbox
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: _termsAccepted
+                              ? AppTheme.primaryColor
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: _termsAccepted
+                                ? AppTheme.primaryColor
+                                : _showTermsError
+                                    ? Colors.red.shade400
+                                    : Colors.grey[400]!,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: _termsAccepted
+                            ? const Icon(
+                                Icons.check,
+                                size: 18,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      
+                      // Terms text with clickable links
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.5,
+                              color: AppTheme.textColor,
+                            ),
+                            children: [
+                              const TextSpan(
+                                text: 'I acknowledge that I am an ',
+                              ),
+                              TextSpan(
+                                text: 'independent contractor',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ', accept ',
+                              ),
+                              TextSpan(
+                                text: 'full professional liability',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ', and agree to the ',
+                              ),
+                              TextSpan(
+                                text: 'Terms of Service',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primaryColor,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppTheme.primaryColor,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    _showTermsDialog(showTerms: true);
+                                  },
+                              ),
+                              const TextSpan(
+                                text: ' and ',
+                              ),
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primaryColor,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppTheme.primaryColor,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    _showTermsDialog(showTerms: false);
+                                  },
+                              ),
+                              const TextSpan(
+                                text: '.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Error message
+              if (_showTermsError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error,
+                        size: 16,
+                        color: Colors.red.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You must accept the terms to continue',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.red.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              
+              // Info badge
+              if (!_showTermsError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.blue.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.blue.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tap on highlighted text to view full details',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Show Terms/Privacy Dialog - Material Design 3
+  void _showTermsDialog({required bool showTerms}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TermsPrivacyScreen(),
+      ),
+    );
   }
 }
