@@ -36,6 +36,22 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     super.didChangeDependencies();
     // Clear badges when viewing the active tab
     final commService = Provider.of<CommunicationService>(context, listen: false);
+    
+    // Check if there's a tab switch request from Dashboard
+    if (commService.requestedTab != null) {
+      final requestedTab = commService.requestedTab;
+      commService.clearTabRequest();
+      
+      // Switch to requested tab
+      setState(() {
+        if (requestedTab == 'calls') {
+          _selectedTab = 0;
+        } else if (requestedTab == 'messages') {
+          _selectedTab = 1;
+        }
+      });
+    }
+    
     if (_selectedTab == 0) {
       // Clear missed calls badge when viewing calls tab
       Future.delayed(const Duration(milliseconds: 500), () {

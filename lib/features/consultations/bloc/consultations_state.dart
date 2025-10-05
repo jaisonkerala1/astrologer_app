@@ -13,7 +13,12 @@ class ConsultationsInitial extends ConsultationsState {
 }
 
 class ConsultationsLoading extends ConsultationsState {
-  const ConsultationsLoading();
+  final bool isInitialLoad;
+  
+  const ConsultationsLoading({this.isInitialLoad = true});
+  
+  @override
+  List<Object?> get props => [isInitialLoad];
 }
 
 class ConsultationsLoaded extends ConsultationsState {

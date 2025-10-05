@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
@@ -12,7 +11,7 @@ import '../widgets/consultation_stats_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
 import '../widgets/consultation_search_bar.dart';
-import '../widgets/consultations_skeleton_loader.dart';
+import '../widgets/consultation_list_skeleton.dart';
 
 class ConsultationsScreen extends StatefulWidget {
   const ConsultationsScreen({super.key});
@@ -102,11 +101,12 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
           }
         },
         builder: (context, state) {
-          if (state is ConsultationsLoading) {
-            return const ConsultationsSkeletonLoader();
-          }
+          // Always show the UI structure, only data loading changes
+          final isLoading = state is ConsultationsLoading;
+          final isError = state is ConsultationsError;
+          final loadedState = state is ConsultationsLoaded ? state : null;
 
-          if (state is ConsultationsError) {
+          if (isError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -148,91 +148,90 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
             );
           }
 
-          if (state is ConsultationsLoaded) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
-              },
-              child: Column(
-                children: [
-                  // Search bar with integrated results indicator
-                  ConsultationSearchBar(
-                    searchQuery: state.searchQuery,
-                    isSearching: state.isSearching,
-                    resultCount: state.consultations.length,
-                    onSearchChanged: (query) {
-                      context.read<ConsultationsBloc>().add(
-                        SearchConsultationsEvent(query: query),
-                      );
-                    },
-                    onClearSearch: () {
-                      context.read<ConsultationsBloc>().add(
-                        const ClearSearchEvent(),
-                      );
-                    },
-                    onSearchSubmitted: () {
-                      // Search is handled in real-time, no need for submission
-                    },
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+            },
+            child: Column(
+              children: [
+                // Search bar - always visible
+                ConsultationSearchBar(
+                  searchQuery: loadedState?.searchQuery ?? '',
+                  isSearching: loadedState?.isSearching ?? false,
+                  resultCount: loadedState?.consultations.length ?? 0,
+                  onSearchChanged: (query) {
+                    context.read<ConsultationsBloc>().add(
+                      SearchConsultationsEvent(query: query),
+                    );
+                  },
+                  onClearSearch: () {
+                    context.read<ConsultationsBloc>().add(
+                      const ClearSearchEvent(),
+                    );
+                  },
+                  onSearchSubmitted: () {
+                    // Search is handled in real-time, no need for submission
+                  },
+                ),
+                
+                // Stats section (only show when not searching) - shows loading state
+                if (loadedState == null || !loadedState.isSearching) ...[
+                  ConsultationStatsWidget(
+                    todayCount: loadedState?.todayCount ?? 0,
+                    todayEarnings: loadedState?.todayEarnings ?? 0.0,
+                    nextConsultation: loadedState?.nextConsultation,
+                    isLoading: isLoading,
                   ),
                   
-                  // Stats section (only show when not searching)
-                  if (!state.isSearching) ...[
-                    ConsultationStatsWidget(
-                      todayCount: state.todayCount,
-                      todayEarnings: state.todayEarnings,
-                      nextConsultation: state.nextConsultation,
-                    ),
-                    
-                    // Filter section
-                    ConsultationFilterWidget(
-                      selectedStatus: state.activeFilter,
-                      onStatusChanged: (status) {
-                        context.read<ConsultationsBloc>().add(
-                          FilterConsultationsEvent(statusFilter: status),
-                        );
-                      },
-                      onClearFilters: () {
-                        context.read<ConsultationsBloc>().add(
-                          const FilterConsultationsEvent(),
-                        );
-                      },
-                    ),
-                  ],
-                  
-                  // Consultations list
-                  Expanded(
-                    child: state.consultations.isEmpty
-                        ? (state.isSearching && state.searchQuery.isNotEmpty
-                            ? SearchEmptyState(
-                                searchQuery: state.searchQuery,
-                                onClearSearch: () {
-                                  context.read<ConsultationsBloc>().add(
-                                    const ClearSearchEvent(),
-                                  );
-                                },
-                              )
-                            : _buildEmptyState(context))
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            itemCount: state.consultations.length,
-                            itemBuilder: (context, index) {
-                              final consultation = state.consultations[index];
-                              return ConsultationCardWidget(
-                                key: ValueKey(consultation.id),
-                                consultation: consultation,
-                                onStart: () => _startConsultation(context, consultation.id),
-                                onComplete: () => _completeConsultation(context, consultation),
-                                onCancel: () => _cancelConsultation(context, consultation.id),
-                              );
-                            },
-                          ),
+                  // Filter section - always visible
+                  ConsultationFilterWidget(
+                    selectedStatus: loadedState?.activeFilter,
+                    onStatusChanged: (status) {
+                      context.read<ConsultationsBloc>().add(
+                        FilterConsultationsEvent(statusFilter: status),
+                      );
+                    },
+                    onClearFilters: () {
+                      context.read<ConsultationsBloc>().add(
+                        const FilterConsultationsEvent(),
+                      );
+                    },
                   ),
                 ],
-              ),
-            );
-          }
-
-          return const SizedBox.shrink();
+                
+                // Consultations list - shows skeleton when loading
+                Expanded(
+                  child: isLoading
+                      ? const ConsultationListSkeleton()
+                      : (loadedState?.consultations.isEmpty ?? true)
+                          ? (loadedState?.isSearching == true && (loadedState?.searchQuery.isNotEmpty ?? false)
+                              ? SearchEmptyState(
+                                  searchQuery: loadedState!.searchQuery,
+                                  onClearSearch: () {
+                                    context.read<ConsultationsBloc>().add(
+                                      const ClearSearchEvent(),
+                                    );
+                                  },
+                                )
+                              : _buildEmptyState(context))
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              itemCount: loadedState!.consultations.length,
+                              itemBuilder: (context, index) {
+                                final consultation = loadedState.consultations[index];
+                                return ConsultationCardWidget(
+                                  key: ValueKey(consultation.id),
+                                  consultation: consultation,
+                                  onStart: () => _startConsultation(context, consultation.id),
+                                  onComplete: () => _completeConsultation(context, consultation),
+                                  onCancel: () => _cancelConsultation(context, consultation.id),
+                                );
+                              },
+                            ),
+                ),
+              ],
+            ),
+          );
         },
       ),
           floatingActionButton: FloatingActionButton(

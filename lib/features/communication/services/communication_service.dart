@@ -10,12 +10,16 @@ class CommunicationService extends ChangeNotifier {
   List<Map<String, dynamic>> _calls = [];
   List<Map<String, dynamic>> _messages = [];
 
+  // Tab switching support
+  String? _requestedTab;
+  
   // Getters
   int get unreadMessagesCount => _unreadMessagesCount;
   int get missedCallsCount => _missedCallsCount;
   int get totalUnreadCount => _unreadMessagesCount + _missedCallsCount;
   List<Map<String, dynamic>> get calls => _calls;
   List<Map<String, dynamic>> get messages => _messages;
+  String? get requestedTab => _requestedTab;
 
   // Initialize with mock data
   CommunicationService() {
@@ -203,6 +207,18 @@ class CommunicationService extends ChangeNotifier {
   void resetUnreadCounts() {
     markMessagesAsRead();
     clearMissedCalls();
+  }
+
+  /// Request to switch to a specific tab (calls or messages)
+  /// This is used when navigating from Dashboard
+  void requestTabSwitch(String tab) {
+    _requestedTab = tab;
+    notifyListeners();
+  }
+
+  /// Clear the tab switch request after it's been handled
+  void clearTabRequest() {
+    _requestedTab = null;
   }
 }
 

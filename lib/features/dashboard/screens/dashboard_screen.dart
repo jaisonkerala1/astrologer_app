@@ -27,6 +27,7 @@ import '../widgets/dashboard_skeleton_loader.dart';
 import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
+import '../../communication/services/communication_service.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../heal/screens/heal_screen.dart';
 import '../../heal/screens/discussion_screen.dart';
@@ -272,11 +273,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Method to open communication screen with specific tab
   void _openCommunicationScreen(String tab) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CommunicationScreen(initialTab: tab),
-      ),
+    // Use Provider to get CommunicationService and request tab switch
+    final commService = Provider.of<CommunicationService>(context, listen: false);
+    commService.requestTabSwitch(tab);
+    
+    // Animate to Communication tab (index 1) with smooth sliding
+    _pageController.animateToPage(
+      1, // Communication tab index
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
     );
   }
 

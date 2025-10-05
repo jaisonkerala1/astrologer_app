@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 import '../models/consultation_model.dart';
 import '../screens/consultation_analytics_screen.dart';
 import '../screens/consultation_detail_screen.dart';
-import '../../dashboard/screens/dashboard_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
 
 class ConsultationStatsWidget extends StatelessWidget {
   final int todayCount;
   final double todayEarnings;
   final ConsultationModel? nextConsultation;
+  final bool isLoading;
 
   const ConsultationStatsWidget({
     super.key,
     required this.todayCount,
     required this.todayEarnings,
     required this.nextConsultation,
+    this.isLoading = false,
   });
 
   @override
@@ -82,7 +83,7 @@ class ConsultationStatsWidget extends StatelessWidget {
       borderRadius: themeService.borderRadius,
       shadowColor: Colors.black.withOpacity(0.1),
       child: InkWell(
-        onTap: () {
+        onTap: isLoading ? null : () {
           _handleCardTap(context, subtitle);
         },
         borderRadius: themeService.borderRadius,
@@ -118,13 +119,20 @@ class ConsultationStatsWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: themeService.textPrimary,
+              if (isLoading)
+                SkeletonLoader(
+                  width: 60,
+                  height: 28,
+                  borderRadius: BorderRadius.circular(4),
+                )
+              else
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: themeService.textPrimary,
+                  ),
                 ),
-              ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
