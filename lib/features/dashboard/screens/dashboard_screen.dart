@@ -296,9 +296,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final commService = Provider.of<CommunicationService>(context, listen: false);
     commService.requestTabSwitch(tab);
     
-    // Animate to Communication tab (index 1) with smooth sliding
+    // Animate to Communication tab (index 2) with smooth sliding
+    // Page structure: 0=LivePrep(hidden), 1=Dashboard, 2=Communication, 3=Heal, 4=Consultations, 5=Profile
     _pageController.animateToPage(
-      1, // Communication tab index
+      2, // Communication tab index (was 1 before Live Prep page was added)
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
