@@ -43,8 +43,10 @@ import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
+import '../widgets/swipe_hint_indicator.dart';
 import '../../live/screens/live_preparation_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -59,24 +61,29 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0; // Start with Dashboard (first tab) as default
+  int _selectedIndex = 0; // Bottom nav selected index (0-4)
+  int _currentPageIndex = 1; // PageView current page (0-5, starts at 1 for Dashboard)
   AstrologerModel? _currentUser;
   final StorageService _storageService = StorageService();
   late PageController _pageController;
   DashboardStatsModel? _currentStats;
+  bool _showSwipeHint = false; // Show swipe indicator for discoverability
+  int _swipeCount = 0; // Track number of swipes to Live Prep
 
   @override
   void initState() {
     super.initState();
     
-    // Set initial tab if provided
+    // Set initial tab if provided (bottom nav index)
     if (widget.initialTabIndex != null) {
       _selectedIndex = widget.initialTabIndex!;
+      _currentPageIndex = _selectedIndex + 1; // Map to page index (add 1 for hidden Live Prep page)
     }
     
-    // Initialize PageController with smooth physics
+    // Initialize PageController starting at Dashboard (page index 1)
+    // Page 0 = Live Prep (hidden), Page 1 = Dashboard, Page 2 = Communication, etc.
     _pageController = PageController(
-      initialPage: _selectedIndex,
+      initialPage: _currentPageIndex,
       viewportFraction: 1.0,
     );
     
@@ -92,6 +99,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     // Load user data first, then load dashboard stats
     _initializeData();
+    
+    // Check if we should show swipe hint
+    _checkSwipeHintVisibility();
   }
 
   Future<void> _initializeData() async {
@@ -180,34 +190,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Build page without double animation - PageView handles transitions
-  // Bottom Nav Structure:
-  // 0: Dashboard - Overview with stats and quick actions
-  // 1: Communication - Live calls and messages (real-time)
-  // 2: Heal - Community and content feature
-  // 3: Consultations - Scheduled/pre-booked appointments (calendar-based)
-  // 4: Profile - Account settings and earnings
+  // PageView Structure (6 pages total):
+  // Page 0: Live Prep (HIDDEN - swipe right from Dashboard to reveal)
+  // Page 1: Dashboard - Overview with stats and quick actions
+  // Page 2: Communication - Live calls and messages (real-time)
+  // Page 3: Heal - Community and content feature
+  // Page 4: Consultations - Scheduled/pre-booked appointments (calendar-based)
+  // Page 5: Profile - Account settings and earnings
+  //
+  // Bottom Nav Structure (5 items, maps to pages 1-5):
+  // Nav 0 → Page 1: Dashboard
+  // Nav 1 → Page 2: Communication
+  // Nav 2 → Page 3: Heal
+  // Nav 3 → Page 4: Consultations
+  // Nav 4 → Page 5: Profile
   Widget _buildPageWithAnimation(int index) {
     switch (index) {
       case 0:
-        return _buildDashboardContent();
+        return const LivePreparationScreen(); // Hidden page - swipe right from Dashboard
       case 1:
-        return const CommunicationScreen();
+        return _buildDashboardContent(); // Dashboard
       case 2:
-        return const HealScreen();
+        return const CommunicationScreen(); // Communication
       case 3:
-        return const ConsultationsScreen();
+        return const HealScreen(); // Heal
       case 4:
-        return ProfileScreen(onProfileUpdated: refreshUserData);
+        return const ConsultationsScreen(); // Consultations
+      case 5:
+        return ProfileScreen(onProfileUpdated: refreshUserData); // Profile
       default:
         return _buildDashboardContent();
     }
   }
 
   // Method to navigate to specific tab programmatically
-  void navigateToTab(int index) {
-    if (index != _selectedIndex) {
+  // Maps bottom nav index (0-4) to page index (1-5)
+  void navigateToTab(int navIndex) {
+    final pageIndex = navIndex + 1; // Add 1 to skip hidden Live Prep page
+    if (pageIndex != _currentPageIndex) {
       HapticFeedback.selectionClick();
-      _pageController.jumpToPage(index); // Instant jump - no sliding through tabs
+      _pageController.jumpToPage(pageIndex);
+    }
+  }
+  
+  // Method to navigate to Live Prep (hidden page at index 0)
+  void _navigateToLivePrep() {
+    HapticFeedback.mediumImpact();
+    _pageController.animateToPage(
+      0, // Live Prep page
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+  
+  // Check if swipe hint should be shown (for first-time users)
+  Future<void> _checkSwipeHintVisibility() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenHint = prefs.getBool('has_seen_live_prep_swipe_hint') ?? false;
+    final swipeCount = prefs.getInt('live_prep_swipe_count') ?? 0;
+    
+    setState(() {
+      // Show hint if user hasn't seen it and hasn't swiped to Live Prep yet
+      _showSwipeHint = !hasSeenHint && swipeCount < 3;
+      _swipeCount = swipeCount;
+    });
+    
+    // Auto-hide after 10 seconds on first launch
+    if (_showSwipeHint) {
+      Future.delayed(const Duration(seconds: 10), () {
+        if (mounted && _showSwipeHint) {
+          _dismissSwipeHint();
+        }
+      });
+    }
+  }
+  
+  // Dismiss swipe hint and remember user has seen it
+  Future<void> _dismissSwipeHint() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_live_prep_swipe_hint', true);
+    
+    if (mounted) {
+      setState(() {
+        _showSwipeHint = false;
+      });
+    }
+  }
+  
+  // Track swipe to Live Prep page
+  Future<void> _trackLivePrepSwipe() async {
+    final prefs = await SharedPreferences.getInstance();
+    final newCount = _swipeCount + 1;
+    await prefs.setInt('live_prep_swipe_count', newCount);
+    
+    setState(() {
+      _swipeCount = newCount;
+    });
+    
+    // Auto-dismiss hint after 3 successful swipes
+    if (newCount >= 3) {
+      _dismissSwipeHint();
     }
   }
 
@@ -217,15 +299,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  // Go Live button method
+  // Go Live button method - now navigates to hidden page instead of pushing new screen
   void _goLive() {
-    HapticFeedback.lightImpact();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LivePreparationScreen(),
-      ),
-    );
+    _navigateToLivePrep();
   }
 
   // Open notifications method
@@ -307,18 +383,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, themeService, child) {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
-          body: PageView.builder(
+          body: Stack(
+            children: [
+              PageView.builder(
             controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            onPageChanged: (index) {
+            physics: const BouncingScrollPhysics(), // Enables smooth swipe gestures
+            onPageChanged: (pageIndex) {
               setState(() {
-                _selectedIndex = index;
+                _currentPageIndex = pageIndex;
+                
+                // Update bottom nav selection based on page index
+                // Page 0 (Live Prep) = hidden, keep Dashboard (nav 0) highlighted
+                // Pages 1-5 = map to nav indices 0-4
+                if (pageIndex == 0) {
+                  // On Live Prep page - keep Dashboard highlighted in nav
+                  _selectedIndex = 0;
+                  // Track that user found the hidden page
+                  _trackLivePrepSwipe();
+                  // Dismiss hint since user discovered it
+                  if (_showSwipeHint) {
+                    _dismissSwipeHint();
+                  }
+                } else {
+                  // Map page index to bottom nav index (subtract 1)
+                  _selectedIndex = pageIndex - 1;
+                }
               });
             },
-            itemCount: 5,
+            itemCount: 6, // 6 pages: Live Prep (hidden) + 5 main tabs
             itemBuilder: (context, index) {
               return _buildPageWithAnimation(index);
             },
+          ),
+          
+          // Swipe hint indicator - only shows on Dashboard and when appropriate
+          if (_currentPageIndex == 1 && _showSwipeHint)
+            SwipeHintIndicator(
+              show: _showSwipeHint,
+              onDismiss: _dismissSwipeHint,
+            ),
+          ],
           ),
           bottomNavigationBar: Container(
             height: 80, // Increased height for better touch targets
@@ -335,15 +439,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               selectedIconTheme: const IconThemeData(size: 26),
               unselectedIconTheme: const IconThemeData(size: 22),
               currentIndex: _selectedIndex,
-              onTap: (index) {
+              onTap: (navIndex) {
                 // Add soft haptic feedback
                 HapticFeedback.selectionClick();
                 
-                // Jump to selected page - instant navigation for taps
-                if (index == 2) {
+                // Map bottom nav index to page index (add 1 for hidden Live Prep page)
+                // Nav 0 → Page 1 (Dashboard)
+                // Nav 1 → Page 2 (Communication)
+                // Nav 2 → Page 3 (Heal)
+                // Nav 3 → Page 4 (Consultations)
+                // Nav 4 → Page 5 (Profile)
+                final pageIndex = navIndex + 1;
+                
+                // Extra haptic for Heal tab
+                if (navIndex == 2) {
                   HapticFeedback.mediumImpact();
                 }
-                _pageController.jumpToPage(index);
+                
+                _pageController.jumpToPage(pageIndex);
               },
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,
