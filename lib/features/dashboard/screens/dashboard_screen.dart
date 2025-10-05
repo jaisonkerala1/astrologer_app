@@ -43,10 +43,8 @@ import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
-import '../widgets/swipe_hint_indicator.dart';
 import '../../live/screens/live_preparation_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -67,8 +65,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final StorageService _storageService = StorageService();
   late PageController _pageController;
   DashboardStatsModel? _currentStats;
-  bool _showSwipeHint = false; // Show swipe indicator for discoverability
-  int _swipeCount = 0; // Track number of swipes to Live Prep
 
   @override
   void initState() {
@@ -99,9 +95,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     // Load user data first, then load dashboard stats
     _initializeData();
-    
-    // Check if we should show swipe hint
-    _checkSwipeHintVisibility();
   }
 
   Future<void> _initializeData() async {
@@ -242,56 +235,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       curve: Curves.easeInOut,
     );
   }
-  
-  // Check if swipe hint should be shown (for first-time users)
-  Future<void> _checkSwipeHintVisibility() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenHint = prefs.getBool('has_seen_live_prep_swipe_hint') ?? false;
-    final swipeCount = prefs.getInt('live_prep_swipe_count') ?? 0;
-    
-    setState(() {
-      // Show hint if user hasn't seen it and hasn't swiped to Live Prep yet
-      _showSwipeHint = !hasSeenHint && swipeCount < 3;
-      _swipeCount = swipeCount;
-    });
-    
-    // Auto-hide after 10 seconds on first launch
-    if (_showSwipeHint) {
-      Future.delayed(const Duration(seconds: 10), () {
-        if (mounted && _showSwipeHint) {
-          _dismissSwipeHint();
-        }
-      });
-    }
-  }
-  
-  // Dismiss swipe hint and remember user has seen it
-  Future<void> _dismissSwipeHint() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('has_seen_live_prep_swipe_hint', true);
-    
-    if (mounted) {
-      setState(() {
-        _showSwipeHint = false;
-      });
-    }
-  }
-  
-  // Track swipe to Live Prep page
-  Future<void> _trackLivePrepSwipe() async {
-    final prefs = await SharedPreferences.getInstance();
-    final newCount = _swipeCount + 1;
-    await prefs.setInt('live_prep_swipe_count', newCount);
-    
-    setState(() {
-      _swipeCount = newCount;
-    });
-    
-    // Auto-dismiss hint after 3 successful swipes
-    if (newCount >= 3) {
-      _dismissSwipeHint();
-    }
-  }
 
   @override
   void dispose() {
@@ -398,12 +341,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (pageIndex == 0) {
                   // On Live Prep page - keep Dashboard highlighted in nav
                   _selectedIndex = 0;
-                  // Track that user found the hidden page
-                  _trackLivePrepSwipe();
-                  // Dismiss hint since user discovered it
-                  if (_showSwipeHint) {
-                    _dismissSwipeHint();
-                  }
                 } else {
                   // Map page index to bottom nav index (subtract 1)
                   _selectedIndex = pageIndex - 1;
@@ -415,13 +352,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return _buildPageWithAnimation(index);
             },
           ),
-          
-          // Swipe hint indicator - only shows on Dashboard and when appropriate
-          if (_currentPageIndex == 1 && _showSwipeHint)
-            SwipeHintIndicator(
-              show: _showSwipeHint,
-              onDismiss: _dismissSwipeHint,
-            ),
           ],
           ),
           bottomNavigationBar: Container(
