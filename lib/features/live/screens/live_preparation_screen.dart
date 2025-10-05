@@ -7,7 +7,9 @@ import '../services/live_stream_service.dart';
 import 'live_streaming_screen.dart';
 
 class LivePreparationScreen extends StatefulWidget {
-  const LivePreparationScreen({super.key});
+  final VoidCallback? onClose;
+  
+  const LivePreparationScreen({super.key, this.onClose});
 
   @override
   State<LivePreparationScreen> createState() => _LivePreparationScreenState();
@@ -57,7 +59,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
               backgroundColor: theme.surfaceColor,
               leading: IconButton(
                 icon: Icon(Icons.close, color: theme.textPrimary),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  // Use callback if provided (PageView context), otherwise pop (Route context)
+                  if (widget.onClose != null) {
+                    widget.onClose!();
+                  } else if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
               title: Text(
                 'Go Live',

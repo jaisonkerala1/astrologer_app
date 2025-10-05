@@ -96,6 +96,8 @@ flutter:
 
   assets:
     - assets/icons/folded_hands.svg
+    - assets/icons/dashboard.svg
+    - assets/icons/calendar.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

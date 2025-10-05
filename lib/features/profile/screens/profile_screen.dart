@@ -119,13 +119,39 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
         builder: (context, themeService, child) {
           return Scaffold(
             backgroundColor: themeService.backgroundColor,
+            appBar: AppBar(
+              title: const Text(
+                'Profile',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: themeService.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: Colors.white),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ThemeSelectionScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
             floatingActionButton: FloatingChatButton(userProfile: _currentUser),
             body: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
                   
                   // Profile Header - Full width
                   _buildProfileHeader(context, _currentUser, themeService),

@@ -200,7 +200,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildPageWithAnimation(int index) {
     switch (index) {
       case 0:
-        return const LivePreparationScreen(); // Hidden page - swipe right from Dashboard
+        return LivePreparationScreen(
+          onClose: () {
+            // Navigate back to dashboard page when close is pressed
+            _pageController.animateToPage(
+              1, // Dashboard page
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
+        ); // Hidden page - swipe right from Dashboard
       case 1:
         return _buildDashboardContent(); // Dashboard
       case 2:
@@ -399,11 +408,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               iconSize: 22, // Slightly larger icons for better visibility
                 items: [
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.dashboard_outlined),
+                    icon: SvgPicture.asset(
+                      AppAssets.dashboardIcon,
+                      width: 29,
+                      height: 29,
+                      color: _selectedIndex == 0
+                          ? themeService.primaryColor
+                          : themeService.textSecondary,
+                    ),
                     label: l10n.dashboard,
                    ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.phone_outlined),
+                    icon: Icon(
+                      Icons.phone_outlined,
+                      size: 28,
+                      color: _selectedIndex == 1
+                          ? themeService.primaryColor
+                          : themeService.textSecondary,
+                    ),
                     label: 'Communication',
                   ),
                   BottomNavigationBarItem(
@@ -418,11 +440,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     label: l10n.heal,
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.calendar_today_outlined),
+                    icon: SvgPicture.asset(
+                      AppAssets.calendarIcon,
+                      width: 27,
+                      height: 27,
+                      color: _selectedIndex == 3
+                          ? themeService.primaryColor
+                          : themeService.textSecondary,
+                    ),
                     label: l10n.consultations,
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.account_circle_outlined),
+                    icon: Icon(
+                      Icons.account_circle_outlined,
+                      size: 28,
+                      color: _selectedIndex == 4
+                          ? themeService.primaryColor
+                          : themeService.textSecondary,
+                    ),
                     label: l10n.profile,
                   ),
                 ],
