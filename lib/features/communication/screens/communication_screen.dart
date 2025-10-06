@@ -69,17 +69,10 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
-            title: const Text(
-              'Communication',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: themeService.primaryColor,
+            title: const Text('Communication'),
+            backgroundColor: Colors.transparent,
             elevation: 0,
-            foregroundColor: Colors.white,
-            iconTheme: const IconThemeData(color: Colors.white),
+            foregroundColor: themeService.textPrimary,
             actions: [
               // Test badge system button (remove in production)
               PopupMenuButton<String>(

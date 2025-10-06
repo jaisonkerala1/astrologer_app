@@ -52,17 +52,16 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Consultations',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: themeService.textPrimary,
               ),
             ),
             backgroundColor: themeService.primaryColor,
-            foregroundColor: Colors.white,
+            foregroundColor: themeService.textPrimary,
             elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               IconButton(
                 icon: AnimatedBuilder(
@@ -70,7 +69,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                   builder: (context, child) {
                     return Transform.rotate(
                       angle: _refreshAnimationController.value * 2 * 3.14159,
-                      child: const Icon(Icons.refresh, color: Colors.white),
+                      child: Icon(Icons.refresh, color: themeService.textPrimary),
                     );
                   },
                 ),

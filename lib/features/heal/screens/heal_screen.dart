@@ -27,20 +27,13 @@ class _HealScreenState extends State<HealScreen> with AutomaticKeepAliveClientMi
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
-            title: Text(
-              l10n.heal,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: themeService.primaryColor,
-            foregroundColor: Colors.white,
+            title: Text(l10n.heal),
+            backgroundColor: themeService.surfaceColor,
+            foregroundColor: themeService.textPrimary,
             elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
+                icon: Icon(Icons.more_vert, color: themeService.textPrimary),
                 onSelected: (value) {
                   if (value == 'manage_services') {
                     Navigator.push(
