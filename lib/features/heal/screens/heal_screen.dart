@@ -28,7 +28,7 @@ class _HealScreenState extends State<HealScreen> with AutomaticKeepAliveClientMi
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
             title: Text(l10n.heal),
-            backgroundColor: themeService.surfaceColor,
+            backgroundColor: themeService.primaryColor,
             foregroundColor: themeService.textPrimary,
             elevation: 0,
             actions: [
