@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import 'outgoing_call_screen.dart';
+import 'dart:math' as math;
 
 class DialerScreen extends StatefulWidget {
   const DialerScreen({super.key});
@@ -102,53 +103,35 @@ class _DialerScreenState extends State<DialerScreen> {
             ),
           ),
           
-          // Dial pad
+          // Dial pad (responsive grid)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                children: [
-                  // Row 1: 1, 2, 3
-                  Expanded(
-                    child: Row(
-                      children: [
-                        _buildDialButton('1', '', themeService),
-                        _buildDialButton('2', 'ABC', themeService),
-                        _buildDialButton('3', 'DEF', themeService),
-                      ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final List<(String, String)> keys = <(String, String)>[
+                    ('1', ''), ('2', 'ABC'), ('3', 'DEF'),
+                    ('4', 'GHI'), ('5', 'JKL'), ('6', 'MNO'),
+                    ('7', 'PQRS'), ('8', 'TUV'), ('9', 'WXYZ'),
+                    ('*', ''), ('0', '+'), ('#', ''),
+                  ];
+
+                  return GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1, // square cells
                     ),
-                  ),
-                  // Row 2: 4, 5, 6
-                  Expanded(
-                    child: Row(
-                      children: [
-                        _buildDialButton('4', 'GHI', themeService),
-                        _buildDialButton('5', 'JKL', themeService),
-                        _buildDialButton('6', 'MNO', themeService),
-                      ],
-                    ),
-                  ),
-                  // Row 3: 7, 8, 9
-                  Expanded(
-                    child: Row(
-                      children: [
-                        _buildDialButton('7', 'PQRS', themeService),
-                        _buildDialButton('8', 'TUV', themeService),
-                        _buildDialButton('9', 'WXYZ', themeService),
-                      ],
-                    ),
-                  ),
-                  // Row 4: *, 0, #
-                  Expanded(
-                    child: Row(
-                      children: [
-                        _buildDialButton('*', '', themeService),
-                        _buildDialButton('0', '+', themeService),
-                        _buildDialButton('#', '', themeService),
-                      ],
-                    ),
-                  ),
-                ],
+                    itemCount: keys.length,
+                    itemBuilder: (context, index) {
+                      final (String, String) item = keys[index];
+                      return _buildDialButton(item.$1, item.$2, themeService);
+                    },
+                  );
+                },
               ),
             ),
           ),
@@ -196,49 +179,54 @@ class _DialerScreenState extends State<DialerScreen> {
   }
 
   Widget _buildDialButton(String number, String letters, ThemeService themeService) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(4),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _addNumber(number),
-            borderRadius: BorderRadius.circular(50),
-            child: Container(
-              height: 80,
-              width: 80,
-              decoration: BoxDecoration(
-                color: themeService.surfaceColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: themeService.borderColor),
-                boxShadow: [themeService.cardShadow],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    number,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w500,
-                      color: themeService.textPrimary,
-                    ),
-                  ),
-                  if (letters.isNotEmpty)
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double diameter = math.min(constraints.maxWidth, constraints.maxHeight) * 0.82;
+        final double numberFontSize = diameter * 0.42;
+        final double lettersFontSize = diameter * 0.16;
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _addNumber(number),
+              borderRadius: BorderRadius.circular(diameter / 2),
+              child: Container
+              (
+                width: diameter,
+                height: diameter,
+                decoration: BoxDecoration(
+                  color: themeService.surfaceColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: themeService.borderColor),
+                  boxShadow: [themeService.cardShadow],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Text(
-                      letters,
+                      number,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: themeService.textSecondary,
-                        fontWeight: FontWeight.w400,
+                        fontSize: numberFontSize,
+                        fontWeight: FontWeight.w500,
+                        color: themeService.textPrimary,
                       ),
                     ),
-                ],
+                    if (letters.isNotEmpty)
+                      Text(
+                        letters,
+                        style: TextStyle(
+                          fontSize: lettersFontSize,
+                          color: themeService.textSecondary,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
