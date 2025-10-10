@@ -332,6 +332,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
+    // Get screen width for responsive sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate responsive sizes for bottom navigation
+    final double navBarHeight = screenWidth < 360 ? 65.0 : screenWidth < 400 ? 72.0 : 80.0;
+    final double selectedIconSize = screenWidth < 360 ? 23.0 : 26.0;
+    final double unselectedIconSize = screenWidth < 360 ? 20.0 : 22.0;
+    final double iconWidth = screenWidth < 360 ? 24.0 : screenWidth < 400 ? 26.0 : 29.0;
+    final double selectedFontSize = screenWidth < 360 ? 9.0 : 11.0;
+    final double unselectedFontSize = screenWidth < 360 ? 8.5 : 10.0;
+    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
@@ -365,7 +376,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
           ),
           bottomNavigationBar: Container(
-            height: 80, // Increased height for better touch targets
+            height: navBarHeight,
             decoration: BoxDecoration(
               color: themeService.surfaceColor,
               border: Border(
@@ -376,8 +387,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             child: BottomNavigationBar(
-              selectedIconTheme: const IconThemeData(size: 26),
-              unselectedIconTheme: const IconThemeData(size: 22),
+              selectedIconTheme: IconThemeData(size: selectedIconSize),
+              unselectedIconTheme: IconThemeData(size: unselectedIconSize),
               currentIndex: _selectedIndex,
               onTap: (navIndex) {
                 // Add soft haptic feedback
@@ -403,15 +414,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               elevation: 0,
               selectedItemColor: themeService.primaryColor,
           unselectedItemColor: themeService.textSecondary,
-              selectedFontSize: 11,
-              unselectedFontSize: 10,
-              iconSize: 22, // Slightly larger icons for better visibility
+              selectedFontSize: selectedFontSize,
+              unselectedFontSize: unselectedFontSize,
+              iconSize: unselectedIconSize,
                 items: [
                   BottomNavigationBarItem(
                     icon: SvgPicture.asset(
                       AppAssets.dashboardIcon,
-                      width: 29,
-                      height: 29,
+                      width: iconWidth,
+                      height: iconWidth,
                       color: _selectedIndex == 0
                           ? themeService.primaryColor
                           : themeService.textSecondary,
@@ -421,7 +432,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   BottomNavigationBarItem(
                     icon: Icon(
                       Icons.phone_outlined,
-                      size: 28,
+                      size: iconWidth,
                       color: _selectedIndex == 1
                           ? themeService.primaryColor
                           : themeService.textSecondary,
@@ -431,8 +442,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   BottomNavigationBarItem(
                     icon: SvgPicture.asset(
                       AppAssets.healIcon,
-                      width: 28,
-                      height: 28,
+                      width: iconWidth,
+                      height: iconWidth,
                       color: _selectedIndex == 2
                           ? themeService.primaryColor
                           : themeService.textSecondary,
@@ -442,8 +453,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   BottomNavigationBarItem(
                     icon: SvgPicture.asset(
                       AppAssets.calendarIcon,
-                      width: 27,
-                      height: 27,
+                      width: iconWidth,
+                      height: iconWidth,
                       color: _selectedIndex == 3
                           ? themeService.primaryColor
                           : themeService.textSecondary,
@@ -453,7 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   BottomNavigationBarItem(
                     icon: Icon(
                       Icons.account_circle_outlined,
-                      size: 28,
+                      size: iconWidth,
                       color: _selectedIndex == 4
                           ? themeService.primaryColor
                           : themeService.textSecondary,
