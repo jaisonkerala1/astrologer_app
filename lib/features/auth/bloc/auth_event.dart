@@ -2,6 +2,12 @@ import 'dart:io';
 
 abstract class AuthEvent {}
 
+class CheckPhoneExistsEvent extends AuthEvent {
+  final String phoneNumber;
+  
+  CheckPhoneExistsEvent(this.phoneNumber);
+}
+
 class SendOtpEvent extends AuthEvent {
   final String phoneNumber;
   

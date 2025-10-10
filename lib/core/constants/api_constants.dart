@@ -3,6 +3,7 @@ class ApiConstants {
   static const String baseUrl = 'https://astrologerapp-production.up.railway.app';
   
   // Authentication endpoints
+  static const String checkPhone = '/api/auth/check-phone';
   static const String sendOtp = '/api/auth/send-otp';
   static const String verifyOtp = '/api/auth/verify-otp';
   static const String signup = '/api/auth/signup';

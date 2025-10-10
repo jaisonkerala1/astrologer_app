@@ -48,6 +48,51 @@ class _LoginScreenState extends State<LoginScreen> {
             setState(() {
               _isLoading = true;
             });
+          } else if (state is PhoneCheckedState) {
+            setState(() {
+              _isLoading = false;
+            });
+            
+            if (state.exists) {
+              // Account exists, proceed to send OTP for login
+              context.read<AuthBloc>().add(SendOtpEvent(state.phoneNumber));
+            } else {
+              // Account doesn't exist, show message and redirect to signup
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: themeService.errorColor,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+              
+              // Show dialog to navigate to signup
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Account Not Found'),
+                  content: const Text('No account exists with this phone number. Would you like to sign up?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SignupScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Sign Up'),
+                    ),
+                  ],
+                ),
+              );
+            }
           } else if (state is OtpSentState) {
             setState(() {
               _isLoading = false;
@@ -194,7 +239,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _sendOtp() {
     if (_fullPhoneNumber.isNotEmpty && _phoneNumber.isNotEmpty) {
-      context.read<AuthBloc>().add(SendOtpEvent(_fullPhoneNumber.trim()));
+      // First check if phone number exists before sending OTP
+      context.read<AuthBloc>().add(CheckPhoneExistsEvent(_fullPhoneNumber.trim()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

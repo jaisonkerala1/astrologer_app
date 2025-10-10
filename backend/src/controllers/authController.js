@@ -15,6 +15,47 @@ const generateToken = (astrologerId, sessionId) => {
   );
 };
 
+// Check if phone number exists
+const checkPhoneExists = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.log('MongoDB not connected, readyState:', mongoose.connection.readyState);
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Service temporarily unavailable. Please try again in a moment.' 
+      });
+    }
+
+    // Validate phone number
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid phone number'
+      });
+    }
+
+    // Check if astrologer exists with this phone number
+    const astrologer = await Astrologer.findOne({ phone: phone.trim() });
+
+    res.json({
+      success: true,
+      exists: !!astrologer,
+      message: astrologer 
+        ? 'Account found. You can proceed to login.' 
+        : 'No account found with this phone number. Please sign up first.'
+    });
+  } catch (error) {
+    console.error('Check phone exists error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check phone number'
+    });
+  }
+};
+
 // Send OTP
 const sendOTP = async (req, res) => {
   try {
@@ -356,6 +397,7 @@ const deleteAccount = async (req, res) => {
 };
 
 module.exports = {
+  checkPhoneExists,
   sendOTP,
   verifyOTP,
   signup,

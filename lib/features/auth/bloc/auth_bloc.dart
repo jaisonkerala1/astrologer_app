@@ -15,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   StreamSubscription<String>? _unauthorizedSubscription;
 
   AuthBloc() : super(AuthInitial()) {
+    on<CheckPhoneExistsEvent>(_onCheckPhoneExists);
     on<SendOtpEvent>(_onSendOtp);
     on<VerifyOtpEvent>(_onVerifyOtp);
     on<SignupEvent>(_onSignup);
@@ -47,6 +48,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await _clearAuthData();
     _apiService.clearAuthToken();
     emit(AuthUnauthenticatedState());
+  }
+
+  Future<void> _onCheckPhoneExists(CheckPhoneExistsEvent event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    
+    try {
+      final response = await _apiService.post(
+        ApiConstants.checkPhone,
+        data: {'phone': event.phoneNumber.trim()},
+      );
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final exists = data['exists'] ?? false;
+        final message = data['message'] ?? '';
+        
+        emit(PhoneCheckedState(
+          exists: exists,
+          message: message,
+          phoneNumber: event.phoneNumber,
+        ));
+      } else {
+        emit(AuthErrorState('Failed to check phone number. Please try again.'));
+      }
+    } catch (e) {
+      print('Check phone exists error: $e');
+      if (e.toString().contains('Connection refused')) {
+        emit(AuthErrorState('Cannot connect to server. Please check your internet connection.'));
+      } else if (e.toString().contains('timeout')) {
+        emit(AuthErrorState('Request timeout. Please check your internet connection.'));
+      } else {
+        emit(AuthErrorState('Failed to check phone number. Please try again.'));
+      }
+    }
   }
 
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AuthState> emit) async {

@@ -34,6 +34,11 @@ const upload = multer({
   }
 });
 
+// @route   POST /api/auth/check-phone
+// @desc    Check if phone number exists in database
+// @access  Public
+router.post('/check-phone', authController.checkPhoneExists);
+
 // @route   POST /api/auth/send-otp
 // @desc    Send OTP to phone number
 // @access  Public

@@ -6,6 +6,18 @@ class AuthInitial extends AuthState {}
 
 class AuthLoading extends AuthState {}
 
+class PhoneCheckedState extends AuthState {
+  final bool exists;
+  final String message;
+  final String phoneNumber;
+  
+  PhoneCheckedState({
+    required this.exists,
+    required this.message,
+    required this.phoneNumber,
+  });
+}
+
 class OtpSentState extends AuthState {
   final String message;
   final String? otpId;
