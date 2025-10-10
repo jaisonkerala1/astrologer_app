@@ -43,6 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          // Only listen to new state changes, not re-evaluations
+          return previous.runtimeType != current.runtimeType;
+        },
         listener: (context, state) {
           if (state is AuthLoading) {
             setState(() {
@@ -97,18 +101,22 @@ class _LoginScreenState extends State<LoginScreen> {
             setState(() {
               _isLoading = false;
             });
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => BlocProvider.value(
-                  value: context.read<AuthBloc>(),
-                  child: OtpVerificationScreen(
-                    phoneNumber: _fullPhoneNumber,
-                    otpId: state.otpId,
+            // Check if OTP screen is already on top to prevent duplicate navigation
+            final currentRoute = ModalRoute.of(context);
+            if (currentRoute?.isCurrent == true) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BlocProvider.value(
+                    value: context.read<AuthBloc>(),
+                    child: OtpVerificationScreen(
+                      phoneNumber: _fullPhoneNumber,
+                      otpId: state.otpId,
+                    ),
                   ),
                 ),
-              ),
-            );
+              );
+            }
           } else if (state is AuthErrorState) {
             setState(() {
               _isLoading = false;
@@ -122,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         },
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             child: Form(
               key: _formKey,

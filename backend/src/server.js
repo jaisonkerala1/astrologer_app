@@ -22,12 +22,21 @@ app.use(limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: [
-    process.env.CORS_ORIGIN || 'http://localhost:3000',
-    'http://10.0.2.2:7566',
-    'http://localhost:7566',
-    'http://127.0.0.1:7566'
-  ],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all localhost/127.0.0.1 origins regardless of port
+    if (origin.startsWith('http://localhost') || 
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://10.0.2.2') ||
+        origin === (process.env.CORS_ORIGIN || 'http://localhost:3000')) {
+      return callback(null, true);
+    }
+    
+    // Reject all other origins
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 

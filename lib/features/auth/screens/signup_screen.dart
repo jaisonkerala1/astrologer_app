@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
@@ -36,6 +37,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String _fullPhoneNumber = '';
   String _countryCode = '+91';
   String _phoneNumber = '';
+  String? _phoneError;
   File? _selectedImage;
   bool _termsAccepted = false;
   bool _showTermsError = false;
@@ -146,40 +148,48 @@ class _SignupScreenState extends State<SignupScreen> {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) {
+            // Only listen to new state changes, not re-evaluations
+            return previous.runtimeType != current.runtimeType;
+          },
           listener: (context, state) async {
             if (state is OtpSentState) {
               setState(() {
                 _isLoading = false;
               });
               
-              // Get device info before navigation
-              final deviceInfo = await _getDeviceInfo();
-              
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => OtpVerificationScreen(
-                    phoneNumber: _fullPhoneNumber,
-                    otpId: state.otpId,
-                    isSignup: true,
-                    signupData: {
-                      'name': _nameController.text,
-                      'email': _emailController.text,
-                      'experience': int.tryParse(_experienceController.text) ?? 0,
-                      'specializations': _selectedSpecializations,
-                      'languages': _selectedLanguages,
-                      'bio': _bioController.text,
-                      'awards': _awardsController.text,
-                      'certificates': _certificatesController.text,
-                      'profilePicture': _selectedImage,
-                      'termsAccepted': _termsAccepted,
-                      'termsAcceptedAt': DateTime.now().toIso8601String(),
-                      'acceptedTermsVersion': PlatformConfig.CURRENT_TERMS_VERSION,
-                      'acceptanceDeviceInfo': deviceInfo,
-                    },
+              // Check if signup screen is the current route to prevent duplicate navigation
+              final currentRoute = ModalRoute.of(context);
+              if (currentRoute?.isCurrent == true) {
+                // Get device info before navigation
+                final deviceInfo = await _getDeviceInfo();
+                
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OtpVerificationScreen(
+                      phoneNumber: _fullPhoneNumber,
+                      otpId: state.otpId,
+                      isSignup: true,
+                      signupData: {
+                        'name': _nameController.text,
+                        'email': _emailController.text,
+                        'experience': int.tryParse(_experienceController.text) ?? 0,
+                        'specializations': _selectedSpecializations,
+                        'languages': _selectedLanguages,
+                        'bio': _bioController.text,
+                        'awards': _awardsController.text,
+                        'certificates': _certificatesController.text,
+                        'profilePicture': _selectedImage,
+                        'termsAccepted': _termsAccepted,
+                        'termsAcceptedAt': DateTime.now().toIso8601String(),
+                        'acceptedTermsVersion': PlatformConfig.CURRENT_TERMS_VERSION,
+                        'acceptanceDeviceInfo': deviceInfo,
+                      },
+                    ),
                   ),
-                ),
-              );
+                );
+              }
             } else if (state is AuthErrorState) {
               setState(() {
                 _isLoading = false;
@@ -321,12 +331,22 @@ class _SignupScreenState extends State<SignupScreen> {
                             controller: _nameController,
                             label: 'Full Name',
                             icon: Icons.person,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                              LengthLimitingTextInputFormatter(50),
+                            ],
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your full name';
                               }
-                              if (value.length < 2) {
+                              if (value.trim().length < 2) {
                                 return 'Name must be at least 2 characters';
+                              }
+                              if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                                return 'Name can only contain letters and spaces';
+                              }
+                              if (value.trim() != value) {
+                                return 'Name cannot start or end with spaces';
                               }
                               return null;
                             },
@@ -355,7 +375,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Phone Field with Country Selector
+                          // Phone Field with Country Selector - Responsive
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -375,10 +395,42 @@ class _SignupScreenState extends State<SignupScreen> {
                                     _fullPhoneNumber = fullPhone;
                                     _countryCode = countryCode;
                                     _phoneNumber = phoneNumber;
+                                    // Clear error when user types
+                                    if (_phoneError != null) {
+                                      _phoneError = null;
+                                    }
                                   });
                                 },
                                 hintText: 'Enter your phone number',
                               ),
+                              // Show validation error below phone field
+                              if (_phoneError != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8, left: 12),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        size: 16,
+                                        color: AppTheme.errorColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          _phoneError!,
+                                          style: TextStyle(
+                                            color: AppTheme.errorColor,
+                                            fontSize: 12,
+                                            height: 1.4,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -389,6 +441,10 @@ class _SignupScreenState extends State<SignupScreen> {
                             label: 'Years of Experience',
                             icon: Icons.timeline,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(2),
+                            ],
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your years of experience';
@@ -397,9 +453,12 @@ class _SignupScreenState extends State<SignupScreen> {
                               if (experience == null || experience < 0) {
                                 return 'Please enter a valid number of years';
                               }
+                              if (experience > 99) {
+                                return 'Experience cannot exceed 99 years';
+                              }
                               return null;
-                              },
-                            ),
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -407,6 +466,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Specializations Card
                     Container(
+                      constraints: const BoxConstraints(
+                        minHeight: 220, // Fixed minimum height for stability
+                      ),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -435,6 +497,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Languages Card
                     Container(
+                      constraints: const BoxConstraints(
+                        minHeight: 220, // Fixed minimum height for stability
+                      ),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -526,6 +591,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             maxLines: 3,
                             maxLength: 1000,
                             hintText: 'Describe your experience, specializations, and what makes you unique as an astrologer...',
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s,.!?\-()&:;]+'))
+                            ],
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Bio is required to help clients understand your expertise';
@@ -549,9 +617,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             maxLines: 1,
                             maxLength: 500,
                             hintText: 'List any awards, recognitions, or achievements...',
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s,.\-()&]')),
+                            ],
                             validator: (value) {
                               if (value != null && value.length > 500) {
                                 return 'Awards description cannot exceed 500 characters';
+                              }
+                              if (value != null && value.isNotEmpty) {
+                                if (!RegExp(r'^[a-zA-Z0-9\s,.\-()&]+$').hasMatch(value)) {
+                                  return 'Awards can only contain letters, numbers, and basic punctuation';
+                                }
                               }
                               return null;
                             },
@@ -566,9 +642,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             maxLines: 1,
                             maxLength: 500,
                             hintText: 'List your certifications, degrees, or qualifications...',
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s,.\-()&]')),
+                            ],
                             validator: (value) {
                               if (value != null && value.length > 500) {
                                 return 'Certificates description cannot exceed 500 characters';
+                              }
+                              if (value != null && value.isNotEmpty) {
+                                if (!RegExp(r'^[a-zA-Z0-9\s,.\-()&]+$').hasMatch(value)) {
+                                  return 'Certificates can only contain letters, numbers, and basic punctuation';
+                                }
                               }
                               return null;
                             },
@@ -687,6 +771,7 @@ class _SignupScreenState extends State<SignupScreen> {
     String? hintText,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
     int? maxLines = 1,
     int? maxLength,
   }) {
@@ -694,6 +779,7 @@ class _SignupScreenState extends State<SignupScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      inputFormatters: inputFormatters,
       maxLines: maxLines,
       maxLength: maxLength,
       style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
@@ -707,6 +793,14 @@ class _SignupScreenState extends State<SignupScreen> {
           fontWeight: FontWeight.w500,
         ),
         hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        // Improved error text styling for responsive layout
+        errorStyle: const TextStyle(
+          color: AppTheme.errorColor,
+          fontSize: 12,
+          height: 1.4,
+        ),
+        errorMaxLines: 2,
+        isDense: true,
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(
@@ -811,11 +905,13 @@ class _SignupScreenState extends State<SignupScreen> {
     String? hint,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      inputFormatters: inputFormatters,
       style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
@@ -823,6 +919,14 @@ class _SignupScreenState extends State<SignupScreen> {
         prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
         labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
         hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        // Improved error text styling
+        errorStyle: const TextStyle(
+          color: AppTheme.errorColor,
+          fontSize: 12,
+          height: 1.4,
+        ),
+        errorMaxLines: 2,
+        isDense: true,
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(
@@ -875,42 +979,48 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((option) {
-            final isSelected = selectedOptions.contains(option);
-            return FilterChip(
-              label: Text(
-                option,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppTheme.textColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  fontSize: 14,
+        // Add minimum height constraint to prevent card resizing
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: 120, // Minimum height to accommodate at least 3 rows of chips
+          ),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: options.map((option) {
+              final isSelected = selectedOptions.contains(option);
+              return FilterChip(
+                label: Text(
+                  option,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppTheme.textColor,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              selected: isSelected,
-              onSelected: (selected) {
-                List<String> newSelection = List.from(selectedOptions);
-                if (selected) {
-                  newSelection.add(option);
-                } else {
-                  newSelection.remove(option);
-                }
-                onChanged(newSelection);
-              },
-              backgroundColor: Colors.grey[100],
-              selectedColor: AppTheme.primaryColor,
-              checkmarkColor: Colors.white,
-              side: BorderSide(
-                color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            );
-          }).toList(),
+                selected: isSelected,
+                onSelected: (selected) {
+                  List<String> newSelection = List.from(selectedOptions);
+                  if (selected) {
+                    newSelection.add(option);
+                  } else {
+                    newSelection.remove(option);
+                  }
+                  onChanged(newSelection);
+                },
+                backgroundColor: Colors.grey[100],
+                selectedColor: AppTheme.primaryColor,
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+                  width: 1,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
@@ -934,105 +1044,117 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _handleSignup() async {
-    if (_formKey.currentState!.validate()) {
-      // Reset terms error
+    // Validate form first to show all field errors
+    final formValid = _formKey.currentState!.validate();
+    
+    // Validate phone number (not in form)
+    bool phoneValid = true;
+    if (_fullPhoneNumber.isEmpty || _phoneNumber.isEmpty) {
       setState(() {
-        _showTermsError = false;
+        _phoneError = 'Please enter a valid phone number';
       });
-      
-      if (_selectedImage == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Profile picture is required for signup'),
-            backgroundColor: AppTheme.errorColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-      if (_selectedSpecializations.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please select at least one specialization'),
-            backgroundColor: AppTheme.errorColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-      if (_selectedLanguages.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please select at least one language'),
-            backgroundColor: AppTheme.errorColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-      if (_bioController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please write a bio to help clients understand your expertise'),
-            backgroundColor: AppTheme.errorColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-      if (_bioController.text.trim().length < 50) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please write at least 50 characters in your bio'),
-            backgroundColor: AppTheme.errorColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-      
-      // Check terms acceptance
-      if (!_termsAccepted) {
-        setState(() {
-          _showTermsError = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('You must accept the Terms of Service to continue'),
-            backgroundColor: AppTheme.errorColor,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        // Scroll to terms section
-        return;
-      }
-
+      phoneValid = false;
+    } else if (_phoneNumber.length < 10) {
       setState(() {
-        _isLoading = true;
+        _phoneError = 'Phone number must be at least 10 digits';
       });
-      
-      // Get device info for tracking
-      final deviceInfo = await _getDeviceInfo();
-
-      // Send OTP for signup with terms acceptance data
-      if (_fullPhoneNumber.isNotEmpty && _phoneNumber.isNotEmpty) {
-        context.read<AuthBloc>().add(SendOtpEvent(_fullPhoneNumber.trim()));
-        
-        // Store terms acceptance info in signup data for later
-        // This will be sent to backend after OTP verification
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please enter a valid phone number'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      phoneValid = false;
+    } else if (_phoneNumber.length > 15) {
+      setState(() {
+        _phoneError = 'Phone number cannot exceed 15 digits';
+      });
+      phoneValid = false;
+    } else {
+      setState(() {
+        _phoneError = null;
+      });
     }
+    
+    // If form or phone validation failed, stop here
+    if (!formValid || !phoneValid) {
+      return;
+    }
+    
+    // All validations passed, continue with other checks
+    if (_selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Profile picture is required for signup'),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    if (_selectedSpecializations.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select at least one specialization'),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    if (_selectedLanguages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select at least one language'),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    if (_bioController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please write a bio to help clients understand your expertise'),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    if (_bioController.text.trim().length < 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please write at least 50 characters in your bio'),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    
+    // Check terms acceptance
+    if (!_termsAccepted) {
+      setState(() {
+        _showTermsError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('You must accept the Terms of Service to continue'),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+    
+    // Get device info for tracking
+    final deviceInfo = await _getDeviceInfo();
+
+    // Send OTP for signup with terms acceptance data
+    context.read<AuthBloc>().add(SendOtpEvent(_fullPhoneNumber.trim()));
+    
+    // Store terms acceptance info in signup data for later
+    // This will be sent to backend after OTP verification
   }
 
   // Google Material Design 3 - Beautiful Terms Acceptance Card
