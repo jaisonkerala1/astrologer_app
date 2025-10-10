@@ -26,15 +26,17 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
     // For medium screens (360-400px), use standard size
     // For large screens (> 400px), use comfortable size
     final double circleSize = screenWidth < 360 
-        ? 60.0  // Small screens
+        ? 58.0  // Small screens - reduced from 60
         : screenWidth < 400 
-            ? 65.0  // Medium screens
+            ? 64.0  // Medium screens - reduced from 65
             : 70.0;  // Large screens
     
     final double nameWidth = circleSize;
     final double fontSize = screenWidth < 360 ? 9.0 : 10.0;
     final double viewerFontSize = screenWidth < 360 ? 8.0 : 9.0;
-    final double iconSize = screenWidth < 360 ? 9.0 : 10.0;
+    final double iconSize = screenWidth < 360 ? 8.0 : 10.0;
+    final double spacingAfterCircle = screenWidth < 360 ? 3.0 : 4.0;
+    final double spacingBeforeViewer = screenWidth < 360 ? 0.5 : 1.0;
     
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
@@ -231,7 +233,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 4),
+              SizedBox(height: spacingAfterCircle),
               
               // Astrologer name - Responsive width
               SizedBox(
@@ -249,14 +251,17 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 1), // Reduced from 2
+              SizedBox(height: spacingBeforeViewer),
               
               // Viewer count - Responsive sizing
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth < 360 ? 3 : 4,
+                  vertical: screenWidth < 360 ? 0.5 : 1,
+                ),
                 decoration: BoxDecoration(
                   color: themeService.surfaceColor,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(screenWidth < 360 ? 6 : 8),
                   border: Border.all(
                     color: themeService.borderColor.withOpacity(0.3),
                     width: 0.5,
@@ -270,7 +275,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                       size: iconSize,
                       color: themeService.textSecondary,
                     ),
-                    const SizedBox(width: 2),
+                    SizedBox(width: screenWidth < 360 ? 1.5 : 2),
                     Text(
                       _formatViewerCount(astrologer.viewerCount),
                       style: TextStyle(
