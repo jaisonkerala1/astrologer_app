@@ -18,17 +18,36 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width for responsive sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate responsive sizes
+    // For very small screens (< 360px), use smaller circles
+    // For medium screens (360-400px), use standard size
+    // For large screens (> 400px), use comfortable size
+    final double circleSize = screenWidth < 360 
+        ? 60.0  // Small screens
+        : screenWidth < 400 
+            ? 65.0  // Medium screens
+            : 70.0;  // Large screens
+    
+    final double nameWidth = circleSize;
+    final double fontSize = screenWidth < 360 ? 9.0 : 10.0;
+    final double viewerFontSize = screenWidth < 360 ? 8.0 : 9.0;
+    final double iconSize = screenWidth < 360 ? 9.0 : 10.0;
+    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return GestureDetector(
           onTap: onTap,
           onLongPress: onLongPress,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Main circle with Instagram Stories-style live border
               Container(
-                width: 70,
-                height: 70,
+                width: circleSize,
+                height: circleSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -70,23 +89,23 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                     children: [
                       // Live streaming thumbnail
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(circleSize / 2),
                         child: Container(
-                          width: 64,
-                          height: 64,
+                          width: circleSize - 6,
+                          height: circleSize - 6,
                           decoration: BoxDecoration(
                             color: themeService.surfaceColor,
                           ),
                           child: astrologer.thumbnailUrl.isNotEmpty
                               ? Image.network(
                                   astrologer.thumbnailUrl,
-                                  width: 64,
-                                  height: 64,
+                                  width: circleSize - 6,
+                                  height: circleSize - 6,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return ProfileAvatarWidget(
                                       imagePath: astrologer.profilePicture,
-                                      radius: 32,
+                                      radius: (circleSize - 6) / 2,
                                       fallbackText: astrologer.name.isNotEmpty 
                                           ? astrologer.name.substring(0, 1).toUpperCase()
                                           : 'A',
@@ -97,11 +116,11 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return Container(
-                                      width: 64,
-                                      height: 64,
+                                      width: circleSize - 6,
+                                      height: circleSize - 6,
                                       decoration: BoxDecoration(
                                         color: themeService.surfaceColor,
-                                        borderRadius: BorderRadius.circular(32),
+                                        borderRadius: BorderRadius.circular((circleSize - 6) / 2),
                                       ),
                                       child: Center(
                                         child: CircularProgressIndicator(
@@ -116,7 +135,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                                 )
                               : ProfileAvatarWidget(
                                   imagePath: astrologer.profilePicture,
-                                  radius: 32,
+                                  radius: (circleSize - 6) / 2,
                                   fallbackText: astrologer.name.isNotEmpty 
                                       ? astrologer.name.substring(0, 1).toUpperCase()
                                       : 'A',
@@ -212,19 +231,17 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 4), // Reduced from 6
+              const SizedBox(height: 4),
               
-              // Astrologer name
-              Container(
-                width: 70,
-                height: 14, // Reduced from 16
-                alignment: Alignment.center,
+              // Astrologer name - Responsive width
+              SizedBox(
+                width: nameWidth,
                 child: Text(
                   astrologer.name,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: themeService.textPrimary,
-                    fontSize: 10, // Reduced from 11
+                    fontSize: fontSize,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -234,9 +251,9 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               
               const SizedBox(height: 1), // Reduced from 2
               
-              // Viewer count
+              // Viewer count - Responsive sizing
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), // Reduced padding
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
                   color: themeService.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
@@ -250,7 +267,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.visibility,
-                      size: 10,
+                      size: iconSize,
                       color: themeService.textSecondary,
                     ),
                     const SizedBox(width: 2),
@@ -258,7 +275,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                       _formatViewerCount(astrologer.viewerCount),
                       style: TextStyle(
                         color: themeService.textSecondary,
-                        fontSize: 9,
+                        fontSize: viewerFontSize,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

@@ -12,10 +12,25 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width for responsive sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate responsive container height
+    // Small screens get compact height, larger screens get comfortable height
+    final double containerHeight = screenWidth < 360 
+        ? 125.0  // Small screens
+        : screenWidth < 400 
+            ? 132.0  // Medium screens
+            : 140.0;  // Large screens
+    
+    // Calculate responsive font sizes
+    final double titleFontSize = screenWidth < 360 ? 14.0 : 16.0;
+    final double buttonFontSize = screenWidth < 360 ? 11.0 : 12.0;
+    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Container(
-          height: 140, // Increased from 120 to accommodate content
+          height: containerHeight,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +61,7 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: themeService.textPrimary,
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                        fontSize: titleFontSize,
                       ),
                     ),
                     const Spacer(),
@@ -70,7 +85,7 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
                           'View All',
                           style: TextStyle(
                             color: themeService.primaryColor,
-                            fontSize: 12,
+                            fontSize: buttonFontSize,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
