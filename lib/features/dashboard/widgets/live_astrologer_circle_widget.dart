@@ -21,35 +21,50 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
     // Get screen width for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
     
-    // Calculate responsive sizes
-    // For very small screens (< 360px), use smaller circles
-    // For medium screens (360-400px), use standard size
-    // For large screens (> 400px), use comfortable size
-    final double circleSize = screenWidth < 360
-        ? 54.0  // Small screens - ultra compact
+    // Base sizes used before we adapt to parent constraints
+    final double baseCircle = screenWidth < 360
+        ? 56.0
         : screenWidth < 400
-            ? 62.0  // Medium screens - compact
-            : 70.0;  // Large screens
-
-    final double nameWidth = circleSize;
-    final double fontSize = screenWidth < 360 ? 8.0 : 10.0;
-    final double viewerFontSize = screenWidth < 360 ? 7.0 : 9.0;
-    final double iconSize = screenWidth < 360 ? 7.0 : 10.0;
-    final double spacingAfterCircle = screenWidth < 360 ? 2.0 : 4.0;
-    final double spacingBeforeViewer = screenWidth < 360 ? 0.0 : 0.5;
+            ? 62.0
+            : 70.0;
+    final double baseNameHeight = screenWidth < 360 ? 12.0 : 14.0;
+    final double baseViewerHeight = screenWidth < 360 ? 12.0 : 14.0;
+    final double baseNameFont = screenWidth < 360 ? 8.5 : 10.0;
+    final double baseViewerFont = screenWidth < 360 ? 7.5 : 9.0;
+    final double baseIcon = screenWidth < 360 ? 7.0 : 10.0;
+    final double spacingAfterCircle = 2.0;
+    final double spacingBeforeViewer = 0.0;
     
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return GestureDetector(
           onTap: onTap,
           onLongPress: onLongPress,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double maxHeight = constraints.hasBoundedHeight
+                  ? constraints.maxHeight
+                  : (screenWidth < 360 ? 100 : screenWidth < 400 ? 110 : 130);
+
+              final _LiveItemLayout layout = _computeLayout(
+                maxHeight: maxHeight,
+                baseCircle: baseCircle,
+                baseNameHeight: baseNameHeight,
+                baseViewerHeight: baseViewerHeight,
+                baseNameFont: baseNameFont,
+                baseViewerFont: baseViewerFont,
+                baseIcon: baseIcon,
+                spacingAfterCircle: spacingAfterCircle,
+                spacingBeforeViewer: spacingBeforeViewer,
+              );
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
               // Main circle with Instagram Stories-style live border
               Container(
-                width: circleSize,
-                height: circleSize,
+                width: layout.circle,
+                height: layout.circle,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -91,23 +106,23 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                     children: [
                       // Live streaming thumbnail
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(circleSize / 2),
+                        borderRadius: BorderRadius.circular(layout.circle / 2),
                         child: Container(
-                          width: circleSize - 6,
-                          height: circleSize - 6,
+                          width: layout.circle - 6,
+                          height: layout.circle - 6,
                           decoration: BoxDecoration(
                             color: themeService.surfaceColor,
                           ),
                           child: astrologer.thumbnailUrl.isNotEmpty
                               ? Image.network(
                                   astrologer.thumbnailUrl,
-                                  width: circleSize - 6,
-                                  height: circleSize - 6,
+                                  width: layout.circle - 6,
+                                  height: layout.circle - 6,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return ProfileAvatarWidget(
                                       imagePath: astrologer.profilePicture,
-                                      radius: (circleSize - 6) / 2,
+                                      radius: (layout.circle - 6) / 2,
                                       fallbackText: astrologer.name.isNotEmpty 
                                           ? astrologer.name.substring(0, 1).toUpperCase()
                                           : 'A',
@@ -118,11 +133,11 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return Container(
-                                      width: circleSize - 6,
-                                      height: circleSize - 6,
+                                      width: layout.circle - 6,
+                                      height: layout.circle - 6,
                                       decoration: BoxDecoration(
                                         color: themeService.surfaceColor,
-                                        borderRadius: BorderRadius.circular((circleSize - 6) / 2),
+                                        borderRadius: BorderRadius.circular((layout.circle - 6) / 2),
                                       ),
                                       child: Center(
                                         child: CircularProgressIndicator(
@@ -137,7 +152,7 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                                 )
                               : ProfileAvatarWidget(
                                   imagePath: astrologer.profilePicture,
-                                  radius: (circleSize - 6) / 2,
+                                  radius: (layout.circle - 6) / 2,
                                   fallbackText: astrologer.name.isNotEmpty 
                                       ? astrologer.name.substring(0, 1).toUpperCase()
                                       : 'A',
@@ -237,15 +252,15 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               
               // Astrologer name - Responsive width and height
               Container(
-                width: nameWidth,
-                height: screenWidth < 360 ? 12.0 : 14.0, // Reduced height for small screens
+                width: layout.circle,
+                height: layout.nameHeight,
                 alignment: Alignment.center,
                 child: Text(
                   astrologer.name,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: themeService.textPrimary,
-                    fontSize: fontSize,
+                    fontSize: layout.nameFont,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -256,40 +271,46 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               SizedBox(height: spacingBeforeViewer),
               
               // Viewer count - Ultra compact for small screens
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth < 360 ? 2 : 3,
-                  vertical: screenWidth < 360 ? 0.5 : 1,
-                ),
-                decoration: BoxDecoration(
-                  color: themeService.surfaceColor,
-                  borderRadius: BorderRadius.circular(screenWidth < 360 ? 5 : 8),
-                  border: Border.all(
-                    color: themeService.borderColor.withOpacity(0.3),
-                    width: 0.5,
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: layout.viewerHeight),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 3,
+                    vertical: 0.5,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.visibility,
-                      size: screenWidth < 360 ? 6.0 : iconSize,
-                      color: themeService.textSecondary,
+                  decoration: BoxDecoration(
+                    color: themeService.surfaceColor,
+                    borderRadius: BorderRadius.circular(screenWidth < 360 ? 5 : 8),
+                    border: Border.all(
+                      color: themeService.borderColor.withOpacity(0.3),
+                      width: 0.5,
                     ),
-                    SizedBox(width: screenWidth < 360 ? 1.0 : 2),
-                    Text(
-                      _formatViewerCount(astrologer.viewerCount),
-                      style: TextStyle(
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.visibility,
+                        size: layout.iconSize,
                         color: themeService.textSecondary,
-                        fontSize: screenWidth < 360 ? 6.5 : viewerFontSize,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 2),
+                      Text(
+                        _formatViewerCount(astrologer.viewerCount),
+                        style: TextStyle(
+                          color: themeService.textSecondary,
+                          fontSize: layout.viewerFont,
+                          fontWeight: FontWeight.w500,
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
+          );
+            },
           ),
         );
       },
@@ -302,6 +323,82 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
     }
     return count.toString();
   }
+}
+
+class _LiveItemLayout {
+  final double circle;
+  final double nameHeight;
+  final double viewerHeight;
+  final double nameFont;
+  final double viewerFont;
+  final double iconSize;
+  const _LiveItemLayout({
+    required this.circle,
+    required this.nameHeight,
+    required this.viewerHeight,
+    required this.nameFont,
+    required this.viewerFont,
+    required this.iconSize,
+  });
+}
+
+_LiveItemLayout _computeLayout({
+  required double maxHeight,
+  required double baseCircle,
+  required double baseNameHeight,
+  required double baseViewerHeight,
+  required double baseNameFont,
+  required double baseViewerFont,
+  required double baseIcon,
+  required double spacingAfterCircle,
+  required double spacingBeforeViewer,
+}) {
+  // Start with base values
+  double circle = baseCircle;
+  double nameH = baseNameHeight;
+  double viewerH = baseViewerHeight;
+  double total = circle + spacingAfterCircle + nameH + spacingBeforeViewer + viewerH;
+
+  // Minimums to preserve readability while fitting
+  const double minCircle = 48.0;
+  const double minNameH = 11.0;
+  const double minViewerH = 11.0;
+
+  if (total > maxHeight) {
+    double overflow = total - maxHeight;
+    final double reducibleCircle = (circle - minCircle).clamp(0, double.infinity);
+    final double reduceCircle = overflow.clamp(0, reducibleCircle);
+    circle -= reduceCircle;
+    overflow -= reduceCircle;
+
+    if (overflow > 0) {
+      final double reducibleName = (nameH - minNameH).clamp(0, double.infinity);
+      final double reduceName = (overflow / 2).clamp(0, reducibleName);
+      nameH -= reduceName;
+      overflow -= reduceName;
+
+      final double reducibleViewer = (viewerH - minViewerH).clamp(0, double.infinity);
+      final double reduceViewer = overflow.clamp(0, reducibleViewer);
+      viewerH -= reduceViewer;
+      overflow -= reduceViewer;
+    }
+  }
+
+  // Scale text/icon based on the relative heights retained
+  final double nameScale = (nameH / baseNameHeight).clamp(0.8, 1.0);
+  final double viewerScale = (viewerH / baseViewerHeight).clamp(0.8, 1.0);
+  final double nameFont = (baseNameFont * nameScale).clamp(7.5, baseNameFont);
+  final double viewerFont = (baseViewerFont * viewerScale).clamp(6.5, baseViewerFont);
+  final double iconSize = (baseIcon * viewerScale).clamp(6.0, baseIcon);
+
+  return _LiveItemLayout(
+    circle: circle,
+    nameHeight: nameH,
+    viewerHeight: viewerH,
+    nameFont: nameFont,
+    viewerFont: viewerFont,
+    iconSize: iconSize,
+  );
 }
 
 

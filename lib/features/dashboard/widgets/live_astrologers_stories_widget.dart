@@ -15,13 +15,13 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     // Get screen width for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
     
-    // Calculate responsive container height
-    // Small screens get compact height, larger screens get comfortable height
+    // Responsive container height. We design for the child item to fit
+    // within its allocated height without overflow across widths.
     final double containerHeight = screenWidth < 360
-        ? 110.0  // Small screens - ultra compact to fit 54px circle + 12px name + 18px viewer
+        ? 110.0
         : screenWidth < 400
-            ? 124.0  // Medium screens - compact
-            : 140.0;  // Large screens
+            ? 124.0
+            : 140.0;
     
     // Calculate responsive font sizes
     final double titleFontSize = screenWidth < 360 ? 14.0 : 16.0;
