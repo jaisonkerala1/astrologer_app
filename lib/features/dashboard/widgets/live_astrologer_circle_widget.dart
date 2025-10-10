@@ -25,18 +25,18 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
     // For very small screens (< 360px), use smaller circles
     // For medium screens (360-400px), use standard size
     // For large screens (> 400px), use comfortable size
-    final double circleSize = screenWidth < 360 
-        ? 56.0  // Small screens - further reduced to fit in 101px constraint
-        : screenWidth < 400 
-            ? 64.0  // Medium screens
+    final double circleSize = screenWidth < 360
+        ? 54.0  // Small screens - ultra compact
+        : screenWidth < 400
+            ? 62.0  // Medium screens - compact
             : 70.0;  // Large screens
-    
+
     final double nameWidth = circleSize;
-    final double fontSize = screenWidth < 360 ? 8.5 : 10.0;
-    final double viewerFontSize = screenWidth < 360 ? 7.5 : 9.0;
-    final double iconSize = screenWidth < 360 ? 7.5 : 10.0;
-    final double spacingAfterCircle = screenWidth < 360 ? 2.5 : 4.0;
-    final double spacingBeforeViewer = screenWidth < 360 ? 0.0 : 1.0;
+    final double fontSize = screenWidth < 360 ? 8.0 : 10.0;
+    final double viewerFontSize = screenWidth < 360 ? 7.0 : 9.0;
+    final double iconSize = screenWidth < 360 ? 7.0 : 10.0;
+    final double spacingAfterCircle = screenWidth < 360 ? 2.0 : 4.0;
+    final double spacingBeforeViewer = screenWidth < 360 ? 0.0 : 0.5;
     
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
@@ -235,9 +235,11 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               
               SizedBox(height: spacingAfterCircle),
               
-              // Astrologer name - Responsive width
-              SizedBox(
+              // Astrologer name - Responsive width and height
+              Container(
                 width: nameWidth,
+                height: screenWidth < 360 ? 12.0 : 14.0, // Reduced height for small screens
+                alignment: Alignment.center,
                 child: Text(
                   astrologer.name,
                   textAlign: TextAlign.center,
@@ -253,15 +255,15 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               
               SizedBox(height: spacingBeforeViewer),
               
-              // Viewer count - Responsive sizing
+              // Viewer count - Ultra compact for small screens
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth < 360 ? 3 : 4,
+                  horizontal: screenWidth < 360 ? 2 : 3,
                   vertical: screenWidth < 360 ? 0.5 : 1,
                 ),
                 decoration: BoxDecoration(
                   color: themeService.surfaceColor,
-                  borderRadius: BorderRadius.circular(screenWidth < 360 ? 6 : 8),
+                  borderRadius: BorderRadius.circular(screenWidth < 360 ? 5 : 8),
                   border: Border.all(
                     color: themeService.borderColor.withOpacity(0.3),
                     width: 0.5,
@@ -272,15 +274,15 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.visibility,
-                      size: iconSize,
+                      size: screenWidth < 360 ? 6.0 : iconSize,
                       color: themeService.textSecondary,
                     ),
-                    SizedBox(width: screenWidth < 360 ? 1.5 : 2),
+                    SizedBox(width: screenWidth < 360 ? 1.0 : 2),
                     Text(
                       _formatViewerCount(astrologer.viewerCount),
                       style: TextStyle(
                         color: themeService.textSecondary,
-                        fontSize: viewerFontSize,
+                        fontSize: screenWidth < 360 ? 6.5 : viewerFontSize,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

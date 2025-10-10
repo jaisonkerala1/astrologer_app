@@ -17,10 +17,10 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     
     // Calculate responsive container height
     // Small screens get compact height, larger screens get comfortable height
-    final double containerHeight = screenWidth < 360 
-        ? 116.0  // Small screens - reduced to match smaller circle size
-        : screenWidth < 400 
-            ? 128.0  // Medium screens
+    final double containerHeight = screenWidth < 360
+        ? 110.0  // Small screens - ultra compact to fit 54px circle + 12px name + 18px viewer
+        : screenWidth < 400
+            ? 124.0  // Medium screens - compact
             : 140.0;  // Large screens
     
     // Calculate responsive font sizes
