@@ -480,9 +480,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardContent() {
+    final themeService = Provider.of<ThemeService>(context);
         return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF1E40AF), // Force blue status bar
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Transparent status bar
         statusBarIconBrightness: Brightness.light, // White icons
         statusBarBrightness: Brightness.light, // For iOS
           ),
@@ -709,16 +710,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (themeService.isLightMode()) {
           // Keep original light theme header
         return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: const SystemUiOverlayStyle(
-              statusBarColor: Color(0xFF1E40AF), // Force blue status bar
+            value: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent, // Transparent status bar
               statusBarIconBrightness: Brightness.light, // White icons
               statusBarBrightness: Brightness.light, // For iOS
           ),
           child: Container(
             width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)], // Modern blue gradient
+                  colors: [themeService.primaryColor.withOpacity(0.9), themeService.primaryColor], // Use theme primary color
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -829,8 +830,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               end: Alignment.bottomRight,
               stops: [0.0, 0.5, 1.0],
             );
-            statusBarStyle = const SystemUiOverlayStyle(
-              statusBarColor: Color(0xFF1a1a2e),
+            statusBarStyle = SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
               statusBarIconBrightness: Brightness.light,
               statusBarBrightness: Brightness.light,
             );

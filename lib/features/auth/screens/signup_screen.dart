@@ -244,11 +244,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: themeService.textPrimary.withOpacity(0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -262,12 +262,12 @@ class _SignupScreenState extends State<SignupScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  color: themeService.primaryColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.star,
-                                  color: AppTheme.primaryColor,
+                                  color: themeService.primaryColor,
                                   size: 24,
                                 ),
                               ),
@@ -279,7 +279,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Text(
                                       'Join Our Platform',
                                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                        color: AppTheme.textColor,
+                                        color: themeService.textPrimary,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -287,7 +287,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Text(
                                       'Start your astrology consulting journey',
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Colors.grey[600],
+                                        color: themeService.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -304,11 +304,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: themeService.textPrimary.withOpacity(0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -320,7 +320,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           Text(
                             'Personal Information',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.textColor,
+                              color: themeService.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -382,7 +382,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               Text(
                                 'Phone Number',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: themeService.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -413,14 +413,14 @@ class _SignupScreenState extends State<SignupScreen> {
                                       Icon(
                                         Icons.error_outline,
                                         size: 16,
-                                        color: AppTheme.errorColor,
+                                        color: themeService.errorColor,
                                       ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           _phoneError!,
                                           style: TextStyle(
-                                            color: AppTheme.errorColor,
+                                            color: themeService.errorColor,
                                             fontSize: 12,
                                             height: 1.4,
                                           ),
@@ -471,11 +471,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: themeService.textPrimary.withOpacity(0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -502,11 +502,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: themeService.textPrimary.withOpacity(0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -530,11 +530,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: themeService.textPrimary.withOpacity(0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -548,12 +548,12 @@ class _SignupScreenState extends State<SignupScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  color: themeService.primaryColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.person_outline,
-                                  color: AppTheme.primaryColor,
+                                  color: themeService.primaryColor,
                                   size: 20,
                                 ),
                               ),
@@ -565,7 +565,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Text(
                                       'Tell Us About Yourself',
                                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        color: AppTheme.textColor,
+                                        color: themeService.textPrimary,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -573,7 +573,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Text(
                                       'Help clients understand your expertise',
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Colors.grey[600],
+                                        color: themeService.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -669,55 +669,53 @@ class _SignupScreenState extends State<SignupScreen> {
                     // Signup Button
                     Container(
                       width: double.infinity,
-                      height: 56,
+                      height: 60,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppTheme.primaryColor, Color(0xFF1E3A8A)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
+                        gradient: LinearGradient(
+                          colors: [themeService.primaryColor, themeService.accentColor],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                            color: themeService.primaryColor.withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleSignup,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: !_isLoading ? _handleSignup : null,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.star, color: Colors.white, size: 20),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Create Account & Send OTP',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.star, color: Colors.white, size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Create Account & Send OTP',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -726,9 +724,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: themeService.cardColor,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
+                        border: Border.all(color: themeService.borderColor),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -736,7 +734,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           Text(
                             'Already have an account? ',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
+                              color: themeService.textSecondary,
                             ),
                           ),
                           GestureDetector(
@@ -744,7 +742,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             child: Text(
                               'Login',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.primaryColor,
+                                color: themeService.primaryColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -775,6 +773,7 @@ class _SignupScreenState extends State<SignupScreen> {
     int? maxLines = 1,
     int? maxLength,
   }) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -782,46 +781,46 @@ class _SignupScreenState extends State<SignupScreen> {
       inputFormatters: inputFormatters,
       maxLines: maxLines,
       maxLength: maxLength,
-      style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
+      style: TextStyle(color: themeService.textPrimary, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
-        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
+        prefixIcon: Icon(icon, color: themeService.primaryColor, size: 20),
         labelStyle: TextStyle(
-          color: Colors.grey[600], 
+          color: themeService.textSecondary, 
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        hintStyle: TextStyle(color: themeService.textHint, fontSize: 14),
         // Improved error text styling for responsive layout
-        errorStyle: const TextStyle(
-          color: AppTheme.errorColor,
+        errorStyle: TextStyle(
+          color: themeService.errorColor,
           fontSize: 12,
           height: 1.4,
         ),
         errorMaxLines: 2,
         isDense: true,
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: themeService.cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(color: themeService.borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+          borderSide: BorderSide(color: themeService.primaryColor, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(color: themeService.borderColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.errorColor),
+          borderSide: BorderSide(color: themeService.errorColor),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
+          borderSide: BorderSide(color: themeService.errorColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         counterText: maxLength != null ? null : '',
@@ -836,7 +835,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Text(
           'Profile Picture',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey[600],
+            color: themeService.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -847,10 +846,10 @@ class _SignupScreenState extends State<SignupScreen> {
             width: double.infinity,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: themeService.cardColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _selectedImage != null ? themeService.primaryColor : Colors.grey[300]!,
+                color: _selectedImage != null ? themeService.primaryColor : themeService.borderColor,
                 width: 2,
               ),
             ),
@@ -870,13 +869,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       Icon(
                         Icons.add_a_photo,
                         size: 40,
-                        color: Colors.grey[400],
+                        color: themeService.textHint,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Tap to add profile picture',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: themeService.textSecondary,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -907,47 +906,48 @@ class _SignupScreenState extends State<SignupScreen> {
     String? Function(String?)? validator,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
       inputFormatters: inputFormatters,
-      style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
+      style: TextStyle(color: themeService.textPrimary, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
-        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        prefixIcon: Icon(icon, color: themeService.primaryColor, size: 20),
+        labelStyle: TextStyle(color: themeService.textSecondary, fontSize: 14),
+        hintStyle: TextStyle(color: themeService.textHint, fontSize: 14),
         // Improved error text styling
-        errorStyle: const TextStyle(
-          color: AppTheme.errorColor,
+        errorStyle: TextStyle(
+          color: themeService.errorColor,
           fontSize: 12,
           height: 1.4,
         ),
         errorMaxLines: 2,
         isDense: true,
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: themeService.cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(color: themeService.borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+          borderSide: BorderSide(color: themeService.primaryColor, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(color: themeService.borderColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.errorColor),
+          borderSide: BorderSide(color: themeService.errorColor),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
+          borderSide: BorderSide(color: themeService.errorColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
@@ -961,13 +961,14 @@ class _SignupScreenState extends State<SignupScreen> {
     required List<String> selectedOptions,
     required Function(List<String>) onChanged,
   }) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTheme.textColor,
+            color: themeService.textPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -975,7 +976,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Text(
           subtitle,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
+            color: themeService.textSecondary,
           ),
         ),
         const SizedBox(height: 12),
@@ -993,7 +994,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 label: Text(
                   option,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textColor,
+                    color: isSelected ? Colors.white : themeService.textPrimary,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
@@ -1008,11 +1009,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   }
                   onChanged(newSelection);
                 },
-                backgroundColor: Colors.grey[100],
-                selectedColor: AppTheme.primaryColor,
+                backgroundColor: themeService.cardColor,
+                selectedColor: themeService.primaryColor,
                 checkmarkColor: Colors.white,
                 side: BorderSide(
-                  color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+                  color: isSelected ? themeService.primaryColor : themeService.borderColor,
                   width: 1,
                 ),
                 shape: RoundedRectangleBorder(
@@ -1076,11 +1077,13 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     
     // All validations passed, continue with other checks
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Profile picture is required for signup'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1090,7 +1093,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please select at least one specialization'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1100,7 +1103,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please select at least one language'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1110,7 +1113,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please write a bio to help clients understand your expertise'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1120,7 +1123,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please write at least 50 characters in your bio'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1135,7 +1138,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('You must accept the Terms of Service to continue'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1166,32 +1169,32 @@ class _SignupScreenState extends State<SignupScreen> {
           end: Alignment.bottomRight,
           colors: [
             _showTermsError
-                ? Colors.red.shade50
-                : AppTheme.primaryColor.withOpacity(0.05),
+                ? themeService.errorColor.withOpacity(0.1)
+                : themeService.primaryColor.withOpacity(0.05),
             _showTermsError
-                ? Colors.red.shade50.withOpacity(0.3)
-                : AppTheme.primaryColor.withOpacity(0.02),
+                ? themeService.errorColor.withOpacity(0.05)
+                : themeService.primaryColor.withOpacity(0.02),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _showTermsError
-              ? Colors.red.shade400
+              ? themeService.errorColor
               : _termsAccepted
-                  ? AppTheme.primaryColor.withOpacity(0.5)
-                  : Colors.grey[300]!,
+                  ? themeService.primaryColor.withOpacity(0.5)
+                  : themeService.borderColor,
           width: _showTermsError || _termsAccepted ? 2 : 1,
         ),
         boxShadow: [
           if (_showTermsError)
             BoxShadow(
-              color: Colors.red.withOpacity(0.2),
+              color: themeService.errorColor.withOpacity(0.2),
               blurRadius: 12,
               offset: const Offset(0, 4),
             )
           else if (_termsAccepted)
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: themeService.primaryColor.withOpacity(0.1),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -1211,10 +1214,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: _showTermsError
-                          ? Colors.red.withOpacity(0.1)
+                          ? themeService.errorColor.withOpacity(0.1)
                           : _termsAccepted
                               ? Colors.green.withOpacity(0.1)
-                              : AppTheme.primaryColor.withOpacity(0.1),
+                              : themeService.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -1224,10 +1227,10 @@ class _SignupScreenState extends State<SignupScreen> {
                               ? Icons.check_circle_outline
                               : Icons.policy_outlined,
                       color: _showTermsError
-                          ? Colors.red.shade700
+                          ? themeService.errorColor
                           : _termsAccepted
                               ? Colors.green.shade700
-                              : AppTheme.primaryColor,
+                              : themeService.primaryColor,
                       size: 24,
                     ),
                   ),
@@ -1242,8 +1245,8 @@ class _SignupScreenState extends State<SignupScreen> {
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                             color: _showTermsError
-                                ? Colors.red.shade900
-                                : AppTheme.textColor,
+                                ? themeService.errorColor
+                                : themeService.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1251,7 +1254,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           'Please review and accept our terms',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey[600],
+                            color: themeService.textSecondary,
                           ),
                         ),
                       ],
@@ -1263,7 +1266,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // Divider
               Divider(
-                color: Colors.grey[300],
+                color: themeService.borderColor,
                 thickness: 1,
               ),
               const SizedBox(height: 16),
@@ -1291,14 +1294,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         height: 24,
                         decoration: BoxDecoration(
                           color: _termsAccepted
-                              ? AppTheme.primaryColor
+                              ? themeService.primaryColor
                               : Colors.transparent,
                           border: Border.all(
                             color: _termsAccepted
-                                ? AppTheme.primaryColor
+                                ? themeService.primaryColor
                                 : _showTermsError
-                                    ? Colors.red.shade400
-                                    : Colors.grey[400]!,
+                                    ? themeService.errorColor
+                                    : themeService.borderColor,
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(6),
@@ -1320,7 +1323,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               height: 1.5,
-                              color: AppTheme.textColor,
+                              color: themeService.textPrimary,
                             ),
                             children: [
                               const TextSpan(
@@ -1328,9 +1331,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               TextSpan(
                                 text: 'independent contractor',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryColor,
+                                  color: themeService.primaryColor,
                                 ),
                               ),
                               const TextSpan(
@@ -1338,9 +1341,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               TextSpan(
                                 text: 'full professional liability',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryColor,
+                                  color: themeService.primaryColor,
                                 ),
                               ),
                               const TextSpan(
@@ -1348,11 +1351,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               TextSpan(
                                 text: 'Terms of Service',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryColor,
+                                  color: themeService.primaryColor,
                                   decoration: TextDecoration.underline,
-                                  decorationColor: AppTheme.primaryColor,
+                                  decorationColor: themeService.primaryColor,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
@@ -1364,11 +1367,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               TextSpan(
                                 text: 'Privacy Policy',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryColor,
+                                  color: themeService.primaryColor,
                                   decoration: TextDecoration.underline,
-                                  decorationColor: AppTheme.primaryColor,
+                                  decorationColor: themeService.primaryColor,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
@@ -1396,7 +1399,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       Icon(
                         Icons.error,
                         size: 16,
-                        color: Colors.red.shade700,
+                        color: themeService.errorColor,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -1404,7 +1407,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           'You must accept the terms to continue',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.red.shade700,
+                            color: themeService.errorColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1423,10 +1426,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: themeService.accentColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Colors.blue.shade200,
+                        color: themeService.accentColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -1435,7 +1438,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         Icon(
                           Icons.info_outline,
                           size: 16,
-                          color: Colors.blue.shade700,
+                          color: themeService.accentColor,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -1443,7 +1446,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             'Tap on highlighted text to view full details',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.blue.shade700,
+                              color: themeService.accentColor,
                             ),
                           ),
                         ),

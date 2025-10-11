@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/notification_model.dart';
 
 class NotificationCard extends StatelessWidget {
@@ -21,17 +23,18 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: themeService.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: notification.isUnread
-            ? Border.all(color: AppTheme.primaryColor.withOpacity(0.3), width: 1)
+            ? Border.all(color: themeService.primaryColor.withOpacity(0.3), width: 1)
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: themeService.textPrimary.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -67,8 +70,8 @@ class NotificationCard extends StatelessWidget {
                                     ? FontWeight.w600 
                                     : FontWeight.w500,
                                 color: notification.isRead 
-                                    ? AppTheme.textColor.withOpacity(0.6)
-                                    : AppTheme.textColor,
+                                    ? themeService.textSecondary
+                                    : themeService.textPrimary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -85,8 +88,8 @@ class NotificationCard extends StatelessWidget {
                         notification.body,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: notification.isRead 
-                              ? AppTheme.textColor.withOpacity(0.5)
-                              : AppTheme.textColor.withOpacity(0.8),
+                              ? themeService.textHint
+                              : themeService.textSecondary,
                           height: 1.3,
                         ),
                         maxLines: 2,

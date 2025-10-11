@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:country_picker/country_picker.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
-import '../../../shared/widgets/country_code_selector.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'otp_verification_screen.dart';
 import 'signup_screen.dart';
 
+/// Modern, world-class login screen design
+/// Following 2024-2025 UI/UX trends
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,88 +19,529 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _phoneController = TextEditingController();
   bool _isLoading = false;
   String _fullPhoneNumber = '';
   String _countryCode = '+91';
   String _phoneNumber = '';
+  String? _errorMessage;
+  Country _selectedCountry = Country.parse('IN');
+  
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
-          backgroundColor: themeService.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
-        listenWhen: (previous, current) {
-          // Only listen to new state changes, not re-evaluations
-          return previous.runtimeType != current.runtimeType;
-        },
-        listener: (context, state) {
-          if (state is AuthLoading) {
-            setState(() {
-              _isLoading = true;
-            });
-          } else if (state is PhoneCheckedState) {
-            setState(() {
-              _isLoading = false;
-            });
-            
-            if (state.exists) {
-              // Account exists, proceed to send OTP for login
-              context.read<AuthBloc>().add(SendOtpEvent(state.phoneNumber));
-            } else {
-              // Account doesn't exist, show message and redirect to signup
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: themeService.errorColor,
-                  duration: const Duration(seconds: 4),
+            listenWhen: (previous, current) => previous.runtimeType != current.runtimeType,
+            listener: _handleAuthStateChange,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    themeService.primaryColor.withOpacity(0.05),
+                    Colors.white,
+                    themeService.accentColor.withOpacity(0.03),
+                  ],
                 ),
-              );
-              
-              // Show dialog to navigate to signup
-              showDialog(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: const Text('Account Not Found'),
-                  content: const Text('No account exists with this phone number. Would you like to sign up?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Cancel'),
+              ),
+              child: SafeArea(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Spacer(flex: 2),
+                          
+                          // Cosmic Icon/Animation
+                          _buildCosmicHeader(themeService),
+                          
+                          const SizedBox(height: 48),
+                          
+                          // Welcome Text
+                          _buildWelcomeText(themeService),
+                          
+                          const SizedBox(height: 40),
+                          
+                          // Phone Input (Floating Card)
+                          _buildPhoneInput(themeService),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Continue Button
+                          _buildContinueButton(themeService),
+                          
+                          const Spacer(flex: 3),
+                          
+                          // Sign Up Link
+                          _buildSignupLink(themeService),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Trust Indicator
+                          _buildTrustIndicator(themeService),
+                          
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
-                    ElevatedButton(
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCosmicHeader(ThemeService themeService) {
+    return Center(
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              themeService.primaryColor,
+              themeService.accentColor,
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: themeService.primaryColor.withOpacity(0.3),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.auto_awesome,
+          size: 50,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeText(ThemeService themeService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Welcome Back',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            color: themeService.textPrimary,
+            height: 1.2,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Enter your phone number\nto continue your journey',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: themeService.textSecondary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneInput(ThemeService themeService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: _errorMessage != null
+                ? Border.all(color: Colors.red.shade300, width: 1.5)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                // Country Code Selector (Minimalist)
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _errorMessage = null);
+                    _showCountryPicker();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _selectedCountry.flagEmoji,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '+${_selectedCountry.phoneCode}',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: themeService.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: themeService.textSecondary,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Divider
+                Container(
+                  width: 1,
+                  height: 32,
+                  color: themeService.borderColor.withOpacity(0.3),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // Phone Number Input
+                Expanded(
+                  child: TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: themeService.textPrimary,
+                      letterSpacing: 0.3,
+                      height: 1.2,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(15),
+                    ],
+                    decoration: InputDecoration(
+                      hintText: '00000 00000',
+                      hintStyle: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w400,
+                        color: themeService.textHint.withOpacity(0.4),
+                        letterSpacing: 0.3,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 0),
+                      isDense: true,
+                    ),
+                    onChanged: (value) {
+            setState(() {
+                        _phoneNumber = value;
+                        _fullPhoneNumber = '+${_selectedCountry.phoneCode}$value';
+                        _errorMessage = null; // Clear error on typing
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // Error Message
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 4),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: Colors.red.shade600,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.red.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildContinueButton(ThemeService themeService) {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [themeService.primaryColor, themeService.accentColor],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: themeService.primaryColor.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: !_isLoading ? _sendOtp : null,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: _isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignupLink(ThemeService themeService) {
+    return Center(
+      child: TextButton(
                       onPressed: () {
-                        Navigator.pop(dialogContext);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignupScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text('Sign Up'),
+            MaterialPageRoute(builder: (context) => const SignupScreen()),
+          );
+        },
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        child: RichText(
+          text: TextSpan(
+            text: 'New here? ',
+            style: TextStyle(
+              fontSize: 15,
+              color: themeService.textSecondary,
+              fontWeight: FontWeight.w400,
+            ),
+            children: [
+              TextSpan(
+                text: 'Create account',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: themeService.primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrustIndicator(ThemeService themeService) {
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.shield_outlined,
+            size: 16,
+            color: themeService.textHint,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Secured by OTP verification',
+            style: TextStyle(
+              fontSize: 13,
+              color: themeService.textHint,
+              fontWeight: FontWeight.w500,
+            ),
                     ),
                   ],
                 ),
               );
             }
-          } else if (state is OtpSentState) {
+
+  void _showCountryPicker() {
+    showCountryPicker(
+      context: context,
+      showPhoneCode: true,
+      onSelect: (Country country) {
             setState(() {
-              _isLoading = false;
-            });
-            // Check if OTP screen is already on top to prevent duplicate navigation
+          _selectedCountry = country;
+          _countryCode = '+${country.phoneCode}';
+          _fullPhoneNumber = '+${country.phoneCode}$_phoneNumber';
+        });
+      },
+      countryListTheme: CountryListThemeData(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        inputDecoration: InputDecoration(
+          labelText: 'Search',
+          hintText: 'Start typing to search',
+          prefixIcon: const Icon(Icons.search),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+        ),
+      ),
+    );
+  }
+
+  void _sendOtp() {
+    // Validation
+    if (_phoneNumber.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter your phone number';
+      });
+      HapticFeedback.lightImpact();
+      return;
+    }
+    
+    if (_phoneNumber.length < 7) {
+      setState(() {
+        _errorMessage = 'Phone number is too short (minimum 7 digits)';
+      });
+      HapticFeedback.lightImpact();
+      return;
+    }
+    
+    if (_phoneNumber.length > 15) {
+      setState(() {
+        _errorMessage = 'Phone number is too long (maximum 15 digits)';
+      });
+      HapticFeedback.lightImpact();
+      return;
+    }
+    
+    // Clear error and proceed
+    setState(() {
+      _errorMessage = null;
+    });
+    
+    HapticFeedback.mediumImpact();
+    context.read<AuthBloc>().add(CheckPhoneExistsEvent(_fullPhoneNumber.trim()));
+  }
+
+  void _handleAuthStateChange(BuildContext context, AuthState state) {
+    if (state is AuthLoading) {
+      setState(() => _isLoading = true);
+    } else if (state is PhoneCheckedState) {
+      setState(() => _isLoading = false);
+      
+      if (state.exists) {
+        context.read<AuthBloc>().add(SendOtpEvent(state.phoneNumber));
+      } else {
+        _showAccountNotFoundDialog(state.message);
+      }
+    } else if (state is OtpSentState) {
+      setState(() => _isLoading = false);
+      
             final currentRoute = ModalRoute.of(context);
             if (currentRoute?.isCurrent == true) {
               Navigator.push(
@@ -118,144 +558,90 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             }
           } else if (state is AuthErrorState) {
-            setState(() {
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: themeService.errorColor,
+      setState(() => _isLoading = false);
+      _showErrorSnackbar(state.message);
+    }
+  }
+
+  void _showAccountNotFoundDialog(String message) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: themeService.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Account Not Found',
+          style: TextStyle(
+            color: themeService.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'No account exists with this phone number. Would you like to sign up?',
+          style: TextStyle(
+            color: themeService.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(
+              foregroundColor: themeService.textSecondary,
+            ),
+            child: const Text('Cancel'),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [themeService.primaryColor, themeService.accentColor],
               ),
-            );
-          }
-        },
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo and Title
-                  Icon(
-                    Icons.star,
-                    size: 80,
-                    color: themeService.primaryColor,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '${l10n.welcome}\n${l10n.appTitle}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: themeService.primaryColor,
-                      fontWeight: FontWeight.bold,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: themeService.primaryColor.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignupScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Text(
+                    'Sign Up',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sign in to manage your astrology practice',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: themeService.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  
-                  // Phone Number Input with Country Selector
-                  PhoneInputField(
-                    initialCountryCode: _countryCode,
-                    initialPhoneNumber: _phoneNumber,
-                    onPhoneChanged: (fullPhone, countryCode, phoneNumber) {
-                      setState(() {
-                        _fullPhoneNumber = fullPhone;
-                        _countryCode = countryCode;
-                        _phoneNumber = phoneNumber;
-                      });
-                    },
-                    hintText: 'Enter your phone number',
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Send OTP Button
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _sendOtp,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(l10n.sendOtp),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Signup Link
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignupScreen(),
-                          ),
-                        );
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          text: 'New to our platform? ',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: themeService.textSecondary,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: l10n.signup,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: themeService.primaryColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Terms and Privacy
-                  Text(
-                    'By continuing, you agree to our Terms of Service and Privacy Policy',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: themeService.textHint,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
-        );
-      },
     );
   }
 
-  void _sendOtp() {
-    if (_fullPhoneNumber.isNotEmpty && _phoneNumber.isNotEmpty) {
-      // First check if phone number exists before sending OTP
-      context.read<AuthBloc>().add(CheckPhoneExistsEvent(_fullPhoneNumber.trim()));
-    } else {
+  void _showErrorSnackbar(String message) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter a valid phone number'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 }

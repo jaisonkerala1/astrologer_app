@@ -591,21 +591,51 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
   }
 
   void _showWithdrawDialog() {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Request Withdrawal'),
+        backgroundColor: themeService.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Request Withdrawal',
+          style: TextStyle(
+            color: themeService.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Available Balance: ₹8,450'),
+            Text(
+              'Available Balance: ₹8,450',
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 16,
+              ),
+            ),
             const SizedBox(height: 16),
-            const TextField(
+            TextField(
+              style: TextStyle(color: themeService.textPrimary),
               decoration: InputDecoration(
                 labelText: 'Amount to Withdraw',
+                labelStyle: TextStyle(color: themeService.textSecondary),
                 hintText: 'Enter amount',
+                hintStyle: TextStyle(color: themeService.textHint),
                 prefixText: '₹',
-                border: OutlineInputBorder(),
+                prefixStyle: TextStyle(color: themeService.textPrimary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: themeService.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: themeService.primaryColor, width: 2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: themeService.borderColor),
+                ),
               ),
               keyboardType: TextInputType.number,
             ),
@@ -614,19 +644,52 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: themeService.textSecondary,
+            ),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Withdrawal request submitted successfully'),
-                  backgroundColor: Colors.green,
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [themeService.primaryColor, themeService.accentColor],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: themeService.primaryColor.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-              );
-            },
-            child: const Text('Submit'),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Withdrawal request submitted successfully'),
+                      backgroundColor: Colors.green.shade600,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Text(
+                    'Submit',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

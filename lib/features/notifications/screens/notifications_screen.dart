@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../services/notification_service.dart';
 import '../models/notification_model.dart';
@@ -42,10 +43,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final themeService = Provider.of<ThemeService>(context);
     
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: _buildAppBar(l10n),
+      backgroundColor: themeService.backgroundColor,
+      appBar: _buildAppBar(l10n, themeService),
       body: Column(
         children: [
           // Filter Chips
@@ -56,12 +58,12 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           
           // Tab Bar
           Container(
-            color: Colors.white,
+            color: themeService.cardColor,
             child: TabBar(
               controller: _tabController,
-              labelColor: AppTheme.primaryColor,
-              unselectedLabelColor: AppTheme.textColor.withOpacity(0.6),
-              indicatorColor: AppTheme.primaryColor,
+              labelColor: themeService.primaryColor,
+              unselectedLabelColor: themeService.textSecondary,
+              indicatorColor: themeService.primaryColor,
               indicatorWeight: 3,
               tabs: const [
                 Tab(text: 'All'),
@@ -88,18 +90,19 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AppLocalizations l10n) {
+  PreferredSizeWidget _buildAppBar(AppLocalizations l10n, ThemeService themeService) {
     return AppBar(
-        title: const Text(
+        title: Text(
           'Notifications',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
+            color: themeService.textPrimary,
           ),
         ),
-      backgroundColor: Colors.white,
+      backgroundColor: themeService.cardColor,
       elevation: 0,
-      foregroundColor: AppTheme.textColor,
+      foregroundColor: themeService.textPrimary,
       actions: [
         // Search Button
         IconButton(
@@ -115,7 +118,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               value: 'mark_all_read',
               child: Row(
                 children: [
-                  const Icon(Icons.done_all, color: AppTheme.primaryColor),
+                  Icon(Icons.done_all, color: themeService.primaryColor),
                   const SizedBox(width: 12),
                   const Text('Mark All as Read'),
                 ],
@@ -125,7 +128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               value: 'clear_all',
               child: Row(
                 children: [
-                  const Icon(Icons.clear_all, color: AppTheme.errorColor),
+                  Icon(Icons.clear_all, color: themeService.errorColor),
                   const SizedBox(width: 12),
                   const Text('Clear All'),
                 ],
@@ -135,7 +138,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               value: 'settings',
               child: Row(
                 children: [
-                  const Icon(Icons.settings, color: AppTheme.textColor),
+                  Icon(Icons.settings, color: themeService.textPrimary),
                   const SizedBox(width: 12),
                   const Text('Settings'),
                 ],
@@ -206,28 +209,31 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildErrorState(String error) {
+    final themeService = Provider.of<ThemeService>(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               size: 64,
-              color: AppTheme.errorColor,
+              color: themeService.errorColor,
             ),
             const SizedBox(height: 16),
             Text(
               'Error loading notifications',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: themeService.textPrimary,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               error,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textColor.withOpacity(0.7),
+                color: themeService.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -245,13 +251,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Widget _buildFloatingActionButton() {
     return Consumer<NotificationService>(
       builder: (context, notificationService, child) {
+        final themeService = Provider.of<ThemeService>(context, listen: false);
         if (notificationService.unreadCount == 0) {
           return const SizedBox.shrink();
         }
 
         return FloatingActionButton(
           onPressed: () => notificationService.markAllAsRead(),
-          backgroundColor: AppTheme.primaryColor,
+          backgroundColor: themeService.primaryColor,
           foregroundColor: Colors.white,
           child: const Icon(Icons.done_all),
         );
@@ -374,7 +381,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               context.read<NotificationService>().clearAllNotifications();
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+            style: TextButton.styleFrom(
+              foregroundColor: Provider.of<ThemeService>(context, listen: false).errorColor,
+            ),
             child: const Text('Clear All'),
           ),
         ],
