@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:country_picker/country_picker.dart';
 import '../../shared/theme/services/theme_service.dart';
 
@@ -211,7 +212,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         // Phone Number Input
         Expanded(
           child: Container(
-            height: 56,
+            constraints: const BoxConstraints(
+              minHeight: 56,
+            ),
             decoration: BoxDecoration(
               border: Border.all(
                 color: themeService.borderColor,
@@ -224,6 +227,10 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               controller: _phoneController,
               enabled: widget.enabled,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(15),
+              ],
               style: TextStyle(
                 fontSize: 16,
                 color: themeService.textPrimary,
@@ -233,6 +240,11 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                 hintStyle: TextStyle(
                   color: themeService.textSecondary,
                   fontSize: 16,
+                ),
+                // Hide error text completely - handled externally
+                errorStyle: const TextStyle(
+                  fontSize: 0,
+                  height: 0,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -262,15 +274,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               onChanged: (value) {
                 _updatePhoneNumber();
               },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your phone number';
-                }
-                if (value.length < 10) {
-                  return 'Please enter a valid phone number';
-                }
-                return null;
-              },
+              // Validator removed - handled externally in parent widgets
             ),
           ),
         ),

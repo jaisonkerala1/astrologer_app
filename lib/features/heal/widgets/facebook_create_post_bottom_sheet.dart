@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
-import '../../../shared/widgets/transition_animations.dart';
+import '../../../shared/widgets/transition_animations.dart' hide AnimatedContainer;
 import '../../../shared/widgets/animated_button.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_state.dart';
@@ -24,17 +24,11 @@ class FacebookCreatePostBottomSheet extends StatefulWidget {
   State<FacebookCreatePostBottomSheet> createState() => _FacebookCreatePostBottomSheetState();
 }
 
-class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottomSheet>
-    with TickerProviderStateMixin {
+class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottomSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final FocusNode _titleFocusNode = FocusNode();
   final FocusNode _contentFocusNode = FocusNode();
-  
-  late AnimationController _slideController;
-  late AnimationController _fadeController;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
   
   String _selectedCategory = 'General';
   String _selectedPrivacy = 'Public';
@@ -71,62 +65,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _initializeAnimations();
-    _setupFocusListeners();
-  }
-
-  void _initializeAnimations() {
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    ));
-    
-    // Start animations
-    _slideController.forward();
-    _fadeController.forward();
-  }
-
-  void _setupFocusListeners() {
-    _titleFocusNode.addListener(() {
-      if (_titleFocusNode.hasFocus) {
-        _slideController.forward();
-      }
-    });
-    
-    _contentFocusNode.addListener(() {
-      if (_contentFocusNode.hasFocus) {
-        _slideController.forward();
-      }
-    });
-  }
-
-  @override
   void dispose() {
-    _slideController.dispose();
-    _fadeController.dispose();
     _titleController.dispose();
     _contentController.dispose();
     _titleFocusNode.dispose();
@@ -138,115 +77,77 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return AnimatedBuilder(
-          animation: _fadeAnimation,
-          builder: (context, child) {
-            return Container(
-              color: Colors.black.withOpacity(0.5 * _fadeAnimation.value),
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.85,
-                  decoration: BoxDecoration(
-                    color: themeService.surfaceColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeader(themeService),
+              Flexible(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(themeService),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildUserProfile(themeService),
-                              const SizedBox(height: 20),
-                              _buildPrivacySelector(themeService),
-                              const SizedBox(height: 20),
-                              _buildTitleInput(themeService),
-                              const SizedBox(height: 16),
-                              _buildContentInput(themeService),
-                              const SizedBox(height: 20),
-                              _buildCategorySelector(themeService),
-                              const SizedBox(height: 20),
-                              _buildMediaOptions(themeService),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildUserProfile(themeService),
+                      const SizedBox(height: 20),
+                      _buildPrivacySelector(themeService),
+                      const SizedBox(height: 20),
+                      _buildTitleInput(themeService),
+                      const SizedBox(height: 16),
+                      _buildContentInput(themeService),
+                      const SizedBox(height: 20),
+                      _buildCategorySelector(themeService),
+                      const SizedBox(height: 20),
+                      _buildMediaOptions(themeService),
                     ],
                   ),
                 ),
               ),
-            );
-          },
+              // Add bottom padding for keyboard
+              SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+            ],
+          ),
         );
       },
     );
   }
 
   Widget _buildHeader(ThemeService themeService) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: themeService.surfaceColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return Row(
+      children: [
+        // Close button
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close),
+          color: themeService.textSecondary,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+        const SizedBox(width: 8),
+        // Title
+        Text(
+          'Create Post',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: themeService.textPrimary,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Close button
-          GestureDetector(
-            onTap: () => _closeBottomSheet(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: themeService.surfaceColor.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Icons.close,
-                size: 20,
-                color: themeService.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Title
-          Text(
-            'Create Post',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: themeService.textPrimary,
-            ),
-          ),
-          const Spacer(),
-          // Post button
-          AnimatedButton(
-            onPressed: _isPosting ? null : _handlePost,
-            text: _isPosting ? 'Posting...' : 'Post',
-            icon: _isPosting ? null : Icons.send,
-            backgroundColor: _isPosting ? themeService.textSecondary : themeService.primaryColor,
-            foregroundColor: Colors.white,
-            width: 100,
-            height: 40,
-          ),
-        ],
-      ),
+        ),
+        const Spacer(),
+        // Post button
+        AnimatedButton(
+          onPressed: _isPosting ? null : _handlePost,
+          text: _isPosting ? 'Posting...' : 'Post',
+          icon: _isPosting ? null : Icons.send,
+          backgroundColor: _isPosting ? themeService.textSecondary : themeService.primaryColor,
+          foregroundColor: Colors.white,
+          width: 100,
+          height: 40,
+        ),
+      ],
     );
   }
 
@@ -420,6 +321,11 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
           child: TextField(
             controller: _titleController,
             focusNode: _titleFocusNode,
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) {
+              // Move focus to content field when done
+              FocusScope.of(context).requestFocus(_contentFocusNode);
+            },
             decoration: InputDecoration(
               hintText: 'What\'s on your mind?',
               hintStyle: TextStyle(
@@ -462,6 +368,8 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
           child: TextField(
             controller: _contentController,
             focusNode: _contentFocusNode,
+            textInputAction: TextInputAction.newline,
+            keyboardType: TextInputType.multiline,
             decoration: InputDecoration(
               hintText: 'Share your thoughts, experiences, or ask questions...',
               hintStyle: TextStyle(
@@ -625,51 +533,54 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                 topRight: Radius.circular(20),
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: themeService.borderColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    'Who can see your post?',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: themeService.textPrimary,
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: themeService.borderColor,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                ),
-                ..._privacyOptions.map((option) => ListTile(
-                  leading: Icon(
-                    option['icon']!,
-                    size: 20,
-                    color: themeService.textSecondary,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Text(
+                      'Who can see your post?',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
                   ),
-                  title: Text(
-                    option['label']!,
-                    style: TextStyle(color: themeService.textPrimary),
-                  ),
-                  trailing: _selectedPrivacy == option['value']
-                      ? Icon(Icons.check, color: themeService.primaryColor)
-                      : null,
-                  onTap: () {
-                    setState(() {
-                      _selectedPrivacy = option['value']!;
-                    });
-                    Navigator.pop(context);
-                  },
-                )),
-                const SizedBox(height: 20),
-              ],
+                  Divider(color: themeService.borderColor, height: 1),
+                  ..._privacyOptions.map((option) => ListTile(
+                    leading: Icon(
+                      option['icon']!,
+                      size: 20,
+                      color: themeService.textSecondary,
+                    ),
+                    title: Text(
+                      option['label']!,
+                      style: TextStyle(color: themeService.textPrimary),
+                    ),
+                    trailing: _selectedPrivacy == option['value']
+                        ? Icon(Icons.check, color: themeService.primaryColor)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _selectedPrivacy = option['value']!;
+                      });
+                      Navigator.pop(context);
+                    },
+                  )),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           );
         },
@@ -681,57 +592,77 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Consumer<ThemeService>(
         builder: (context, themeService, child) {
-          return Container(
-            decoration: BoxDecoration(
-              color: themeService.surfaceColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: themeService.borderColor,
-                    borderRadius: BorderRadius.circular(2),
+          return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.9,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: themeService.surfaceColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    'Select Category',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: themeService.textPrimary,
+                child: Column(
+                  children: [
+                    // Drag handle
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: themeService.borderColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      child: Text(
+                        'Select Category',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: themeService.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Divider(color: themeService.borderColor, height: 1),
+                    // Scrollable list
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: _categories.length,
+                        itemBuilder: (context, index) {
+                          final category = _categories[index];
+                          return ListTile(
+                            title: Text(
+                              category,
+                              style: TextStyle(color: themeService.textPrimary),
+                            ),
+                            trailing: _selectedCategory == category
+                                ? Icon(Icons.check, color: themeService.primaryColor)
+                                : null,
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = category;
+                              });
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                ..._categories.map((category) => ListTile(
-                  title: Text(
-                    category,
-                    style: TextStyle(color: themeService.textPrimary),
-                  ),
-                  trailing: _selectedCategory == category
-                      ? Icon(Icons.check, color: themeService.primaryColor)
-                      : null,
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = category;
-                    });
-                    Navigator.pop(context);
-                  },
-                )),
-                const SizedBox(height: 20),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -779,14 +710,6 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
       _isPosting = false;
     });
 
-    _closeBottomSheet();
-  }
-
-  void _closeBottomSheet() {
-    _slideController.reverse().then((_) {
-      _fadeController.reverse().then((_) {
-        Navigator.pop(context);
-      });
-    });
+    Navigator.pop(context);
   }
 }

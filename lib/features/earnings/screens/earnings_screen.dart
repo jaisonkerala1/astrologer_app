@@ -250,11 +250,11 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
 
   Widget _buildTabBar(AppLocalizations l10n, ThemeService themeService) {
     return Container(
-      margin: const EdgeInsets.all(AppConstants.defaultPadding),
+      margin: const EdgeInsets.only(top: 20, bottom: 16, left: AppConstants.defaultPadding, right: AppConstants.defaultPadding),
       decoration: BoxDecoration(
         color: themeService.surfaceColor,
         borderRadius: themeService.borderRadius,
-        border: Border.all(color: themeService.borderColor),
+        border: Border.all(color: themeService.borderColor.withOpacity(0.5)),
       ),
       child: TabBar(
         controller: _tabController,
@@ -274,30 +274,30 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           boxShadow: [
             BoxShadow(
               color: themeService.primaryColor.withOpacity(0.3),
-              blurRadius: 8,
+              blurRadius: 10,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        indicatorPadding: const EdgeInsets.all(4),
+        indicatorPadding: const EdgeInsets.all(6),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
         tabs: [
           Tab(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Text(l10n.transactions),
             ),
           ),
           Tab(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Text(l10n.analytics),
             ),
           ),
           Tab(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Text(l10n.withdrawals),
             ),
           ),
@@ -308,7 +308,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
 
   Widget _buildTransactionsTab(ThemeService themeService) {
     return ListView.builder(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.only(left: AppConstants.defaultPadding, right: AppConstants.defaultPadding, bottom: AppConstants.defaultPadding),
       itemCount: _mockTransactions.length,
       itemBuilder: (context, index) {
         final transaction = _mockTransactions[index];
@@ -380,7 +380,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
 
   Widget _buildAnalyticsTab(ThemeService themeService) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.only(left: AppConstants.defaultPadding, right: AppConstants.defaultPadding, bottom: AppConstants.defaultPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -474,7 +474,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
 
   Widget _buildWithdrawalsTab(ThemeService themeService) {
     return Padding(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.only(left: AppConstants.defaultPadding, right: AppConstants.defaultPadding, bottom: AppConstants.defaultPadding),
       child: Column(
         children: [
           // Withdraw button

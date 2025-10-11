@@ -27,8 +27,9 @@ class _DialerScreenState extends State<DialerScreen> {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
+        final Size screenSize = MediaQuery.of(context).size;
         return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
+          height: screenSize.height * 0.95,
           decoration: BoxDecoration(
             color: themeService.cardColor,
             borderRadius: const BorderRadius.only(
@@ -36,13 +37,15 @@ class _DialerScreenState extends State<DialerScreen> {
               topRight: Radius.circular(20),
             ),
           ),
-      child: Column(
+      child: SafeArea(
+        top: false,
+        child: Column(
         children: [
           // Handle bar
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
+            margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: themeService.borderColor,
               borderRadius: BorderRadius.circular(2),
@@ -51,7 +54,7 @@ class _DialerScreenState extends State<DialerScreen> {
           
           // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
               children: [
                 IconButton(
@@ -78,8 +81,8 @@ class _DialerScreenState extends State<DialerScreen> {
           
           // Phone number display
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: themeService.surfaceColor,
               borderRadius: themeService.borderRadius,
@@ -116,14 +119,21 @@ class _DialerScreenState extends State<DialerScreen> {
                     ('*', ''), ('0', '+'), ('#', ''),
                   ];
 
+                  const double spacing = 6;
+                  const int columns = 3;
+                  const int rows = 4;
+                  final double cellWidth = (constraints.maxWidth - (columns - 1) * spacing) / columns;
+                  final double cellHeight = (constraints.maxHeight - (rows - 1) * spacing) / rows;
+                  final double aspect = (cellWidth / cellHeight).clamp(1.05, 1.4);
+
                   return GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     padding: EdgeInsets.zero,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 1, // square cells
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                      childAspectRatio: aspect,
                     ),
                     itemCount: keys.length,
                     itemBuilder: (context, index) {
@@ -138,14 +148,14 @@ class _DialerScreenState extends State<DialerScreen> {
           
           // Call button
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 Expanded(
                   child: GestureDetector(
                     onTap: _phoneNumber.isNotEmpty ? _makeCall : null,
                     child: Container(
-                      height: 60,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: _phoneNumber.isNotEmpty ? themeService.successColor : themeService.surfaceColor,
                         shape: BoxShape.circle,
@@ -160,10 +170,10 @@ class _DialerScreenState extends State<DialerScreen> {
                               ]
                             : null,
                       ),
-                      child: Icon(
+                       child: Icon(
                         Icons.call,
                         color: _phoneNumber.isNotEmpty ? Colors.white : themeService.textSecondary,
-                        size: 28,
+                        size: 22,
                       ),
                     ),
                   ),
@@ -173,6 +183,7 @@ class _DialerScreenState extends State<DialerScreen> {
           ),
         ],
       ),
+      ),
         );
       },
     );
@@ -181,9 +192,9 @@ class _DialerScreenState extends State<DialerScreen> {
   Widget _buildDialButton(String number, String letters, ThemeService themeService) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double diameter = math.min(constraints.maxWidth, constraints.maxHeight) * 0.82;
-        final double numberFontSize = diameter * 0.42;
-        final double lettersFontSize = diameter * 0.16;
+        final double diameter = math.min(constraints.maxWidth, constraints.maxHeight) * 0.74;
+        final double numberFontSize = diameter * 0.40;
+        final double lettersFontSize = diameter * 0.14;
         return Center(
           child: Material(
             color: Colors.transparent,

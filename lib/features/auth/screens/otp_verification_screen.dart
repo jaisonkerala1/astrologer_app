@@ -84,11 +84,27 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             foregroundColor: themeService.textPrimary,
           ),
       body: BlocListener<AuthBloc, AuthState>(
+        listenWhen: (previous, current) {
+          // Only listen to new state changes, not re-evaluations
+          return previous.runtimeType != current.runtimeType;
+        },
         listener: (context, state) {
           if (state is AuthLoading) {
             setState(() {
               _isLoading = true;
             });
+          } else if (state is OtpSentState) {
+            setState(() {
+              _isLoading = false;
+            });
+            // OTP resent successfully - show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('OTP sent successfully! Please check your phone.'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 3),
+              ),
+            );
           } else if (state is AuthSuccessState) {
             setState(() {
               _isLoading = false;
