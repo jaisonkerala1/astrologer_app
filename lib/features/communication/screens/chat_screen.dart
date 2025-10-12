@@ -104,13 +104,36 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () => _makeCall(),
-            icon: Icon(Icons.phone, color: themeService.successColor),
+          // Voice Call Button (Instagram-style)
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: () => _makeCall(),
+              icon: const Icon(Icons.phone_rounded, color: Color(0xFF10B981)),
+              tooltip: 'Voice Call',
+            ),
           ),
+          // Video Call Button (Instagram-style)
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B5CF6).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: () => _makeVideoCall(),
+              icon: const Icon(Icons.videocam_rounded, color: Color(0xFF8B5CF6)),
+              tooltip: 'Video Call',
+            ),
+          ),
+          // More Options
           IconButton(
             onPressed: () => _showOptionsMenu(),
-            icon: Icon(Icons.more_vert, color: themeService.textPrimary),
+            icon: Icon(Icons.more_vert_rounded, color: themeService.textPrimary),
           ),
         ],
       ),
@@ -388,6 +411,10 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
+  }
+  
+  void _makeVideoCall() {
+    _initiateVideoCall();
   }
 
   void _showContactInfo() {

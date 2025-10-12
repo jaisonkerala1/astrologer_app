@@ -16,7 +16,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
   }
 }
 
-// Send OTP via SMS
+// Send OTP via SMS with Android Auto-Detection Support
 const sendOTP = async (phone, otp) => {
   try {
     // Check if Twilio client is properly initialized
@@ -24,17 +24,35 @@ const sendOTP = async (phone, otp) => {
       throw new Error('Twilio client not initialized. Please check your credentials.');
     }
 
+    // App hash signature for Android SMS Retriever API (zero-permission auto-detection)
+    // Get from environment variable or use default
+    // TO GET YOUR APP HASH: Run OTPHelper.printAppSignature() in Flutter app
+    const appHashSignature = process.env.ANDROID_APP_HASH || 'FA+9qCX9VSu';
+    
+    // iOS domain for autofill support (optional but recommended)
+    const iosDomain = process.env.IOS_DOMAIN || 'astrologerapp.com';
+
+    // Format SMS for cross-platform OTP auto-detection
+    // Works on both Android (SMS Retriever API) and iOS (native autofill)
+    const smsBody = `Your Astrologer App verification code: ${otp}
+
+This code expires in 5 minutes.
+
+@${iosDomain} #${otp}
+${appHashSignature}`;
+
     // Send actual SMS via Twilio
     const message = await client.messages.create({
-      body: `Your Astrologer App verification code is: ${otp}. This code will expire in 5 minutes.`,
+      body: smsBody,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phone
     });
 
-    console.log(`OTP sent successfully to ${phone}. Message SID: ${message.sid}`);
+    console.log(`✅ OTP sent to ${phone}: ${otp} (with auto-detection support)`);
+    console.log(`Message SID: ${message.sid}`);
     return { success: true, messageId: message.sid };
   } catch (error) {
-    console.error('Twilio SMS error:', error);
+    console.error('❌ Twilio SMS error:', error);
     throw new Error(`Failed to send SMS: ${error.message}`);
   }
 };

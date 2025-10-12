@@ -1,25 +1,84 @@
 import 'package:flutter/foundation.dart';
+import '../models/communication_item.dart';
 
 /// Service to manage communication state including unread counts for calls and messages
 class CommunicationService extends ChangeNotifier {
   // Unread counts
   int _unreadMessagesCount = 0;
   int _missedCallsCount = 0;
+  int _missedVideoCallsCount = 0;
 
-  // Mock data for calls and messages
+  // Mock data for calls and messages (legacy - kept for compatibility)
   List<Map<String, dynamic>> _calls = [];
   List<Map<String, dynamic>> _messages = [];
 
-  // Tab switching support
+  // Unified communication list
+  List<CommunicationItem> _allCommunications = [];
+  
+  // Current filter
+  CommunicationFilter _activeFilter = CommunicationFilter.all;
+
+  // Tab switching support (legacy)
   String? _requestedTab;
   
   // Getters
   int get unreadMessagesCount => _unreadMessagesCount;
   int get missedCallsCount => _missedCallsCount;
-  int get totalUnreadCount => _unreadMessagesCount + _missedCallsCount;
+  int get missedVideoCallsCount => _missedVideoCallsCount;
+  int get totalUnreadCount => _unreadMessagesCount + _missedCallsCount + _missedVideoCallsCount;
   List<Map<String, dynamic>> get calls => _calls;
   List<Map<String, dynamic>> get messages => _messages;
   String? get requestedTab => _requestedTab;
+  CommunicationFilter get activeFilter => _activeFilter;
+  
+  /// Get unified list of all communications
+  List<CommunicationItem> get allCommunications => _allCommunications;
+  
+  /// Get filtered communications based on active filter
+  List<CommunicationItem> get filteredCommunications {
+    switch (_activeFilter) {
+      case CommunicationFilter.all:
+        return _allCommunications;
+      case CommunicationFilter.calls:
+        return _allCommunications
+            .where((item) => item.type == CommunicationType.voiceCall)
+            .toList();
+      case CommunicationFilter.messages:
+        return _allCommunications
+            .where((item) => item.type == CommunicationType.message)
+            .toList();
+      case CommunicationFilter.video:
+        return _allCommunications
+            .where((item) => item.type == CommunicationType.videoCall)
+            .toList();
+    }
+  }
+  
+  /// Get count for specific filter
+  int getCountForFilter(CommunicationFilter filter) {
+    switch (filter) {
+      case CommunicationFilter.all:
+        return _allCommunications.length;
+      case CommunicationFilter.calls:
+        return _allCommunications
+            .where((item) => item.type == CommunicationType.voiceCall)
+            .length;
+      case CommunicationFilter.messages:
+        return _allCommunications
+            .where((item) => item.type == CommunicationType.message)
+            .length;
+      case CommunicationFilter.video:
+        return _allCommunications
+            .where((item) => item.type == CommunicationType.videoCall)
+            .length;
+    }
+  }
+  
+  /// Set active filter
+  void setFilter(CommunicationFilter filter) {
+    _activeFilter = filter;
+    notifyListeners();
+  }
 
   // Initialize with mock data
   CommunicationService() {
@@ -34,6 +93,7 @@ class CommunicationService extends ChangeNotifier {
         'time': '2m ago',
         'status': 'answered',
         'avatar': 'SM',
+        'duration': '5:23',
       },
       {
         'name': 'Raj Kumar',
@@ -48,6 +108,7 @@ class CommunicationService extends ChangeNotifier {
         'time': '3h ago',
         'status': 'outgoing',
         'avatar': 'AN',
+        'duration': '12:45',
       },
     ];
 
@@ -76,21 +137,74 @@ class CommunicationService extends ChangeNotifier {
         'avatar': 'AN',
         'isOnline': false,
       },
+      {
+        'name': 'Michael Chen',
+        'preview': 'Can we schedule another session?',
+        'time': '5h',
+        'unread': 0,
+        'avatar': 'MC',
+        'isOnline': true,
+      },
     ];
 
+    // Build unified communications list
+    _buildUnifiedList();
     _updateUnreadCounts();
+  }
+  
+  /// Build unified list from calls and messages
+  void _buildUnifiedList() {
+    _allCommunications = [];
+    
+    // Add messages
+    for (var message in _messages) {
+      _allCommunications.add(CommunicationItem.fromMessage(message));
+    }
+    
+    // Add calls
+    for (var call in _calls) {
+      _allCommunications.add(CommunicationItem.fromCall(call));
+    }
+    
+    // Add some mock video calls
+    _allCommunications.add(
+      CommunicationItem(
+        id: 'video_1',
+        type: CommunicationType.videoCall,
+        contactName: 'Priya Sharma',
+        avatar: 'PS',
+        timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+        preview: 'Video consultation',
+        status: CommunicationStatus.incoming,
+        duration: '25:15',
+        chargedAmount: 750.0,
+      ),
+    );
+    
+    // Sort by timestamp (newest first)
+    _allCommunications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   /// Update unread counts based on current data
   void _updateUnreadCounts() {
     // Count unread messages
-    _unreadMessagesCount = _messages.fold<int>(
-      0,
-      (sum, message) => sum + (message['unread'] as int? ?? 0),
-    );
+    _unreadMessagesCount = _allCommunications
+        .where((item) => item.type == CommunicationType.message && item.unreadCount > 0)
+        .fold<int>(0, (sum, item) => sum + item.unreadCount);
 
     // Count missed calls
-    _missedCallsCount = _calls.where((call) => call['status'] == 'missed').length;
+    _missedCallsCount = _allCommunications
+        .where((item) => 
+            item.type == CommunicationType.voiceCall && 
+            item.status == CommunicationStatus.missed)
+        .length;
+    
+    // Count missed video calls
+    _missedVideoCallsCount = _allCommunications
+        .where((item) => 
+            item.type == CommunicationType.videoCall && 
+            item.status == CommunicationStatus.missed)
+        .length;
 
     notifyListeners();
   }
@@ -162,6 +276,8 @@ class CommunicationService extends ChangeNotifier {
       });
     }
 
+    // Rebuild unified list
+    _buildUnifiedList();
     _updateUnreadCounts();
   }
 
@@ -180,6 +296,8 @@ class CommunicationService extends ChangeNotifier {
       'avatar': avatar,
     });
 
+    // Rebuild unified list
+    _buildUnifiedList();
     _updateUnreadCounts();
   }
 

@@ -57,6 +57,9 @@ dependencies:
   # Country Code Picker
   country_picker: ^2.0.21
   
+  # OTP Auto-Detection (Android & iOS)
+  sms_autofill: ^2.3.0
+  
   # UI & Media
   # image_picker: ^0.8.6  # Temporarily disabled due to SDK 35 compatibility issues
   # cached_network_image: ^3.3.0  # Temporarily disabled due to path_provider dependency

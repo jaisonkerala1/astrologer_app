@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:sms_autofill/sms_autofill.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -34,11 +35,14 @@ class OtpVerificationScreen extends StatefulWidget {
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> with SingleTickerProviderStateMixin {
+class _OtpVerificationScreenState extends State<OtpVerificationScreen> 
+    with SingleTickerProviderStateMixin, CodeAutoFill {
   final _otpController = TextEditingController();
   bool _isLoading = false;
   int _resendTimer = 30;
   bool _canResend = false;
+  String? _otpCode;
+  bool _isOtpDetected = false;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -48,6 +52,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Sing
   void initState() {
     super.initState();
     _startResendTimer();
+    _startListeningForOTP();
     
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -72,9 +77,62 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Sing
     
     _animationController.forward();
   }
+  
+  /// Start listening for OTP SMS (works on both Android & iOS)
+  void _startListeningForOTP() async {
+    try {
+      // Android: Uses SMS Retriever API (zero permission)
+      // iOS: Uses native autofill (built-in)
+      await listenForCode();
+      print('🔔 Started listening for OTP');
+    } catch (e) {
+      print('❌ Error starting OTP listener: $e');
+    }
+  }
+  
+  @override
+  void codeUpdated() {
+    // Called automatically when OTP is detected
+    if (code != null && code!.length >= 6) {
+      setState(() {
+        _otpCode = code!.substring(0, 6);
+        _otpController.text = _otpCode!;
+        _isOtpDetected = true;
+      });
+      
+      print('✅ OTP Auto-detected: $_otpCode');
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Code detected automatically!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // Optional: Auto-verify after 1 second
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted && _otpCode != null && _otpCode!.length == 6) {
+          _verifyOTP();
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
+    SmsAutoFill().unregisterListener();
     _otpController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -312,6 +370,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Sing
           maxLength: AppConstants.otpLength,
           textAlign: TextAlign.center,
           autofocus: true,
+          autofillHints: const [AutofillHints.oneTimeCode],
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w700,

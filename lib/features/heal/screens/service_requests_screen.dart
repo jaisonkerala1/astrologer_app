@@ -148,56 +148,66 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
           
           return Container(
             margin: const EdgeInsets.only(right: 8),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = filter['key'] as String;
-                  });
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedFilter = filter['key'] as String;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? themeService.primaryColor
+                      : themeService.cardColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
                     color: isSelected
                         ? themeService.primaryColor
-                        : themeService.backgroundColor,
-                    borderRadius: themeService.borderRadius,
-                    border: Border.all(
-                      color: isSelected
-                          ? themeService.primaryColor
-                          : themeService.borderColor,
-                      width: 1,
-                    ),
+                        : themeService.borderColor,
+                    width: 1.5,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        filter['label'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isSelected
-                              ? Colors.white
-                              : themeService.textPrimary,
-                        ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: themeService.primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      filter['label'] as String,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        letterSpacing: 0.2,
+                        color: isSelected
+                            ? Colors.white
+                            : themeService.textPrimary,
                       ),
+                    ),
+                    if (filter['count'] as int > 0) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.white.withOpacity(0.2)
+                              ? Colors.white.withOpacity(0.25)
                               : themeService.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           '${filter['count']}',
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                             color: isSelected
                                 ? Colors.white
                                 : themeService.primaryColor,
@@ -205,7 +215,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
