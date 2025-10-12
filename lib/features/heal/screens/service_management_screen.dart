@@ -130,23 +130,16 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
             title: Text(l10n.services),
-            backgroundColor: themeService.surfaceColor,
+            backgroundColor: themeService.primaryColor,
             foregroundColor: themeService.textPrimary,
             elevation: 0,
             actions: [
               IconButton(
                 onPressed: _showAddServiceDialog,
-                icon: Icon(Icons.add, color: themeService.textPrimary),
+                icon: const Icon(Icons.add, color: Colors.white),
                 tooltip: l10n.addService,
               ),
             ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(
-                height: 1,
-                color: themeService.borderColor,
-              ),
-            ),
           ),
       body: Column(
         children: [

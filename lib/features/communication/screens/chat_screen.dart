@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import 'video_call_screen.dart';
@@ -19,6 +20,8 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+  bool _showEmojiPicker = false;
   final List<Map<String, dynamic>> _messages = [
     {
       'text': 'Hi! Thank you for the wonderful birth chart reading yesterday.',
@@ -51,7 +54,47 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleEmojiPicker() {
+    setState(() {
+      _showEmojiPicker = !_showEmojiPicker;
+    });
+    if (_showEmojiPicker) {
+      _focusNode.unfocus(); // Hide keyboard when showing emoji picker
+    } else {
+      _focusNode.requestFocus(); // Show keyboard when hiding emoji picker
+    }
+  }
+
+  void _onBackspacePressed() {
+    final text = _messageController.text;
+    if (text.isEmpty) return;
+    
+    // Get current cursor position
+    final selection = _messageController.selection;
+    if (!selection.isValid) return;
+    
+    final cursorPosition = selection.baseOffset;
+    if (cursorPosition <= 0) return;
+    
+    // Handle emoji backspace properly (emojis can be multiple code units)
+    final characters = text.characters;
+    final charactersBefore = text.substring(0, cursorPosition).characters;
+    final charactersAfter = text.substring(cursorPosition).characters;
+    
+    if (charactersBefore.isEmpty) return;
+    
+    // Remove one character before cursor
+    final newTextBefore = charactersBefore.skipLast(1).toString();
+    final newText = newTextBefore + charactersAfter.toString();
+    
+    _messageController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newTextBefore.length),
+    );
   }
 
   @override
@@ -151,58 +194,191 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-          // Message Input
+          // Message Input (WhatsApp-inspired)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: themeService.cardColor,
-              boxShadow: [themeService.cardShadow],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: themeService.surfaceColor,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: themeService.borderColor),
-                    ),
-                    child: TextField(
-                      controller: _messageController,
-                      style: TextStyle(color: themeService.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        hintStyle: TextStyle(color: themeService.textHint),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: themeService.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.send,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
                 ),
               ],
+            ),
+            child: SafeArea(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Expanded input field with rounded design
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: themeService.surfaceColor,
+                        borderRadius: BorderRadius.circular(28), // More rounded
+                        border: Border.all(
+                          color: themeService.borderColor.withOpacity(0.5),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          // Emoji icon (WhatsApp style - tappable)
+                          GestureDetector(
+                            onTap: _toggleEmojiPicker,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Icon(
+                                _showEmojiPicker
+                                    ? Icons.keyboard_rounded
+                                    : Icons.emoji_emotions_outlined,
+                                color: _showEmojiPicker
+                                    ? themeService.primaryColor
+                                    : themeService.textHint,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Text input
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              focusNode: _focusNode,
+                              style: TextStyle(
+                                color: themeService.textPrimary,
+                                fontSize: 15,
+                                height: 1.4,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Message',
+                                hintStyle: TextStyle(
+                                  color: themeService.textHint,
+                                  fontSize: 15,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 12,
+                                ),
+                              ),
+                              maxLines: null,
+                              minLines: 1,
+                              maxLength: null,
+                              textInputAction: TextInputAction.newline,
+                              textCapitalization: TextCapitalization.sentences,
+                              onTap: () {
+                                if (_showEmojiPicker) {
+                                  setState(() {
+                                    _showEmojiPicker = false;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Send button (keeping it the same as requested)
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: themeService.primaryColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeService.primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.send,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Emoji Picker (WhatsApp-inspired)
+          Offstage(
+            offstage: !_showEmojiPicker,
+            child: SizedBox(
+              height: 280,
+              child: EmojiPicker(
+                textEditingController: _messageController,
+                // onBackspacePressed: _onBackspacePressed, // Let the package handle it
+                config: Config(
+                  height: 256,
+                  checkPlatformCompatibility: true,
+                  emojiViewConfig: EmojiViewConfig(
+                    backgroundColor: themeService.cardColor,
+                    columns: 7,
+                    emojiSizeMax: 28,
+                    verticalSpacing: 0,
+                    horizontalSpacing: 0,
+                    gridPadding: EdgeInsets.zero,
+                    recentsLimit: 28,
+                    replaceEmojiOnLimitExceed: false,
+                    noRecents: Text(
+                      'No Recents',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: themeService.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    buttonMode: ButtonMode.MATERIAL,
+                  ),
+                  skinToneConfig: SkinToneConfig(
+                    enabled: true,
+                    dialogBackgroundColor: themeService.cardColor,
+                    indicatorColor: themeService.primaryColor,
+                  ),
+                  categoryViewConfig: CategoryViewConfig(
+                    backgroundColor: themeService.cardColor,
+                    iconColor: themeService.textSecondary,
+                    iconColorSelected: themeService.primaryColor,
+                    indicatorColor: themeService.primaryColor,
+                    backspaceColor: themeService.primaryColor,
+                    dividerColor: themeService.borderColor,
+                    categoryIcons: const CategoryIcons(),
+                    initCategory: Category.SMILEYS,
+                  ),
+                  bottomActionBarConfig: BottomActionBarConfig(
+                    backgroundColor: themeService.cardColor,
+                    buttonColor: themeService.surfaceColor,
+                    buttonIconColor: themeService.textSecondary,
+                    showSearchViewButton: false,
+                  ),
+                  searchViewConfig: SearchViewConfig(
+                    backgroundColor: themeService.cardColor,
+                    buttonIconColor: themeService.textSecondary,
+                  ),
+                ),
+              ),
             ),
           ),
         ],

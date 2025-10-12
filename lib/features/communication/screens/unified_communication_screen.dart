@@ -18,9 +18,15 @@ class UnifiedCommunicationScreen extends StatefulWidget {
 }
 
 class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen> 
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _fabAnimationController;
   late Animation<double> _fabScaleAnimation;
+  late AnimationController _searchAnimationController;
+  late Animation<double> _searchAnimation;
+  
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   
   @override
   void initState() {
@@ -35,12 +41,38 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
         curve: Curves.easeInOut,
       ),
     );
+    
+    _searchAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _searchAnimation = CurvedAnimation(
+      parent: _searchAnimationController,
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   void dispose() {
     _fabAnimationController.dispose();
+    _searchAnimationController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+  
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (_isSearching) {
+        _searchAnimationController.forward();
+        _searchFocusNode.requestFocus();
+      } else {
+        _searchAnimationController.reverse();
+        _searchController.clear();
+        _searchFocusNode.unfocus();
+      }
+    });
   }
 
   @override
@@ -86,42 +118,113 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     return AppBar(
       backgroundColor: themeService.backgroundColor,
       elevation: 0,
-      title: Text(
-        'Communication',
-        style: TextStyle(
-          color: themeService.textPrimary,
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
-        ),
+      titleSpacing: 16, // WhatsApp-style left spacing
+      title: AnimatedBuilder(
+        animation: _searchAnimation,
+        builder: (context, child) {
+          return Row(
+            children: [
+              // Title (fades out when searching)
+              if (!_isSearching)
+                Opacity(
+                  opacity: 1.0 - _searchAnimation.value,
+                  child: Text(
+                    'Communication',
+                    style: TextStyle(
+                      color: themeService.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+              
+              // Search bar (expands when searching)
+              if (_isSearching)
+                Expanded(
+                  child: FadeTransition(
+                    opacity: _searchAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: themeService.surfaceColor,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: themeService.borderColor.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            style: TextStyle(
+                              color: themeService.textPrimary,
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Search conversations...',
+                              hintStyle: TextStyle(
+                                color: themeService.textHint,
+                                fontSize: 16,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              prefixIcon: Padding(
+                                padding: const EdgeInsets.only(left: 8, right: 6),
+                                child: Icon(
+                                  Icons.search_rounded,
+                                  color: themeService.textHint,
+                                  size: 20,
+                                ),
+                              ),
+                              prefixIconConstraints: const BoxConstraints(
+                                minWidth: 0,
+                                minHeight: 0,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
       actions: [
-        // Search button
+        // Search button (becomes close when searching)
         IconButton(
-          icon: Icon(
-            Icons.search_rounded,
-            color: themeService.textPrimary,
-            size: 24,
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+              key: ValueKey<bool>(_isSearching),
+              color: themeService.textPrimary,
+              size: 24,
+            ),
           ),
-          onPressed: () {
-            // TODO: Implement search
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Search coming soon'),
-                backgroundColor: themeService.primaryColor,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
-          },
+          onPressed: _toggleSearch,
         ),
         
-        // More options
-        PopupMenuButton<String>(
-          icon: Icon(
-            Icons.more_vert_rounded,
+        // More options (hide when searching)
+        if (!_isSearching)
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert_rounded,
             color: themeService.textPrimary,
           ),
           shape: RoundedRectangleBorder(
@@ -226,7 +329,16 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
   }
 
   Widget _buildContent(ThemeService themeService, CommunicationService commService) {
-    final communications = commService.filteredCommunications;
+    var communications = commService.filteredCommunications;
+    
+    // Apply search filter if searching
+    if (_isSearching && _searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      communications = communications.where((item) {
+        return item.contactName.toLowerCase().contains(query) ||
+               item.preview.toLowerCase().contains(query);
+      }).toList();
+    }
 
     if (communications.isEmpty) {
       return _buildEmptyState(themeService, commService);
@@ -235,7 +347,7 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: ListView.builder(
-        key: ValueKey(commService.activeFilter),
+        key: ValueKey('${commService.activeFilter}_${_searchController.text}'),
         padding: const EdgeInsets.all(16),
         itemCount: communications.length,
         itemBuilder: (context, index) {
@@ -254,23 +366,29 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     String message;
     IconData icon;
     
-    switch (commService.activeFilter) {
-      case CommunicationFilter.all:
-        message = 'No communications yet';
-        icon = Icons.forum_rounded;
-        break;
-      case CommunicationFilter.calls:
-        message = 'No calls yet';
-        icon = Icons.phone_rounded;
-        break;
-      case CommunicationFilter.messages:
-        message = 'No messages yet';
-        icon = Icons.message_rounded;
-        break;
-      case CommunicationFilter.video:
-        message = 'No video calls yet';
-        icon = Icons.videocam_rounded;
-        break;
+    // Check if empty due to search
+    if (_isSearching && _searchController.text.isNotEmpty) {
+      message = 'No results found';
+      icon = Icons.search_off_rounded;
+    } else {
+      switch (commService.activeFilter) {
+        case CommunicationFilter.all:
+          message = 'No communications yet';
+          icon = Icons.forum_rounded;
+          break;
+        case CommunicationFilter.calls:
+          message = 'No calls yet';
+          icon = Icons.phone_rounded;
+          break;
+        case CommunicationFilter.messages:
+          message = 'No messages yet';
+          icon = Icons.message_rounded;
+          break;
+        case CommunicationFilter.video:
+          message = 'No video calls yet';
+          icon = Icons.videocam_rounded;
+          break;
+      }
     }
 
     return Center(

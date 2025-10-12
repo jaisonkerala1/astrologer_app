@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:sms_autofill/sms_autofill.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/otp_helper.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/auth_bloc.dart';
@@ -53,6 +54,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     super.initState();
     _startResendTimer();
     _startListeningForOTP();
+    _printAppHash(); // Print app hash for backend configuration
     
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -78,12 +80,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     _animationController.forward();
   }
   
+  /// Print app hash signature for backend configuration
+  void _printAppHash() async {
+    try {
+      await OTPHelper.printAppSignature();
+    } catch (e) {
+      print('❌ Error printing app hash: $e');
+    }
+  }
+  
   /// Start listening for OTP SMS (works on both Android & iOS)
   void _startListeningForOTP() async {
     try {
       // Android: Uses SMS Retriever API (zero permission)
       // iOS: Uses native autofill (built-in)
-      await listenForCode();
+      listenForCode();
       print('🔔 Started listening for OTP');
     } catch (e) {
       print('❌ Error starting OTP listener: $e');
@@ -124,7 +135,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
       // Optional: Auto-verify after 1 second
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted && _otpCode != null && _otpCode!.length == 6) {
-          _verifyOTP();
+          _verifyOtp();
         }
       });
     }
@@ -369,7 +380,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           keyboardType: TextInputType.number,
           maxLength: AppConstants.otpLength,
           textAlign: TextAlign.center,
-          autofocus: true,
+          autofocus: false,
           autofillHints: const [AutofillHints.oneTimeCode],
           style: TextStyle(
             fontSize: 28,

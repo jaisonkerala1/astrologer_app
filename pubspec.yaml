@@ -60,6 +60,9 @@ dependencies:
   # OTP Auto-Detection (Android & iOS)
   sms_autofill: ^2.3.0
   
+  # Emoji Picker
+  emoji_picker_flutter: ^2.0.0
+  
   # UI & Media
   # image_picker: ^0.8.6  # Temporarily disabled due to SDK 35 compatibility issues
   # cached_network_image: ^3.3.0  # Temporarily disabled due to path_provider dependency

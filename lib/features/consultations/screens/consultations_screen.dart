@@ -10,7 +10,7 @@ import '../widgets/consultation_card_widget.dart';
 import '../widgets/consultation_stats_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
-import '../widgets/consultation_search_bar.dart';
+// Removed inline search bar in favor of AppBar-integrated search
 import '../widgets/consultation_list_skeleton.dart';
 
 class ConsultationsScreen extends StatefulWidget {
@@ -24,6 +24,12 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _refreshAnimationController;
   bool _isRefreshing = false;
+  // AppBar search state
+  late AnimationController _searchAnimationController;
+  late Animation<double> _searchAnimation;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -31,6 +37,14 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
     _refreshAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
+    );
+    _searchAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _searchAnimation = CurvedAnimation(
+      parent: _searchAnimationController,
+      curve: Curves.easeInOut,
     );
     context.read<ConsultationsBloc>().add(const LoadConsultationsEvent());
   }
@@ -41,7 +55,25 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
   @override
   void dispose() {
     _refreshAnimationController.dispose();
+    _searchAnimationController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch(ThemeService themeService) {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (_isSearching) {
+        _searchAnimationController.forward();
+        _searchFocusNode.requestFocus();
+      } else {
+        _searchAnimationController.reverse();
+        _searchController.clear();
+        _searchFocusNode.unfocus();
+        context.read<ConsultationsBloc>().add(const ClearSearchEvent());
+      }
+    });
   }
 
   @override
@@ -52,31 +84,122 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
-            title: Text(
-              'Consultations',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: themeService.textPrimary,
-              ),
-            ),
             backgroundColor: themeService.primaryColor,
-            foregroundColor: themeService.textPrimary,
             elevation: 0,
+            titleSpacing: 16,
+            title: AnimatedBuilder(
+              animation: _searchAnimation,
+              builder: (context, child) {
+                return Row(
+                  children: [
+                    if (!_isSearching)
+                      Opacity(
+                        opacity: 1.0 - _searchAnimation.value,
+                        child: Text(
+                          'Consultations',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                    if (_isSearching)
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _searchAnimation,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.0),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: TextField(
+                                  controller: _searchController,
+                                  focusNode: _searchFocusNode,
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    hintText: 'Search consultations...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.black45,
+                                      fontSize: 16,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                    prefixIcon: Padding(
+                                      padding: const EdgeInsets.only(left: 8, right: 6),
+                                      child: Icon(
+                                        Icons.search_rounded,
+                                        color: Colors.black45,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    prefixIconConstraints: const BoxConstraints(
+                                      minWidth: 0,
+                                      minHeight: 0,
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    context.read<ConsultationsBloc>().add(
+                                      SearchConsultationsEvent(query: value),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
             actions: [
               IconButton(
-                icon: AnimatedBuilder(
-                  animation: _refreshAnimationController,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _refreshAnimationController.value * 2 * 3.14159,
-                      child: Icon(Icons.refresh, color: themeService.textPrimary),
-                    );
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                    key: ValueKey<bool>(_isSearching),
+                  color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                onPressed: () => _toggleSearch(themeService),
+              ),
+              if (!_isSearching)
+                IconButton(
+                  icon: AnimatedBuilder(
+                    animation: _refreshAnimationController,
+                    builder: (context, child) {
+                      return Transform.rotate(
+                        angle: _refreshAnimationController.value * 2 * 3.14159,
+                      child: const Icon(Icons.refresh, color: Colors.white),
+                      );
+                    },
+                  ),
+                  onPressed: _isRefreshing ? null : () {
+                    _handleRefresh();
                   },
                 ),
-                onPressed: _isRefreshing ? null : () {
-                  _handleRefresh();
-                },
-              ),
             ],
           ),
       body: BlocConsumer<ConsultationsBloc, ConsultationsState>(
@@ -154,25 +277,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
             },
             child: Column(
               children: [
-                // Search bar - always visible
-                ConsultationSearchBar(
-                  searchQuery: loadedState?.searchQuery ?? '',
-                  isSearching: loadedState?.isSearching ?? false,
-                  resultCount: loadedState?.consultations.length ?? 0,
-                  onSearchChanged: (query) {
-                    context.read<ConsultationsBloc>().add(
-                      SearchConsultationsEvent(query: query),
-                    );
-                  },
-                  onClearSearch: () {
-                    context.read<ConsultationsBloc>().add(
-                      const ClearSearchEvent(),
-                    );
-                  },
-                  onSearchSubmitted: () {
-                    // Search is handled in real-time, no need for submission
-                  },
-                ),
+                // Removed inline search bar; using AppBar-integrated search
                 
                 // Stats section (only show when not searching) - shows loading state
                 if (loadedState == null || !loadedState.isSearching) ...[
@@ -205,14 +310,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                       ? const ConsultationListSkeleton()
                       : (loadedState?.consultations.isEmpty ?? true)
                           ? (loadedState?.isSearching == true && (loadedState?.searchQuery.isNotEmpty ?? false)
-                              ? SearchEmptyState(
-                                  searchQuery: loadedState!.searchQuery,
-                                  onClearSearch: () {
-                                    context.read<ConsultationsBloc>().add(
-                                      const ClearSearchEvent(),
-                                    );
-                                  },
-                                )
+                              ? _buildSearchEmptyState(context, loadedState!.searchQuery)
                               : _buildEmptyState(context))
                           : ListView.builder(
                               padding: const EdgeInsets.only(bottom: 16),
@@ -239,6 +337,65 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
             backgroundColor: themeService.primaryColor,
             shape: const CircleBorder(),
             child: const Icon(Icons.add, color: Colors.white),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchEmptyState(BuildContext context, String query) {
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
+                  color: themeService.textHint,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No results for "$query"',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: themeService.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try a different keyword or clear the search.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: themeService.textHint,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    context.read<ConsultationsBloc>().add(const ClearSearchEvent());
+                    setState(() {
+                      _isSearching = false;
+                      _searchController.clear();
+                      _searchFocusNode.unfocus();
+                    });
+                  },
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Clear search'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: themeService.textPrimary,
+                    side: BorderSide(color: themeService.borderColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

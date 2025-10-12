@@ -146,29 +146,58 @@ class CommunicationItemCard extends StatelessWidget {
   }
 
   Widget _buildPreview() {
-    // For calls, show status icon
-    String displayText = item.preview;
-    if (item.statusIcon != null) {
-      displayText = '${item.statusIcon} ${item.preview}';
-    }
-    
-    return Text(
-      displayText,
-      style: TextStyle(
-        color: themeService.textSecondary,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    // For calls, show status icon (Google Phone inspired)
+    return Row(
+      children: [
+        if (item.type != CommunicationType.message) ...[
+          Icon(
+            _getStatusIcon(),
+            size: 14,
+            color: _getStatusIconColor(),
+          ),
+          const SizedBox(width: 6),
+        ],
+        Expanded(
+          child: Text(
+            item.preview,
+            style: TextStyle(
+              color: themeService.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 1.4,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
+  }
+
+  IconData _getStatusIcon() {
+    switch (item.status) {
+      case CommunicationStatus.missed:
+        return Icons.call_missed_outgoing_rounded;
+      case CommunicationStatus.outgoing:
+        return Icons.call_made_rounded;
+      case CommunicationStatus.incoming:
+        return Icons.call_received_rounded;
+      default:
+        return Icons.phone_rounded;
+    }
+  }
+
+  Color _getStatusIconColor() {
+    if (item.status == CommunicationStatus.missed) {
+      return themeService.errorColor;
+    }
+    return themeService.textSecondary;
   }
 
   Widget _buildMetadata() {
     return Row(
       children: [
-        // Type icon with background
+        // Type icon with background (Google Phone inspired - minimal, 20px)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -178,9 +207,10 @@ class CommunicationItemCard extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                item.typeIcon,
-                style: const TextStyle(fontSize: 12),
+              Icon(
+                _getTypeIconData(),
+                size: 14, // Slightly smaller in badge
+                color: _getTypeColor(),
               ),
               const SizedBox(width: 4),
               Text(
@@ -257,21 +287,21 @@ class CommunicationItemCard extends StatelessWidget {
       );
     }
     
-    // Show action icon based on type
+    // Show minimal outlined icon based on type (Google Phone style - 20px)
     IconData actionIcon;
     Color iconColor;
     
     switch (item.type) {
       case CommunicationType.message:
-        actionIcon = Icons.message_rounded;
+        actionIcon = Icons.chat_bubble_outline_rounded;
         iconColor = themeService.primaryColor;
         break;
       case CommunicationType.voiceCall:
-        actionIcon = Icons.phone_rounded;
+        actionIcon = Icons.phone_outlined;
         iconColor = const Color(0xFF10B981); // Green
         break;
       case CommunicationType.videoCall:
-        actionIcon = Icons.videocam_rounded;
+        actionIcon = Icons.videocam_outlined;
         iconColor = const Color(0xFF8B5CF6); // Purple
         break;
     }
@@ -279,8 +309,19 @@ class CommunicationItemCard extends StatelessWidget {
     return Icon(
       actionIcon,
       color: iconColor.withOpacity(0.3),
-      size: 20,
+      size: 20, // Google Phone inspired - 20px
     );
+  }
+
+  IconData _getTypeIconData() {
+    switch (item.type) {
+      case CommunicationType.message:
+        return Icons.chat_bubble_outline_rounded;
+      case CommunicationType.voiceCall:
+        return Icons.phone_outlined;
+      case CommunicationType.videoCall:
+        return Icons.videocam_outlined;
+    }
   }
 
   Color _getTypeColor() {

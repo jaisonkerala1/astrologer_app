@@ -8,7 +8,8 @@ import '../models/service_request_model.dart';
 import '../widgets/service_request_card_widget.dart';
 
 class ServiceRequestsScreen extends StatefulWidget {
-  const ServiceRequestsScreen({super.key});
+  final String searchQuery;
+  const ServiceRequestsScreen({super.key, this.searchQuery = ''});
 
   @override
   State<ServiceRequestsScreen> createState() => _ServiceRequestsScreenState();
@@ -287,27 +288,42 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
   }
 
   List<ServiceRequest> _getFilteredRequests() {
+    // Start with all requests or filtered by status
+    List<ServiceRequest> filtered;
+    
     if (_selectedFilter == 'all') {
-      return _requests;
+      filtered = _requests;
+    } else {
+      RequestStatus? status;
+      switch (_selectedFilter) {
+        case 'pending':
+          status = RequestStatus.pending;
+          break;
+        case 'confirmed':
+          status = RequestStatus.confirmed;
+          break;
+        case 'in_progress':
+          status = RequestStatus.inProgress;
+          break;
+        case 'completed':
+          status = RequestStatus.completed;
+          break;
+      }
+      filtered = _requests.where((request) => request.status == status).toList();
     }
     
-    RequestStatus? status;
-    switch (_selectedFilter) {
-      case 'pending':
-        status = RequestStatus.pending;
-        break;
-      case 'confirmed':
-        status = RequestStatus.confirmed;
-        break;
-      case 'in_progress':
-        status = RequestStatus.inProgress;
-        break;
-      case 'completed':
-        status = RequestStatus.completed;
-        break;
+    // Apply search query if provided
+    final query = widget.searchQuery.toLowerCase().trim();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((request) {
+        return request.customerName.toLowerCase().contains(query) ||
+               request.serviceName.toLowerCase().contains(query) ||
+               request.serviceCategory.toLowerCase().contains(query) ||
+               request.customerPhone.contains(query);
+      }).toList();
     }
     
-    return _requests.where((request) => request.status == status).toList();
+    return filtered;
   }
 
   void _updateRequestStatus(ServiceRequest request, RequestStatus newStatus) {

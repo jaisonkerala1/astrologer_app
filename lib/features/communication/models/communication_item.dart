@@ -28,8 +28,9 @@ class CommunicationItem {
     this.sessionId,
   });
 
-  /// Get display icon based on type
+  /// Get display icon based on type (IconData for Material Icons)
   String get typeIcon {
+    // Deprecated - use typeIconData instead
     switch (type) {
       case CommunicationType.message:
         return '💬';
@@ -40,7 +41,7 @@ class CommunicationItem {
     }
   }
 
-  /// Get status icon for calls
+  /// Get status icon for calls (deprecated)
   String? get statusIcon {
     if (type == CommunicationType.message) return null;
     
