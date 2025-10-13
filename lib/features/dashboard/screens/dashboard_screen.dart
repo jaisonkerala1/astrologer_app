@@ -1019,23 +1019,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Live indicator dot
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
+              // Broadcast icon
+              const Icon(
+                Icons.sensors,
+                color: Colors.white,
+                size: 16,
               ),
               const SizedBox(width: 6),
-              // Camera icon
-              Icon(
-                Icons.videocam,
-                color: Colors.white,
-                size: 14,
-              ),
-              const SizedBox(width: 4),
               // LIVE text
               const Text(
                 'LIVE',
