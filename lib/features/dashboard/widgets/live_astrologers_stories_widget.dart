@@ -17,11 +17,12 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     
     // Responsive container height. We design for the child item to fit
     // within its allocated height without overflow across widths.
+    // Adjusted to match profile image size
     final double containerHeight = screenWidth < 360
-        ? 110.0
+        ? 122.0  // Matches profile image size proportions
         : screenWidth < 400
-            ? 124.0
-            : 140.0;
+            ? 134.0
+            : 146.0;
     
     // Calculate responsive font sizes
     final double titleFontSize = screenWidth < 360 ? 14.0 : 16.0;

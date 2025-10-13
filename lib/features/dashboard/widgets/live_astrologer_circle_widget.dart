@@ -22,16 +22,17 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Base sizes used before we adapt to parent constraints
+    // Match profile image size in dashboard header (60px)
     final double baseCircle = screenWidth < 360
-        ? 56.0
+        ? 62.0  // Slightly larger than profile for gradient border
         : screenWidth < 400
-            ? 62.0
-            : 70.0;
-    final double baseNameHeight = screenWidth < 360 ? 12.0 : 14.0;
-    final double baseViewerHeight = screenWidth < 360 ? 12.0 : 14.0;
-    final double baseNameFont = screenWidth < 360 ? 8.5 : 10.0;
-    final double baseViewerFont = screenWidth < 360 ? 7.5 : 9.0;
-    final double baseIcon = screenWidth < 360 ? 7.0 : 10.0;
+            ? 66.0
+            : 70.0;  // Matches profile image + border
+    final double baseNameHeight = screenWidth < 360 ? 13.0 : 15.0;
+    final double baseViewerHeight = screenWidth < 360 ? 13.0 : 15.0;
+    final double baseNameFont = screenWidth < 360 ? 9.0 : 10.5;
+    final double baseViewerFont = screenWidth < 360 ? 8.0 : 9.5;
+    final double baseIcon = screenWidth < 360 ? 7.5 : 10.5;
     final double spacingAfterCircle = 2.0;
     final double spacingBeforeViewer = 0.0;
     
@@ -353,9 +354,9 @@ _LiveItemLayout _computeLayout({
   double total = circle + spacingAfterCircle + nameH + spacingBeforeViewer + viewerH;
 
   // Minimums to preserve readability while fitting
-  const double minCircle = 48.0;
-  const double minNameH = 11.0;
-  const double minViewerH = 11.0;
+  const double minCircle = 56.0;  // Match profile size range
+  const double minNameH = 12.0;
+  const double minViewerH = 12.0;
 
   if (total > maxHeight) {
     double overflow = total - maxHeight;
