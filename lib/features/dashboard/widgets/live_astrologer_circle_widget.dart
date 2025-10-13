@@ -61,27 +61,20 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-              // Main circle with Instagram Stories-style live border
+              // Main circle with red live border (matching LIVE badge)
               Container(
                 width: layout.circle,
                 height: layout.circle,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFF09433), // Orange
-                      Color(0xFFE6683C), // Red-orange
-                      Color(0xFFDC2743), // Red
-                      Color(0xFFCC2366), // Pink-red
-                      Color(0xFFBC1888), // Pink
-                    ],
+                    colors: [Colors.red, Colors.redAccent],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.pink.withOpacity(0.3),
+                      color: Colors.red.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
