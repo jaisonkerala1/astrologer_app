@@ -61,20 +61,20 @@ class LiveAstrologerCircleWidget extends StatelessWidget {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-              // Main circle with red live border (matching LIVE badge)
+              // Main circle with lighter red live border (minimal look)
               Container(
                 width: layout.circle,
                 height: layout.circle,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Colors.red, Colors.redAccent],
+                  gradient: LinearGradient(
+                    colors: [Colors.red[400]!, Colors.redAccent[200]!],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
