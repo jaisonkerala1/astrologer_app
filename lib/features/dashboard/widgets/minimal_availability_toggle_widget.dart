@@ -29,11 +29,15 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: statusService.isOnline ? Colors.green : Colors.grey,
+                          color: statusService.isOnline 
+                              ? const Color(0xFF10B981) // Green for online
+                              : const Color(0xFFEF4444), // Red for offline
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: (statusService.isOnline ? Colors.green : Colors.grey)
+                              color: (statusService.isOnline 
+                                  ? const Color(0xFF10B981) 
+                                  : const Color(0xFFEF4444))
                                   .withOpacity(0.4),
                               blurRadius: 4,
                               spreadRadius: 1,
@@ -70,13 +74,13 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         color: statusService.isOnline 
-                            ? themeService.primaryColor
-                            : themeService.borderColor,
+                            ? const Color(0xFF10B981) // Green for online
+                            : const Color(0xFFEF4444), // Red for offline
                         boxShadow: [
                           BoxShadow(
-                            color: themeService.isVedicMode() 
-                                ? Colors.black.withOpacity(0.2)
-                                : Colors.grey.withOpacity(0.3),
+                            color: statusService.isOnline 
+                                ? const Color(0xFF10B981).withOpacity(0.3)
+                                : const Color(0xFFEF4444).withOpacity(0.3),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -111,8 +115,8 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       statusService.isOnline 
-                                          ? themeService.primaryColor
-                                          : themeService.textSecondary,
+                                          ? const Color(0xFF10B981) // Green for online
+                                          : const Color(0xFFEF4444), // Red for offline
                                     ),
                                   ),
                                 )
@@ -120,8 +124,8 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                                   statusService.isOnline ? Icons.check : Icons.close,
                                   size: 14,
                                   color: statusService.isOnline 
-                                      ? themeService.primaryColor
-                                      : themeService.textSecondary,
+                                      ? const Color(0xFF10B981) // Green for online
+                                      : const Color(0xFFEF4444), // Red for offline
                                 ),
                         ),
                       ),

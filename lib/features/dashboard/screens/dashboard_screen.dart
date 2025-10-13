@@ -28,6 +28,7 @@ import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
 import '../../communication/services/communication_service.dart';
+import '../../communication/models/communication_item.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../heal/screens/heal_screen.dart';
 import '../../heal/screens/discussion_screen.dart';
@@ -301,9 +302,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Method to open communication screen with specific tab
   void _openCommunicationScreen(String tab) {
-    // Use Provider to get CommunicationService and request tab switch
+    // Use Provider to get CommunicationService and set the filter
     final commService = Provider.of<CommunicationService>(context, listen: false);
-    commService.requestTabSwitch(tab);
+    
+    // Map string tab to CommunicationFilter enum
+    CommunicationFilter filter;
+    switch (tab) {
+      case 'calls':
+        filter = CommunicationFilter.calls;
+        break;
+      case 'messages':
+        filter = CommunicationFilter.messages;
+        break;
+      case 'video':
+        filter = CommunicationFilter.video;
+        break;
+      default:
+        filter = CommunicationFilter.all;
+    }
+    
+    commService.setFilter(filter);
     
     // Animate to Communication tab (index 2) with smooth sliding
     // Page structure: 0=LivePrep(hidden), 1=Dashboard, 2=Communication, 3=Heal, 4=Consultations, 5=Profile
@@ -1218,47 +1236,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCallsCard(int callsToday) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _openCommunicationScreen('calls');
-          },
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                themeService.primaryColor,
-                themeService.primaryColor.withOpacity(0.7),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        // Check if Vedic theme
+        final isVedic = themeService.isVedicMode();
+        
+        return Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _openCommunicationScreen('calls');
+            },
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: themeService.primaryColor.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Left side - Icon container with backdrop blur effect
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
+            splashColor: isVedic 
+                ? const Color(0xFFF59E0B).withOpacity(0.2)
+                : Colors.white.withOpacity(0.2),
+            highlightColor: isVedic
+                ? const Color(0xFFF59E0B).withOpacity(0.1)
+                : Colors.white.withOpacity(0.1),
+            child: Ink(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+              // Use solid beige color for Vedic, surface color for others
+              color: isVedic ? const Color(0xFFFFF3E0) : themeService.surfaceColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                // Left side - Icon container with backdrop blur effect
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: isVedic 
+                        ? const Color(0xFFF59E0B)
+                        : themeService.primaryColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.phone,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.phone,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
               const SizedBox(width: 20),
               // Middle - Number and label
               Expanded(
@@ -1267,20 +1287,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       callsToday.toString(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: themeService.textPrimary,
                         height: 1.0,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Calls Today',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: themeService.textPrimary,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -1296,25 +1316,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.7),
+                      color: themeService.textSecondary,
                       letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.arrow_upward,
-                        color: Colors.white,
+                        color: themeService.successColor,
                         size: 16,
                       ),
                       const SizedBox(width: 2),
-                      const Text(
+                      Text(
                         '12%',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: themeService.successColor,
                         ),
                       ),
                     ],
@@ -1322,6 +1342,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ],
+          ),
           ),
           ),
         );
@@ -1333,121 +1354,112 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMessagesCard() {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
+        // Check if Vedic theme
+        final isVedic = themeService.isVedicMode();
+        
         return Material(
-          color: themeService.surfaceColor,
-          elevation: 2,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          shadowColor: themeService.primaryColor.withOpacity(0.1),
           child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
               _openCommunicationScreen('messages');
             },
             borderRadius: BorderRadius.circular(20),
-            splashColor: themeService.primaryColor.withOpacity(0.15),
-            highlightColor: themeService.primaryColor.withOpacity(0.1),
-            child: Container(
-              width: double.infinity,
+            splashColor: isVedic 
+                ? const Color(0xFFF59E0B).withOpacity(0.2)
+                : themeService.primaryColor.withOpacity(0.15),
+            highlightColor: isVedic
+                ? const Color(0xFFF59E0B).withOpacity(0.1)
+                : themeService.primaryColor.withOpacity(0.1),
+            child: Ink(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: themeService.borderColor,
-                  width: 1,
+              // Use solid beige color for Vedic, surface color for others
+              color: isVedic ? const Color(0xFFFFF3E0) : themeService.surfaceColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                // Left side - Icon container
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: themeService.primaryColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                    children: [
-                      // Left side - Label, number, and trend badge
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'MESSAGES',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: themeService.textSecondary,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '12',
-                              style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                color: themeService.textPrimary,
-                                height: 1.0,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                // Trend badge
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981), // emerald - success color
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.arrow_upward,
-                                        color: Colors.white,
-                                        size: 12,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      const Text(
-                                        '+8%',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'from last week',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: themeService.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+              const SizedBox(width: 20),
+              // Middle - Number and label
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '12',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: themeService.textPrimary,
+                        height: 1.0,
                       ),
-                      // Right side - Icon container
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              themeService.primaryColor,
-                              AppTheme.secondaryColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.message,
-                          color: Colors.white,
-                          size: 36,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Messages Today',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: themeService.textPrimary,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Right side - VS YESTERDAY and percentage
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'VS YESTERDAY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: themeService.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_upward,
+                        color: themeService.successColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '8%',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: themeService.successColor,
                         ),
                       ),
                     ],
                   ),
-            ),
+                ],
+              ),
+            ],
+          ),
+          ),
           ),
         );
       },

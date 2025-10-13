@@ -120,16 +120,19 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
           return Scaffold(
             backgroundColor: themeService.backgroundColor,
             appBar: AppBar(
+              backgroundColor: themeService.primaryColor,
+              elevation: 0,
+              centerTitle: false,
+              titleSpacing: 16,
               title: Text(
                 'Profile',
                 style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
                   fontWeight: FontWeight.w600,
-                  color: themeService.textPrimary,
+                  letterSpacing: -0.3,
                 ),
               ),
-              backgroundColor: themeService.primaryColor,
-              foregroundColor: themeService.textPrimary,
-              elevation: 0,
             ),
             floatingActionButton: FloatingChatButton(userProfile: _currentUser),
             body: SingleChildScrollView(
