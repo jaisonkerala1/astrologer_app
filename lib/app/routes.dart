@@ -67,25 +67,28 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAuthAndNavigate() async {
     // Show splash for minimum time
-    await Future.delayed(const Duration(milliseconds: 1000)); // Just 1 second
+    await Future.delayed(const Duration(milliseconds: 1000));
     
     if (!mounted) return;
     
-    // Clear data in background (don't wait for it)
-    _clearDataInBackground();
+    // Check if user is already authenticated
+    final storage = StorageService();
+    await storage.initialize();
+    final isLoggedIn = await storage.getIsLoggedIn();
+    final token = await storage.getAuthToken();
     
-    // Go to login immediately
-    if (mounted) {
+    print('SplashScreen: Auth check - isLoggedIn: $isLoggedIn, hasToken: ${token != null}');
+    
+    if (!mounted) return;
+    
+    // Navigate based on auth status
+    if (isLoggedIn == true && token != null) {
+      print('SplashScreen: User authenticated, going to dashboard');
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    } else {
+      print('SplashScreen: User not authenticated, going to login');
       Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
-  }
-  
-  void _clearDataInBackground() {
-    // Clear data without blocking the UI
-    StorageService().initialize().then((_) {
-      StorageService().forceClearAllData();
-      print('SplashScreen: Cleared cached data in background');
-    });
   }
 
   @override

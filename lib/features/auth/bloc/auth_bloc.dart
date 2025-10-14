@@ -320,12 +320,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _clearAuthData() async {
     try {
-      // Force clear ALL data (nuclear option)
-      await _storageService.forceClearAllData();
+      // Clear only auth-related data (preserves app preferences)
+      await _storageService.clearAuthData();
       _apiService.clearAuthToken();
       add(InitializeAuthEvent());
       
-      print('AuthBloc: FORCE CLEARED ALL DATA - Fresh start!');
+      print('AuthBloc: Cleared auth data (preserving app preferences)');
     } catch (e) {
       print('AuthBloc: Error clearing auth data: $e');
     }

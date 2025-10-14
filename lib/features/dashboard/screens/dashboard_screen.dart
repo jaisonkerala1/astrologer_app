@@ -354,7 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Calculate responsive sizes for bottom navigation
-    final double navBarHeight = screenWidth < 360 ? 65.0 : screenWidth < 400 ? 72.0 : 80.0;
+    final double navBarHeight = 60.0; // Slightly increased for better visual balance
     final double selectedIconSize = screenWidth < 360 ? 23.0 : 26.0;
     final double unselectedIconSize = screenWidth < 360 ? 20.0 : 22.0;
     final double iconWidth = screenWidth < 360 ? 24.0 : screenWidth < 400 ? 26.0 : 29.0;
@@ -396,10 +396,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           bottomNavigationBar: Container(
             height: navBarHeight,
             decoration: BoxDecoration(
-              color: themeService.surfaceColor,
+              color: Colors.white,
               border: Border(
                 top: BorderSide(
-                  color: themeService.borderColor,
+                  color: Colors.grey.shade200,
                   width: 0.5,
                 ),
               ),
@@ -458,10 +458,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     label: 'Communication',
                   ),
                   BottomNavigationBarItem(
-                    icon: SvgPicture.asset(
-                      AppAssets.healIcon,
-                      width: iconWidth,
-                      height: iconWidth,
+                    icon: Icon(
+                      Icons.spa,
+                      size: iconWidth,
                       color: _selectedIndex == 2
                           ? themeService.primaryColor
                           : themeService.textSecondary,
