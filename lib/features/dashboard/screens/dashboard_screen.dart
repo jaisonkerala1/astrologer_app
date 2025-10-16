@@ -13,6 +13,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/theme/models/app_theme.dart' show AppThemeType;
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
@@ -396,10 +397,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           bottomNavigationBar: Container(
             height: navBarHeight,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: themeService.currentTheme.type == AppThemeType.dark 
+                  ? themeService.surfaceColor 
+                  : Colors.white,
               border: Border(
                 top: BorderSide(
-                  color: Colors.grey.shade200,
+                  color: themeService.currentTheme.type == AppThemeType.dark
+                      ? themeService.borderColor
+                      : Colors.grey.shade200,
                   width: 0.5,
                 ),
               ),
