@@ -6,6 +6,7 @@ class DiscussionService {
   static const String _discussionsKey = 'discussions';
   static const String _commentsKey = 'comments';
   static const String _favoritesKey = 'favorites';
+  static const String _savedPostsKey = 'saved_posts';
   static const String _astrologerHistoryKey = 'astrologer_history';
 
   // Save discussion post
@@ -128,6 +129,38 @@ class DiscussionService {
       final commentsJson = comments.map((c) => c.toJson()).toList();
       await prefs.setString('${_commentsKey}_$discussionId', jsonEncode(commentsJson));
     }
+  }
+
+  // Save post (bookmark)
+  static Future<void> savePost(String discussionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPosts = await _getSavedPostIds();
+    if (!savedPosts.contains(discussionId)) {
+      savedPosts.add(discussionId);
+      await prefs.setStringList(_savedPostsKey, savedPosts);
+    }
+  }
+
+  // Unsave post (remove bookmark)
+  static Future<void> unsavePost(String discussionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPosts = await _getSavedPostIds();
+    savedPosts.remove(discussionId);
+    await prefs.setStringList(_savedPostsKey, savedPosts);
+  }
+
+  // Get saved post IDs
+  static Future<List<String>> _getSavedPostIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_savedPostsKey) ?? [];
+  }
+
+  // Get saved posts
+  static Future<List<DiscussionPost>> getSavedPosts() async {
+    final savedPostIds = await _getSavedPostIds();
+    final allDiscussions = await getDiscussions();
+    
+    return allDiscussions.where((post) => savedPostIds.contains(post.id)).toList();
   }
 }
 

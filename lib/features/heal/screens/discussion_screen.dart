@@ -124,47 +124,67 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
-          backgroundColor: themeService.primaryColor,
+          backgroundColor: const Color(0xFFF5F5F5),
           appBar: AppBar(
             title: Text(
               l10n.discussion,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+              style: const TextStyle(
+                color: Color(0xFF1A1A2E),
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
               ),
             ),
-            backgroundColor: themeService.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1A1A2E),
+            elevation: 0.5,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A2E)),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.favorite_border, color: Colors.white),
+                icon: const Icon(Icons.bookmark_border, color: Color(0xFF6B6B8D)),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const FavoritesScreen(),
+                      builder: (context) => const SavedPostsScreen(),
                     ),
                   );
                 },
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: AnimatedButton(
-                  onPressed: () {
+                padding: const EdgeInsets.only(right: 12.0),
+                child: GestureDetector(
+                  onTap: () {
                     _showCreatePostBottomSheet();
                   },
-                  text: 'Post',
-                  icon: Icons.add,
-                  backgroundColor: Colors.white,
-                  foregroundColor: themeService.primaryColor,
-                  width: 100,
-                  height: 40,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: themeService.primaryColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Post',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -176,7 +196,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
               // Posts List
               Expanded(
                 child: Container(
-                  color: themeService.primaryColor,
+                  color: const Color(0xFFF5F5F5),
                   child: _filteredPosts.isEmpty
                       ? _buildEmptyState(l10n, themeService)
                       : ListView.builder(
@@ -198,16 +218,16 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
 
   Widget _buildSearchBar(AppLocalizations l10n, ThemeService themeService) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor,
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(0.04),
             spreadRadius: 0,
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -218,24 +238,24 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
             _searchQuery = value;
           });
         },
-        style: TextStyle(
-          color: themeService.textPrimary,
-          fontSize: 16,
+        style: const TextStyle(
+          color: Color(0xFF1A1A2E),
+          fontSize: 15,
           fontWeight: FontWeight.w400,
         ),
         decoration: InputDecoration(
           hintText: 'Search discussions...',
-          hintStyle: TextStyle(
-            color: themeService.textSecondary.withOpacity(0.8),
-            fontSize: 16,
+          hintStyle: const TextStyle(
+            color: Color(0xFF6B6B8D),
+            fontSize: 15,
             fontWeight: FontWeight.w400,
           ),
           prefixIcon: Container(
             padding: const EdgeInsets.all(12),
-            child: Icon(
+            child: const Icon(
               Icons.search_rounded,
-              color: themeService.primaryColor.withOpacity(0.7),
-              size: 22,
+              color: Color(0xFF6B6B8D),
+              size: 20,
             ),
           ),
           suffixIcon: _searchQuery.isNotEmpty
@@ -248,16 +268,16 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                   },
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    child: Icon(
+                    child: const Icon(
                       Icons.close_rounded,
-                      color: themeService.textSecondary.withOpacity(0.6),
-                      size: 20,
+                      color: Color(0xFF6B6B8D),
+                      size: 18,
                     ),
                   ),
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
         ),
       ),
     );
@@ -265,14 +285,21 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
 
   Widget _buildPostCard(DiscussionPost post, AppLocalizations l10n, ThemeService themeService) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor,
+        gradient: LinearGradient(
+          colors: [
+            Colors.white,
+            const Color(0xFFFAFAFA),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
+            color: Colors.black.withOpacity(0.04),
+            spreadRadius: 0,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -288,83 +315,128 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header Row: Avatar + Metadata
               Row(
                 children: [
+                  // Author Avatar
+                  CircleAvatar(
+                    backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                    radius: 20,
+                    child: Text(
+                      post.authorInitial,
+                      style: TextStyle(
+                        color: themeService.primaryColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Author Info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.title,
+                          post.author,
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: themeService.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1A1A2E),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 2),
                         Text(
-                          '${post.author} • ${post.timeAgo} • ${post.category}',
+                          '${post.timeAgo} • ${post.category}',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: themeService.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF6B6B8D),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Like button
-                  GestureDetector(
-                    onTap: () => _toggleLike(post.id),
-                    child: Icon(
-                      post.isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: post.isLiked ? Colors.red : themeService.textSecondary,
+                  
+                  // More Options
+                  IconButton(
+                    icon: Icon(
+                      Icons.more_horiz,
+                      color: const Color(0xFF6B6B8D),
                       size: 20,
                     ),
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
+              
               const SizedBox(height: 16),
+              
+              // Post Title
+              Text(
+                post.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A2E),
+                  height: 1.4,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Post Content Preview
               Text(
                 post.content,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: themeService.textPrimary.withOpacity(0.87),
-                  height: 1.4,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF6B6B8D),
+                  height: 1.5,
                 ),
-                maxLines: 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              
               const SizedBox(height: 16),
+              
+              // Action Bar
               Row(
                 children: [
-                  // Navigation arrow button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: themeService.primaryColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
+                  // Like Button
+                  _buildActionButton(
+                    icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
+                    label: '${post.likes}',
+                    color: post.isLiked ? Colors.red : const Color(0xFF6B6B8D),
+                    onTap: () => _toggleLike(post.id),
+                  ),
+                  
+                  const SizedBox(width: 20),
+                  
+                  // Comment Button
+                  _buildActionButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'Comment',
+                    color: const Color(0xFF6B6B8D),
+                    onTap: () => _showPostDetail(post),
+                  ),
+                  
+                  const Spacer(),
+                  
+                  // Share Button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.share_outlined,
                       size: 20,
                     ),
-                  ),
-                  const Spacer(),
-                  // Author avatar
-                  CircleAvatar(
-                    backgroundColor: themeService.accentColor,
-                    radius: 20,
-                    child: Text(
-                      post.authorInitial,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    color: const Color(0xFF6B6B8D),
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -374,36 +446,71 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       ),
     );
   }
-
-  Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
         children: [
-          Icon(
-            Icons.forum_outlined,
-            size: 64,
-            color: Colors.white.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 6),
           Text(
-            _searchQuery.isEmpty ? l10n.noPostsYet : 'No posts found',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-                      color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isEmpty ? l10n.beTheFirstToPost : 'Try a different search term',
-            textAlign: TextAlign.center,
+            label,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+              color: color,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE5E5E5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.forum_outlined,
+                size: 48,
+                color: Color(0xFF6B6B8D),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _searchQuery.isEmpty ? l10n.noPostsYet : 'No posts found',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A2E),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isEmpty ? l10n.beTheFirstToPost : 'Try a different search term',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Color(0xFF6B6B8D),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

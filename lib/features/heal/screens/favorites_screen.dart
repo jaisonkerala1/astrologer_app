@@ -9,41 +9,43 @@ import 'discussion_detail_screen.dart';
 import '../services/discussion_service.dart';
 import '../models/discussion_models.dart';
 
-class FavoritesScreen extends StatefulWidget {
-  const FavoritesScreen({super.key});
+class SavedPostsScreen extends StatefulWidget {
+  const SavedPostsScreen({super.key});
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
+  State<SavedPostsScreen> createState() => _SavedPostsScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
-  final List<DiscussionPost> _favoritePosts = [];
+// Keep old name for backwards compatibility
+class FavoritesScreen extends SavedPostsScreen {
+  const FavoritesScreen({super.key});
+}
+
+class _SavedPostsScreenState extends State<SavedPostsScreen> {
+  final List<DiscussionPost> _savedPosts = [];
 
   @override
   void initState() {
     super.initState();
-    _loadFavoritePosts();
+    _loadSavedPosts();
   }
 
-  Future<void> _loadFavoritePosts() async {
-    final favoriteIds = await DiscussionService.getFavorites();
-    final allPosts = await DiscussionService.getDiscussions();
+  Future<void> _loadSavedPosts() async {
+    final savedPosts = await DiscussionService.getSavedPosts();
     
-    final favoritePosts = allPosts.where((post) => favoriteIds.contains(post.id)).toList();
-    
-    if (favoritePosts.isEmpty) {
-      _loadSampleFavorites();
+    if (savedPosts.isEmpty) {
+      _loadSampleSavedPosts();
     } else {
       setState(() {
-        _favoritePosts.addAll(favoritePosts);
+        _savedPosts.addAll(savedPosts);
       });
     }
   }
 
-  void _loadSampleFavorites() {
-    // Sample favorite posts for demonstration
+  void _loadSampleSavedPosts() {
+    // Sample saved posts for demonstration
     setState(() {
-      _favoritePosts.addAll([
+      _savedPosts.addAll([
         DiscussionPost(
           id: '1',
           title: 'Astro Veda',
@@ -103,39 +105,31 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
-          backgroundColor: themeService.primaryColor,
+          backgroundColor: const Color(0xFFF5F5F5),
           appBar: AppBar(
-            title: Text(
-              'Favorites',
+            title: const Text(
+              'Saved Posts',
               style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+                color: Color(0xFF1A1A2E),
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
               ),
             ),
-            backgroundColor: themeService.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1A1A2E),
+            elevation: 0.5,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A2E)),
               onPressed: () => Navigator.pop(context),
             ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.search, color: Colors.white),
-                onPressed: () {
-                  // TODO: Implement search functionality
-                },
-              ),
-            ],
           ),
-          body: _favoritePosts.isEmpty
+          body: _savedPosts.isEmpty
               ? _buildEmptyState(l10n, themeService)
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _favoritePosts.length,
+                  itemCount: _savedPosts.length,
                   itemBuilder: (context, index) {
-                    final post = _favoritePosts[index];
+                    final post = _savedPosts[index];
                     return _buildPostCard(post, l10n, themeService);
                   },
                 ),
@@ -146,14 +140,21 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildPostCard(DiscussionPost post, AppLocalizations l10n, ThemeService themeService) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor,
+        gradient: const LinearGradient(
+          colors: [
+            Colors.white,
+            Color(0xFFFAFAFA),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
+            color: Colors.black.withOpacity(0.04),
+            spreadRadius: 0,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -199,12 +200,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ],
                     ),
                   ),
-                  // Like button
+                  // Bookmark button (remove from saved)
                   GestureDetector(
-                    onTap: () => _removeFromFavorites(post.id),
+                    onTap: () => _removeFromSaved(post.id),
                     child: const Icon(
-                      Icons.favorite,
-                      color: Colors.red,
+                      Icons.bookmark,
+                      color: Color(0xFF1A1A2E),
                       size: 20,
                     ),
                   ),
@@ -263,48 +264,58 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite_border,
-            size: 64,
-            color: Colors.white.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No favorites yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-                      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE5E5E5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.bookmark_border,
+                size: 48,
+                color: Color(0xFF6B6B8D),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Like posts to add them to your favorites',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.7),
+            const SizedBox(height: 20),
+            const Text(
+              'No saved posts yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A2E),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Save posts to read them later',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: Color(0xFF6B6B8D),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _removeFromFavorites(String postId) async {
+  void _removeFromSaved(String postId) async {
     setState(() {
-      _favoritePosts.removeWhere((post) => post.id == postId);
+      _savedPosts.removeWhere((post) => post.id == postId);
     });
     
     // Remove from database
-    await DiscussionService.removeFromFavorites(postId);
+    await DiscussionService.unsavePost(postId);
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Removed from favorites'),
+        content: Text('Removed from saved posts'),
         duration: Duration(seconds: 2),
       ),
     );
