@@ -1191,20 +1191,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    // 3D Illustration placeholder - you can replace this with an actual illustration
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.forum,
-                        size: 40,
-                        color: Colors.white,
-                      ),
+                    const SizedBox(width: 16),
+                    // 3D Discussion Illustration
+                    Image.asset(
+                      'discussion.png',
+                      width: 130,
+                      height: 130,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ),
