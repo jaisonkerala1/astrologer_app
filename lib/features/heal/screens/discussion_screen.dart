@@ -125,6 +125,18 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       builder: (context, themeService, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              _showCreatePostBottomSheet();
+            },
+            backgroundColor: themeService.primaryColor,
+            elevation: 4,
+            child: const Icon(
+              Icons.edit,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
           appBar: AppBar(
             title: Text(
               l10n.discussion,
@@ -152,40 +164,6 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                     ),
                   );
                 },
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: GestureDetector(
-                  onTap: () {
-                    _showCreatePostBottomSheet();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: themeService.primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'Post',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
