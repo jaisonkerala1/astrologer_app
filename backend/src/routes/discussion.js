@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const discussionController = require('../controllers/discussionController');
 const auth = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 
 // ============================================
 // DISCUSSION CRUD ROUTES
@@ -19,8 +20,9 @@ router.post('/', auth, discussionController.createDiscussion);
  * @desc    Get all discussions with filters and pagination
  * @access  Public/Private (different visibility based on auth)
  * @query   page, limit, sortBy, sortOrder, category, tags, authorId, visibleTo, search
+ * NOTE: Optional auth - sets req.user if token provided (for isLiked status)
  */
-router.get('/', discussionController.getDiscussions);
+router.get('/', optionalAuth, discussionController.getDiscussions);
 
 /**
  * @route   GET /api/discussions/my-posts

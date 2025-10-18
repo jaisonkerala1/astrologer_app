@@ -122,7 +122,9 @@ exports.getDiscussions = async (req, res) => {
     const total = await Discussion.countDocuments(query);
 
     // Check if current user has liked/saved each discussion
+    console.log('🔍 getDiscussions - req.user exists?', !!req.user);
     if (req.user) {
+      console.log('✅ User authenticated:', req.user.astrologerId);
       for (let discussion of discussions) {
         discussion.isLiked = await DiscussionLike.hasUserLiked(
           discussion._id,
@@ -140,7 +142,10 @@ exports.getDiscussions = async (req, res) => {
           req.user.astrologerId,
           req.user.userType || 'astrologer'
         );
+        console.log(`📊 Discussion ${discussion._id}: isLiked=${discussion.isLiked}, likeCount=${discussion.likeCount}`);
       }
+    } else {
+      console.log('❌ No req.user - user not authenticated!');
     }
 
     res.status(200).json({
