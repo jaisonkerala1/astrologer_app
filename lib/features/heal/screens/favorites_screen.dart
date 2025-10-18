@@ -38,7 +38,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
     
     try {
       // Try loading from API first
-      final savedPosts = await _apiService.getSavedDiscussions();
+      final result = await _apiService.getSavedPosts();
+      final savedPosts = List<DiscussionPost>.from(
+        result['discussions'].map((json) => DiscussionPost.fromJson(json))
+      );
       
       setState(() {
         _savedPosts.clear();
@@ -76,11 +79,11 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
       _savedPosts.addAll([
         DiscussionPost(
           id: '1',
+          authorId: '',
           title: 'Astro Veda',
           content: 'Welcome to our spiritual community! Share your experiences and learn from others.',
           author: 'dipanshu',
           authorInitial: 'D',
-          timeAgo: '1 day ago',
           category: 'Community Support & Life Talk',
           likes: 24,
           isLiked: true,
@@ -88,11 +91,11 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
         ),
         DiscussionPost(
           id: '4',
+          authorId: '',
           title: 'Crystal Healing Guide',
           content: 'Complete guide to crystal healing for beginners. Which crystals resonate with you?',
           author: 'sarah',
           authorInitial: 'S',
-          timeAgo: '2 days ago',
           category: 'Healing & Wellness',
           likes: 18,
           isLiked: true,
@@ -100,11 +103,11 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
         ),
         DiscussionPost(
           id: '6',
+          authorId: '',
           title: 'Meditation for Beginners',
           content: 'Step-by-step guide to start your meditation journey. Perfect for newcomers.',
           author: 'priya',
           authorInitial: 'P',
-          timeAgo: '3 days ago',
           category: 'Yoga, Meditation & Mindfulness',
           likes: 32,
           isLiked: true,
@@ -112,11 +115,11 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
         ),
         DiscussionPost(
           id: '7',
+          authorId: '',
           title: 'Vastu Shastra Tips',
           content: 'Simple Vastu tips to improve your home energy and bring positivity.',
           author: 'rajesh',
           authorInitial: 'R',
-          timeAgo: '4 days ago',
           category: 'Healing & Wellness',
           likes: 15,
           isLiked: true,

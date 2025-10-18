@@ -124,11 +124,15 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     
     try {
       // Call API
+      await _apiService.toggleSubscription(
+        discussionId: widget.post.id,
+        notifyOnAllComments: newStatus,
+      );
+      
+      // Also update local storage
       if (newStatus) {
-        await _apiService.subscribeToNotifications(widget.post.id);
         await DiscussionService.subscribeToNotifications(widget.post.id);
       } else {
-        await _apiService.unsubscribeFromNotifications(widget.post.id);
         await DiscussionService.unsubscribeFromNotifications(widget.post.id);
       }
       
@@ -219,7 +223,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
 
     try {
       // Try loading from API first
-      final comments = await _apiService.getComments(widget.post.id);
+      final result = await _apiService.getComments(discussionId: widget.post.id);
+      final comments = List<DiscussionComment>.from(
+        result['comments'].map((json) => DiscussionComment.fromJson(json))
+      );
       
       setState(() {
         _comments.clear();
@@ -294,8 +301,8 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     _socketService.joinDiscussion(widget.post.id);
     
     // Listen to new comments (Facebook-style real-time)
-    _socketService.onCommentCreated((comment, author) {
-      if (comment.discussionId == widget.post.id) {
+    _socketService.onCommentAdded((discussionId, comment, author) {
+      if (discussionId == widget.post.id) {
         setState(() {
           if (comment.parentCommentId == null) {
             // New top-level comment
@@ -312,15 +319,17 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     });
     
     // Listen to comment deletions
-    _socketService.onCommentDeleted((commentId) {
-      setState(() {
-        // Remove from top-level
-        _comments.removeWhere((c) => c.id == commentId);
-        // Remove from replies
-        for (var comment in _comments) {
-          comment.replies.removeWhere((r) => r.id == commentId);
-        }
-      });
+    _socketService.onCommentDeleted((discussionId, commentId) {
+      if (discussionId == widget.post.id) {
+        setState(() {
+          // Remove from top-level
+          _comments.removeWhere((c) => c.id == commentId);
+          // Remove from replies
+          for (var comment in _comments) {
+            comment.replies.removeWhere((r) => r.id == commentId);
+          }
+        });
+      }
     });
     
     // Listen to real-time like updates
@@ -333,23 +342,25 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     });
     
     // Listen to comment likes
-    _socketService.onCommentLike((commentId, action, likeCount, user) {
-      setState(() {
-        // Update top-level comment
-        final topLevelIndex = _comments.indexWhere((c) => c.id == commentId);
-        if (topLevelIndex != -1) {
-          _comments[topLevelIndex].likes = likeCount;
-        } else {
-          // Update reply
-          for (var comment in _comments) {
-            final replyIndex = comment.replies.indexWhere((r) => r.id == commentId);
-            if (replyIndex != -1) {
-              comment.replies[replyIndex].likes = likeCount;
-              break;
+    _socketService.onCommentLike((discussionId, commentId, action, likeCount, user) {
+      if (discussionId == widget.post.id) {
+        setState(() {
+          // Update top-level comment
+          final topLevelIndex = _comments.indexWhere((c) => c.id == commentId);
+          if (topLevelIndex != -1) {
+            _comments[topLevelIndex].likes = likeCount;
+          } else {
+            // Update reply
+            for (var comment in _comments) {
+              final replyIndex = comment.replies.indexWhere((r) => r.id == commentId);
+              if (replyIndex != -1) {
+                comment.replies[replyIndex].likes = likeCount;
+                break;
+              }
             }
           }
-        }
-      });
+        });
+      }
     });
   }
 
@@ -360,10 +371,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         DiscussionComment(
           id: '1',
           discussionId: widget.post.id,
+          authorId: '',
           author: 'sarah',
           authorInitial: 'S',
           content: 'This is really helpful! I\'ve been looking for this information.',
-          timeAgo: '2 hours ago',
           likes: 5,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(hours: 2)),
@@ -371,10 +382,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         DiscussionComment(
           id: '2',
           discussionId: widget.post.id,
+          authorId: '',
           author: 'mike',
           authorInitial: 'M',
           content: 'Great post! I have a similar experience to share.',
-          timeAgo: '1 hour ago',
           likes: 3,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(hours: 1)),
@@ -382,10 +393,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         DiscussionComment(
           id: '3',
           discussionId: widget.post.id,
+          authorId: '',
           author: 'priya',
           authorInitial: 'P',
           content: 'Thank you for sharing this wisdom. It resonates with me.',
-          timeAgo: '30 minutes ago',
           likes: 8,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
@@ -1197,11 +1208,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     
     try {
       // Call API - Socket.IO will broadcast the update
-      if (newLikeStatus) {
-        await _apiService.likeDiscussion(widget.post.id);
-      } else {
-        await _apiService.unlikeDiscussion(widget.post.id);
-      }
+      await _apiService.toggleDiscussionLike(widget.post.id);
       
       // Also save to local storage
       await DiscussionService.toggleLike(widget.post.id, newLikeStatus);
@@ -1236,11 +1243,12 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     
     try {
       // Call API
+      await _apiService.toggleSave(discussionId: widget.post.id);
+      
+      // Also update local storage
       if (newSaveStatus) {
-        await _apiService.saveDiscussion(widget.post.id);
         await DiscussionService.savePost(widget.post.id);
       } else {
-        await _apiService.unsaveDiscussion(widget.post.id);
         await DiscussionService.unsavePost(widget.post.id);
       }
       

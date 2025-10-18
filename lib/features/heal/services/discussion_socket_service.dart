@@ -33,7 +33,7 @@ class DiscussionSocketService {
 
     try {
       // Get JWT token for authentication
-      final token = await _storageService.getToken();
+      final token = await _storageService.getAuthToken();
       
       if (token == null) {
         print('⚠️ No JWT token found, connecting as anonymous');

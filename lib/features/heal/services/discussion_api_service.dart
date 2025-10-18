@@ -19,7 +19,7 @@ class DiscussionApiService {
   /// Get JWT token from storage
   Future<String?> _getToken() async {
     try {
-      return await _storageService.getToken();
+      return await _storageService.getAuthToken();
     } catch (e) {
       print('Error getting token: $e');
       return null;

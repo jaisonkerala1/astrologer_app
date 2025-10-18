@@ -129,11 +129,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       _posts.addAll([
         DiscussionPost(
           id: '1',
+          authorId: '',
           title: 'Astro Veda',
           content: 'Welcome to our spiritual community! Share your experiences and learn from others.',
           author: 'dipanshu',
           authorInitial: 'D',
-          timeAgo: '1 day ago',
           category: 'Community Support & Life Talk',
           likes: 24,
           isLiked: true,
@@ -141,11 +141,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         ),
         DiscussionPost(
           id: '2',
+          authorId: '',
           title: 'hi eeveryone',
           content: 'Hello everyone! I\'m new here and excited to be part of this community.',
           author: 'jatin',
           authorInitial: 'J',
-          timeAgo: '1 day ago',
           category: 'Yoga, Meditation & Mindfulness',
           likes: 8,
           isLiked: false,
@@ -153,11 +153,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         ),
         DiscussionPost(
           id: '3',
+          authorId: '',
           title: 'what',
           content: 'What are your thoughts on the current energy shifts?',
           author: 'jatin',
           authorInitial: 'J',
-          timeAgo: '1 day ago',
           category: 'Yoga, Meditation & Mindfulness',
           likes: 12,
           isLiked: false,
@@ -165,11 +165,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         ),
         DiscussionPost(
           id: '4',
+          authorId: '',
           title: 'Crystal Healing Guide',
           content: 'Complete guide to crystal healing for beginners. Which crystals resonate with you?',
           author: 'sarah',
           authorInitial: 'S',
-          timeAgo: '2 days ago',
           category: 'Healing & Wellness',
           likes: 18,
           isLiked: true,
@@ -177,11 +177,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         ),
         DiscussionPost(
           id: '5',
+          authorId: '',
           title: 'Meditation Techniques',
           content: 'Share your favorite meditation techniques and how they\'ve helped you.',
           author: 'mike',
           authorInitial: 'M',
-          timeAgo: '3 days ago',
           category: 'Yoga, Meditation & Mindfulness',
           likes: 15,
           isLiked: false,
@@ -828,11 +828,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       
       try {
         // Call API - Socket.IO will broadcast the update
-        if (newLikeStatus) {
-          await _apiService.likeDiscussion(postId);
-        } else {
-          await _apiService.unlikeDiscussion(postId);
-        }
+        await _apiService.toggleDiscussionLike(postId);
         
         // Also save to local storage
         await DiscussionService.toggleLike(postId, newLikeStatus);
