@@ -1,0 +1,264 @@
+### Discussion Module API Tests
+### Base URL: https://astrologerapp-production.up.railway.app
+### Replace {{token}} with your actual JWT token
+
+@baseUrl = https://astrologerapp-production.up.railway.app/api
+@token = YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### HEALTH CHECK
+### ============================================
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### ============================================
+### DISCUSSION CRUD TESTS
+### ============================================
+
+### 2. Create Discussion
+POST {{baseUrl}}/discussions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Understanding Retrograde Planets in Vedic Astrology",
+  "content": "Let's discuss the profound effects of retrograde planets in natal charts. Retrograde planets often indicate karmic lessons and areas where we need to revisit past experiences. What are your insights on this topic?",
+  "tags": ["retrograde", "planets", "vedic", "karma"],
+  "category": "vedic",
+  "visibleTo": "both"
+}
+
+### 3. Get All Discussions (Public - No Auth)
+GET {{baseUrl}}/discussions?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+
+### 4. Get All Discussions (Authenticated - with likes/saves status)
+GET {{baseUrl}}/discussions?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{token}}
+
+### 5. Get Single Discussion (Replace with actual ID)
+GET {{baseUrl}}/discussions/DISCUSSION_ID_HERE
+Authorization: Bearer {{token}}
+
+### 6. Get My Discussions
+GET {{baseUrl}}/discussions/my-posts?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### 7. Update Discussion (Replace with actual ID)
+PUT {{baseUrl}}/discussions/DISCUSSION_ID_HERE
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated: Understanding Retrograde Planets",
+  "content": "Updated content with more insights...",
+  "tags": ["retrograde", "planets", "vedic", "updated"]
+}
+
+### 8. Search Discussions
+GET {{baseUrl}}/discussions/search?q=retrograde&page=1&limit=10
+
+### 9. Get Trending Discussions
+GET {{baseUrl}}/discussions/trending?limit=10&timeframe=7d
+
+### ============================================
+### ENGAGEMENT TESTS
+### ============================================
+
+### 10. Toggle Like on Discussion
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/like
+Authorization: Bearer {{token}}
+
+### 11. Get Discussion Likes
+GET {{baseUrl}}/discussions/DISCUSSION_ID_HERE/likes?limit=50
+
+### 12. Increment View Count
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/view
+
+### 13. Increment Share Count
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/share
+
+### ============================================
+### COMMENT TESTS
+### ============================================
+
+### 14. Add Top-Level Comment
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Great discussion! I completely agree with your perspective on retrograde planets. In my practice, I've observed that Saturn retrograde particularly brings significant karmic lessons."
+}
+
+### 15. Add Reply (1-level nested)
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Thanks for sharing! Could you elaborate on Saturn retrograde effects?",
+  "parentCommentId": "PARENT_COMMENT_ID_HERE"
+}
+
+### 16. Get Comments (Flat Structure)
+GET {{baseUrl}}/discussions/DISCUSSION_ID_HERE/comments?page=1&limit=50&structure=flat
+Authorization: Bearer {{token}}
+
+### 17. Get Comments (Nested Structure)
+GET {{baseUrl}}/discussions/DISCUSSION_ID_HERE/comments?page=1&limit=50&structure=nested
+Authorization: Bearer {{token}}
+
+### 18. Update Comment
+PUT {{baseUrl}}/comments/COMMENT_ID_HERE
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Updated comment: Great discussion! I completely agree..."
+}
+
+### 19. Toggle Like on Comment
+POST {{baseUrl}}/comments/COMMENT_ID_HERE/like
+Authorization: Bearer {{token}}
+
+### 20. Get Comment Likes
+GET {{baseUrl}}/comments/COMMENT_ID_HERE/likes?limit=50
+
+### 21. Delete Comment
+DELETE {{baseUrl}}/comments/COMMENT_ID_HERE
+Authorization: Bearer {{token}}
+
+### ============================================
+### SAVED POSTS TESTS
+### ============================================
+
+### 22. Toggle Save (Bookmark)
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/save
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "collection": "favorites"
+}
+
+### 23. Get Saved Posts
+GET {{baseUrl}}/discussions/saved?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### 24. Get Saved Posts by Collection
+GET {{baseUrl}}/discussions/saved?page=1&limit=20&collection=favorites
+Authorization: Bearer {{token}}
+
+### ============================================
+### NOTIFICATION SUBSCRIPTION TESTS
+### ============================================
+
+### 25. Toggle Subscription (Subscribe)
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/subscribe
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notifyOnAllComments": true,
+  "notifyOnReplies": true,
+  "notifyOnLikes": false
+}
+
+### 26. Toggle Subscription (Unsubscribe - just call without body)
+POST {{baseUrl}}/discussions/DISCUSSION_ID_HERE/subscribe
+Authorization: Bearer {{token}}
+
+### 27. Get User Subscriptions
+GET {{baseUrl}}/discussions/subscriptions?page=1&limit=50
+Authorization: Bearer {{token}}
+
+### ============================================
+### PUBLIC PROFILE TESTS
+### ============================================
+
+### 28. Get Astrologer Discussions
+GET {{baseUrl}}/astrologers/ASTROLOGER_ID_HERE/discussions?page=1&limit=20
+
+### 29. Get Astrologer Stats
+GET {{baseUrl}}/astrologers/ASTROLOGER_ID_HERE/stats
+
+### 30. Delete Discussion
+DELETE {{baseUrl}}/discussions/DISCUSSION_ID_HERE
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING INSTRUCTIONS
+### ============================================
+
+# Step 1: Get your JWT token by logging in:
+# POST {{baseUrl}}/auth/login
+# {
+#   "phone": "+1234567890",
+#   "password": "your_password"
+# }
+
+# Step 2: Replace {{token}} with the actual token from Step 1
+
+# Step 3: Run tests in order:
+# - Start with Health Check (#1)
+# - Create a discussion (#2)
+# - Copy the discussion ID from response
+# - Replace DISCUSSION_ID_HERE in all subsequent requests
+# - Test engagement features (#10-13)
+# - Test comments (#14-21)
+# - Test saved posts (#22-24)
+# - Test subscriptions (#25-27)
+
+# Step 4: For Socket.IO testing:
+# - Use Socket.IO client (browser console or testing tool)
+# - Connect to wss://astrologerapp-production.up.railway.app
+# - Authenticate with token
+# - Join discussion room: socket.emit('discussion:join', discussionId)
+# - Listen to events: socket.on('comment:added', callback)
+
+### ============================================
+### EXPECTED RESPONSES
+### ============================================
+
+# Success Response (200/201):
+# {
+#   "success": true,
+#   "message": "Operation successful",
+#   "data": { ... }
+# }
+
+# Error Response (400/401/403/404/500):
+# {
+#   "success": false,
+#   "message": "Error message",
+#   "error": "Detailed error"
+# }
+
+### ============================================
+### SOCKET.IO REAL-TIME EVENTS TO TEST
+### ============================================
+
+# Client Emits:
+# - discussion:join → Join discussion room
+# - discussion:leave → Leave discussion room
+# - comment:typing → Show typing indicator
+# - comment:stop-typing → Hide typing indicator
+# - presence:update → Update online status
+
+# Server Emits (Listen to these):
+# - discussion:created → New discussion created
+# - discussion:updated → Discussion updated
+# - discussion:deleted → Discussion deleted
+# - comment:added → New comment added (REAL-TIME!)
+# - comment:updated → Comment updated
+# - comment:deleted → Comment deleted
+# - discussion:like → Discussion liked/unliked
+# - comment:like → Comment liked/unliked
+# - discussion:share → Discussion shared
+# - discussion:viewers → Current viewer count
+# - user:joined → User joined room
+# - user:left → User left room
+# - comment:typing → User is typing
+# - comment:stop-typing → User stopped typing
+
