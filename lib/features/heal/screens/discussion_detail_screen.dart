@@ -1198,20 +1198,27 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   void _toggleLike() async {
-    final newLikeStatus = !_isLiked;
+    final oldLikeStatus = _isLiked;
+    final oldLikeCount = _likeCount;
     
     // Optimistic UI update
     setState(() {
-      _isLiked = newLikeStatus;
-      _likeCount += newLikeStatus ? 1 : -1;
+      _isLiked = !oldLikeStatus;
+      _likeCount += _isLiked ? 1 : -1;
     });
     
     try {
-      // Call API - Socket.IO will broadcast the update
-      await _apiService.toggleDiscussionLike(widget.post.id);
+      // Call API - it returns the actual state from backend
+      final result = await _apiService.toggleDiscussionLike(widget.post.id);
+      
+      // Sync with backend response (this is the truth!)
+      setState(() {
+        _isLiked = result['liked'] as bool;
+        _likeCount = result['likeCount'] as int;
+      });
       
       // Also save to local storage
-      await DiscussionService.toggleLike(widget.post.id, newLikeStatus);
+      await DiscussionService.toggleLike(widget.post.id, _isLiked);
       
       // Save astrologer activity
       await DiscussionService.saveAstrologerActivity(
@@ -1219,7 +1226,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           type: 'post_liked',
           discussionId: widget.post.id,
-          content: newLikeStatus ? 'Liked post: ${widget.post.title}' : 'Unliked post: ${widget.post.title}',
+          content: _isLiked ? 'Liked post: ${widget.post.title}' : 'Unliked post: ${widget.post.title}',
           timestamp: DateTime.now(),
         ),
       );
@@ -1227,8 +1234,8 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
       print('Error toggling like: $e');
       // Revert optimistic update on error
       setState(() {
-        _isLiked = !newLikeStatus;
-        _likeCount += newLikeStatus ? -1 : 1;
+        _isLiked = oldLikeStatus;
+        _likeCount = oldLikeCount;
       });
     }
   }

@@ -57,10 +57,8 @@ discussionLikeSchema.statics.toggleLike = async function(targetId, targetType, u
     
     if (existingLike) {
       // Unlike - remove the like
+      // NOTE: The pre-remove hook will handle decrementing the count
       await existingLike.deleteOne();
-      
-      // Update like count on target
-      await updateTargetLikeCount(targetId, targetType, -1);
       
       return { action: 'unliked', liked: false };
     } else {
@@ -74,7 +72,7 @@ discussionLikeSchema.statics.toggleLike = async function(targetId, targetType, u
         userPhoto
       });
       
-      // Update like count on target
+      // Manually increment for new likes (no post-save hook for this)
       await updateTargetLikeCount(targetId, targetType, 1);
       
       return { action: 'liked', liked: true, like: newLike };
@@ -119,26 +117,25 @@ discussionLikeSchema.statics.getUsersWhoLiked = async function(targetId, targetT
 async function updateTargetLikeCount(targetId, targetType, increment) {
   if (targetType === 'discussion') {
     const Discussion = mongoose.model('Discussion');
-    await Discussion.findByIdAndUpdate(
-      targetId,
-      { 
-        $inc: { likeCount: increment },
-        lastActivityAt: new Date()
-      }
-    );
-    
-    // Update trending score
     const discussion = await Discussion.findById(targetId);
+    
     if (discussion) {
+      // Ensure likeCount doesn't go below 0
+      const newCount = Math.max(0, discussion.likeCount + increment);
+      discussion.likeCount = newCount;
+      discussion.lastActivityAt = new Date();
       discussion.calculateTrendingScore();
       await discussion.save();
     }
   } else if (targetType === 'comment') {
     const DiscussionComment = mongoose.model('DiscussionComment');
-    await DiscussionComment.findByIdAndUpdate(
-      targetId,
-      { $inc: { likeCount: increment } }
-    );
+    const comment = await DiscussionComment.findById(targetId);
+    
+    if (comment) {
+      // Ensure likeCount doesn't go below 0
+      comment.likeCount = Math.max(0, comment.likeCount + increment);
+      await comment.save();
+    }
   }
 }
 

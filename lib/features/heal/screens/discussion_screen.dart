@@ -134,7 +134,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
           content: 'Welcome to our spiritual community! Share your experiences and learn from others.',
           author: 'dipanshu',
           authorInitial: 'D',
-          category: 'Community Support & Life Talk',
+          category: 'general',
           likes: 24,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(days: 1)),
@@ -146,7 +146,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
           content: 'Hello everyone! I\'m new here and excited to be part of this community.',
           author: 'jatin',
           authorInitial: 'J',
-          category: 'Yoga, Meditation & Mindfulness',
+          category: 'general',
           likes: 8,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(days: 1)),
@@ -154,11 +154,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         DiscussionPost(
           id: '3',
           authorId: '',
-          title: 'what',
-          content: 'What are your thoughts on the current energy shifts?',
+          title: 'Understanding Planetary Transits',
+          content: 'Let\'s discuss how planetary transits affect our daily lives and spiritual growth.',
           author: 'jatin',
           authorInitial: 'J',
-          category: 'Yoga, Meditation & Mindfulness',
+          category: 'vedic',
           likes: 12,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(days: 1)),
@@ -166,11 +166,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         DiscussionPost(
           id: '4',
           authorId: '',
-          title: 'Crystal Healing Guide',
-          content: 'Complete guide to crystal healing for beginners. Which crystals resonate with you?',
+          title: 'Tarot Reading Insights',
+          content: 'Share your tarot reading experiences and interpretations.',
           author: 'sarah',
           authorInitial: 'S',
-          category: 'Healing & Wellness',
+          category: 'tarot',
           likes: 18,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(days: 2)),
@@ -178,11 +178,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         DiscussionPost(
           id: '5',
           authorId: '',
-          title: 'Meditation Techniques',
-          content: 'Share your favorite meditation techniques and how they\'ve helped you.',
+          title: 'Vastu Tips for Home',
+          content: 'Simple Vastu Shastra tips to improve your home energy and bring positivity.',
           author: 'mike',
           authorInitial: 'M',
-          category: 'Yoga, Meditation & Mindfulness',
+          category: 'vastu',
           likes: 15,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(days: 3)),
@@ -784,33 +784,21 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     } catch (e) {
       print('Error creating post: $e');
       
-      // Fallback: Save locally only
-      final localPost = DiscussionPost(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        authorId: '',
-        title: title.trim(),
-        content: content.trim(),
-        author: _currentUserName,
-        authorPhoto: _currentUserPhoto,
-        authorInitial: _currentUserInitial,
-        category: category,
-        likes: 0,
-        isLiked: false,
-        createdAt: DateTime.now(),
-      );
-      
-      setState(() {
-        _posts.insert(0, localPost);
-      });
-      
-      await DiscussionService.saveDiscussion(localPost);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Post created offline. Will sync when online.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create post: ${e.toString().contains('category') ? 'Invalid category' : 'Please check your internet connection'}'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red.shade600,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _createPost(title, content, category, privacy),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -818,20 +806,27 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     final postIndex = _posts.indexWhere((post) => post.id == postId);
     if (postIndex != -1) {
       final post = _posts[postIndex];
-      final newLikeStatus = !post.isLiked;
+      final oldLikeStatus = post.isLiked;
+      final oldLikeCount = post.likes;
       
       // Optimistic UI update
       setState(() {
-        post.isLiked = newLikeStatus;
-        post.likes += newLikeStatus ? 1 : -1;
+        post.isLiked = !oldLikeStatus;
+        post.likes += post.isLiked ? 1 : -1;
       });
       
       try {
-        // Call API - Socket.IO will broadcast the update
-        await _apiService.toggleDiscussionLike(postId);
+        // Call API - it returns the actual state from backend
+        final result = await _apiService.toggleDiscussionLike(postId);
+        
+        // Sync with backend response (this is the truth!)
+        setState(() {
+          post.isLiked = result['liked'] as bool;
+          post.likes = result['likeCount'] as int;
+        });
         
         // Also save to local storage
-        await DiscussionService.toggleLike(postId, newLikeStatus);
+        await DiscussionService.toggleLike(postId, post.isLiked);
         
         // Save astrologer activity
         await DiscussionService.saveAstrologerActivity(
@@ -839,7 +834,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             type: 'post_liked',
             discussionId: postId,
-            content: newLikeStatus ? 'Liked post: ${post.title}' : 'Unliked post: ${post.title}',
+            content: post.isLiked ? 'Liked post: ${post.title}' : 'Unliked post: ${post.title}',
             timestamp: DateTime.now(),
           ),
         );
@@ -847,8 +842,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         print('Error toggling like: $e');
         // Revert optimistic update on error
         setState(() {
-          post.isLiked = !newLikeStatus;
-          post.likes += newLikeStatus ? -1 : 1;
+          post.isLiked = oldLikeStatus;
+          post.likes = oldLikeCount;
         });
       }
     }
