@@ -13,6 +13,8 @@ import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'discussion_detail_screen.dart';
 import 'favorites_screen.dart';
 import '../services/discussion_service.dart';
+import '../services/discussion_api_service.dart';
+import '../services/discussion_socket_service.dart';
 import '../models/discussion_models.dart';
 import '../widgets/facebook_create_post_bottom_sheet.dart';
 import '../../auth/models/astrologer_model.dart';
@@ -29,6 +31,14 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   final List<DiscussionPost> _posts = [];
   String _searchQuery = '';
   
+  // API and Real-time services
+  final _apiService = DiscussionApiService();
+  final _socketService = DiscussionSocketService();
+  
+  // Loading and error states
+  bool _isLoading = false;
+  String? _errorMessage;
+  
   // Current user info
   String _currentUserName = 'You';
   String _currentUserInitial = 'Y';
@@ -39,6 +49,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     super.initState();
     _loadCurrentUser();
     _loadPosts();
+    _setupRealTimeListeners();
   }
   
   /// Load current user's profile information
@@ -66,13 +77,50 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   }
 
   Future<void> _loadPosts() async {
-    final posts = await DiscussionService.getDiscussions();
-    if (posts.isEmpty) {
-      _loadSamplePosts();
-    } else {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Try loading from API first
+      final result = await _apiService.getDiscussions(
+        page: 1,
+        limit: 50,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      );
+      
       setState(() {
-        _posts.addAll(posts);
+        _posts.clear();
+        _posts.addAll(result['discussions']);
+        _isLoading = false;
       });
+    } catch (e) {
+      print('Error loading from API: $e');
+      
+      // Fallback: Try local storage
+      try {
+        final localPosts = await DiscussionService.getDiscussions();
+        if (localPosts.isNotEmpty) {
+          setState(() {
+            _posts.clear();
+            _posts.addAll(localPosts);
+            _isLoading = false;
+          });
+        } else {
+          // Last resort: Load sample posts
+          _loadSamplePosts();
+          setState(() => _isLoading = false);
+        }
+      } catch (localError) {
+        setState(() {
+          _errorMessage = 'Failed to load discussions. Please check your connection.';
+          _isLoading = false;
+        });
+        // Still show sample posts for demo
+        _loadSamplePosts();
+      }
     }
   }
 
@@ -143,6 +191,47 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     });
   }
 
+  /// Setup real-time Socket.IO listeners for live updates
+  void _setupRealTimeListeners() {
+    // Connect to Socket.IO server
+    _socketService.connect();
+    
+    // Listen to new discussions created by other users
+    _socketService.onDiscussionCreated((discussion, author) {
+      setState(() {
+        // Add to top of list
+        _posts.insert(0, discussion);
+      });
+    });
+    
+    // Listen to discussion updates
+    _socketService.onDiscussionUpdated((discussionId, updatedDiscussion) {
+      setState(() {
+        final index = _posts.indexWhere((p) => p.id == discussionId);
+        if (index != -1) {
+          _posts[index] = updatedDiscussion;
+        }
+      });
+    });
+    
+    // Listen to discussion deletions
+    _socketService.onDiscussionDeleted((discussionId) {
+      setState(() {
+        _posts.removeWhere((p) => p.id == discussionId);
+      });
+    });
+    
+    // Listen to real-time like updates (Facebook-style)
+    _socketService.onDiscussionLike((discussionId, action, likeCount, user) {
+      setState(() {
+        final index = _posts.indexWhere((p) => p.id == discussionId);
+        if (index != -1) {
+          _posts[index].likes = likeCount;
+        }
+      });
+    });
+  }
+
   List<DiscussionPost> get _filteredPosts {
     if (_searchQuery.isEmpty) return _posts;
     return _posts.where((post) =>
@@ -158,23 +247,20 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     HapticFeedback.mediumImpact();
     
     try {
-      // Simulate fetching new posts from database
-      await Future.delayed(const Duration(milliseconds: 1500));
-      
-      // In real implementation, this would fetch from database
-      final newPosts = await DiscussionService.getDiscussions();
-      
       final oldPostCount = _posts.length;
+      
+      // Fetch fresh data from API
+      final result = await _apiService.getDiscussions(
+        page: 1,
+        limit: 50,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      );
       
       setState(() {
         // Clear and reload posts
         _posts.clear();
-        if (newPosts.isNotEmpty) {
-          _posts.addAll(newPosts);
-        } else {
-          // If no posts from database, reload sample posts
-          _loadSamplePosts();
-        }
+        _posts.addAll(result['discussions']);
       });
       
       // Calculate new posts count
@@ -299,7 +385,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                   strokeWidth: 2.5,
                   child: Container(
                     color: const Color(0xFFF5F5F5),
-                    child: _filteredPosts.isEmpty
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(),
+                          )
+                        : _filteredPosts.isEmpty
                         ? _buildEmptyState(l10n, themeService)
                         : ListView.builder(
                             padding: const EdgeInsets.all(16),
@@ -664,36 +754,64 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   void _createPost(String title, String content, String category, String privacy) async {
     if (title.trim().isEmpty || content.trim().isEmpty) return;
 
-    final newPost = DiscussionPost(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title.trim(),
-      content: content.trim(),
-      author: _currentUserName,
-      authorInitial: _currentUserInitial,
-      timeAgo: 'Just now',
-      category: category,
-      likes: 0,
-      isLiked: false,
-      createdAt: DateTime.now(),
-    );
+    try {
+      // Post to API - Socket.IO will broadcast to all users
+      final newPost = await _apiService.createDiscussion(
+        title: title.trim(),
+        content: content.trim(),
+        category: category,
+        visibleTo: privacy == 'Public' ? 'both' : 'astrologers_only',
+      );
 
-    setState(() {
-      _posts.insert(0, newPost);
-    });
-    
-    // Save to database
-    await DiscussionService.saveDiscussion(newPost);
-    
-    // Save astrologer activity
-    await DiscussionService.saveAstrologerActivity(
-      AstrologerActivity(
+      // Add to local list (optimistic update)
+      setState(() {
+        _posts.insert(0, newPost);
+      });
+
+      // Also save to local storage as backup
+      await DiscussionService.saveDiscussion(newPost);
+      
+      // Save astrologer activity
+      await DiscussionService.saveAstrologerActivity(
+        AstrologerActivity(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: 'post_created',
+          discussionId: newPost.id,
+          content: 'Created post: ${newPost.title}',
+          timestamp: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      print('Error creating post: $e');
+      
+      // Fallback: Save locally only
+      final localPost = DiscussionPost(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: 'post_created',
-        discussionId: newPost.id,
-        content: 'Created post: ${newPost.title}',
-        timestamp: DateTime.now(),
-      ),
-    );
+        authorId: '',
+        title: title.trim(),
+        content: content.trim(),
+        author: _currentUserName,
+        authorPhoto: _currentUserPhoto,
+        authorInitial: _currentUserInitial,
+        category: category,
+        likes: 0,
+        isLiked: false,
+        createdAt: DateTime.now(),
+      );
+      
+      setState(() {
+        _posts.insert(0, localPost);
+      });
+      
+      await DiscussionService.saveDiscussion(localPost);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Post created offline. Will sync when online.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _toggleLike(String postId) async {
@@ -702,31 +820,50 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       final post = _posts[postIndex];
       final newLikeStatus = !post.isLiked;
       
+      // Optimistic UI update
       setState(() {
         post.isLiked = newLikeStatus;
         post.likes += newLikeStatus ? 1 : -1;
       });
       
-      // Save to database
-      await DiscussionService.toggleLike(postId, newLikeStatus);
-      
-      // Add to favorites if liked
-      if (newLikeStatus) {
-        await DiscussionService.addToFavorites(postId);
-      } else {
-        await DiscussionService.removeFromFavorites(postId);
+      try {
+        // Call API - Socket.IO will broadcast the update
+        if (newLikeStatus) {
+          await _apiService.likeDiscussion(postId);
+        } else {
+          await _apiService.unlikeDiscussion(postId);
+        }
+        
+        // Also save to local storage
+        await DiscussionService.toggleLike(postId, newLikeStatus);
+        
+        // Save astrologer activity
+        await DiscussionService.saveAstrologerActivity(
+          AstrologerActivity(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            type: 'post_liked',
+            discussionId: postId,
+            content: newLikeStatus ? 'Liked post: ${post.title}' : 'Unliked post: ${post.title}',
+            timestamp: DateTime.now(),
+          ),
+        );
+      } catch (e) {
+        print('Error toggling like: $e');
+        // Revert optimistic update on error
+        setState(() {
+          post.isLiked = !newLikeStatus;
+          post.likes += newLikeStatus ? -1 : 1;
+        });
       }
-      
-      // Save astrologer activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'post_liked',
-          discussionId: postId,
-          content: newLikeStatus ? 'Liked post: ${post.title}' : 'Unliked post: ${post.title}',
-          timestamp: DateTime.now(),
-        ),
-      );
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    // Clean up Socket.IO listeners and disconnect
+    _socketService.removeAllListeners();
+    _socketService.disconnect();
+    super.dispose();
   }
 }

@@ -7,6 +7,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import 'discussion_detail_screen.dart';
 import '../services/discussion_service.dart';
+import '../services/discussion_api_service.dart';
 import '../models/discussion_models.dart';
 
 class SavedPostsScreen extends StatefulWidget {
@@ -23,6 +24,8 @@ class FavoritesScreen extends SavedPostsScreen {
 
 class _SavedPostsScreenState extends State<SavedPostsScreen> {
   final List<DiscussionPost> _savedPosts = [];
+  final _apiService = DiscussionApiService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -31,14 +34,39 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
   }
 
   Future<void> _loadSavedPosts() async {
-    final savedPosts = await DiscussionService.getSavedPosts();
+    setState(() => _isLoading = true);
     
-    if (savedPosts.isEmpty) {
-      _loadSampleSavedPosts();
-    } else {
+    try {
+      // Try loading from API first
+      final savedPosts = await _apiService.getSavedDiscussions();
+      
       setState(() {
+        _savedPosts.clear();
         _savedPosts.addAll(savedPosts);
+        _isLoading = false;
       });
+    } catch (e) {
+      print('Error loading saved posts from API: $e');
+      
+      // Fallback: Try local storage
+      try {
+        final localSaved = await DiscussionService.getSavedPosts();
+        if (localSaved.isNotEmpty) {
+          setState(() {
+            _savedPosts.clear();
+            _savedPosts.addAll(localSaved);
+            _isLoading = false;
+          });
+        } else {
+          // Last resort: Sample posts
+          _loadSampleSavedPosts();
+          setState(() => _isLoading = false);
+        }
+      } catch (localError) {
+        setState(() => _isLoading = false);
+        // Still show sample posts for demo
+        _loadSampleSavedPosts();
+      }
     }
   }
 
