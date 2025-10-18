@@ -7,7 +7,6 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import 'discussion_detail_screen.dart';
 import '../services/discussion_service.dart';
-import '../services/discussion_api_service.dart';
 import '../models/discussion_models.dart';
 
 class SavedPostsScreen extends StatefulWidget {
@@ -24,8 +23,6 @@ class FavoritesScreen extends SavedPostsScreen {
 
 class _SavedPostsScreenState extends State<SavedPostsScreen> {
   final List<DiscussionPost> _savedPosts = [];
-  final _apiService = DiscussionApiService();
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -34,42 +31,14 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
   }
 
   Future<void> _loadSavedPosts() async {
-    setState(() => _isLoading = true);
+    final savedPosts = await DiscussionService.getSavedPosts();
     
-    try {
-      // Try loading from API first
-      final result = await _apiService.getSavedPosts();
-      final savedPosts = List<DiscussionPost>.from(
-        result['discussions'].map((json) => DiscussionPost.fromJson(json))
-      );
-      
+    if (savedPosts.isEmpty) {
+      _loadSampleSavedPosts();
+    } else {
       setState(() {
-        _savedPosts.clear();
         _savedPosts.addAll(savedPosts);
-        _isLoading = false;
       });
-    } catch (e) {
-      print('Error loading saved posts from API: $e');
-      
-      // Fallback: Try local storage
-      try {
-        final localSaved = await DiscussionService.getSavedPosts();
-        if (localSaved.isNotEmpty) {
-          setState(() {
-            _savedPosts.clear();
-            _savedPosts.addAll(localSaved);
-            _isLoading = false;
-          });
-        } else {
-          // Last resort: Sample posts
-          _loadSampleSavedPosts();
-          setState(() => _isLoading = false);
-        }
-      } catch (localError) {
-        setState(() => _isLoading = false);
-        // Still show sample posts for demo
-        _loadSampleSavedPosts();
-      }
     }
   }
 
@@ -79,48 +48,48 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
       _savedPosts.addAll([
         DiscussionPost(
           id: '1',
-          authorId: '',
           title: 'Astro Veda',
           content: 'Welcome to our spiritual community! Share your experiences and learn from others.',
           author: 'dipanshu',
           authorInitial: 'D',
-          category: 'general',
+          timeAgo: '1 day ago',
+          category: 'Community Support & Life Talk',
           likes: 24,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(days: 1)),
         ),
         DiscussionPost(
           id: '4',
-          authorId: '',
-          title: 'Tarot Reading Guide',
-          content: 'Complete guide to tarot reading for beginners. Learn card meanings and spreads.',
+          title: 'Crystal Healing Guide',
+          content: 'Complete guide to crystal healing for beginners. Which crystals resonate with you?',
           author: 'sarah',
           authorInitial: 'S',
-          category: 'tarot',
+          timeAgo: '2 days ago',
+          category: 'Healing & Wellness',
           likes: 18,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(days: 2)),
         ),
         DiscussionPost(
           id: '6',
-          authorId: '',
-          title: 'Numerology Insights',
-          content: 'Understanding life path numbers and their significance in your spiritual journey.',
+          title: 'Meditation for Beginners',
+          content: 'Step-by-step guide to start your meditation journey. Perfect for newcomers.',
           author: 'priya',
           authorInitial: 'P',
-          category: 'numerology',
+          timeAgo: '3 days ago',
+          category: 'Yoga, Meditation & Mindfulness',
           likes: 32,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(days: 3)),
         ),
         DiscussionPost(
           id: '7',
-          authorId: '',
           title: 'Vastu Shastra Tips',
           content: 'Simple Vastu tips to improve your home energy and bring positivity.',
           author: 'rajesh',
           authorInitial: 'R',
-          category: 'vastu',
+          timeAgo: '4 days ago',
+          category: 'Healing & Wellness',
           likes: 15,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(days: 4)),

@@ -1,6 +1,4 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -8,31 +6,8 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps)
-      if (!origin) return callback(null, true);
-      
-      // Allow all localhost/127.0.0.1 origins regardless of port
-      if (origin.startsWith('http://localhost') || 
-          origin.startsWith('http://127.0.0.1') ||
-          origin.startsWith('http://10.0.2.2') ||
-          origin === (process.env.CORS_ORIGIN || 'http://localhost:3000')) {
-        return callback(null, true);
-      }
-      
-      // Reject all other origins
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"]
-  }
-});
-
 const PORT = 7566; // Force port 7566
-console.log('🚀 Server starting with Socket.IO - Discussion Module v1.0');
+console.log('🚀 Server starting - force redeploy 2025-09-20 v2');
 
 // Security middleware
 app.use(helmet());
@@ -69,18 +44,8 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Make io accessible in all routes
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
-
 // Serve static files (uploaded images)
 app.use('/uploads', express.static('uploads'));
-
-// Initialize Socket.IO handler
-const { initializeSocket } = require('./utils/socketHandler');
-initializeSocket(io);
 
 // Database connection
 const connectDB = async () => {
@@ -146,7 +111,6 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/consultation', require('./routes/consultation'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/reviews', require('./routes/reviews'));
-app.use('/api/discussions', require('./routes/discussion'));
 app.use('/api/seed', require('./routes/seed'));
 app.use('/api/migration', require('./routes/migration'));
 
@@ -170,17 +134,15 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server with Socket.IO
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Server accessible at: http://localhost:${PORT}`);
-  console.log(`🔌 Socket.IO enabled for real-time features`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`💬 Discussion Module with real-time comments enabled`);
-  console.log(`✅ Server started at ${new Date().toISOString()}`);
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Server accessible at: http://localhost:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Reviews API enabled at ${new Date().toISOString()}`);
 });
 
-module.exports = { app, server, io };
+module.exports = app;
 
 
 

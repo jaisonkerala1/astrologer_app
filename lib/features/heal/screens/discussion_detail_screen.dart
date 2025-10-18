@@ -10,8 +10,6 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../services/discussion_service.dart';
-import '../services/discussion_api_service.dart';
-import '../services/discussion_socket_service.dart';
 import '../models/discussion_models.dart';
 import '../../auth/models/astrologer_model.dart';
 
@@ -35,14 +33,6 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   bool _isNotificationSubscribed = false; // Track notification subscription
   DiscussionComment? _replyingTo; // Track which comment we're replying to
   
-  // API and Real-time services
-  final _apiService = DiscussionApiService();
-  final _socketService = DiscussionSocketService();
-  
-  // Loading and error states
-  bool _isLoadingComments = false;
-  String? _errorMessage;
-  
   // Current user info
   String _currentUserName = 'You';
   String _currentUserInitial = 'Y';
@@ -60,7 +50,6 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     _loadComments();
     _checkIfSaved();
     _checkNotificationStatus();
-    _setupRealTimeListeners();
   }
   
   /// Load current user's profile information
@@ -91,8 +80,6 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   void dispose() {
     _commentController.dispose();
     _commentFocusNode.dispose();
-    // Clean up Socket.IO listeners
-    _socketService.removeAllListeners();
     super.dispose();
   }
 
@@ -116,31 +103,21 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     HapticFeedback.mediumImpact();
     
     final newStatus = !_isNotificationSubscribed;
-    
-    // Optimistic UI update
     setState(() {
       _isNotificationSubscribed = newStatus;
     });
     
-    try {
-      // Call API
-      await _apiService.toggleSubscription(
-        discussionId: widget.post.id,
-        notifyOnAllComments: newStatus,
-      );
-      
-      // Also update local storage
-      if (newStatus) {
-        await DiscussionService.subscribeToNotifications(widget.post.id);
-      } else {
-        await DiscussionService.unsubscribeFromNotifications(widget.post.id);
-      }
-      
-      // Save activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: newStatus ? 'notification_subscribed' : 'notification_unsubscribed',
+    if (newStatus) {
+      await DiscussionService.subscribeToNotifications(widget.post.id);
+    } else {
+      await DiscussionService.unsubscribeFromNotifications(widget.post.id);
+    }
+    
+    // Save activity
+    await DiscussionService.saveAstrologerActivity(
+      AstrologerActivity(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: newStatus ? 'notification_subscribed' : 'notification_unsubscribed',
         discussionId: widget.post.id,
         content: newStatus 
             ? 'Subscribed to notifications for: ${widget.post.title}'
@@ -148,39 +125,23 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         timestamp: DateTime.now(),
       ),
     );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              newStatus 
-                  ? 'You\'ll be notified of all comments on this post'
-                  : 'You\'ll only be notified of replies to your comments',
-            ),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF1A1A2E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            newStatus 
+                ? 'You\'ll be notified of all comments on this post'
+                : 'You\'ll only be notified of replies to your comments',
           ),
-        );
-      }
-    } catch (e) {
-      print('Error toggling notifications: $e');
-      // Revert optimistic update on error
-      setState(() {
-        _isNotificationSubscribed = !newStatus;
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update notification settings'),
-            duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -216,49 +177,14 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   Future<void> _loadComments() async {
-    setState(() {
-      _isLoadingComments = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // Try loading from API first
-      final result = await _apiService.getComments(discussionId: widget.post.id);
-      final comments = List<DiscussionComment>.from(
-        result['comments'].map((json) => DiscussionComment.fromJson(json))
-      );
-      
+    final allComments = await DiscussionService.getComments(widget.post.id);
+    if (allComments.isEmpty) {
+      _loadSampleComments();
+    } else {
       setState(() {
-        _comments.clear();
         // Rebuild parent-child relationships from flat list
-        _comments.addAll(_buildCommentTree(comments));
-        _isLoadingComments = false;
+        _comments.addAll(_buildCommentTree(allComments));
       });
-    } catch (e) {
-      print('Error loading comments from API: $e');
-      
-      // Fallback: Try local storage
-      try {
-        final localComments = await DiscussionService.getComments(widget.post.id);
-        if (localComments.isNotEmpty) {
-          setState(() {
-            _comments.clear();
-            _comments.addAll(_buildCommentTree(localComments));
-            _isLoadingComments = false;
-          });
-        } else {
-          // Last resort: Sample comments
-          _loadSampleComments();
-          setState(() => _isLoadingComments = false);
-        }
-      } catch (localError) {
-        setState(() {
-          _errorMessage = 'Failed to load comments. Please check your connection.';
-          _isLoadingComments = false;
-        });
-        // Still show sample comments for demo
-        _loadSampleComments();
-      }
     }
   }
 
@@ -292,78 +218,6 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     return parentComments;
   }
 
-  /// Setup real-time Socket.IO listeners for live updates
-  void _setupRealTimeListeners() {
-    // Connect to Socket.IO if not already connected
-    _socketService.connect();
-    
-    // Join the discussion room for real-time updates
-    _socketService.joinDiscussion(widget.post.id);
-    
-    // Listen to new comments (Facebook-style real-time)
-    _socketService.onCommentAdded((discussionId, comment, author) {
-      if (discussionId == widget.post.id) {
-        setState(() {
-          if (comment.parentCommentId == null) {
-            // New top-level comment
-            _comments.insert(0, comment);
-          } else {
-            // New reply - find parent and add to replies
-            final parentIndex = _comments.indexWhere((c) => c.id == comment.parentCommentId);
-            if (parentIndex != -1) {
-              _comments[parentIndex].replies.add(comment);
-            }
-          }
-        });
-      }
-    });
-    
-    // Listen to comment deletions
-    _socketService.onCommentDeleted((discussionId, commentId) {
-      if (discussionId == widget.post.id) {
-        setState(() {
-          // Remove from top-level
-          _comments.removeWhere((c) => c.id == commentId);
-          // Remove from replies
-          for (var comment in _comments) {
-            comment.replies.removeWhere((r) => r.id == commentId);
-          }
-        });
-      }
-    });
-    
-    // Listen to real-time like updates
-    _socketService.onDiscussionLike((discussionId, action, likeCount, user) {
-      if (discussionId == widget.post.id) {
-        setState(() {
-          _likeCount = likeCount;
-        });
-      }
-    });
-    
-    // Listen to comment likes
-    _socketService.onCommentLike((discussionId, commentId, action, likeCount, user) {
-      if (discussionId == widget.post.id) {
-        setState(() {
-          // Update top-level comment
-          final topLevelIndex = _comments.indexWhere((c) => c.id == commentId);
-          if (topLevelIndex != -1) {
-            _comments[topLevelIndex].likes = likeCount;
-          } else {
-            // Update reply
-            for (var comment in _comments) {
-              final replyIndex = comment.replies.indexWhere((r) => r.id == commentId);
-              if (replyIndex != -1) {
-                comment.replies[replyIndex].likes = likeCount;
-                break;
-              }
-            }
-          }
-        });
-      }
-    });
-  }
-
   void _loadSampleComments() {
     // Sample comments for demonstration
     setState(() {
@@ -371,10 +225,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         DiscussionComment(
           id: '1',
           discussionId: widget.post.id,
-          authorId: '',
           author: 'sarah',
           authorInitial: 'S',
           content: 'This is really helpful! I\'ve been looking for this information.',
+          timeAgo: '2 hours ago',
           likes: 5,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(hours: 2)),
@@ -382,10 +236,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         DiscussionComment(
           id: '2',
           discussionId: widget.post.id,
-          authorId: '',
           author: 'mike',
           authorInitial: 'M',
           content: 'Great post! I have a similar experience to share.',
+          timeAgo: '1 hour ago',
           likes: 3,
           isLiked: true,
           createdAt: DateTime.now().subtract(const Duration(hours: 1)),
@@ -393,10 +247,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         DiscussionComment(
           id: '3',
           discussionId: widget.post.id,
-          authorId: '',
           author: 'priya',
           authorInitial: 'P',
           content: 'Thank you for sharing this wisdom. It resonates with me.',
+          timeAgo: '30 minutes ago',
           likes: 8,
           isLiked: false,
           createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
@@ -1198,84 +1052,52 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   void _toggleLike() async {
-    final oldLikeStatus = _isLiked;
-    final oldLikeCount = _likeCount;
+    final newLikeStatus = !_isLiked;
     
-    // Optimistic UI update
     setState(() {
-      _isLiked = !oldLikeStatus;
-      _likeCount += _isLiked ? 1 : -1;
+      _isLiked = newLikeStatus;
+      _likeCount += newLikeStatus ? 1 : -1;
     });
     
-    try {
-      // Call API - it returns the actual state from backend
-      final result = await _apiService.toggleDiscussionLike(widget.post.id);
-      
-      // Sync with backend response (this is the truth!)
-      setState(() {
-        _isLiked = result['liked'] as bool;
-        _likeCount = result['likeCount'] as int;
-      });
-      
-      // Also save to local storage
-      await DiscussionService.toggleLike(widget.post.id, _isLiked);
-      
-      // Save astrologer activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'post_liked',
-          discussionId: widget.post.id,
-          content: _isLiked ? 'Liked post: ${widget.post.title}' : 'Unliked post: ${widget.post.title}',
-          timestamp: DateTime.now(),
-        ),
-      );
-    } catch (e) {
-      print('Error toggling like: $e');
-      // Revert optimistic update on error
-      setState(() {
-        _isLiked = oldLikeStatus;
-        _likeCount = oldLikeCount;
-      });
-    }
+    // Save to database
+    await DiscussionService.toggleLike(widget.post.id, newLikeStatus);
+    
+    // Save astrologer activity
+    await DiscussionService.saveAstrologerActivity(
+      AstrologerActivity(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'post_liked',
+        discussionId: widget.post.id,
+        content: newLikeStatus ? 'Liked post: ${widget.post.title}' : 'Unliked post: ${widget.post.title}',
+        timestamp: DateTime.now(),
+      ),
+    );
   }
   
   void _toggleSave() async {
     final newSaveStatus = !_isSaved;
     
-    // Optimistic UI update
     setState(() {
       _isSaved = newSaveStatus;
     });
     
-    try {
-      // Call API
-      await _apiService.toggleSave(discussionId: widget.post.id);
-      
-      // Also update local storage
-      if (newSaveStatus) {
-        await DiscussionService.savePost(widget.post.id);
-      } else {
-        await DiscussionService.unsavePost(widget.post.id);
-      }
-      
-      // Save astrologer activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: newSaveStatus ? 'post_saved' : 'post_unsaved',
-          discussionId: widget.post.id,
-          content: newSaveStatus ? 'Saved post: ${widget.post.title}' : 'Unsaved post: ${widget.post.title}',
-          timestamp: DateTime.now(),
-        ),
-      );
-    } catch (e) {
-      print('Error toggling save: $e');
-      // Revert optimistic update on error
-      setState(() {
-        _isSaved = !newSaveStatus;
-      });
+    // Save to database
+    if (newSaveStatus) {
+      await DiscussionService.savePost(widget.post.id);
+    } else {
+      await DiscussionService.unsavePost(widget.post.id);
     }
+    
+    // Save astrologer activity
+    await DiscussionService.saveAstrologerActivity(
+      AstrologerActivity(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: newSaveStatus ? 'post_saved' : 'post_unsaved',
+        discussionId: widget.post.id,
+        content: newSaveStatus ? 'Saved post: ${widget.post.title}' : 'Unsaved post: ${widget.post.title}',
+        timestamp: DateTime.now(),
+      ),
+    );
     
     // Show feedback
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1335,90 +1157,52 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
 
     // For 1-level structure: if replying to a reply, reply to its parent instead
     final actualParentId = _replyingTo?.parentCommentId ?? _replyingTo?.id;
-    final commentText = _commentController.text.trim();
 
-    try {
-      // Post comment to API - Socket.IO will broadcast to all users
-      final newComment = await _apiService.addComment(
-        discussionId: widget.post.id,
-        text: commentText,
-        parentCommentId: actualParentId, // 1-level nesting
-      );
+    final newComment = DiscussionComment(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      discussionId: widget.post.id,
+      author: _currentUserName,
+      authorInitial: _currentUserInitial,
+      content: _commentController.text.trim(),
+      timeAgo: 'Just now',
+      likes: 0,
+      isLiked: false,
+      createdAt: DateTime.now(),
+      parentCommentId: actualParentId, // Always references parent comment (1-level only)
+    );
 
-      // Optimistic UI update
-      setState(() {
-        if (actualParentId != null) {
-          // Find the parent comment and add reply to it
-          final parentIndex = _comments.indexWhere((c) => c.id == actualParentId);
-          if (parentIndex != -1) {
-            _comments[parentIndex].replies.insert(0, newComment);
-          }
-        } else {
-          // Add as a top-level comment
-          _comments.insert(0, newComment);
+    setState(() {
+      if (actualParentId != null) {
+        // Find the parent comment and add reply to it
+        final parentIndex = _comments.indexWhere((c) => c.id == actualParentId);
+        if (parentIndex != -1) {
+          _comments[parentIndex].replies.insert(0, newComment);
         }
-        _commentController.clear();
-        _isComposing = false;
-        _replyingTo = null; // Clear reply mode
-      });
-      
-      // Also save to local storage as backup
-      await DiscussionService.saveComment(widget.post.id, newComment);
-      
-      // Save astrologer activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: actualParentId != null ? 'reply_added' : 'comment_added',
-          discussionId: widget.post.id,
-          commentId: newComment.id,
-          content: actualParentId != null 
-              ? 'Replied to ${_replyingTo!.author}: ${newComment.content}'
-              : 'Added comment: ${newComment.content}',
-          timestamp: DateTime.now(),
-        ),
-      );
-    } catch (e) {
-      print('Error adding comment: $e');
-      
-      // Fallback: Save locally only
-      final localComment = DiscussionComment(
+      } else {
+        // Add as a top-level comment
+        _comments.insert(0, newComment);
+      }
+      _commentController.clear();
+      _isComposing = false;
+      _replyingTo = null; // Clear reply mode
+    });
+    
+    // Save to database
+    await DiscussionService.saveComment(widget.post.id, newComment);
+    
+    // Save astrologer activity
+    await DiscussionService.saveAstrologerActivity(
+      AstrologerActivity(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: actualParentId != null ? 'reply_added' : 'comment_added',
         discussionId: widget.post.id,
-        authorId: '',
-        author: _currentUserName,
-        authorPhoto: _currentUserPhoto,
-        authorInitial: _currentUserInitial,
-        content: commentText,
-        likes: 0,
-        isLiked: false,
-        createdAt: DateTime.now(),
-        parentCommentId: actualParentId,
-      );
-      
-      setState(() {
-        if (actualParentId != null) {
-          final parentIndex = _comments.indexWhere((c) => c.id == actualParentId);
-          if (parentIndex != -1) {
-            _comments[parentIndex].replies.insert(0, localComment);
-          }
-        } else {
-          _comments.insert(0, localComment);
-        }
-        _commentController.clear();
-        _isComposing = false;
-        _replyingTo = null;
-      });
-      
-      await DiscussionService.saveComment(widget.post.id, localComment);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Comment posted offline. Will sync when online.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+        commentId: newComment.id,
+        content: actualParentId != null 
+            ? 'Replied to ${_replyingTo!.author}: ${newComment.content}'
+            : 'Added comment: ${newComment.content}',
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   void _sharePost() {

@@ -31,21 +31,32 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
   final FocusNode _titleFocusNode = FocusNode();
   final FocusNode _contentFocusNode = FocusNode();
   
-  String _selectedCategory = 'general';
+  String _selectedCategory = 'General';
   String _selectedPrivacy = 'Public';
   bool _isPosting = false;
   bool _showEmojiPicker = false;
   
-  // Categories matching backend enum (lowercase)
-  final List<Map<String, String>> _categories = [
-    {'value': 'general', 'label': 'General Discussion'},
-    {'value': 'vedic', 'label': 'Vedic Astrology'},
-    {'value': 'western', 'label': 'Western Astrology'},
-    {'value': 'numerology', 'label': 'Numerology'},
-    {'value': 'tarot', 'label': 'Tarot & Divination'},
-    {'value': 'palmistry', 'label': 'Palmistry'},
-    {'value': 'vastu', 'label': 'Vastu Shastra & Feng Shui'},
-    {'value': 'other', 'label': 'Other Topics'},
+  final List<String> _categories = [
+    'General',
+    'Astrology & Horoscopes',
+    'Vedic Astrology',
+    'Western Astrology',
+    'Numerology',
+    'Tarot & Divination',
+    'Crystal Healing',
+    'Chakra Healing',
+    'Reiki & Energy Healing',
+    'Meditation & Mindfulness',
+    'Yoga & Spiritual Practice',
+    'Buddhism & Philosophy',
+    'New Age & Awakening',
+    'Spiritual Guidance',
+    'Dream Interpretation',
+    'Palmistry & Palm Reading',
+    'Feng Shui & Vastu',
+    'Mantras & Chanting',
+    'Ayurveda & Wellness',
+    'Community Support & Life Talk',
   ];
   
   final List<Map<String, dynamic>> _privacyOptions = [
@@ -414,7 +425,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _categories.firstWhere((cat) => cat['value'] == _selectedCategory)['label']!,
+                    _selectedCategory,
                     style: TextStyle(
                       fontSize: 14,
                       color: themeService.textPrimary,
@@ -633,15 +644,15 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                           final category = _categories[index];
                           return ListTile(
                             title: Text(
-                              category['label']!,
+                              category,
                               style: TextStyle(color: themeService.textPrimary),
                             ),
-                            trailing: _selectedCategory == category['value']
+                            trailing: _selectedCategory == category
                                 ? Icon(Icons.check, color: themeService.primaryColor)
                                 : null,
                             onTap: () {
                               setState(() {
-                                _selectedCategory = category['value']!;
+                                _selectedCategory = category;
                               });
                               Navigator.pop(context);
                             },
