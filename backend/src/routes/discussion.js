@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const discussionController = require('../controllers/discussionController');
-const { verifyToken } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
 // ============================================
 // DISCUSSION CRUD ROUTES
@@ -12,7 +12,7 @@ const { verifyToken } = require('../middleware/auth');
  * @desc    Create new discussion
  * @access  Private (Astrologers only)
  */
-router.post('/', verifyToken, discussionController.createDiscussion);
+router.post('/', auth, discussionController.createDiscussion);
 
 /**
  * @route   GET /api/discussions
@@ -27,21 +27,21 @@ router.get('/', discussionController.getDiscussions);
  * @desc    Get current user's discussions
  * @access  Private
  */
-router.get('/my-posts', verifyToken, discussionController.getMyDiscussions);
+router.get('/my-posts', auth, discussionController.getMyDiscussions);
 
 /**
  * @route   GET /api/discussions/saved
  * @desc    Get user's saved posts
  * @access  Private
  */
-router.get('/saved', verifyToken, discussionController.getSavedPosts);
+router.get('/saved', auth, discussionController.getSavedPosts);
 
 /**
  * @route   GET /api/discussions/subscriptions
  * @desc    Get user's notification subscriptions
  * @access  Private
  */
-router.get('/subscriptions', verifyToken, discussionController.getSubscriptions);
+router.get('/subscriptions', auth, discussionController.getSubscriptions);
 
 /**
  * @route   GET /api/discussions/search
@@ -71,14 +71,14 @@ router.get('/:id', discussionController.getDiscussionById);
  * @desc    Update discussion (author only)
  * @access  Private
  */
-router.put('/:id', verifyToken, discussionController.updateDiscussion);
+router.put('/:id', auth, discussionController.updateDiscussion);
 
 /**
  * @route   DELETE /api/discussions/:id
  * @desc    Delete discussion (soft delete, author only)
  * @access  Private
  */
-router.delete('/:id', verifyToken, discussionController.deleteDiscussion);
+router.delete('/:id', auth, discussionController.deleteDiscussion);
 
 // ============================================
 // ENGAGEMENT ROUTES
@@ -89,7 +89,7 @@ router.delete('/:id', verifyToken, discussionController.deleteDiscussion);
  * @desc    Toggle like on discussion
  * @access  Private
  */
-router.post('/:id/like', verifyToken, discussionController.toggleLike);
+router.post('/:id/like', auth, discussionController.toggleLike);
 
 /**
  * @route   GET /api/discussions/:id/likes
@@ -117,7 +117,7 @@ router.post('/:id/share', discussionController.incrementShare);
  * @desc    Toggle save on discussion (bookmark)
  * @access  Private
  */
-router.post('/:id/save', verifyToken, discussionController.toggleSave);
+router.post('/:id/save', auth, discussionController.toggleSave);
 
 /**
  * @route   POST /api/discussions/:id/subscribe
@@ -125,7 +125,7 @@ router.post('/:id/save', verifyToken, discussionController.toggleSave);
  * @access  Private
  * @body    notifyOnAllComments, notifyOnReplies, notifyOnLikes (optional)
  */
-router.post('/:id/subscribe', verifyToken, discussionController.toggleSubscription);
+router.post('/:id/subscribe', auth, discussionController.toggleSubscription);
 
 // ============================================
 // COMMENT ROUTES
@@ -137,7 +137,7 @@ router.post('/:id/subscribe', verifyToken, discussionController.toggleSubscripti
  * @access  Private
  * @body    text, imageUrl (optional), parentCommentId (optional for replies)
  */
-router.post('/:id/comments', verifyToken, discussionController.addComment);
+router.post('/:id/comments', auth, discussionController.addComment);
 
 /**
  * @route   GET /api/discussions/:id/comments
@@ -152,21 +152,21 @@ router.get('/:id/comments', discussionController.getComments);
  * @desc    Update comment (author only)
  * @access  Private
  */
-router.put('/comments/:commentId', verifyToken, discussionController.updateComment);
+router.put('/comments/:commentId', auth, discussionController.updateComment);
 
 /**
  * @route   DELETE /api/comments/:commentId
  * @desc    Delete comment (soft delete, author or discussion author)
  * @access  Private
  */
-router.delete('/comments/:commentId', verifyToken, discussionController.deleteComment);
+router.delete('/comments/:commentId', auth, discussionController.deleteComment);
 
 /**
  * @route   POST /api/comments/:commentId/like
  * @desc    Toggle like on comment
  * @access  Private
  */
-router.post('/comments/:commentId/like', verifyToken, discussionController.toggleCommentLike);
+router.post('/comments/:commentId/like', auth, discussionController.toggleCommentLike);
 
 /**
  * @route   GET /api/comments/:commentId/likes

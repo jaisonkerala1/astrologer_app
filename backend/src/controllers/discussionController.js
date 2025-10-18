@@ -16,7 +16,7 @@ const Astrologer = require('../models/Astrologer');
 exports.createDiscussion = async (req, res) => {
   try {
     const { title, content, imageUrl, tags, category, visibleTo } = req.body;
-    const astrologerId = req.user.id; // From auth middleware
+    const astrologerId = req.user.astrologerId; // From auth middleware
 
     // Get astrologer details
     const astrologer = await Astrologer.findById(astrologerId);
@@ -127,17 +127,17 @@ exports.getDiscussions = async (req, res) => {
         discussion.isLiked = await DiscussionLike.hasUserLiked(
           discussion._id,
           'discussion',
-          req.user.id,
+          req.user.astrologerId,
           req.user.userType || 'astrologer'
         );
         discussion.isSaved = await SavedPost.hasUserSaved(
           discussion._id,
-          req.user.id,
+          req.user.astrologerId,
           req.user.userType || 'astrologer'
         );
         discussion.isSubscribed = await NotificationSubscription.isUserSubscribed(
           discussion._id,
-          req.user.id,
+          req.user.astrologerId,
           req.user.userType || 'astrologer'
         );
       }
@@ -194,17 +194,17 @@ exports.getDiscussionById = async (req, res) => {
       discussion.isLiked = await DiscussionLike.hasUserLiked(
         discussion._id,
         'discussion',
-        req.user.id,
+        req.user.astrologerId,
         req.user.userType || 'astrologer'
       );
       discussion.isSaved = await SavedPost.hasUserSaved(
         discussion._id,
-        req.user.id,
+        req.user.astrologerId,
         req.user.userType || 'astrologer'
       );
       discussion.isSubscribed = await NotificationSubscription.isUserSubscribed(
         discussion._id,
-        req.user.id,
+        req.user.astrologerId,
         req.user.userType || 'astrologer'
       );
     }
@@ -231,7 +231,7 @@ exports.updateDiscussion = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, imageUrl, tags, category, visibleTo } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
 
     const discussion = await Discussion.findOne({ _id: id, isDeleted: false });
 
@@ -290,7 +290,7 @@ exports.updateDiscussion = async (req, res) => {
 exports.deleteDiscussion = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
 
     const discussion = await Discussion.findOne({ _id: id, isDeleted: false });
 
@@ -338,7 +338,7 @@ exports.deleteDiscussion = async (req, res) => {
  */
 exports.getMyDiscussions = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -387,7 +387,7 @@ exports.getMyDiscussions = async (req, res) => {
 exports.toggleLike = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
 
     // Get user details
@@ -553,7 +553,7 @@ exports.addComment = async (req, res) => {
   try {
     const { id } = req.params;
     const { text, imageUrl, parentCommentId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
 
     // Get user details
@@ -659,7 +659,7 @@ exports.getComments = async (req, res) => {
             reply.isLiked = await DiscussionLike.hasUserLiked(
               reply._id,
               'comment',
-              req.user.id,
+              req.user.astrologerId,
               req.user.userType || 'astrologer'
             );
           }
@@ -672,7 +672,7 @@ exports.getComments = async (req, res) => {
           comment.isLiked = await DiscussionLike.hasUserLiked(
             comment._id,
             'comment',
-            req.user.id,
+            req.user.astrologerId,
             req.user.userType || 'astrologer'
           );
         }
@@ -684,7 +684,7 @@ exports.getComments = async (req, res) => {
           comment.isLiked = await DiscussionLike.hasUserLiked(
             comment._id,
             'comment',
-            req.user.id,
+            req.user.astrologerId,
             req.user.userType || 'astrologer'
           );
         }
@@ -725,7 +725,7 @@ exports.updateComment = async (req, res) => {
   try {
     const { commentId } = req.params;
     const { text, imageUrl } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
 
     const comment = await DiscussionComment.findOne({
       _id: commentId,
@@ -785,7 +785,7 @@ exports.updateComment = async (req, res) => {
 exports.deleteComment = async (req, res) => {
   try {
     const { commentId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
 
     const comment = await DiscussionComment.findOne({
       _id: commentId,
@@ -842,7 +842,7 @@ exports.deleteComment = async (req, res) => {
 exports.toggleCommentLike = async (req, res) => {
   try {
     const { commentId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
 
     // Get user details
@@ -942,7 +942,7 @@ exports.toggleSave = async (req, res) => {
   try {
     const { id } = req.params;
     const { collection } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
 
     const result = await SavedPost.toggleSave(
@@ -979,7 +979,7 @@ exports.toggleSave = async (req, res) => {
  */
 exports.getSavedPosts = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
     const { page = 1, limit = 20, collection } = req.query;
 
@@ -1031,7 +1031,7 @@ exports.toggleSubscription = async (req, res) => {
   try {
     const { id } = req.params;
     const { notifyOnAllComments, notifyOnReplies, notifyOnLikes } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
 
     const settings = {};
@@ -1072,7 +1072,7 @@ exports.toggleSubscription = async (req, res) => {
  */
 exports.getSubscriptions = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.astrologerId;
     const userType = req.user.userType || 'astrologer';
     const { page = 1, limit = 50 } = req.query;
 
