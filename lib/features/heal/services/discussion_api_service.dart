@@ -130,18 +130,21 @@ class DiscussionApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final discussions = (data['data'] as List)
+            .map((json) => DiscussionPost.fromJson(json))
+            .toList();
+        
         return {
-          'discussions': (data['data'] as List)
-              .map((json) => DiscussionPost.fromJson(json))
-              .toList(),
+          'discussions': discussions,
           'pagination': data['pagination'],
         };
       } else {
+        print('❌ API Error: ${response.statusCode} - ${response.body}');
         _handleError(response);
         throw Exception('Failed to load discussions');
       }
     } catch (e) {
-      print('Error getting discussions: $e');
+      print('❌ Error: $e');
       rethrow;
     }
   }
@@ -149,11 +152,8 @@ class DiscussionApiService {
   /// Get a single discussion by ID
   Future<DiscussionPost> getDiscussionById(String discussionId) async {
     try {
-      final headers = await _getHeaders(requiresAuth: false);
-      final token = await _getToken();
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
+      // Send auth token to get isLiked/isSaved/isSubscribed status
+      final headers = await _getHeaders(requiresAuth: true);
 
       final response = await http.get(
         Uri.parse('$_baseUrl/discussions/$discussionId'),

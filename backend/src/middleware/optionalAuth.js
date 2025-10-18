@@ -12,7 +12,6 @@ const optionalAuth = async (req, res, next) => {
 
     // If no token, just continue without setting req.user
     if (!token) {
-      console.log('🔓 No token provided - continuing as unauthenticated');
       return next();
     }
 
@@ -21,12 +20,10 @@ const optionalAuth = async (req, res, next) => {
     const astrologer = await Astrologer.findById(decoded.astrologerId);
 
     if (!astrologer) {
-      console.log('❌ Invalid token - astrologer not found');
       return next(); // Continue without auth instead of failing
     }
 
     if (!astrologer.activeSession || astrologer.activeSession.sessionId !== decoded.sessionId) {
-      console.log('❌ Session invalid or expired');
       return next(); // Continue without auth instead of failing
     }
 
@@ -40,11 +37,9 @@ const optionalAuth = async (req, res, next) => {
       sessionId: decoded.sessionId,
       userType: 'astrologer' 
     };
-    console.log('✅ User authenticated:', req.user.astrologerId);
     next();
   } catch (error) {
     // On any error, just continue without auth (don't fail the request)
-    console.log('⚠️ Auth error (continuing unauthenticated):', error.message);
     next();
   }
 };
