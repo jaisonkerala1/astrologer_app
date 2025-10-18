@@ -1,16 +1,21 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_button.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'discussion_detail_screen.dart';
 import 'favorites_screen.dart';
 import '../services/discussion_service.dart';
 import '../models/discussion_models.dart';
 import '../widgets/facebook_create_post_bottom_sheet.dart';
+import '../../auth/models/astrologer_model.dart';
 
 class DiscussionScreen extends StatefulWidget {
   const DiscussionScreen({super.key});
@@ -23,11 +28,41 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<DiscussionPost> _posts = [];
   String _searchQuery = '';
+  
+  // Current user info
+  String _currentUserName = 'You';
+  String _currentUserInitial = 'Y';
+  String? _currentUserPhoto;
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentUser();
     _loadPosts();
+  }
+  
+  /// Load current user's profile information
+  Future<void> _loadCurrentUser() async {
+    try {
+      final storageService = StorageService();
+      final userDataJson = await storageService.getUserData();
+      
+      if (userDataJson != null) {
+        final userData = jsonDecode(userDataJson);
+        final astrologer = AstrologerModel.fromJson(userData);
+        
+        setState(() {
+          _currentUserName = astrologer.name;
+          _currentUserInitial = astrologer.name.isNotEmpty 
+              ? astrologer.name[0].toUpperCase() 
+              : 'Y';
+          _currentUserPhoto = astrologer.profilePicture;
+        });
+      }
+    } catch (e) {
+      print('Error loading current user: $e');
+      // Keep default values if error
+    }
   }
 
   Future<void> _loadPosts() async {
@@ -118,6 +153,89 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     ).toList();
   }
 
+  Future<void> _refreshDiscussions() async {
+    // Add haptic feedback for pull-to-refresh
+    HapticFeedback.mediumImpact();
+    
+    try {
+      // Simulate fetching new posts from database
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      // In real implementation, this would fetch from database
+      final newPosts = await DiscussionService.getDiscussions();
+      
+      final oldPostCount = _posts.length;
+      
+      setState(() {
+        // Clear and reload posts
+        _posts.clear();
+        if (newPosts.isNotEmpty) {
+          _posts.addAll(newPosts);
+        } else {
+          // If no posts from database, reload sample posts
+          _loadSamplePosts();
+        }
+      });
+      
+      // Calculate new posts count
+      final newPostsCount = _posts.length - oldPostCount;
+      
+      // Show feedback with haptic
+      HapticFeedback.lightImpact();
+      
+      if (mounted) {
+        // Show success message
+        if (newPostsCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$newPostsCount new post${newPostsCount > 1 ? 's' : ''} loaded'),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1A1A2E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('You\'re all caught up!'),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1A1A2E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Error handling
+      HapticFeedback.heavyImpact();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to refresh. Please try again.'),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red.shade600,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _refreshDiscussions,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -173,18 +291,28 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
               _buildSearchBar(l10n, themeService),
               // Posts List
               Expanded(
-                child: Container(
-                  color: const Color(0xFFF5F5F5),
-                  child: _filteredPosts.isEmpty
-                      ? _buildEmptyState(l10n, themeService)
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredPosts.length,
-                          itemBuilder: (context, index) {
-                            final post = _filteredPosts[index];
-                            return _buildPostCard(post, l10n, themeService);
-                          },
-                        ),
+                child: RefreshIndicator(
+                  onRefresh: _refreshDiscussions,
+                  color: themeService.primaryColor,
+                  backgroundColor: Colors.white,
+                  displacement: 50,
+                  strokeWidth: 2.5,
+                  child: Container(
+                    color: const Color(0xFFF5F5F5),
+                    child: _filteredPosts.isEmpty
+                        ? _buildEmptyState(l10n, themeService)
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            physics: const BouncingScrollPhysics(
+                              parent: AlwaysScrollableScrollPhysics(),
+                            ),
+                            itemCount: _filteredPosts.length,
+                            itemBuilder: (context, index) {
+                              final post = _filteredPosts[index];
+                              return _buildPostCard(post, l10n, themeService);
+                            },
+                          ),
+                  ),
                 ),
               ),
             ],
@@ -296,18 +424,13 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
               // Header Row: Avatar + Metadata
               Row(
                 children: [
-                  // Author Avatar
-                  CircleAvatar(
-                    backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                  // Author Avatar (with profile picture support)
+                  ProfileAvatarWidget(
+                    imagePath: (post.author == _currentUserName) ? _currentUserPhoto : null,
                     radius: 20,
-                    child: Text(
-                      post.authorInitial,
-                      style: TextStyle(
-                        color: themeService.primaryColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
+                    fallbackText: post.authorInitial,
+                    backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                    textColor: themeService.primaryColor,
                   ),
                   const SizedBox(width: 12),
                   
@@ -451,45 +574,68 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   }
 
   Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Color(0xFFE5E5E5),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.forum_outlined,
-                size: 48,
-                color: Color(0xFF6B6B8D),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _searchQuery.isEmpty ? l10n.noPostsYet : 'No posts found',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A2E),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _searchQuery.isEmpty ? l10n.beTheFirstToPost : 'Try a different search term',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF6B6B8D),
-              ),
-            ),
-          ],
-        ),
+    // Make empty state scrollable for pull-to-refresh to work
+    return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
       ),
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height - 300,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE5E5E5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.forum_outlined,
+                      size: 48,
+                      color: Color(0xFF6B6B8D),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _searchQuery.isEmpty ? l10n.noPostsYet : 'No posts found',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A2E),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _searchQuery.isEmpty ? l10n.beTheFirstToPost : 'Try a different search term',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF6B6B8D),
+                    ),
+                  ),
+                  if (_searchQuery.isEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Pull down to refresh',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: const Color(0xFF6B6B8D).withOpacity(0.7),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -522,8 +668,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title.trim(),
       content: content.trim(),
-      author: 'You',
-      authorInitial: 'Y',
+      author: _currentUserName,
+      authorInitial: _currentUserInitial,
       timeAgo: 'Just now',
       category: category,
       likes: 0,

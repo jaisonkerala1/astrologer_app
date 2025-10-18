@@ -64,6 +64,8 @@ class DiscussionComment {
   int likes;
   bool isLiked;
   final DateTime createdAt;
+  final String? parentCommentId; // For replies
+  List<DiscussionComment> replies; // Nested replies
 
   DiscussionComment({
     required this.id,
@@ -75,7 +77,9 @@ class DiscussionComment {
     required this.likes,
     required this.isLiked,
     required this.createdAt,
-  });
+    this.parentCommentId,
+    List<DiscussionComment>? replies,
+  }) : replies = replies ?? [];
 
   factory DiscussionComment.fromJson(Map<String, dynamic> json) {
     return DiscussionComment(
@@ -88,6 +92,10 @@ class DiscussionComment {
       likes: json['likes'],
       isLiked: json['isLiked'],
       createdAt: DateTime.parse(json['createdAt']),
+      parentCommentId: json['parentCommentId'],
+      replies: (json['replies'] as List<dynamic>?)
+          ?.map((reply) => DiscussionComment.fromJson(reply))
+          .toList() ?? [],
     );
   }
 
@@ -102,6 +110,8 @@ class DiscussionComment {
       'likes': likes,
       'isLiked': isLiked,
       'createdAt': createdAt.toIso8601String(),
+      'parentCommentId': parentCommentId,
+      'replies': replies.map((reply) => reply.toJson()).toList(),
     };
   }
 }

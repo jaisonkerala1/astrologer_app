@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/transition_animations.dart' hide AnimatedContainer;
 import '../../../shared/widgets/animated_button.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_state.dart';
 import '../../auth/models/astrologer_model.dart';
@@ -159,9 +160,16 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
             String userName = 'Your Name';
             bool isOnline = false;
             
+            String? userPhoto;
+            String userInitial = 'Y';
+            
             if (authState is AuthSuccessState) {
               userName = authState.astrologer.name;
               isOnline = statusService.isOnline;
+              userPhoto = authState.astrologer.profilePicture;
+              userInitial = authState.astrologer.name.isNotEmpty 
+                  ? authState.astrologer.name[0].toUpperCase() 
+                  : 'Y';
             }
             
             return Row(
@@ -169,18 +177,12 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
                 // Profile avatar with online status indicator
                 Stack(
                   children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: themeService.primaryColor,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                    ProfileAvatarWidget(
+                      imagePath: userPhoto,
+                      radius: 25,
+                      fallbackText: userInitial,
+                      backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                      textColor: themeService.primaryColor,
                     ),
                     // Online status indicator
                     Positioned(

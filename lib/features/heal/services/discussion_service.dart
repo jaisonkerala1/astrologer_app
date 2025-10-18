@@ -8,6 +8,7 @@ class DiscussionService {
   static const String _favoritesKey = 'favorites';
   static const String _savedPostsKey = 'saved_posts';
   static const String _astrologerHistoryKey = 'astrologer_history';
+  static const String _notificationSubscriptionsKey = 'notification_subscriptions';
 
   // Save discussion post
   static Future<void> saveDiscussion(DiscussionPost post) async {
@@ -30,7 +31,10 @@ class DiscussionService {
     return discussionsList.map((json) => DiscussionPost.fromJson(json)).toList();
   }
 
-  // Save comment
+  // Save comment (stores as flat structure for server compatibility)
+  // Parent comments have parentCommentId = null
+  // Replies have parentCommentId = parent comment's ID
+  // This flat structure is ready for server/database migration
   static Future<void> saveComment(String discussionId, DiscussionComment comment) async {
     final prefs = await SharedPreferences.getInstance();
     final comments = await getComments(discussionId);
@@ -40,7 +44,9 @@ class DiscussionService {
     await prefs.setString('${_commentsKey}_$discussionId', jsonEncode(commentsJson));
   }
 
-  // Get comments for a discussion
+  // Get comments for a discussion (returns flat list)
+  // UI layer is responsible for rebuilding parent-child relationships
+  // This flat structure allows easy migration to server/database
   static Future<List<DiscussionComment>> getComments(String discussionId) async {
     final prefs = await SharedPreferences.getInstance();
     final commentsJson = prefs.getString('${_commentsKey}_$discussionId');
@@ -161,6 +167,46 @@ class DiscussionService {
     final allDiscussions = await getDiscussions();
     
     return allDiscussions.where((post) => savedPostIds.contains(post.id)).toList();
+  }
+
+  // Notification Subscriptions
+  
+  // Subscribe to notifications for a post
+  static Future<void> subscribeToNotifications(String discussionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final subscriptions = await _getNotificationSubscriptions();
+    if (!subscriptions.contains(discussionId)) {
+      subscriptions.add(discussionId);
+      await prefs.setStringList(_notificationSubscriptionsKey, subscriptions);
+    }
+  }
+
+  // Unsubscribe from notifications for a post
+  static Future<void> unsubscribeFromNotifications(String discussionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final subscriptions = await _getNotificationSubscriptions();
+    subscriptions.remove(discussionId);
+    await prefs.setStringList(_notificationSubscriptionsKey, subscriptions);
+  }
+
+  // Check if user is subscribed to notifications for a post
+  static Future<bool> isNotificationSubscribed(String discussionId) async {
+    final subscriptions = await _getNotificationSubscriptions();
+    return subscriptions.contains(discussionId);
+  }
+
+  // Get all notification subscriptions
+  static Future<List<String>> _getNotificationSubscriptions() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_notificationSubscriptionsKey) ?? [];
+  }
+
+  // Get all subscribed posts
+  static Future<List<DiscussionPost>> getSubscribedPosts() async {
+    final subscriptionIds = await _getNotificationSubscriptions();
+    final allDiscussions = await getDiscussions();
+    
+    return allDiscussions.where((post) => subscriptionIds.contains(post.id)).toList();
   }
 }
 
