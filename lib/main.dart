@@ -29,7 +29,7 @@ void main() async {
   
   // Initialize services
   await StorageService().initialize();
-  ApiService().initialize();
+  await ApiService().initialize();
   final languageService = LanguageService();
   await languageService.initialize();
   final statusService = StatusService();

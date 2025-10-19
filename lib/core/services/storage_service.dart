@@ -170,6 +170,18 @@ class StorageService {
     return await getString('phone_number');
   }
 
+  // Onboarding tracking
+  Future<bool> setHasSeenOnboarding(bool value) async {
+    print('StorageService: Setting hasSeenOnboarding to $value (WILL PERSIST!)');
+    return await setBool('has_seen_onboarding', value);
+  }
+
+  Future<bool?> getHasSeenOnboarding() async {
+    final result = await getBool('has_seen_onboarding');
+    print('StorageService: Getting hasSeenOnboarding: $result');
+    return result;
+  }
+
   // Clear all auth data
   Future<bool> clearAuthData() async {
     await remove('auth_token');

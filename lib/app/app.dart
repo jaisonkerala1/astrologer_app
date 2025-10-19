@@ -15,7 +15,6 @@ import '../features/profile/bloc/profile_bloc.dart';
 import '../features/consultations/bloc/consultations_bloc.dart';
 import '../features/reviews/bloc/reviews_bloc.dart';
 import '../features/reviews/repository/reviews_repository.dart';
-import '../features/auth/screens/auth_gate_screen.dart';
 import '../shared/theme/app_theme.dart';
 import 'routes.dart';
 import '../features/auth/bloc/auth_event.dart';
@@ -123,7 +122,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
             Locale('en', ''), // English
             Locale('hi', ''), // Hindi
           ],
-          home: const AuthGateScreen(),
+          initialRoute: AppRoutes.splash,
           onGenerateRoute: AppRoutes.generateRoute,
           builder: (context, child) {
             return child!;

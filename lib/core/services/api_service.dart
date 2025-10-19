@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
+import 'storage_service.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -14,7 +15,9 @@ class ApiService {
 
   Stream<String> get unauthorizedStream => _unauthorizedController.stream;
 
-  void initialize() {
+  Future<void> initialize() async {
+    print('🔧 [API_SERVICE] Initializing...');
+    
     _dio = Dio(BaseOptions(
       baseUrl: ApiConstants.baseUrl,
       connectTimeout: Duration(milliseconds: ApiConstants.connectTimeout),
@@ -39,6 +42,22 @@ class ApiService {
         handler.next(error);
       },
     ));
+
+    // Load token from storage on initialization (for app restarts)
+    try {
+      final storage = StorageService();
+      final token = await storage.getAuthToken();
+      if (token != null && token.isNotEmpty) {
+        setAuthToken(token);
+        print('✅ [API_SERVICE] Loaded auth token from storage on initialization');
+      } else {
+        print('ℹ️ [API_SERVICE] No auth token found in storage');
+      }
+    } catch (e) {
+      print('❌ [API_SERVICE] Error loading token from storage: $e');
+    }
+    
+    print('✅ [API_SERVICE] Initialization complete');
   }
 
   void _notifyUnauthorized(String? message) {

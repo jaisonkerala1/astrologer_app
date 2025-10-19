@@ -1,0 +1,181 @@
+{
+  "designSystem": {
+    "theme": {
+      "colorScheme": "dark",
+      "backgroundColor": "#1a1a1a",
+      "primaryColor": "#89b4f8",
+      "textColor": {
+        "primary": "#ffffff",
+        "secondary": "#e0e0e0"
+      },
+      "illustrationColors": ["#f8a5a5", "#f8dc89", "#89f8b4", "#89b4f8", "#4da6ff"]
+    },
+    "typography": {
+      "fontFamily": "Google Sans, Roboto, System Default",
+      "heading": {
+        "fontSize": "40px",
+        "fontWeight": "500",
+        "lineHeight": "1.2",
+        "textAlign": "center",
+        "letterSpacing": "-0.5px"
+      },
+      "body": {
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "1.5"
+      }
+    },
+    "spacing": {
+      "screenPadding": "32px",
+      "headerMarginTop": "80px",
+      "contentGap": "48px"
+    },
+    "layout": {
+      "structure": "vertical-centered",
+      "contentAlignment": "center",
+      "distribution": "space-between"
+    },
+    "components": {
+      "branding": {
+        "type": "logo-with-icon",
+        "position": "top-center",
+        "layout": "horizontal-inline",
+        "textSize": "32px",
+        "iconSize": "40px",
+        "iconColor": "#34a853",
+        "textColor": "#ffffff",
+        "marginTop": "60px"
+      },
+      "closeButton": {
+        "type": "icon-only",
+        "icon": "X",
+        "position": "top-right",
+        "size": "32px",
+        "color": "#ffffff",
+        "backgroundColor": "transparent",
+        "padding": "16px"
+      },
+      "illustration": {
+        "type": "abstract-playful-composition",
+        "position": "center",
+        "maxHeight": "50vh",
+        "marginVertical": "64px",
+        "elements": {
+          "centerDevice": {
+            "type": "phone-outline",
+            "borderRadius": "48px",
+            "border": "4px solid #ffffff",
+            "aspectRatio": "9:19.5",
+            "backgroundColor": "#4a4a4a",
+            "shadow": "none",
+            "centerIcon": {
+              "type": "brand-mascot",
+              "size": "48px",
+              "color": "#34a853"
+            }
+          },
+          "floatingShapes": {
+            "distribution": "scattered-around-device",
+            "zIndex": "behind-and-front",
+            "types": [
+              {
+                "shape": "blob-organic",
+                "sizes": ["large", "medium", "small"],
+                "colors": ["#f8a5a5", "#89f8b4", "#89b4f8", "#4da6ff"]
+              },
+              {
+                "shape": "flower-daisy",
+                "size": "xlarge",
+                "color": "#f8dc89",
+                "position": "left"
+              },
+              {
+                "shape": "music-note",
+                "size": "medium",
+                "color": "#4da6ff",
+                "position": "right"
+              }
+            ],
+            "animation": "subtle-float-optional"
+          }
+        },
+        "style": {
+          "aesthetic": "playful-modern",
+          "shapeStyle": "organic-rounded",
+          "composition": "balanced-asymmetry"
+        }
+      },
+      "primaryButton": {
+        "type": "filled-rounded",
+        "backgroundColor": "#89b4f8",
+        "textColor": "#1a1a1a",
+        "fontSize": "18px",
+        "fontWeight": "500",
+        "borderRadius": "32px",
+        "padding": "20px 64px",
+        "minWidth": "200px",
+        "position": "bottom-center",
+        "marginBottom": "80px",
+        "shadow": "0 4px 12px rgba(137, 180, 248, 0.3)"
+      },
+      "navigation": {
+        "type": "minimal",
+        "elements": ["close-button", "primary-cta"],
+        "progressIndicator": false
+      }
+    },
+    "patterns": {
+      "slideStructure": {
+        "type": "welcome-announcement",
+        "order": [
+          "branding-header",
+          "close-button",
+          "main-heading",
+          "illustration-hero",
+          "primary-action-button"
+        ]
+      },
+      "illustrationComposition": {
+        "centerFocus": "device-outline",
+        "surroundingElements": "decorative-shapes",
+        "colorPalette": "vibrant-pastels",
+        "balance": "asymmetric-dynamic",
+        "whitespace": "generous"
+      }
+    },
+    "visualStyle": {
+      "aesthetic": "modern-playful",
+      "mood": "welcoming-energetic",
+      "approach": "illustration-driven",
+      "brandPersonality": "friendly-innovative",
+      "designPrinciples": [
+        "bold-simple-typography",
+        "vibrant-color-accents",
+        "organic-shapes",
+        "generous-whitespace",
+        "centered-composition"
+      ]
+    },
+    "animations": {
+      "entrance": {
+        "type": "fade-scale-in",
+        "duration": "400ms",
+        "easing": "ease-out"
+      },
+      "illustration": {
+        "type": "subtle-float-optional",
+        "duration": "3s",
+        "loop": true
+      },
+      "buttonHover": {
+        "type": "scale-brighten",
+        "duration": "200ms"
+      }
+    },
+    "accessibility": {
+      "contrastRatio": "WCAG-AA",
+      "touchTargetSize": "48px-minimum",
+      "focusIndicators": "visible-outline"
+    }
+  }
+}

@@ -1,0 +1,220 @@
+{
+  "designSystem": {
+    "theme": {
+      "colorScheme": "dark",
+      "backgroundColor": "#1a1a1a",
+      "primaryColor": "#89b4f8",
+      "accentColor": "#4285f4",
+      "textColor": {
+        "primary": "#ffffff",
+        "secondary": "#9ca3af",
+        "brand": "#4285f4"
+      }
+    },
+    "typography": {
+      "fontFamily": "Google Sans, Roboto, System Default",
+      "headingSize": "28px",
+      "headingWeight": "500",
+      "bodySize": "16px",
+      "bodyWeight": "400",
+      "captionSize": "12px",
+      "textAlign": "left",
+      "lineHeight": "1.5"
+    },
+    "spacing": {
+      "screenPadding": "24px",
+      "sectionGap": "32px",
+      "elementGap": "16px",
+      "cardPadding": "24px"
+    },
+    "layout": {
+      "structure": "vertical-stack",
+      "contentAlignment": "start",
+      "maxWidth": "100%"
+    },
+    "components": {
+      "branding": {
+        "type": "logo-with-icon",
+        "position": "top-left",
+        "layout": "horizontal",
+        "iconSize": "24px",
+        "textSize": "18px",
+        "spacing": "8px"
+      },
+      "deviceMockup": {
+        "type": "phone-interface",
+        "position": "top-center",
+        "borderRadius": "32px",
+        "border": "2px solid #404040",
+        "aspectRatio": "9:19.5",
+        "backgroundColor": "#000000",
+        "shadow": "0 24px 48px rgba(0,0,0,0.4)",
+        "maxHeight": "55vh",
+        "marginBottom": "32px",
+        "innerContent": {
+          "header": {
+            "backgroundColor": "#1a1a1a",
+            "height": "60px",
+            "elements": ["menu-icon", "title", "subtitle", "profile-avatar"]
+          },
+          "chatInterface": {
+            "greeting": {
+              "color": "#4285f4",
+              "fontSize": "32px",
+              "fontWeight": "500",
+              "marginBottom": "24px"
+            },
+            "actionButton": {
+              "backgroundColor": "#2a2a2a",
+              "borderRadius": "20px",
+              "padding": "10px 16px",
+              "icon": "audio-wave",
+              "marginBottom": "24px"
+            },
+            "messageCard": {
+              "backgroundColor": "#2a2a2a",
+              "borderRadius": "16px",
+              "padding": "12px",
+              "thumbnail": "attached",
+              "textColor": "#ffffff"
+            },
+            "inputArea": {
+              "backgroundColor": "#2a2a2a",
+              "borderRadius": "24px",
+              "elements": ["plus-icon", "pill-badge", "send-button"]
+            }
+          }
+        }
+      },
+      "contentSection": {
+        "title": {
+          "fontSize": "28px",
+          "fontWeight": "500",
+          "color": "#ffffff",
+          "marginBottom": "16px"
+        },
+        "description": {
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "color": "#9ca3af",
+          "lineHeight": "1.5",
+          "marginBottom": "8px"
+        },
+        "link": {
+          "color": "#89b4f8",
+          "textDecoration": "underline",
+          "fontSize": "16px"
+        }
+      },
+      "instructionCard": {
+        "backgroundColor": "#262626",
+        "borderRadius": "16px",
+        "padding": "24px",
+        "marginTop": "24px",
+        "heading": {
+          "fontSize": "18px",
+          "fontWeight": "500",
+          "color": "#ffffff",
+          "marginBottom": "16px"
+        },
+        "steps": {
+          "listStyle": "decimal",
+          "fontSize": "16px",
+          "color": "#ffffff",
+          "lineHeight": "2",
+          "paddingLeft": "20px"
+        }
+      },
+      "footer": {
+        "type": "disclaimer",
+        "fontSize": "12px",
+        "color": "#6b7280",
+        "marginTop": "24px",
+        "lineHeight": "1.4"
+      },
+      "navigation": {
+        "position": "bottom-fixed",
+        "padding": "24px",
+        "backgroundColor": "transparent",
+        "layout": "flex-space-between",
+        "backButton": {
+          "type": "icon-only",
+          "icon": "arrow-left",
+          "size": "48px",
+          "backgroundColor": "transparent",
+          "color": "#ffffff"
+        },
+        "dots": {
+          "type": "progress-indicators",
+          "position": "bottom-center",
+          "activeColor": "#89b4f8",
+          "inactiveColor": "#404040",
+          "size": "8px",
+          "spacing": "12px",
+          "marginBottom": "16px"
+        },
+        "primaryButton": {
+          "backgroundColor": "#89b4f8",
+          "color": "#1a1a1a",
+          "borderRadius": "24px",
+          "padding": "14px 32px",
+          "fontSize": "16px",
+          "fontWeight": "600",
+          "minWidth": "100px"
+        }
+      }
+    },
+    "patterns": {
+      "slideStructure": {
+        "order": [
+          "branding-logo",
+          "device-mockup",
+          "content-title",
+          "content-description",
+          "learn-more-link",
+          "instruction-card",
+          "footer-disclaimer",
+          "navigation-controls"
+        ]
+      },
+      "interactiveElements": {
+        "pills": {
+          "backgroundColor": "#1e40af",
+          "color": "#ffffff",
+          "borderRadius": "16px",
+          "padding": "6px 12px",
+          "fontSize": "14px",
+          "icon": "optional",
+          "closeButton": "optional"
+        },
+        "buttons": {
+          "primary": {
+            "style": "filled",
+            "borderRadius": "24px",
+            "textTransform": "none"
+          },
+          "secondary": {
+            "style": "outlined",
+            "borderRadius": "20px",
+            "border": "1px solid #404040"
+          },
+          "icon": {
+            "style": "transparent",
+            "size": "40px",
+            "borderRadius": "50%"
+          }
+        }
+      }
+    },
+    "animations": {
+      "pageTransition": "slide-horizontal",
+      "duration": "300ms",
+      "easing": "cubic-bezier(0.4, 0.0, 0.2, 1)"
+    },
+    "responsiveness": {
+      "mockupScaling": "maintain-aspect-ratio",
+      "textScaling": "fluid-typography",
+      "layoutBehavior": "single-column-stack"
+    }
+  }
+}

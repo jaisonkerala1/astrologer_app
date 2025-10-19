@@ -347,6 +347,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Method to reset onboarding for testing
+  Future<void> _resetOnboarding() async {
+    print('🔄 [DASHBOARD] Resetting onboarding flag');
+    
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Onboarding'),
+        content: const Text('This will show the onboarding screens again.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Show Onboarding'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Clear the onboarding flag
+      await _storageService.setHasSeenOnboarding(false);
+      print('✅ [DASHBOARD] Onboarding flag cleared');
+      
+      // Verify it was cleared
+      final checkFlag = await _storageService.getHasSeenOnboarding();
+      print('🔍 [DASHBOARD] Verified flag after reset: $checkFlag');
+      
+      // Show success message
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Showing onboarding...'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 1),
+        ),
+      );
+      
+      // Wait a moment then navigate directly to onboarding screen
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      
+      // Navigate directly to onboarding screen
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.onboarding,
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -713,6 +767,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             width: double.infinity,
                             height: 56,
                           ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Test Button to Reset Onboarding
+                          AnimatedButton(
+                            onPressed: _resetOnboarding,
+                            text: 'Reset Onboarding (Test)',
+                            icon: Icons.refresh,
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            width: double.infinity,
+                            height: 56,
+                          ),
+                          
+                          const SizedBox(height: 32),
                         ],
                       ),
                     ),
