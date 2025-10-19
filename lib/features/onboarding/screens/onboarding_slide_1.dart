@@ -25,18 +25,18 @@ class OnboardingSlide1 extends StatelessWidget {
               children: [
                 const SizedBox(height: 60),
                 
-                // Android branding header
+                // Astrology branding header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      Icons.android,
+                      Icons.auto_awesome,
                       color: Color(0xFF34A853),
                       size: 32,
                     ),
                     const SizedBox(width: 8),
                     const Text(
-                      'Android',
+                      'AstroGuru',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -52,7 +52,7 @@ class OnboardingSlide1 extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
-                    'Your Android has\nnew features',
+                    'Your journey\nbegins here',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,

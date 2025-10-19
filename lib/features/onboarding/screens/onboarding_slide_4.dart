@@ -28,39 +28,7 @@ class OnboardingSlide4 extends StatelessWidget {
           child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Branding section
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFFFBBC05),
-                                Color(0xFFF59E0B),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Earnings Tracker',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 64), // Spacing to maintain mockup position
                     
                     // Device mockup
                     Center(
