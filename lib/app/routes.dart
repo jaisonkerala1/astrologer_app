@@ -7,6 +7,7 @@ import '../features/auth/bloc/auth_event.dart';
 import '../features/auth/bloc/auth_state.dart';
 import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
+import '../core/constants/api_constants.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
 import '../features/consultations/screens/consultation_analytics_screen.dart';
@@ -144,9 +145,50 @@ class _SplashScreenState extends State<SplashScreen> {
     
     // Navigate based on auth status
     if (isLoggedIn == true && token != null) {
-      print('🧭 [SPLASH] User authenticated, navigating to DASHBOARD');
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-      print('✅ [SPLASH] Navigation command sent to DASHBOARD');
+      // ✅ VALIDATE TOKEN WITH SERVER (Prevents flash to dashboard)
+      print('🔐 [SPLASH] Token found locally, validating with server...');
+      final apiService = ApiService();
+      apiService.setAuthToken(token);
+      
+      try {
+        final validationStart = DateTime.now();
+        final response = await apiService.get(ApiConstants.profile);
+        print('✅ [SPLASH] Token validation response received (took ${DateTime.now().difference(validationStart).inMilliseconds}ms)');
+        
+        if (response.statusCode == 200 && response.data['success'] == true) {
+          print('✅ [SPLASH] Token VALID - User authenticated');
+          print('👤 [SPLASH] User: ${response.data['data']['name']}');
+          
+          if (!mounted) {
+            print('❌ [SPLASH] Widget not mounted, aborting');
+            return;
+          }
+          
+          print('🧭 [SPLASH] Navigating to DASHBOARD');
+          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          print('✅ [SPLASH] Navigation command sent to DASHBOARD');
+        } else {
+          print('❌ [SPLASH] Token INVALID - Server returned error');
+          await _clearAuthAndGoToLogin(storage);
+        }
+      } catch (e) {
+        print('❌ [SPLASH] Token validation failed: $e');
+        
+        // Check if it's a 401 error (expired token)
+        if (e.toString().contains('401')) {
+          print('⚠️ [SPLASH] Token expired (401), clearing auth data');
+          await _clearAuthAndGoToLogin(storage);
+        } else {
+          // Network error or server down - allow offline access
+          print('⚠️ [SPLASH] Network error, allowing offline dashboard access');
+          
+          if (!mounted) return;
+          
+          print('🧭 [SPLASH] Navigating to DASHBOARD (offline mode)');
+          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          print('✅ [SPLASH] Navigation command sent to DASHBOARD (offline)');
+        }
+      }
     } else {
       print('🧭 [SPLASH] User not authenticated, navigating to LOGIN');
       Navigator.pushReplacementNamed(context, AppRoutes.login);
@@ -154,6 +196,22 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     
     print('🏁 [SPLASH] _checkAuthAndNavigate complete (total: ${DateTime.now().difference(startTime).inMilliseconds}ms)');
+  }
+  
+  /// Clear auth data and navigate to login
+  Future<void> _clearAuthAndGoToLogin(StorageService storage) async {
+    print('🧹 [SPLASH] Clearing expired auth data...');
+    await storage.clearAuthData();
+    print('✅ [SPLASH] Auth data cleared');
+    
+    if (!mounted) {
+      print('❌ [SPLASH] Widget not mounted, aborting');
+      return;
+    }
+    
+    print('🧭 [SPLASH] Navigating to LOGIN');
+    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    print('✅ [SPLASH] Navigation command sent to LOGIN');
   }
 
   @override

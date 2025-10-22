@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:sms_autofill/sms_autofill.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/otp_helper.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -116,11 +117,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 12),
-              Text('Code detected automatically!'),
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(AppLocalizations.of(context)!.codeDetectedAuto),
             ],
           ),
           backgroundColor: Colors.green,
@@ -184,7 +185,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                 setState(() => _isLoading = false);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('OTP sent successfully! Please check your phone.'),
+                    content: Text(AppLocalizations.of(context)!.otpSentSuccess),
                     backgroundColor: Colors.green.shade600,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -322,11 +323,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   Widget _buildVerificationText(ThemeService themeService) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Verification Code',
+          l10n.verificationCode,
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.w800,
@@ -345,7 +347,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
               height: 1.5,
             ),
             children: [
-              const TextSpan(text: 'We sent a 6-digit code to\n'),
+              TextSpan(text: l10n.sentCodeTo),
               TextSpan(
                 text: widget.phoneNumber,
                 style: TextStyle(
@@ -457,20 +459,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Verify',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.verify,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                           letterSpacing: 0.5,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(
+                      const SizedBox(width: 8),
+                      const Icon(
                         Icons.arrow_forward_rounded,
                         color: Colors.white,
                         size: 20,
@@ -484,12 +486,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   Widget _buildResendSection(ThemeService themeService) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            "Didn't receive code? ",
+            l10n.didntReceiveCode,
             style: TextStyle(
               fontSize: 15,
               color: themeService.textSecondary,
@@ -505,9 +508,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                 minimumSize: const Size(0, 0),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
-                'Resend',
-                style: TextStyle(
+              child: Text(
+                l10n.resend,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -515,7 +518,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
             )
           else
             Text(
-              'Resend in ${_resendTimer}s',
+              l10n.resendIn(_resendTimer),
               style: TextStyle(
                 fontSize: 15,
                 color: themeService.textHint,
@@ -528,11 +531,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   void _verifyOtp() {
+    final l10n = AppLocalizations.of(context)!;
     final otp = _otpController.text.trim();
     if (otp.isEmpty || otp.length != AppConstants.otpLength) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter a valid 6-digit OTP'),
+          content: Text(l10n.enterValid6DigitOtp),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -574,20 +578,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
 
   void _showSignupDialog() {
     final themeService = Provider.of<ThemeService>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: themeService.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Account Not Found',
+          l10n.accountNotFound,
           style: TextStyle(
             color: themeService.textPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
-          'No account found with this phone number. Would you like to create a new account?',
+          l10n.noAccountFoundMessage,
           style: TextStyle(
             color: themeService.textSecondary,
           ),
@@ -598,7 +603,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
             style: TextButton.styleFrom(
               foregroundColor: themeService.textSecondary,
             ),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           Container(
             decoration: BoxDecoration(
@@ -628,11 +633,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                   );
                 },
                 borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Text(
-                    'Create Account',
-                    style: TextStyle(
+                    l10n.createAccount,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

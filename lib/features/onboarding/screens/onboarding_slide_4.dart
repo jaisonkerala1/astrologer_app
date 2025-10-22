@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../widgets/device_mockup_widget.dart';
 import '../widgets/earnings_dashboard_mockup.dart';
 
@@ -42,9 +43,9 @@ class OnboardingSlide4 extends StatelessWidget {
                     const SizedBox(height: 32),
                     
                     // Content section
-                    const Text(
-                      'Track Your Income in Real-Time',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.onboardingEarningsTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w500,
@@ -55,9 +56,9 @@ class OnboardingSlide4 extends StatelessWidget {
                     const SizedBox(height: 16),
                     
                     // Description
-                    const Text(
-                      'Monitor your daily and total earnings with detailed analytics. View consultation statistics, average ratings, and performance insights all in one place.',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.onboardingEarningsDescription,
+                      style: const TextStyle(
                         color: Color(0xFF9CA3AF),
                         fontSize: 16,
                         height: 1.5,
@@ -71,9 +72,9 @@ class OnboardingSlide4 extends StatelessWidget {
                       onTap: () {
                         // Could open a web link or show more info
                       },
-                      child: const Text(
-                        'Learn more',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.learnMore,
+                        style: const TextStyle(
                           color: Color(0xFF89B4F8),
                           fontSize: 16,
                           decoration: TextDecoration.underline,
@@ -94,19 +95,19 @@ class OnboardingSlide4 extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'What you can track:',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.whatYouCanTrack,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildInstructionStep(1, 'View today\'s and total earnings'),
-                          _buildInstructionStep(2, 'Monitor call and message statistics'),
-                          _buildInstructionStep(3, 'Check your average rating and reviews'),
-                          _buildInstructionStep(4, 'Analyze consultation duration trends'),
+                          _buildInstructionStep(context, 1, AppLocalizations.of(context)!.trackStep1),
+                          _buildInstructionStep(context, 2, AppLocalizations.of(context)!.trackStep2),
+                          _buildInstructionStep(context, 3, AppLocalizations.of(context)!.trackStep3),
+                          _buildInstructionStep(context, 4, AppLocalizations.of(context)!.trackStep4),
                         ],
                       ),
                     ),
@@ -114,9 +115,9 @@ class OnboardingSlide4 extends StatelessWidget {
                     const SizedBox(height: 24),
                     
                     // Footer disclaimer
-                    const Text(
-                      '* Earnings updated in real-time. Withdraw anytime to your bank account.',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.earningsDisclaimer,
+                      style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 12,
                         height: 1.4,
@@ -131,7 +132,7 @@ class OnboardingSlide4 extends StatelessWidget {
     );
   }
 
-  Widget _buildInstructionStep(int number, String text) {
+  Widget _buildInstructionStep(BuildContext context, int number, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(

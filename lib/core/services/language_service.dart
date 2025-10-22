@@ -31,6 +31,16 @@ class LanguageService extends ChangeNotifier {
     notifyListeners();
   }
   
+  /// Update language without notifying listeners (used during onboarding to prevent app restart)
+  Future<void> setLanguageWithoutNotify(String languageCode) async {
+    if (_currentLocale.languageCode == languageCode) return;
+    
+    print('LanguageService: Silently changing language to $languageCode (no notification)');
+    _currentLocale = Locale(languageCode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_languageKey, languageCode);
+  }
+  
   Future<void> setEnglish() async {
     await setLanguage('en');
   }

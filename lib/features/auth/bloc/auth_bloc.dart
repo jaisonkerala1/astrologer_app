@@ -45,8 +45,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onUnauthorized(AuthUnauthorizedEvent event, Emitter<AuthState> emit) async {
+    print('');
+    print('╔═══════════════════════════════════════════════════════╗');
+    print('║      🔐 AUTH BLOC: UNAUTHORIZED EVENT                ║');
+    print('╠═══════════════════════════════════════════════════════╣');
+    print('║ Reason: ${event.message}');
+    print('║ Timestamp: ${DateTime.now()}');
+    print('╚═══════════════════════════════════════════════════════╝');
+    print('');
     await _clearAuthData();
     _apiService.clearAuthToken();
+    print('⚠️ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (from unauthorized event)');
     emit(AuthUnauthenticatedState());
   }
 
@@ -150,6 +159,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           // Set auth token for API calls
           _apiService.setAuthToken(authResponse.token!);
           
+          print('');
+          print('╔═══════════════════════════════════════════════════════╗');
+          print('║      ✅ AUTH BLOC: OTP VERIFICATION SUCCESS          ║');
+          print('╠═══════════════════════════════════════════════════════╣');
+          print('║ User: ${authResponse.astrologer!.name}');
+          print('║ Phone: ${event.phoneNumber}');
+          print('║ Timestamp: ${DateTime.now()}');
+          print('╚═══════════════════════════════════════════════════════╝');
+          print('');
+          print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from OTP verification)');
+          
           emit(AuthSuccessState(
             astrologer: authResponse.astrologer!,
             token: authResponse.token!,
@@ -215,6 +235,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           // Set auth token for API calls
           _apiService.setAuthToken(authResponse.token!);
           
+          print('');
+          print('╔═══════════════════════════════════════════════════════╗');
+          print('║      ✅ AUTH BLOC: SIGNUP SUCCESS                    ║');
+          print('╠═══════════════════════════════════════════════════════╣');
+          print('║ User: ${authResponse.astrologer!.name}');
+          print('║ Phone: ${event.phoneNumber}');
+          print('║ Timestamp: ${DateTime.now()}');
+          print('╚═══════════════════════════════════════════════════════╝');
+          print('');
+          print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from signup)');
+          
           emit(AuthSuccessState(
             astrologer: authResponse.astrologer!,
             token: authResponse.token!,
@@ -237,6 +268,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogout(LogoutEvent event, Emitter<AuthState> emit) async {
+    print('');
+    print('╔═══════════════════════════════════════════════════════╗');
+    print('║      🚪 AUTH BLOC: LOGOUT EVENT                      ║');
+    print('╠═══════════════════════════════════════════════════════╣');
+    print('║ Timestamp: ${DateTime.now()}');
+    print('╚═══════════════════════════════════════════════════════╝');
+    print('');
+    
     try {
       // Clear local storage
       await _storageService.clearAuthData();
@@ -245,30 +284,50 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       _apiService.clearAuthToken();
       add(InitializeAuthEvent());
       
+      print('✅ [AUTH_BLOC] EMITTING: AuthLoggedOutState');
       emit(AuthLoggedOutState());
     } catch (e) {
+      print('❌ [AUTH_BLOC] Logout error: $e');
       // Even if there's an error, we should still log out locally
       await _storageService.clearAuthData();
       _apiService.clearAuthToken();
       add(InitializeAuthEvent());
+      print('✅ [AUTH_BLOC] EMITTING: AuthLoggedOutState (after error)');
       emit(AuthLoggedOutState());
     }
   }
 
   Future<void> _onCheckAuthStatus(CheckAuthStatusEvent event, Emitter<AuthState> emit) async {
-    print('AuthBloc: Checking auth status...');
+    print('');
+    print('╔═══════════════════════════════════════════════════════╗');
+    print('║      🔍 AUTH BLOC: CHECKING AUTH STATUS              ║');
+    print('╠═══════════════════════════════════════════════════════╣');
+    print('║ Timestamp: ${DateTime.now()}');
+    print('╚═══════════════════════════════════════════════════════╝');
+    print('');
+    
     try {
       final isLoggedIn = await _storageService.getIsLoggedIn();
       final token = await _storageService.getAuthToken();
       final sessionId = await _storageService.getSessionId();
       final userData = await _storageService.getUserData();
       
-      print('AuthBloc: isLoggedIn=$isLoggedIn, hasToken=${token != null}, hasUserData=${userData != null}');
+      print('');
+      print('╔═══════════════════════════════════════════════════════╗');
+      print('║        AUTH STATUS CHECK RESULTS                      ║');
+      print('╠═══════════════════════════════════════════════════════╣');
+      print('║ isLoggedIn: $isLoggedIn');
+      print('║ hasToken: ${token != null}');
+      print('║ hasUserData: ${userData != null}');
+      print('║ hasSessionId: ${sessionId != null}');
+      print('╚═══════════════════════════════════════════════════════╝');
+      print('');
       
       // If no valid auth data, clear everything and go to login
       if (isLoggedIn != true || token == null || userData == null || sessionId == null) {
-        print('AuthBloc: No valid auth data found, clearing all data');
+        print('⚠️ [AUTH_BLOC] No valid auth data found, clearing all data');
         await _clearAuthData();
+        print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (no valid auth data)');
         emit(AuthUnauthenticatedState());
         return;
       }
@@ -279,7 +338,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         
         // Validate token with server by calling profile endpoint
         try {
-          print('AuthBloc: Validating token with server...');
+          print('🔐 [AUTH_BLOC] Validating token with server...');
           final response = await _apiService.get(ApiConstants.profile);
           
           if (response.statusCode == 200 && response.data['success'] == true) {
@@ -291,29 +350,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             await _storageService.setSessionId(serverUserData['sessionId'] ?? sessionId);
             await _persistUserData(serverUserData);
             
-            print('AuthBloc: Token valid, emitting AuthSuccessState with fresh data');
+            print('✅ [AUTH_BLOC] Token valid, user authenticated');
+            print('👤 [AUTH_BLOC] User: ${astrologer.name}');
+            print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (token validated)');
             emit(AuthSuccessState(
               astrologer: astrologer,
               token: token,
               sessionId: sessionId,
             ));
           } else {
-            print('AuthBloc: Server returned invalid response, clearing auth data');
+            print('❌ [AUTH_BLOC] Server returned invalid response, clearing auth data');
             await _clearAuthData();
+            print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (invalid server response)');
             emit(AuthUnauthenticatedState());
           }
         } catch (e) {
-          print('AuthBloc: Token validation failed: $e');
+          print('❌ [AUTH_BLOC] Token validation failed: $e');
           // Token is invalid or server error, clear auth data
           await _clearAuthData();
+          print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (token validation failed)');
           emit(AuthUnauthenticatedState());
         }
       } else {
-        print('AuthBloc: User not authenticated, emitting AuthUnauthenticatedState');
+        print('❌ [AUTH_BLOC] User not authenticated');
+        print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (user not authenticated)');
         emit(AuthUnauthenticatedState());
       }
     } catch (e) {
-      print('AuthBloc: Error checking auth status: $e');
+      print('❌ [AUTH_BLOC] Error checking auth status: $e');
+      print('Stack trace: ${StackTrace.current}');
+      print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (error occurred)');
       emit(AuthUnauthenticatedState());
     }
   }

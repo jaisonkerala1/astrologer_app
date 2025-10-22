@@ -7,6 +7,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/country_code_selector.dart';
@@ -114,6 +115,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _showImagePicker() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -122,7 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
+                title: Text(l10n.chooseFromGallery),
                 onTap: () {
                   Navigator.of(context).pop();
                   _pickImage();
@@ -130,7 +132,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera),
-                title: const Text('Take Photo'),
+                title: Text(l10n.takePhoto),
                 onTap: () {
                   Navigator.of(context).pop();
                   _takePicture();
@@ -212,7 +214,7 @@ class _SignupScreenState extends State<SignupScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Create Account',
+            AppLocalizations.of(context)!.createAccountTitle,
             style: TextStyle(
               color: themeService.textPrimary,
               fontSize: 18,
@@ -277,7 +279,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Join Our Platform',
+                                      AppLocalizations.of(context)!.joinPlatform,
                                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                         color: themeService.textPrimary,
                                         fontWeight: FontWeight.bold,
@@ -285,7 +287,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Start your astrology consulting journey',
+                                      AppLocalizations.of(context)!.astrologyJourney,
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                         color: themeService.textSecondary,
                                       ),
@@ -318,7 +320,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Personal Information',
+                            AppLocalizations.of(context)!.personalInformation,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: themeService.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -329,24 +331,25 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Name Field
                           _buildTextField(
                             controller: _nameController,
-                            label: 'Full Name',
+                            label: AppLocalizations.of(context)!.fullName,
                             icon: Icons.person,
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
                               LengthLimitingTextInputFormatter(50),
                             ],
                             validator: (value) {
+                              final l10n = AppLocalizations.of(context)!;
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your full name';
+                                return l10n.pleaseEnterFullName;
                               }
                               if (value.trim().length < 2) {
-                                return 'Name must be at least 2 characters';
+                                return l10n.nameMinLength;
                               }
                               if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
-                                return 'Name can only contain letters and spaces';
+                                return l10n.nameOnlyLetters;
                               }
                               if (value.trim() != value) {
-                                return 'Name cannot start or end with spaces';
+                                return l10n.nameNoSpaces;
                               }
                               return null;
                             },
@@ -360,15 +363,16 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Email Field
                           _buildTextField(
                             controller: _emailController,
-                            label: 'Email Address',
+                            label: AppLocalizations.of(context)!.emailAddress,
                             icon: Icons.email,
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
+                              final l10n = AppLocalizations.of(context)!;
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
+                                return l10n.pleaseEnterEmail;
                               }
                               if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                                return 'Please enter a valid email address';
+                                return l10n.invalidEmail;
                               }
                               return null;
                             },
@@ -380,7 +384,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Phone Number',
+                                AppLocalizations.of(context)!.phoneNumber,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: themeService.textSecondary,
                                   fontWeight: FontWeight.w500,
@@ -438,7 +442,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Experience Field
                           _buildTextField(
                             controller: _experienceController,
-                            label: 'Years of Experience',
+                            label: AppLocalizations.of(context)!.yearsOfExperience,
                             icon: Icons.timeline,
                             keyboardType: TextInputType.number,
                             inputFormatters: [
@@ -446,15 +450,16 @@ class _SignupScreenState extends State<SignupScreen> {
                               LengthLimitingTextInputFormatter(2),
                             ],
                             validator: (value) {
+                              final l10n = AppLocalizations.of(context)!;
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your years of experience';
+                                return l10n.pleaseEnterExperience;
                               }
                               final experience = int.tryParse(value);
                               if (experience == null || experience < 0) {
-                                return 'Please enter a valid number of years';
+                                return l10n.invalidExperience;
                               }
                               if (experience > 99) {
-                                return 'Experience cannot exceed 99 years';
+                                return l10n.experienceMax;
                               }
                               return null;
                             },
@@ -482,8 +487,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         ],
                       ),
                       child: _buildMultiSelectSection(
-                        title: 'Specializations',
-                        subtitle: 'Select your areas of expertise',
+                        title: AppLocalizations.of(context)!.specializations,
+                        subtitle: AppLocalizations.of(context)!.selectExpertise,
                         options: _specializations,
                         selectedOptions: _selectedSpecializations,
                         onChanged: (selected) {
@@ -513,8 +518,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         ],
                       ),
                       child: _buildMultiSelectSection(
-                        title: 'Languages',
-                        subtitle: 'Select languages you can consult in',
+                        title: AppLocalizations.of(context)!.languages,
+                        subtitle: AppLocalizations.of(context)!.selectLanguagesConsult,
                         options: _languages,
                         selectedOptions: _selectedLanguages,
                         onChanged: (selected) {
@@ -563,7 +568,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Tell Us About Yourself',
+                                      AppLocalizations.of(context)!.tellUsAboutYourself,
                                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                         color: themeService.textPrimary,
                                         fontWeight: FontWeight.w600,
@@ -571,7 +576,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Help clients understand your expertise',
+                                      AppLocalizations.of(context)!.helpClientsUnderstand,
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                         color: themeService.textSecondary,
                                       ),
@@ -586,23 +591,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Bio Field (Mandatory)
                           _buildBioTextField(
                             controller: _bioController,
-                            label: 'Bio *',
+                            label: AppLocalizations.of(context)!.bioRequired,
                             icon: Icons.description,
                             maxLines: 3,
                             maxLength: 1000,
-                            hintText: 'Describe your experience, specializations, and what makes you unique as an astrologer...',
+                            hintText: AppLocalizations.of(context)!.bioHint,
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s,.!?\-()&:;]+'))
                             ],
                             validator: (value) {
+                              final l10n = AppLocalizations.of(context)!;
                               if (value == null || value.trim().isEmpty) {
-                                return 'Bio is required to help clients understand your expertise';
+                                return l10n.bioRequired2;
                               }
                               if (value.trim().length < 50) {
-                                return 'Please write at least 50 characters to describe yourself';
+                                return l10n.bioMinLength;
                               }
                               if (value.length > 1000) {
-                                return 'Bio cannot exceed 1000 characters';
+                                return l10n.bioMaxLength;
                               }
                               return null;
                             },
@@ -612,11 +618,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Awards Field (Optional)
                           _buildBioTextField(
                             controller: _awardsController,
-                            label: 'Awards & Recognition (Optional)',
+                            label: AppLocalizations.of(context)!.awardsOptional,
                             icon: Icons.emoji_events,
                             maxLines: 1,
                             maxLength: 500,
-                            hintText: 'List any awards, recognitions, or achievements...',
+                            hintText: AppLocalizations.of(context)!.awardsHint,
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s,.\-()&]')),
                             ],
@@ -637,11 +643,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Certificates Field (Optional)
                           _buildBioTextField(
                             controller: _certificatesController,
-                            label: 'Certifications (Optional)',
+                            label: AppLocalizations.of(context)!.certificationsOptional,
                             icon: Icons.school,
                             maxLines: 1,
                             maxLength: 500,
-                            hintText: 'List your certifications, degrees, or qualifications...',
+                            hintText: AppLocalizations.of(context)!.certificationsHint,
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s,.\-()&]')),
                             ],
@@ -698,14 +704,14 @@ class _SignupScreenState extends State<SignupScreen> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : const Row(
+                                : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.star, color: Colors.white, size: 20),
-                                      SizedBox(width: 8),
+                                      const Icon(Icons.star, color: Colors.white, size: 20),
+                                      const SizedBox(width: 8),
                                       Text(
-                                        'Create Account & Send OTP',
-                                        style: TextStyle(
+                                        AppLocalizations.of(context)!.createAccountSendOtp,
+                                        style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -732,7 +738,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Already have an account? ',
+                            AppLocalizations.of(context)!.alreadyHaveAccount,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: themeService.textSecondary,
                             ),
@@ -740,7 +746,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
                             child: Text(
-                              'Login',
+                              AppLocalizations.of(context)!.loginLink,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: themeService.primaryColor,
                                 fontWeight: FontWeight.w600,
@@ -829,11 +835,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildProfilePictureField(ThemeService themeService) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Profile Picture',
+          l10n.profilePicture,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: themeService.textSecondary,
             fontWeight: FontWeight.w500,
@@ -873,7 +880,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Tap to add profile picture',
+                        l10n.tapToAddPhoto,
                         style: TextStyle(
                           color: themeService.textSecondary,
                           fontSize: 14,
@@ -882,7 +889,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Required for signup',
+                        l10n.requiredForSignup,
                         style: TextStyle(
                           color: themeService.primaryColor,
                           fontSize: 12,
@@ -1079,10 +1086,12 @@ class _SignupScreenState extends State<SignupScreen> {
     // All validations passed, continue with other checks
     final themeService = Provider.of<ThemeService>(context, listen: false);
     
+    final l10n = AppLocalizations.of(context)!;
+    
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Profile picture is required for signup'),
+          content: Text(l10n.profilePictureRequired),
           backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
@@ -1092,7 +1101,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_selectedSpecializations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select at least one specialization'),
+          content: Text(l10n.selectOneSpecialization),
           backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
@@ -1102,7 +1111,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_selectedLanguages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select at least one language'),
+          content: Text(l10n.selectOneLanguage),
           backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
@@ -1112,7 +1121,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_bioController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please write a bio to help clients understand your expertise'),
+          content: Text(l10n.bioRequired2),
           backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
@@ -1122,7 +1131,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_bioController.text.trim().length < 50) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please write at least 50 characters in your bio'),
+          content: Text(l10n.bioMinLength),
           backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
         ),
@@ -1137,7 +1146,7 @@ class _SignupScreenState extends State<SignupScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('You must accept the Terms of Service to continue'),
+          content: Text(l10n.mustAcceptTerms),
           backgroundColor: themeService.errorColor,
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
@@ -1240,7 +1249,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Legal Agreement',
+                          AppLocalizations.of(context)!.legalAgreement,
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
@@ -1251,7 +1260,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Please review and accept our terms',
+                          AppLocalizations.of(context)!.reviewAcceptTerms,
                           style: TextStyle(
                             fontSize: 13,
                             color: themeService.textSecondary,
@@ -1326,31 +1335,31 @@ class _SignupScreenState extends State<SignupScreen> {
                               color: themeService.textPrimary,
                             ),
                             children: [
-                              const TextSpan(
-                                text: 'I acknowledge that I am an ',
+                              TextSpan(
+                                text: AppLocalizations.of(context)!.iAcknowledge,
                               ),
                               TextSpan(
-                                text: 'independent contractor',
+                                text: AppLocalizations.of(context)!.independentContractor,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: themeService.primaryColor,
                                 ),
                               ),
-                              const TextSpan(
-                                text: ', accept ',
+                              TextSpan(
+                                text: AppLocalizations.of(context)!.acceptFull,
                               ),
                               TextSpan(
-                                text: 'full professional liability',
+                                text: AppLocalizations.of(context)!.professionalLiability,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: themeService.primaryColor,
                                 ),
                               ),
-                              const TextSpan(
-                                text: ', and agree to the ',
+                              TextSpan(
+                                text: AppLocalizations.of(context)!.andAgreeTo,
                               ),
                               TextSpan(
-                                text: 'Terms of Service',
+                                text: AppLocalizations.of(context)!.termsOfService,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: themeService.primaryColor,
@@ -1362,11 +1371,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                     _showTermsDialog(showTerms: true);
                                   },
                               ),
-                              const TextSpan(
-                                text: ' and ',
+                              TextSpan(
+                                text: AppLocalizations.of(context)!.andWord,
                               ),
                               TextSpan(
-                                text: 'Privacy Policy',
+                                text: AppLocalizations.of(context)!.privacyPolicy,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: themeService.primaryColor,
@@ -1404,7 +1413,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'You must accept the terms to continue',
+                          AppLocalizations.of(context)!.mustAcceptTermsError,
                           style: TextStyle(
                             fontSize: 13,
                             color: themeService.errorColor,
@@ -1443,7 +1452,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Tap on highlighted text to view full details',
+                            AppLocalizations.of(context)!.tapHighlightedText,
                             style: TextStyle(
                               fontSize: 12,
                               color: themeService.accentColor,

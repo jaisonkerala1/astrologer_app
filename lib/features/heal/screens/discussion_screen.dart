@@ -10,6 +10,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 import 'discussion_detail_screen.dart';
 import 'favorites_screen.dart';
 import '../services/discussion_service.dart';
@@ -28,6 +29,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<DiscussionPost> _posts = [];
   String _searchQuery = '';
+  bool _isLoading = true; // Loading state for shimmer
   
   // Current user info
   String _currentUserName = 'You';
@@ -66,6 +68,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   }
 
   Future<void> _loadPosts() async {
+    setState(() => _isLoading = true);
+    
     final posts = await DiscussionService.getDiscussions();
     if (posts.isEmpty) {
       _loadSamplePosts();
@@ -74,6 +78,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         _posts.addAll(posts);
       });
     }
+    
+    // Small delay for smooth transition (like Facebook)
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    setState(() => _isLoading = false);
   }
 
   void _loadSamplePosts() {
@@ -157,6 +166,9 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     // Add haptic feedback for pull-to-refresh
     HapticFeedback.mediumImpact();
     
+    // Show shimmer during refresh
+    setState(() => _isLoading = true);
+    
     try {
       // Simulate fetching new posts from database
       await Future.delayed(const Duration(milliseconds: 1500));
@@ -179,6 +191,12 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       
       // Calculate new posts count
       final newPostsCount = _posts.length - oldPostCount;
+      
+      // Small delay for smooth transition
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Hide shimmer
+      setState(() => _isLoading = false);
       
       // Show feedback with haptic
       HapticFeedback.lightImpact();
@@ -214,6 +232,9 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     } catch (e) {
       // Error handling
       HapticFeedback.heavyImpact();
+      
+      // Hide shimmer on error
+      setState(() => _isLoading = false);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -299,19 +320,21 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                   strokeWidth: 2.5,
                   child: Container(
                     color: const Color(0xFFF5F5F5),
-                    child: _filteredPosts.isEmpty
-                        ? _buildEmptyState(l10n, themeService)
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            physics: const BouncingScrollPhysics(
-                              parent: AlwaysScrollableScrollPhysics(),
-                            ),
-                            itemCount: _filteredPosts.length,
-                            itemBuilder: (context, index) {
-                              final post = _filteredPosts[index];
-                              return _buildPostCard(post, l10n, themeService);
-                            },
-                          ),
+                    child: _isLoading
+                        ? _buildShimmerList(themeService)
+                        : _filteredPosts.isEmpty
+                            ? _buildEmptyState(l10n, themeService)
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                physics: const BouncingScrollPhysics(
+                                  parent: AlwaysScrollableScrollPhysics(),
+                                ),
+                                itemCount: _filteredPosts.length,
+                                itemBuilder: (context, index) {
+                                  final post = _filteredPosts[index];
+                                  return _buildPostCard(post, l10n, themeService);
+                                },
+                              ),
                   ),
                 ),
               ),
@@ -567,6 +590,146 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
               fontWeight: FontWeight.w500,
               color: color,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shimmer loader list (Facebook-style)
+  Widget _buildShimmerList(ThemeService themeService) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      physics: const NeverScrollableScrollPhysics(), // No scrolling while loading
+      itemCount: 4, // Show 4 shimmer cards
+      itemBuilder: (context, index) => _buildDiscussionCardShimmer(themeService),
+    );
+  }
+
+  /// Individual discussion card shimmer (matches real card structure)
+  Widget _buildDiscussionCardShimmer(ThemeService themeService) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            spreadRadius: 0,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Avatar + Author Info
+          Row(
+            children: [
+              // Avatar shimmer
+              SkeletonLoader(
+                width: 40,
+                height: 40,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              const SizedBox(width: 12),
+              
+              // Author info shimmer
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Author name
+                    SkeletonLoader(
+                      width: 120,
+                      height: 14,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 6),
+                    // Time + Category
+                    SkeletonLoader(
+                      width: 180,
+                      height: 12,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // More button shimmer
+              SkeletonLoader(
+                width: 20,
+                height: 20,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Title shimmer (2 lines, thick)
+          SkeletonLoader(
+            width: double.infinity,
+            height: 16,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 8),
+          SkeletonLoader(
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: 16,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Content shimmer (3 lines, normal)
+          SkeletonLoader(
+            width: double.infinity,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 6),
+          SkeletonLoader(
+            width: double.infinity,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 6),
+          SkeletonLoader(
+            width: MediaQuery.of(context).size.width * 0.4,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Action bar shimmer
+          Row(
+            children: [
+              // Like button shimmer
+              SkeletonLoader(
+                width: 60,
+                height: 20,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              const SizedBox(width: 20),
+              // Comment button shimmer
+              SkeletonLoader(
+                width: 80,
+                height: 20,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              const Spacer(),
+              // Share button shimmer
+              SkeletonLoader(
+                width: 20,
+                height: 20,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ],
           ),
         ],
       ),

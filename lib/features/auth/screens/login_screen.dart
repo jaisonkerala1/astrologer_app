@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -175,11 +176,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Widget _buildWelcomeText(ThemeService themeService) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome Back',
+          l10n.welcomeBack,
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.w800,
@@ -190,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
         const SizedBox(height: 8),
         Text(
-          'Enter your phone number\nto continue your journey',
+          l10n.enterPhoneSubtitle,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w400,
@@ -380,9 +382,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Continue',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.continueButton,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -390,7 +392,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Icon(
+                      const Icon(
                         Icons.arrow_forward_rounded,
                         color: Colors.white,
                         size: 20,
@@ -404,6 +406,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Widget _buildSignupLink(ThemeService themeService) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: TextButton(
                       onPressed: () {
@@ -417,7 +420,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
         child: RichText(
           text: TextSpan(
-            text: 'New here? ',
+            text: l10n.newHere,
             style: TextStyle(
               fontSize: 15,
               color: themeService.textSecondary,
@@ -425,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
             children: [
               TextSpan(
-                text: 'Create account',
+                text: l10n.createAccount,
                 style: TextStyle(
                   fontSize: 15,
                   color: themeService.primaryColor,
@@ -440,6 +443,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Widget _buildTrustIndicator(ThemeService themeService) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -451,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
           const SizedBox(width: 8),
           Text(
-            'Secured by OTP verification',
+            l10n.securedByOtp,
             style: TextStyle(
               fontSize: 13,
               color: themeService.textHint,
@@ -464,6 +468,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             }
 
   void _showCountryPicker() {
+    final l10n = AppLocalizations.of(context)!;
     showCountryPicker(
       context: context,
       showPhoneCode: true,
@@ -480,8 +485,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           topRight: Radius.circular(20),
         ),
         inputDecoration: InputDecoration(
-          labelText: 'Search',
-          hintText: 'Start typing to search',
+          labelText: l10n.search,
+          hintText: l10n.startTypingToSearch,
           prefixIcon: const Icon(Icons.search),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -494,10 +499,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   void _sendOtp() {
+    final l10n = AppLocalizations.of(context)!;
     // Validation
     if (_phoneNumber.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter your phone number';
+        _errorMessage = l10n.pleaseEnterPhone;
       });
       HapticFeedback.lightImpact();
       return;
@@ -505,7 +511,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     if (_phoneNumber.length < 7) {
       setState(() {
-        _errorMessage = 'Phone number is too short (minimum 7 digits)';
+        _errorMessage = l10n.phoneTooShort;
       });
       HapticFeedback.lightImpact();
       return;
@@ -513,7 +519,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     if (_phoneNumber.length > 15) {
       setState(() {
-        _errorMessage = 'Phone number is too long (maximum 15 digits)';
+        _errorMessage = l10n.phoneTooLong;
       });
       HapticFeedback.lightImpact();
       return;
@@ -565,20 +571,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   void _showAccountNotFoundDialog(String message) {
     final themeService = Provider.of<ThemeService>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: themeService.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Account Not Found',
+          l10n.accountNotFound,
           style: TextStyle(
             color: themeService.textPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
-          'No account exists with this phone number. Would you like to sign up?',
+          l10n.noAccountMessage,
           style: TextStyle(
             color: themeService.textSecondary,
           ),
@@ -589,7 +596,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             style: TextButton.styleFrom(
               foregroundColor: themeService.textSecondary,
             ),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           Container(
             decoration: BoxDecoration(
@@ -616,11 +623,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   );
                 },
                 borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Text(
-                    'Sign Up',
-                    style: TextStyle(
+                    l10n.signUp,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

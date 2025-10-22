@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../widgets/device_mockup_widget.dart';
 import '../widgets/astroguru_chat_mockup.dart';
 
@@ -42,9 +43,9 @@ class OnboardingSlide2 extends StatelessWidget {
                     const SizedBox(height: 32),
                     
                     // Content section
-                    const Text(
-                      'Heal and Help Others Through AstroGuru',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.onboardingAstroGuruTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w500,
@@ -55,18 +56,12 @@ class OnboardingSlide2 extends StatelessWidget {
                     const SizedBox(height: 16),
                     
                     // Description
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          color: Color(0xFF9CA3AF),
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                        children: [
-                          const TextSpan(
-                            text: 'Connect with people seeking guidance and help them heal through astrological wisdom. Share your knowledge, provide consultations, and make a positive impact on others\' lives through this platform.',
-                          ),
-                        ],
+                    Text(
+                      AppLocalizations.of(context)!.onboardingAstroGuruDescription,
+                      style: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 16,
+                        height: 1.5,
                       ),
                     ),
                     
@@ -77,9 +72,9 @@ class OnboardingSlide2 extends StatelessWidget {
                       onTap: () {
                         // Could open a web link or show more info
                       },
-                      child: const Text(
-                        'Learn more',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.learnMore,
+                        style: const TextStyle(
                           color: Color(0xFF89B4F8),
                           fontSize: 16,
                           decoration: TextDecoration.underline,
@@ -100,19 +95,19 @@ class OnboardingSlide2 extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'How to help others:',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.howToHelpOthers,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildInstructionStep(1, 'Set your availability and expertise areas'),
-                          _buildInstructionStep(2, 'Receive consultation requests from seekers'),
-                          _buildInstructionStep(3, 'Provide guidance through calls or messages'),
-                          _buildInstructionStep(4, 'Help heal and transform lives with your wisdom'),
+                          _buildInstructionStep(context, 1, AppLocalizations.of(context)!.helpStep1),
+                          _buildInstructionStep(context, 2, AppLocalizations.of(context)!.helpStep2),
+                          _buildInstructionStep(context, 3, AppLocalizations.of(context)!.helpStep3),
+                          _buildInstructionStep(context, 4, AppLocalizations.of(context)!.helpStep4),
                         ],
                       ),
                     ),
@@ -120,9 +115,9 @@ class OnboardingSlide2 extends StatelessWidget {
                     const SizedBox(height: 24),
                     
                     // Footer disclaimer
-                    const Text(
-                      '* Professional guidance. Maintain confidentiality. Respect all seekers.',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.astroGuruDisclaimer,
+                      style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 12,
                         height: 1.4,
@@ -137,7 +132,7 @@ class OnboardingSlide2 extends StatelessWidget {
     );
   }
 
-  Widget _buildInstructionStep(int number, String text) {
+  Widget _buildInstructionStep(BuildContext context, int number, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(

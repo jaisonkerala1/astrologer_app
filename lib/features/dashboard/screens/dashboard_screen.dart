@@ -72,6 +72,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     
+    print('');
+    print('╔═══════════════════════════════════════════════════════╗');
+    print('║          🏠 DASHBOARD SCREEN INITIALIZED             ║');
+    print('╠═══════════════════════════════════════════════════════╣');
+    print('║ Timestamp: ${DateTime.now()}');
+    print('║ InitialTabIndex: ${widget.initialTabIndex}');
+    print('╚═══════════════════════════════════════════════════════╝');
+    print('');
+    
     // Set initial tab if provided (bottom nav index)
     if (widget.initialTabIndex != null) {
       _selectedIndex = widget.initialTabIndex!;
@@ -111,10 +120,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadUserData() async {
     try {
+      print('📖 [DASHBOARD] Starting _loadUserData...');
       final userData = await _storageService.getUserData();
       final sessionId = await _storageService.getSessionId();
+      final isLoggedIn = await _storageService.getIsLoggedIn();
+      final authToken = await _storageService.getAuthToken();
       
-      print('Dashboard: Loading userIs: $userData');
+      print('');
+      print('╔═══════════════════════════════════════════════════════╗');
+      print('║        📊 DASHBOARD USER DATA LOAD REPORT            ║');
+      print('╠═══════════════════════════════════════════════════════╣');
+      print('║ HasUserData: ${userData != null}');
+      print('║ HasSessionId: ${sessionId != null}');
+      print('║ IsLoggedIn: $isLoggedIn');
+      print('║ HasAuthToken: ${authToken != null}');
+      if (userData != null) {
+        print('║ UserData length: ${userData.length} chars');
+      }
+      print('╚═══════════════════════════════════════════════════════╝');
+      print('');
       
       if (userData != null) {
         final Map<String, dynamic> data = jsonDecode(userData);
@@ -130,15 +154,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _currentUser = AstrologerModel.fromJson(data);
         });
 
+        print('✅ [DASHBOARD] User loaded: ${_currentUser?.name} (ID: ${_currentUser?.id})');
+
         if (_currentStats?.astrologer != null) {
           _currentUser = _currentStats!.astrologer;
         }
       } else {
-        print('👤 [DASHBOARD] No user data found, using fallback');
+        print('⚠️ [DASHBOARD] No user data found, using fallback');
         _setFallbackUser();
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      print('❌ [DASHBOARD] Error loading user data: $e');
+      print('Stack trace: ${StackTrace.current}');
       _setFallbackUser();
     }
   }
@@ -570,12 +597,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
           height: double.infinity,
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, authState) {
+            print('');
+            print('╔═══════════════════════════════════════════════════════╗');
+            print('║      🔐 AUTH STATE CHANGED IN DASHBOARD              ║');
+            print('╠═══════════════════════════════════════════════════════╣');
+            print('║ State Type: ${authState.runtimeType}');
+            print('║ Timestamp: ${DateTime.now()}');
+            print('╚═══════════════════════════════════════════════════════╝');
+            print('');
+            
             if (authState is AuthUnauthenticatedState) {
+              print('❌ [DASHBOARD] User is UNAUTHENTICATED - Redirecting to LOGIN');
+              print('🧭 [DASHBOARD] Navigator.pushReplacementNamed(AppRoutes.login)');
               // User is not authenticated, redirect to login
               Navigator.pushReplacementNamed(context, AppRoutes.login);
+              print('✅ [DASHBOARD] Navigation to login triggered');
             } else if (authState is AuthSuccessState) {
+              print('✅ [DASHBOARD] User is AUTHENTICATED - Updating user data');
+              print('👤 [DASHBOARD] User: ${authState.astrologer.name}');
               // User is authenticated, update current user data
               _updateUserFromAuthState(authState);
+            } else {
+              print('ℹ️ [DASHBOARD] AuthState is neither Success nor Unauthenticated: ${authState.runtimeType}');
             }
           },
           child: BlocBuilder<DashboardBloc, DashboardState>(

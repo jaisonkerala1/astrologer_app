@@ -635,6 +635,475 @@
   "noRequestsInCategory": "No requests in this category",
   "@noRequestsInCategory": {
     "description": "No requests in category message"
+  },
+  "chooseYourLanguage": "Choose Your Language",
+  "@chooseYourLanguage": {
+    "description": "Choose language onboarding title"
+  },
+  "chooseLanguageDescription": "Select your preferred language. You can change this anytime in settings.",
+  "@chooseLanguageDescription": {
+    "description": "Choose language onboarding description"
+  },
+  "chooseYourTheme": "Choose Your Theme",
+  "@chooseYourTheme": {
+    "description": "Choose theme onboarding title"
+  },
+  "chooseThemeDescription": "Select your preferred visual theme. Light for day, Dark for night, or Vedic for a spiritual experience.",
+  "@chooseThemeDescription": {
+    "description": "Choose theme onboarding description"
+  },
+  "lightTheme": "Light",
+  "@lightTheme": {
+    "description": "Light theme option"
+  },
+  "darkTheme": "Dark",
+  "@darkTheme": {
+    "description": "Dark theme option"
+  },
+  "vedicTheme": "Vedic",
+  "@vedicTheme": {
+    "description": "Vedic theme option"
+  },
+  "defaultByLanguage": "English by default",
+  "@defaultByLanguage": {
+    "description": "Default language note"
+  },
+  "onboardingAstroGuruTitle": "Heal and Help Others Through AstroGuru",
+  "@onboardingAstroGuruTitle": {
+    "description": "AstroGuru onboarding slide title"
+  },
+  "onboardingAstroGuruDescription": "Connect with people seeking guidance and help them heal through astrological wisdom. Share your knowledge, provide consultations, and make a positive impact on others' lives through this platform.",
+  "@onboardingAstroGuruDescription": {
+    "description": "AstroGuru onboarding slide description"
+  },
+  "learnMore": "Learn more",
+  "@learnMore": {
+    "description": "Learn more link text"
+  },
+  "howToHelpOthers": "How to help others:",
+  "@howToHelpOthers": {
+    "description": "AstroGuru instruction section title"
+  },
+  "helpStep1": "Set your availability and expertise areas",
+  "@helpStep1": {
+    "description": "AstroGuru step 1"
+  },
+  "helpStep2": "Receive consultation requests from seekers",
+  "@helpStep2": {
+    "description": "AstroGuru step 2"
+  },
+  "helpStep3": "Provide guidance through calls or messages",
+  "@helpStep3": {
+    "description": "AstroGuru step 3"
+  },
+  "helpStep4": "Help heal and transform lives with your wisdom",
+  "@helpStep4": {
+    "description": "AstroGuru step 4"
+  },
+  "astroGuruDisclaimer": "* Professional guidance. Maintain confidentiality. Respect all seekers.",
+  "@astroGuruDisclaimer": {
+    "description": "AstroGuru footer disclaimer"
+  },
+  "onboardingCommunityTitle": "Grow the Astrologer Community",
+  "@onboardingCommunityTitle": {
+    "description": "Community onboarding slide title"
+  },
+  "onboardingCommunityDescription": "Connect with fellow astrologers through discussions, share knowledge via live streaming, and build a thriving community. Collaborate, learn, and grow together on this platform.",
+  "@onboardingCommunityDescription": {
+    "description": "Community onboarding slide description"
+  },
+  "communityFeatures": "Community features:",
+  "@communityFeatures": {
+    "description": "Community features section title"
+  },
+  "communityStep1": "Start discussions on astrological topics",
+  "@communityStep1": {
+    "description": "Community step 1"
+  },
+  "communityStep2": "Go live to share your knowledge",
+  "@communityStep2": {
+    "description": "Community step 2"
+  },
+  "communityStep3": "Engage with other astrologers",
+  "@communityStep3": {
+    "description": "Community step 3"
+  },
+  "communityStep4": "Build your following and reputation",
+  "@communityStep4": {
+    "description": "Community step 4"
+  },
+  "communityDisclaimer": "* Respectful discussions. Quality content. Build meaningful connections.",
+  "@communityDisclaimer": {
+    "description": "Community footer disclaimer"
+  },
+  "onboardingEarningsTitle": "Track Your Income in Real-Time",
+  "@onboardingEarningsTitle": {
+    "description": "Earnings onboarding slide title"
+  },
+  "onboardingEarningsDescription": "Monitor your daily and total earnings with detailed analytics. View consultation statistics, average ratings, and performance insights all in one place.",
+  "@onboardingEarningsDescription": {
+    "description": "Earnings onboarding slide description"
+  },
+  "whatYouCanTrack": "What you can track:",
+  "@whatYouCanTrack": {
+    "description": "Earnings tracking section title"
+  },
+  "trackStep1": "View today's and total earnings",
+  "@trackStep1": {
+    "description": "Earnings step 1"
+  },
+  "trackStep2": "Monitor call and message statistics",
+  "@trackStep2": {
+    "description": "Earnings step 2"
+  },
+  "trackStep3": "Check your average rating and reviews",
+  "@trackStep3": {
+    "description": "Earnings step 3"
+  },
+  "trackStep4": "Analyze consultation duration trends",
+  "@trackStep4": {
+    "description": "Earnings step 4"
+  },
+  "earningsDisclaimer": "* Earnings updated in real-time. Withdraw anytime to your bank account.",
+  "@earningsDisclaimer": {
+    "description": "Earnings footer disclaimer"
+  },
+  "welcomeBack": "Welcome Back",
+  "@welcomeBack": {
+    "description": "Login screen welcome title"
+  },
+  "enterPhoneSubtitle": "Enter your phone number\nto continue your journey",
+  "@enterPhoneSubtitle": {
+    "description": "Login screen subtitle"
+  },
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Continue button"
+  },
+  "newHere": "New here? ",
+  "@newHere": {
+    "description": "New user text"
+  },
+  "createAccount": "Create account",
+  "@createAccount": {
+    "description": "Create account link"
+  },
+  "securedByOtp": "Secured by OTP verification",
+  "@securedByOtp": {
+    "description": "Trust indicator text"
+  },
+  "pleaseEnterPhone": "Please enter your phone number",
+  "@pleaseEnterPhone": {
+    "description": "Phone validation error"
+  },
+  "phoneTooShort": "Phone number is too short (minimum 7 digits)",
+  "@phoneTooShort": {
+    "description": "Phone validation error"
+  },
+  "phoneTooLong": "Phone number is too long (maximum 15 digits)",
+  "@phoneTooLong": {
+    "description": "Phone validation error"
+  },
+  "accountNotFound": "Account Not Found",
+  "@accountNotFound": {
+    "description": "Account not found dialog title"
+  },
+  "noAccountMessage": "No account exists with this phone number. Would you like to sign up?",
+  "@noAccountMessage": {
+    "description": "Account not found dialog message"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "signUp": "Sign Up",
+  "@signUp": {
+    "description": "Sign up button"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search label"
+  },
+  "startTypingToSearch": "Start typing to search",
+  "@startTypingToSearch": {
+    "description": "Search hint"
+  },
+  "createAccountTitle": "Create Account",
+  "@createAccountTitle": {
+    "description": "Signup screen title"
+  },
+  "joinPlatform": "Join Our Platform",
+  "@joinPlatform": {
+    "description": "Signup header title"
+  },
+  "astrologyJourney": "Start your astrology consulting journey",
+  "@astrologyJourney": {
+    "description": "Signup header subtitle"
+  },
+  "personalInformation": "Personal Information",
+  "@personalInformation": {
+    "description": "Personal info section title"
+  },
+  "fullName": "Full Name",
+  "@fullName": {
+    "description": "Full name field label"
+  },
+  "profilePicture": "Profile Picture",
+  "@profilePicture": {
+    "description": "Profile picture field label"
+  },
+  "tapToAddPhoto": "Tap to add profile picture",
+  "@tapToAddPhoto": {
+    "description": "Profile picture placeholder"
+  },
+  "requiredForSignup": "Required for signup",
+  "@requiredForSignup": {
+    "description": "Profile picture required text"
+  },
+  "emailAddress": "Email Address",
+  "@emailAddress": {
+    "description": "Email field label"
+  },
+  "phoneNumber": "Phone Number",
+  "@phoneNumber": {
+    "description": "Phone number field label"
+  },
+  "yearsOfExperience": "Years of Experience",
+  "@yearsOfExperience": {
+    "description": "Experience field label"
+  },
+  "specializations": "Specializations",
+  "@specializations": {
+    "description": "Specializations section title"
+  },
+  "selectExpertise": "Select your areas of expertise",
+  "@selectExpertise": {
+    "description": "Specializations subtitle"
+  },
+  "languages": "Languages",
+  "@languages": {
+    "description": "Languages section title"
+  },
+  "selectLanguagesConsult": "Select languages you can consult in",
+  "@selectLanguagesConsult": {
+    "description": "Languages subtitle"
+  },
+  "tellUsAboutYourself": "Tell Us About Yourself",
+  "@tellUsAboutYourself": {
+    "description": "Bio section title"
+  },
+  "helpClientsUnderstand": "Help clients understand your expertise",
+  "@helpClientsUnderstand": {
+    "description": "Bio section subtitle"
+  },
+  "bioRequired": "Bio *",
+  "@bioRequired": {
+    "description": "Bio field label"
+  },
+  "bioHint": "Describe your experience, specializations, and what makes you unique as an astrologer...",
+  "@bioHint": {
+    "description": "Bio field hint"
+  },
+  "awardsOptional": "Awards & Recognition (Optional)",
+  "@awardsOptional": {
+    "description": "Awards field label"
+  },
+  "awardsHint": "List any awards, recognitions, or achievements...",
+  "@awardsHint": {
+    "description": "Awards field hint"
+  },
+  "certificationsOptional": "Certifications (Optional)",
+  "@certificationsOptional": {
+    "description": "Certifications field label"
+  },
+  "certificationsHint": "List your certifications, degrees, or qualifications...",
+  "@certificationsHint": {
+    "description": "Certifications field hint"
+  },
+  "legalAgreement": "Legal Agreement",
+  "@legalAgreement": {
+    "description": "Terms section title"
+  },
+  "reviewAcceptTerms": "Please review and accept our terms",
+  "@reviewAcceptTerms": {
+    "description": "Terms section subtitle"
+  },
+  "createAccountSendOtp": "Create Account & Send OTP",
+  "@createAccountSendOtp": {
+    "description": "Signup button text"
+  },
+  "alreadyHaveAccount": "Already have an account? ",
+  "@alreadyHaveAccount": {
+    "description": "Login link text"
+  },
+  "loginLink": "Login",
+  "@loginLink": {
+    "description": "Login link"
+  },
+  "chooseFromGallery": "Choose from Gallery",
+  "@chooseFromGallery": {
+    "description": "Image picker option"
+  },
+  "takePhoto": "Take Photo",
+  "@takePhoto": {
+    "description": "Image picker option"
+  },
+  "pleaseEnterFullName": "Please enter your full name",
+  "@pleaseEnterFullName": {
+    "description": "Validation error"
+  },
+  "nameMinLength": "Name must be at least 2 characters",
+  "@nameMinLength": {
+    "description": "Validation error"
+  },
+  "nameOnlyLetters": "Name can only contain letters and spaces",
+  "@nameOnlyLetters": {
+    "description": "Validation error"
+  },
+  "nameNoSpaces": "Name cannot start or end with spaces",
+  "@nameNoSpaces": {
+    "description": "Validation error"
+  },
+  "pleaseEnterEmail": "Please enter your email",
+  "@pleaseEnterEmail": {
+    "description": "Validation error"
+  },
+  "invalidEmail": "Please enter a valid email address",
+  "@invalidEmail": {
+    "description": "Validation error"
+  },
+  "phoneMinDigits": "Phone number must be at least 10 digits",
+  "@phoneMinDigits": {
+    "description": "Validation error"
+  },
+  "phoneMaxDigits": "Phone number cannot exceed 15 digits",
+  "@phoneMaxDigits": {
+    "description": "Validation error"
+  },
+  "pleaseEnterExperience": "Please enter your years of experience",
+  "@pleaseEnterExperience": {
+    "description": "Validation error"
+  },
+  "invalidExperience": "Please enter a valid number of years",
+  "@invalidExperience": {
+    "description": "Validation error"
+  },
+  "experienceMax": "Experience cannot exceed 99 years",
+  "@experienceMax": {
+    "description": "Validation error"
+  },
+  "bioRequired2": "Bio is required to help clients understand your expertise",
+  "@bioRequired2": {
+    "description": "Validation error"
+  },
+  "bioMinLength": "Please write at least 50 characters to describe yourself",
+  "@bioMinLength": {
+    "description": "Validation error"
+  },
+  "bioMaxLength": "Bio cannot exceed 1000 characters",
+  "@bioMaxLength": {
+    "description": "Validation error"
+  },
+  "profilePictureRequired": "Profile picture is required for signup",
+  "@profilePictureRequired": {
+    "description": "Validation message"
+  },
+  "selectOneSpecialization": "Please select at least one specialization",
+  "@selectOneSpecialization": {
+    "description": "Validation message"
+  },
+  "selectOneLanguage": "Please select at least one language",
+  "@selectOneLanguage": {
+    "description": "Validation message"
+  },
+  "mustAcceptTerms": "You must accept the Terms of Service to continue",
+  "@mustAcceptTerms": {
+    "description": "Validation message"
+  },
+  "verificationCode": "Verification Code",
+  "@verificationCode": {
+    "description": "OTP screen title"
+  },
+  "sentCodeTo": "We sent a 6-digit code to\n",
+  "@sentCodeTo": {
+    "description": "OTP screen description"
+  },
+  "verify": "Verify",
+  "@verify": {
+    "description": "Verify button"
+  },
+  "didntReceiveCode": "Didn't receive code? ",
+  "@didntReceiveCode": {
+    "description": "Resend text"
+  },
+  "resend": "Resend",
+  "@resend": {
+    "description": "Resend button"
+  },
+  "resendIn": "Resend in {seconds}s",
+  "@resendIn": {
+    "description": "Resend timer",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "enterValid6DigitOtp": "Please enter a valid 6-digit OTP",
+  "@enterValid6DigitOtp": {
+    "description": "OTP validation error"
+  },
+  "noAccountFoundMessage": "No account found with this phone number. Would you like to create a new account?",
+  "@noAccountFoundMessage": {
+    "description": "OTP account not found message"
+  },
+  "otpSentSuccess": "OTP sent successfully! Please check your phone.",
+  "@otpSentSuccess": {
+    "description": "OTP sent success message"
+  },
+  "codeDetectedAuto": "Code detected automatically!",
+  "@codeDetectedAuto": {
+    "description": "Auto-detect OTP message"
+  },
+  "iAcknowledge": "I acknowledge that I am an ",
+  "@iAcknowledge": {
+    "description": "Terms text part 1"
+  },
+  "independentContractor": "independent contractor",
+  "@independentContractor": {
+    "description": "Terms text part 2"
+  },
+  "acceptFull": ", accept ",
+  "@acceptFull": {
+    "description": "Terms text part 3"
+  },
+  "professionalLiability": "full professional liability",
+  "@professionalLiability": {
+    "description": "Terms text part 4"
+  },
+  "andAgreeTo": ", and agree to the ",
+  "@andAgreeTo": {
+    "description": "Terms text part 5"
+  },
+  "termsOfService": "Terms of Service",
+  "@termsOfService": {
+    "description": "Terms of Service"
+  },
+  "andWord": " and ",
+  "@andWord": {
+    "description": "And word"
+  },
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Privacy Policy"
+  },
+  "tapHighlightedText": "Tap on highlighted text to view full details",
+  "@tapHighlightedText": {
+    "description": "Terms info text"
+  },
+  "mustAcceptTermsError": "You must accept the terms to continue",
+  "@mustAcceptTermsError": {
+    "description": "Terms error message"
   }
 }
 

@@ -107,7 +107,8 @@ class _AstrologerAppState extends State<AstrologerApp> {
           ),
         ],
         child: MaterialApp(
-          key: ValueKey(widget.languageService.currentLocale.languageCode),
+          // Removed key to prevent full app restart on language change
+          // The locale property alone is sufficient for l10n updates
           title: 'Astrologer App',
           theme: AppTheme.lightTheme,
           debugShowCheckedModeBanner: false,

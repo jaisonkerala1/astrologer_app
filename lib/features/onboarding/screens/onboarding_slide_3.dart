@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../widgets/device_mockup_widget.dart';
 import '../widgets/community_growth_mockup.dart';
 
@@ -42,9 +43,9 @@ class OnboardingSlide3 extends StatelessWidget {
                     const SizedBox(height: 32),
                     
                     // Content section
-                    const Text(
-                      'Grow the Astrologer Community',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.onboardingCommunityTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w500,
@@ -55,9 +56,9 @@ class OnboardingSlide3 extends StatelessWidget {
                     const SizedBox(height: 16),
                     
                     // Description
-                    const Text(
-                      'Connect with fellow astrologers through discussions, share knowledge via live streaming, and build a thriving community. Collaborate, learn, and grow together on this platform.',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.onboardingCommunityDescription,
+                      style: const TextStyle(
                         color: Color(0xFF9CA3AF),
                         fontSize: 16,
                         height: 1.5,
@@ -71,9 +72,9 @@ class OnboardingSlide3 extends StatelessWidget {
                       onTap: () {
                         // Could open a web link or show more info
                       },
-                      child: const Text(
-                        'Learn more',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.learnMore,
+                        style: const TextStyle(
                           color: Color(0xFF89B4F8),
                           fontSize: 16,
                           decoration: TextDecoration.underline,
@@ -94,19 +95,19 @@ class OnboardingSlide3 extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Community features:',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.communityFeatures,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildInstructionStep(1, 'Start discussions on astrological topics'),
-                          _buildInstructionStep(2, 'Go live to share your knowledge'),
-                          _buildInstructionStep(3, 'Engage with other astrologers'),
-                          _buildInstructionStep(4, 'Build your following and reputation'),
+                          _buildInstructionStep(context, 1, AppLocalizations.of(context)!.communityStep1),
+                          _buildInstructionStep(context, 2, AppLocalizations.of(context)!.communityStep2),
+                          _buildInstructionStep(context, 3, AppLocalizations.of(context)!.communityStep3),
+                          _buildInstructionStep(context, 4, AppLocalizations.of(context)!.communityStep4),
                         ],
                       ),
                     ),
@@ -114,9 +115,9 @@ class OnboardingSlide3 extends StatelessWidget {
                     const SizedBox(height: 24),
                     
                     // Footer disclaimer
-                    const Text(
-                      '* Respectful discussions. Quality content. Build meaningful connections.',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.communityDisclaimer,
+                      style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 12,
                         height: 1.4,
@@ -131,7 +132,7 @@ class OnboardingSlide3 extends StatelessWidget {
     );
   }
 
-  Widget _buildInstructionStep(int number, String text) {
+  Widget _buildInstructionStep(BuildContext context, int number, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
