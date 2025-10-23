@@ -264,16 +264,24 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       builder: (context, themeService, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
-          floatingActionButton: FloatingActionButton(
+          floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
               _showCreatePostBottomSheet();
             },
             backgroundColor: themeService.primaryColor,
             elevation: 4,
-            child: const Icon(
+            icon: const Icon(
               Icons.edit,
               color: Colors.white,
               size: 24,
+            ),
+            label: const Text(
+              'Create',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           appBar: AppBar(

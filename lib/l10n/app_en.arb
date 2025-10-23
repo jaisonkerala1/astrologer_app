@@ -668,11 +668,11 @@
   "@defaultByLanguage": {
     "description": "Default language note"
   },
-  "onboardingAstroGuruTitle": "Heal and Help Others Through AstroGuru",
+  "onboardingAstroGuruTitle": "Help Your Followers Heal and Thrive",
   "@onboardingAstroGuruTitle": {
     "description": "AstroGuru onboarding slide title"
   },
-  "onboardingAstroGuruDescription": "Connect with people seeking guidance and help them heal through astrological wisdom. Share your knowledge, provide consultations, and make a positive impact on others' lives through this platform.",
+  "onboardingAstroGuruDescription": "Empower your followers through personalized astrological guidance. Manage your consultations, connect with seekers, and grow your practice while making a meaningful difference in their lives.",
   "@onboardingAstroGuruDescription": {
     "description": "AstroGuru onboarding slide description"
   },
@@ -680,27 +680,27 @@
   "@learnMore": {
     "description": "Learn more link text"
   },
-  "howToHelpOthers": "How to help others:",
+  "howToHelpOthers": "How it works:",
   "@howToHelpOthers": {
     "description": "AstroGuru instruction section title"
   },
-  "helpStep1": "Set your availability and expertise areas",
+  "helpStep1": "Set your availability and consultation preferences",
   "@helpStep1": {
     "description": "AstroGuru step 1"
   },
-  "helpStep2": "Receive consultation requests from seekers",
+  "helpStep2": "Receive follower requests and bookings instantly",
   "@helpStep2": {
     "description": "AstroGuru step 2"
   },
-  "helpStep3": "Provide guidance through calls or messages",
+  "helpStep3": "Conduct consultations via calls, video, or chat",
   "@helpStep3": {
     "description": "AstroGuru step 3"
   },
-  "helpStep4": "Help heal and transform lives with your wisdom",
+  "helpStep4": "Help followers heal and find clarity with your expertise",
   "@helpStep4": {
     "description": "AstroGuru step 4"
   },
-  "astroGuruDisclaimer": "* Professional guidance. Maintain confidentiality. Respect all seekers.",
+  "astroGuruDisclaimer": "* Manage your practice professionally. Follower confidentiality guaranteed. Your success, our priority.",
   "@astroGuruDisclaimer": {
     "description": "AstroGuru footer disclaimer"
   },
