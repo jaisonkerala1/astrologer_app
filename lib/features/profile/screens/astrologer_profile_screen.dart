@@ -19,6 +19,12 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   bool _isFollowing = false;
   final ScrollController _scrollController = ScrollController();
   bool _showStickyHeader = false;
+  
+  // Notification preferences
+  bool _notificationsEnabled = false;
+  bool _notifyOnline = true;
+  bool _notifyLive = true;
+  bool _notifyDiscussion = true;
 
   // Mock astrologer data
   final Map<String, dynamic> _mockAstrologer = {
@@ -43,7 +49,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       'Featured in Times of India',
       'TEDx Speaker on Astrology',
     ],
-    'accuracyRate': 95,
+    'responseTime': '5 min',
     'repeatClients': 78,
     'verified': true,
   };
@@ -115,33 +121,48 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
 
   final List<Map<String, dynamic>> _posts = [
     {
+      'id': '1',
       'title': 'Mercury Retrograde 2024 - What to Expect',
-      'excerpt': 'Navigate this challenging period with these simple tips and remedies...',
-      'type': 'article',
-      'date': '3 days ago',
+      'content': 'Navigate this challenging period with these simple tips and remedies. Learn how to protect your communication and avoid common pitfalls during this transit...',
+      'author': 'Rajesh Kumar',
+      'authorInitial': 'RK',
+      'timeAgo': '3 days ago',
+      'category': 'Astrology Guidance',
       'likes': 124,
-      'comments': 23,
-      'views': 890,
+      'isLiked': false,
     },
     {
+      'id': '2',
       'title': 'Understanding Your Birth Chart - Complete Guide',
-      'excerpt': 'Learn how to read your birth chart and understand planetary influences',
-      'type': 'video',
-      'duration': '12:45',
-      'date': '1 week ago',
+      'content': 'Learn how to read your birth chart and understand planetary influences. Discover the secrets hidden in your natal chart and how they shape your destiny...',
+      'author': 'Rajesh Kumar',
+      'authorInitial': 'RK',
+      'timeAgo': '1 week ago',
+      'category': 'Education',
       'likes': 67,
-      'comments': 12,
-      'views': 456,
+      'isLiked': false,
     },
     {
-      'title': 'Career & Finance Q&A Session',
-      'excerpt': 'Live session replay covering common career and financial questions',
-      'type': 'live',
-      'duration': '45:20',
-      'date': '2 weeks ago',
+      'id': '3',
+      'title': 'Career & Finance Predictions for 2024',
+      'content': 'Detailed insights on career transitions and financial opportunities this year. Find out what the planets have in store for your professional growth...',
+      'author': 'Rajesh Kumar',
+      'authorInitial': 'RK',
+      'timeAgo': '2 weeks ago',
+      'category': 'Career & Finance',
       'likes': 189,
-      'comments': 34,
-      'views': 1200,
+      'isLiked': false,
+    },
+    {
+      'id': '4',
+      'title': 'Remedies for Saturn Transit Effects',
+      'content': 'Powerful remedies to mitigate challenging Saturn transits. Learn simple daily practices that can help you navigate difficult periods with grace...',
+      'author': 'Rajesh Kumar',
+      'authorInitial': 'RK',
+      'timeAgo': '3 weeks ago',
+      'category': 'Remedies',
+      'likes': 98,
+      'isLiked': false,
     },
   ];
 
@@ -251,13 +272,18 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
+        // Notification Bell Icon
         IconButton(
-          icon: const Icon(Icons.share_outlined, color: Color(0xFF050505)),
-          onPressed: () {},
+          icon: Icon(
+            _notificationsEnabled ? Icons.notifications_active : Icons.notifications_outlined,
+            color: _notificationsEnabled ? const Color(0xFF1877F2) : const Color(0xFF050505),
+          ),
+          onPressed: _showNotificationPreferences,
         ),
+        // 3-dot menu
         IconButton(
           icon: const Icon(Icons.more_vert, color: Color(0xFF050505)),
-          onPressed: () {},
+          onPressed: _showOptionsMenu,
         ),
       ],
     );
@@ -266,90 +292,102 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   Widget _buildHeader() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.all(20),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Profile Picture
+          // Profile Picture - Smaller with Online Status
           Stack(
             children: [
               ProfileAvatarWidget(
                 imagePath: null,
-                radius: 60,
+                radius: 36,
                 fallbackText: 'RK',
                 backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
                 textColor: const Color(0xFF1877F2),
               ),
-              if (_mockAstrologer['verified'])
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1877F2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.verified,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+              // Online Status Indicator (bottom-right)
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF44B700),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Name and Title
-          Text(
-            _mockAstrologer['name'],
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF050505),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _mockAstrologer['title'],
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF65676B),
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          // Rating and Reviews
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.star, color: Color(0xFFFFC107), size: 20),
-              const SizedBox(width: 4),
-              Text(
-                '${_mockAstrologer['rating']}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF050505),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '(${_mockAstrologer['totalReviews']} reviews)',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF65676B),
-                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${_mockAstrologer['experience']} years experience • ${_mockAstrologer['totalConsultations']}+ consultations',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF65676B),
+          const SizedBox(width: 12),
+          
+          // Name and Info - Compact
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _mockAstrologer['name'],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF050505),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ),
+                    if (_mockAstrologer['verified']) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.verified,
+                        color: Color(0xFF1877F2),
+                        size: 18,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _mockAstrologer['title'],
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF65676B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        '${_mockAstrologer['rating']} (${_mockAstrologer['totalReviews']}) • ${_mockAstrologer['experience']}y exp',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF050505),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -360,37 +398,36 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   Widget _buildQuickStats() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(Icons.people_outline, '${_mockAstrologer['followers']}', 'Followers'),
-          Container(width: 1, height: 40, color: const Color(0xFFE4E6EB)),
-          _buildStatItem(Icons.speed, '${_mockAstrologer['accuracyRate']}%', 'Accuracy'),
-          Container(width: 1, height: 40, color: const Color(0xFFE4E6EB)),
-          _buildStatItem(Icons.repeat, '${_mockAstrologer['repeatClients']}%', 'Repeat'),
+          _buildStatItem('${_mockAstrologer['followers']}', 'Followers'),
+          Container(width: 1, height: 30, color: const Color(0xFFE4E6EB)),
+          _buildStatItem('${_mockAstrologer['responseTime']}', 'Response'),
+          Container(width: 1, height: 30, color: const Color(0xFFE4E6EB)),
+          _buildStatItem('${_mockAstrologer['repeatClients']}%', 'Repeat'),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label) {
+  Widget _buildStatItem(String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFF1877F2), size: 24),
-        const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.bold,
             color: Color(0xFF050505),
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             color: Color(0xFF65676B),
           ),
         ),
@@ -401,42 +438,46 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   Widget _buildActionButtons() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
         children: [
           Expanded(
-            flex: 3,
             child: ElevatedButton.icon(
               onPressed: () {
                 setState(() => _isFollowing = !_isFollowing);
                 HapticFeedback.lightImpact();
               },
-              icon: Icon(_isFollowing ? Icons.check : Icons.add, size: 20),
-              label: Text(_isFollowing ? 'Following' : 'Follow'),
+              icon: Icon(_isFollowing ? Icons.check : Icons.add, size: 16),
+              label: Text(
+                _isFollowing ? 'Following' : 'Follow',
+                style: const TextStyle(fontSize: 13),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isFollowing ? const Color(0xFFE4E6EB) : const Color(0xFF1877F2),
                 foregroundColor: _isFollowing ? const Color(0xFF050505) : Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 elevation: 0,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
-            flex: 2,
             child: OutlinedButton.icon(
               onPressed: () {},
-              icon: const Icon(Icons.message_outlined, size: 20),
-              label: const Text('Message'),
+              icon: const Icon(Icons.chat_bubble_outline, size: 16),
+              label: const Text(
+                'Message',
+                style: TextStyle(fontSize: 13),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF050505),
                 side: const BorderSide(color: Color(0xFFCED0D4)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(30),
                 ),
               ),
             ),
@@ -449,22 +490,43 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   Widget _buildStickyHeader() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: SafeArea(
         child: Row(
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
             ),
-            ProfileAvatarWidget(
-              imagePath: null,
-              radius: 16,
-              fallbackText: 'RK',
-              backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
-              textColor: const Color(0xFF1877F2),
+            const SizedBox(width: 4),
+            Stack(
+              children: [
+                ProfileAvatarWidget(
+                  imagePath: null,
+                  radius: 16,
+                  fallbackText: 'RK',
+                  backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
+                  textColor: const Color(0xFF1877F2),
+                ),
+                // Online Status Indicator
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF44B700),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,8 +539,12 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF050505),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
                       const SizedBox(width: 4),
@@ -488,12 +554,16 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                           fontSize: 13,
                           color: Color(0xFF65676B),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                       ),
                     ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             ElevatedButton(
               onPressed: _showBookingSheet,
               style: ElevatedButton.styleFrom(
@@ -501,8 +571,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(30),
                 ),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Text('Book'),
             ),
@@ -866,9 +937,6 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: service['popular']
-            ? Border.all(color: const Color(0xFF1877F2), width: 2)
-            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -892,38 +960,13 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            service['name'],
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF050505),
-                            ),
-                          ),
-                        ),
-                        if (service['popular'])
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFC107),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'POPULAR',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                      ],
+                    Text(
+                      service['name'],
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF050505),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -979,7 +1022,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     vertical: 10,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
                 child: const Text('Book Now'),
@@ -1236,190 +1279,503 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildPostsTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 12, bottom: 80),
-      itemCount: _posts.length,
-      itemBuilder: (context, index) {
-        return _buildPostCard(_posts[index]);
-      },
+    return Container(
+      color: const Color(0xFFF5F5F5),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+        itemCount: _posts.length,
+        itemBuilder: (context, index) {
+          return _buildPostCard(_posts[index]);
+        },
+      ),
     );
   }
 
   Widget _buildPostCard(Map<String, dynamic> post) {
-    IconData typeIcon;
-    String typeLabel;
-    Color typeColor;
-
-    switch (post['type']) {
-      case 'video':
-        typeIcon = Icons.play_circle_outline;
-        typeLabel = post['duration'];
-        typeColor = const Color(0xFFEA4335);
-        break;
-      case 'live':
-        typeIcon = Icons.wifi_tethering;
-        typeLabel = 'LIVE REPLAY';
-        typeColor = const Color(0xFFEA4335);
-        break;
-      default:
-        typeIcon = Icons.article_outlined;
-        typeLabel = 'ARTICLE';
-        typeColor = const Color(0xFF1877F2);
-    }
-
     return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Post image/video thumbnail
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1877F2).withOpacity(0.1),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Center(
-              child: Icon(
-                typeIcon,
-                size: 64,
-                color: typeColor,
-              ),
-            ),
+        gradient: const LinearGradient(
+          colors: [
+            Colors.white,
+            Color(0xFFFAFAFA),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            spreadRadius: 0,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // Show post detail
+            HapticFeedback.lightImpact();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header Row: Avatar + Metadata
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: typeColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        typeLabel,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: typeColor,
-                        ),
+                    // Author Avatar
+                    ProfileAvatarWidget(
+                      imagePath: null,
+                      radius: 20,
+                      fallbackText: post['authorInitial'],
+                      backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
+                      textColor: const Color(0xFF1877F2),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Author Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post['author'],
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A2E),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${post['timeAgo']} • ${post['category']}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xFF6B6B8D),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      post['date'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF65676B),
+                    
+                    // More Options
+                    IconButton(
+                      icon: const Icon(
+                        Icons.more_horiz,
+                        color: Color(0xFF6B6B8D),
+                        size: 20,
                       ),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                
+                const SizedBox(height: 16),
+                
+                // Post Title
                 Text(
                   post['title'],
                   style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF050505),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A2E),
+                    height: 1.4,
+                    letterSpacing: -0.3,
                   ),
                 ),
+                
                 const SizedBox(height: 8),
+                
+                // Post Content Preview
                 Text(
-                  post['excerpt'],
+                  post['content'],
                   style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF65676B),
-                    height: 1.4,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF6B6B8D),
+                    height: 1.5,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
+                
+                const SizedBox(height: 16),
+                
+                // Action Bar
                 Row(
                   children: [
-                    _buildEngagementItem(Icons.favorite_border, '${post['likes']}'),
-                    const SizedBox(width: 16),
-                    _buildEngagementItem(Icons.chat_bubble_outline, '${post['comments']}'),
-                    const SizedBox(width: 16),
-                    _buildEngagementItem(Icons.visibility, '${post['views']}'),
+                    // Like Button
+                    _buildDiscussionActionButton(
+                      icon: post['isLiked'] ? Icons.favorite : Icons.favorite_border,
+                      label: '${post['likes']}',
+                      color: post['isLiked'] ? Colors.red : const Color(0xFF6B6B8D),
+                      onTap: () {
+                        // Toggle like
+                        HapticFeedback.lightImpact();
+                      },
+                    ),
+                    
+                    const SizedBox(width: 20),
+                    
+                    // Comment Button
+                    _buildDiscussionActionButton(
+                      icon: Icons.chat_bubble_outline,
+                      label: 'Comment',
+                      color: const Color(0xFF6B6B8D),
+                      onTap: () {},
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // Share Button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.share_outlined,
+                        size: 20,
+                      ),
+                      color: const Color(0xFF6B6B8D),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEngagementItem(IconData icon, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: const Color(0xFF65676B)),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF65676B),
-          ),
+  Widget _buildDiscussionActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildBookingButton() {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withOpacity(0.0),  // Transparent at top
+            Colors.white.withOpacity(0.8),  // Semi-transparent
+            Colors.white.withOpacity(0.95), // Almost solid
+            Colors.white,                   // Solid white
+          ],
+          stops: const [0.0, 0.15, 0.4, 0.6],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
             offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
-        child: ElevatedButton(
-          onPressed: _showBookingSheet,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1877F2),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            elevation: 0,
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
             children: [
-              Icon(Icons.calendar_today, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'Book Consultation - ₹500 onwards',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              // Call Button (longest)
+              Expanded(
+                flex: 3,
+                child: ElevatedButton.icon(
+                onPressed: () {
+                  // Handle call action
+                  HapticFeedback.lightImpact();
+                },
+                icon: const Icon(Icons.phone, size: 18),
+                label: const Text('Call'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF34A853),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
                 ),
               ),
+            ),
+            const SizedBox(width: 8),
+            
+            // Video Call Button (medium)
+            Expanded(
+              flex: 2,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Handle video call action
+                  HapticFeedback.lightImpact();
+                },
+                icon: const Icon(Icons.videocam, size: 18),
+                label: const Text('Video'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEA4335),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            
+            // Book Consultation Button (medium)
+            Expanded(
+              flex: 2,
+              child: ElevatedButton.icon(
+                onPressed: _showBookingSheet,
+                icon: const Icon(Icons.calendar_today, size: 18),
+                label: const Text('Book'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1877F2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+        ),
+      ),
+    );
+  }
+
+  void _showNotificationPreferences() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              _notificationsEnabled ? Icons.notifications_active : Icons.notifications_outlined,
+              color: const Color(0xFF1877F2),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Notification Settings',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  value: _notificationsEnabled,
+                  onChanged: (value) {
+                    setDialogState(() => _notificationsEnabled = value);
+                    setState(() => _notificationsEnabled = value);
+                    HapticFeedback.lightImpact();
+                  },
+                  title: const Text(
+                    'Enable Notifications',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Get notified about this astrologer'),
+                  activeColor: const Color(0xFF1877F2),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const Divider(),
+                if (_notificationsEnabled) ...[
+                  CheckboxListTile(
+                    value: _notifyOnline,
+                    onChanged: (value) {
+                      setDialogState(() => _notifyOnline = value ?? true);
+                      setState(() => _notifyOnline = value ?? true);
+                      HapticFeedback.lightImpact();
+                    },
+                    title: const Text('Online Status'),
+                    subtitle: const Text('When astrologer comes online'),
+                    activeColor: const Color(0xFF1877F2),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  CheckboxListTile(
+                    value: _notifyLive,
+                    onChanged: (value) {
+                      setDialogState(() => _notifyLive = value ?? true);
+                      setState(() => _notifyLive = value ?? true);
+                      HapticFeedback.lightImpact();
+                    },
+                    title: const Text('Live Sessions'),
+                    subtitle: const Text('When going live'),
+                    activeColor: const Color(0xFF1877F2),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  CheckboxListTile(
+                    value: _notifyDiscussion,
+                    onChanged: (value) {
+                      setDialogState(() => _notifyDiscussion = value ?? true);
+                      setState(() => _notifyDiscussion = value ?? true);
+                      HapticFeedback.lightImpact();
+                    },
+                    title: const Text('New Discussions'),
+                    subtitle: const Text('When creating new posts'),
+                    activeColor: const Color(0xFF1877F2),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOptionsMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE4E6EB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Share option
+              ListTile(
+                leading: const Icon(Icons.share_outlined, color: Color(0xFF050505)),
+                title: const Text(
+                  'Share Profile',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  HapticFeedback.lightImpact();
+                  // Handle share
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Share profile...')),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              // Report option
+              ListTile(
+                leading: const Icon(Icons.flag_outlined, color: Color(0xFFEA4335)),
+                title: const Text(
+                  'Report',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFEA4335),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  HapticFeedback.lightImpact();
+                  _showReportDialog();
+                },
+              ),
+              const SizedBox(height: 12),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showReportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.flag_outlined, color: Color(0xFFEA4335)),
+            SizedBox(width: 12),
+            Text(
+              'Report Profile',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to report this profile? Our team will review it.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Report submitted. Thank you.')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFEA4335)),
+            child: const Text('Report'),
+          ),
+        ],
       ),
     );
   }
@@ -1482,7 +1838,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                   child: const Text(

@@ -112,13 +112,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
           body: Column(
             children: [
               // Header Card
-              const SizedBox(height: 16),
               _buildHeaderCard(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               
               // Action Buttons
               _buildActionButtons(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               
               // Tab Bar
               Container(
@@ -167,88 +166,83 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
 
   Widget _buildHeaderCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(
         children: [
-          // Profile Picture
+          // Profile Picture - Smaller
           ProfileAvatarWidget(
             imagePath: null,
-            radius: 50,
+            radius: 36,
             fallbackText: 'PS',
             backgroundColor: const Color(0xFF7C3AED).withOpacity(0.1),
             textColor: const Color(0xFF7C3AED),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(width: 12),
           
-          // Name and Age
-          Text(
-            '${_mockUser['name']}, ${_mockUser['age']}',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A2E),
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Gender and Location
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.person_outline, size: 16, color: Color(0xFF6B6B8D)),
-              const SizedBox(width: 4),
-              Text(
-                _mockUser['gender'],
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6B6B8D),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF6B6B8D)),
-              const SizedBox(width: 4),
-              Text(
-                _mockUser['location'],
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6B6B8D),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          // Follower Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF7C3AED).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          // Name and Info - Compact
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.favorite, size: 14, color: Color(0xFF7C3AED)),
-                const SizedBox(width: 6),
-                Text(
-                  'Follower since ${_mockUser['followerSince']}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF7C3AED),
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '${_mockUser['name']}, ${_mockUser['age']}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1A2E),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 14, color: Color(0xFF6B6B8D)),
+                    const SizedBox(width: 4),
+                    Text(
+                      _mockUser['gender'],
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B6B8D),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF6B6B8D)),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _mockUser['location'],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B6B8D),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.favorite, size: 14, color: Color(0xFF7C3AED)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Since ${_mockUser['followerSince']}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF7C3AED),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -260,19 +254,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
 
   Widget _buildActionButtons() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -287,20 +270,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
 
   Widget _buildActionButton(IconData icon, String label, Color color) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Icon(icon, color: color, size: 20),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: color,
           ),
