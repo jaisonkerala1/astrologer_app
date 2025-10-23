@@ -41,12 +41,12 @@ class DashboardSkeletonLoader extends StatelessWidget {
                     _buildCommunicationCardsSkeleton(themeService),
                     const SizedBox(height: 16),
                     
-                    // Stats Cards row (Avg Rating, Avg Duration)
-                    _buildStatsCardsSkeleton(themeService),
-                    const SizedBox(height: 16),
-                    
                     // Calendar Card skeleton
                     _buildCalendarCardSkeleton(themeService),
+                    const SizedBox(height: 16),
+                    
+                    // Stats Cards row (Avg Rating, Avg Duration)
+                    _buildStatsCardsSkeleton(themeService),
                     const SizedBox(height: 24),
                     
                     // Discussion Card skeleton

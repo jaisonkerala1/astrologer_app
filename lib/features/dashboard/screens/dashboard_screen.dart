@@ -750,50 +750,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(height: 12),
                               // Messages Today Card - New Design
                               _buildMessagesCard(),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          Row(
-                            children: [
-                              Expanded(
-                                child: StatsCardWidget(
-                                  title: 'Avg Rating',
-                                  value: stats.averageRating.toStringAsFixed(1),
-                                  icon: Icons.star,
-                                  color: AppTheme.ratingColor,
-                                  onTap: () => _openReviewsScreen(),
-                                ),
+                        ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Calendar Card
+                        CalendarCardWidget(
+                          onTap: () {
+                            // Navigate to calendar screen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CalendarScreen(),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: StatsCardWidget(
-                                  title: 'Avg Duration',
-                                  value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
-                                  icon: Icons.timer,
-                                  color: AppTheme.secondaryColor,
-                                  onTap: () {
-                                    // TODO: Add navigation for average duration
-                                  },
-                                ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        Row(
+                          children: [
+                            Expanded(
+                              child: StatsCardWidget(
+                                title: 'Avg Rating',
+                                value: stats.averageRating.toStringAsFixed(1),
+                                icon: Icons.star,
+                                color: AppTheme.ratingColor,
+                                onTap: () => _openReviewsScreen(),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          // Calendar Card
-                          CalendarCardWidget(
-                            onTap: () {
-                              // Navigate to calendar screen
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CalendarScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 24),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: StatsCardWidget(
+                                title: 'Avg Duration',
+                                value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
+                                icon: Icons.timer,
+                                color: AppTheme.secondaryColor,
+                                onTap: () {
+                                  // TODO: Add navigation for average duration
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
                           
                           // Discussion Card
                           _buildDiscussionCard(),
