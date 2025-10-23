@@ -12,7 +12,8 @@ class UserProfileScreen extends StatefulWidget {
   State<UserProfileScreen> createState() => _UserProfileScreenState();
 }
 
-class _UserProfileScreenState extends State<UserProfileScreen> {
+class _UserProfileScreenState extends State<UserProfileScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   // Mock user data
   final Map<String, dynamic> _mockUser = {
     'name': 'Priya Sharma',
@@ -36,6 +37,49 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     'about': 'Looking for career guidance and relationship advice. Interested in understanding my life path through Vedic astrology.',
     'concerns': ['Career Growth', 'Relationship', 'Health'],
   };
+
+  // Mock discussion posts from user
+  final List<Map<String, dynamic>> _mockPosts = [
+    {
+      'title': 'Seeking Career Guidance',
+      'content': 'I am at a crossroads in my career and would love some astrological insight on the best path forward...',
+      'date': '2 days ago',
+      'likes': 12,
+      'comments': 5,
+      'category': 'Career',
+    },
+    {
+      'title': 'Understanding My Birth Chart',
+      'content': 'Can someone help me understand what my Mars placement means for my relationships?',
+      'date': '1 week ago',
+      'likes': 8,
+      'comments': 3,
+      'category': 'Astrology',
+    },
+    {
+      'title': 'Best Time for New Beginnings',
+      'content': 'Planning to start a new business. What are the auspicious dates this month?',
+      'date': '2 weeks ago',
+      'likes': 15,
+      'comments': 7,
+      'category': 'Business',
+    },
+  ];
+
+  // Mock notes
+  String _astrologerNotes = 'Client is going through career transition. Recommended wearing Ruby gemstone. Saturn transit affecting 10th house. Suggest follow-up consultation in April 2024.';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,40 +109,56 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                
-                // Header Card
-                _buildHeaderCard(),
-                const SizedBox(height: 12),
-                
-                // Action Buttons
-                _buildActionButtons(),
-                const SizedBox(height: 12),
-                
-                // Astrological Info Card
-                _buildAstrologicalInfoCard(),
-                const SizedBox(height: 12),
-                
-                // Stats Card
-                _buildStatsCard(),
-                const SizedBox(height: 12),
-                
-                // About Section
-                _buildAboutCard(),
-                const SizedBox(height: 12),
-                
-                // Contact Info Card
-                _buildContactCard(),
-                const SizedBox(height: 12),
-                
-                // Recent History
-                _buildHistorySection(),
-                const SizedBox(height: 24),
-              ],
-            ),
+          body: Column(
+            children: [
+              // Header Card
+              const SizedBox(height: 16),
+              _buildHeaderCard(),
+              const SizedBox(height: 12),
+              
+              // Action Buttons
+              _buildActionButtons(),
+              const SizedBox(height: 16),
+              
+              // Tab Bar
+              Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: const Color(0xFF7C3AED),
+                  unselectedLabelColor: const Color(0xFF6B6B8D),
+                  indicatorColor: const Color(0xFF7C3AED),
+                  indicatorWeight: 3,
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Posts'),
+                    Tab(text: 'History'),
+                    Tab(text: 'Notes'),
+                  ],
+                ),
+              ),
+              
+              // Tab Views
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildOverviewTab(),
+                    _buildPostsTab(),
+                    _buildHistoryTab(),
+                    _buildNotesTab(),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -762,6 +822,440 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               fontWeight: FontWeight.w700,
               color: Color(0xFF34A853),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Tab Views
+  Widget _buildOverviewTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        children: [
+          // Astrological Info Card
+          _buildAstrologicalInfoCard(),
+          const SizedBox(height: 12),
+          
+          // Stats Card
+          _buildStatsCard(),
+          const SizedBox(height: 12),
+          
+          // About Section
+          _buildAboutCard(),
+          const SizedBox(height: 12),
+          
+          // Contact Info Card
+          _buildContactCard(),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostsTab() {
+    return _mockPosts.isEmpty
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.post_add,
+                  size: 64,
+                  color: const Color(0xFF6B6B8D).withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No posts yet',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6B6B8D),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'User hasn\'t posted in discussions',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B6B8D),
+                  ),
+                ),
+              ],
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            itemCount: _mockPosts.length,
+            itemBuilder: (context, index) {
+              final post = _mockPosts[index];
+              return _buildPostCard(post);
+            },
+          );
+  }
+
+  Widget _buildPostCard(Map<String, dynamic> post) {
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category and Date
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7C3AED).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  post['category'],
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF7C3AED),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                post['date'],
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6B6B8D),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Title
+          Text(
+            post['title'],
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A2E),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Content
+          Text(
+            post['content'],
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF6B6B8D),
+              height: 1.5,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          
+          // Engagement Row
+          Row(
+            children: [
+              Icon(
+                Icons.favorite_border,
+                size: 18,
+                color: const Color(0xFF6B6B8D),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${post['likes']}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF6B6B8D),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 18,
+                color: const Color(0xFF6B6B8D),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${post['comments']} comments',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF6B6B8D),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {},
+                child: const Text('View Post'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryTab() {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      children: [
+        _buildHistorySection(),
+      ],
+    );
+  }
+
+  Widget _buildNotesTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Notes Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.note_outlined, color: Color(0xFF7C3AED), size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Private Notes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      color: const Color(0xFF7C3AED),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _astrologerNotes,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1A1A2E),
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Tags Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.label_outline, color: Color(0xFF7C3AED), size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Tags',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildTag('Career Transition'),
+                    _buildTag('Gemstone Recommended'),
+                    _buildTag('Follow-up Needed'),
+                    _buildTag('Saturn Transit'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Tag'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7C3AED),
+                    side: const BorderSide(color: Color(0xFF7C3AED)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Reminders Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.notifications_outlined, color: Color(0xFF7C3AED), size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Reminders',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildReminderItem('Follow-up consultation', 'April 15, 2024'),
+                _buildReminderItem('Check Ruby gemstone feedback', 'April 1, 2024'),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Reminder'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7C3AED),
+                    side: const BorderSide(color: Color(0xFF7C3AED)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF7C3AED).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF7C3AED),
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () {},
+            child: const Icon(
+              Icons.close,
+              size: 14,
+              color: Color(0xFF7C3AED),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReminderItem(String title, String date) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.alarm, size: 18, color: Color(0xFF7C3AED)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  date,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B6B8D),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert, size: 18),
+            color: const Color(0xFF6B6B8D),
+            onPressed: () {},
           ),
         ],
       ),
