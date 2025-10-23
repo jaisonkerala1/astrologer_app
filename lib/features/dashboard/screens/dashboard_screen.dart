@@ -25,6 +25,7 @@ import '../widgets/earnings_card_widget.dart';
 import '../widgets/stats_card_widget.dart';
 import '../widgets/calendar_card_widget.dart';
 import '../widgets/dashboard_skeleton_loader.dart';
+import '../../../shared/widgets/value_shimmer.dart';
 import '../../consultations/screens/consultations_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
@@ -623,25 +624,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           child: BlocBuilder<DashboardBloc, DashboardState>(
             builder: (context, state) {
-            // Always show loading if user data is not ready yet
+            // Show skeleton loader only on initial load with no user data
             if (_currentUser == null) {
               return const DashboardSkeletonLoader();
             }
             
+            bool isLoading = false;
+            DashboardStatsModel? statsToShow;
+            
             if (state is DashboardLoading) {
-              // Show skeleton loader during initial load, existing content during refresh
-              if (_currentStats == null) {
-                return const DashboardSkeletonLoader();
-              } else {
-                // Show existing content during refresh to prevent flash animation
-                return _buildDashboardBody(_currentStats!);
-              }
+              // Show progressive loading with placeholder or previous data
+              isLoading = true;
+              statsToShow = _currentStats ?? DashboardStatsModel(
+                todayEarnings: 0,
+                totalEarnings: 0,
+                callsToday: 0,
+                totalCalls: 0,
+                isOnline: false,
+                totalSessions: 0,
+                averageRating: 0,
+                averageSessionDuration: 0,
+                todayCount: 0,
+                astrologer: _currentUser,
+              );
             } else if (state is DashboardLoadedState) {
               _currentStats = state.stats; // Store current stats for refresh
               if (state.stats.astrologer != null) {
                 _currentUser = state.stats.astrologer;
               }
-              return _buildDashboardBody(state.stats);
+              isLoading = false;
+              statsToShow = state.stats;
             } else if (state is DashboardErrorState) {
               return Padding(
                 padding: const EdgeInsets.all(16),
@@ -682,8 +694,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             } else {
               // Fallback for any unhandled states (like StatusUpdatedState)
-              return const DashboardSkeletonLoader();
+              isLoading = false;
+              statsToShow = _currentStats ?? DashboardStatsModel(
+                todayEarnings: 0,
+                totalEarnings: 0,
+                callsToday: 0,
+                totalCalls: 0,
+                isOnline: false,
+                totalSessions: 0,
+                averageRating: 0,
+                averageSessionDuration: 0,
+                todayCount: 0,
+                astrologer: _currentUser,
+              );
             }
+            
+            // Always show the dashboard body with progressive loading
+            return _buildDashboardBody(statsToShow!, isLoading: isLoading);
           },
           ),
         ),
@@ -692,7 +719,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildDashboardBody(stats) {
+  Widget _buildDashboardBody(stats, {bool isLoading = false}) {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<DashboardBloc>().add(RefreshDashboardEvent());
@@ -727,6 +754,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           EarningsCardWidget(
                             todayEarnings: stats.todayEarnings,
                             totalEarnings: stats.totalEarnings,
+                            isLoading: isLoading,
                             onRefresh: () {
                               context.read<DashboardBloc>().add(RefreshDashboardEvent());
                             },
@@ -746,10 +774,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Column(
                             children: [
                               // Calls Today Card - New Design
-                              _buildCallsCard(stats.callsToday),
+                              _buildCallsCard(stats.callsToday, isLoading: isLoading),
                               const SizedBox(height: 12),
                               // Messages Today Card - New Design
-                              _buildMessagesCard(),
+                              _buildMessagesCard(isLoading: isLoading),
                         ],
                         ),
                         const SizedBox(height: 16),
@@ -776,6 +804,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 value: stats.averageRating.toStringAsFixed(1),
                                 icon: Icons.star,
                                 color: AppTheme.ratingColor,
+                                isLoading: isLoading,
                                 onTap: () => _openReviewsScreen(),
                               ),
                             ),
@@ -786,6 +815,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
                                 icon: Icons.timer,
                                 color: AppTheme.secondaryColor,
+                                isLoading: isLoading,
                                 onTap: () {
                                   // TODO: Add navigation for average duration
                                 },
@@ -1332,7 +1362,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Redesigned Calls Today Card
-  Widget _buildCallsCard(int callsToday) {
+  Widget _buildCallsCard(int callsToday, {bool isLoading = false}) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         // Check if Vedic theme
@@ -1384,15 +1414,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      callsToday.toString(),
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: themeService.textPrimary,
-                        height: 1.0,
-                      ),
-                    ),
+                    isLoading
+                        ? const ValueShimmer(
+                            width: 60,
+                            height: 36,
+                            borderRadius: 8,
+                          )
+                        : Text(
+                            callsToday.toString(),
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: themeService.textPrimary,
+                              height: 1.0,
+                            ),
+                          ),
                     const SizedBox(height: 4),
                     Text(
                       'Calls Today',
@@ -1450,7 +1486,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Redesigned Messages Today Card
-  Widget _buildMessagesCard() {
+  Widget _buildMessagesCard({bool isLoading = false}) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         // Check if Vedic theme
@@ -1500,15 +1536,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '12',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: themeService.textPrimary,
-                        height: 1.0,
-                      ),
-                    ),
+                    isLoading
+                        ? const ValueShimmer(
+                            width: 60,
+                            height: 36,
+                            borderRadius: 8,
+                          )
+                        : Text(
+                            '12',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: themeService.textPrimary,
+                              height: 1.0,
+                            ),
+                          ),
                     const SizedBox(height: 4),
                     Text(
                       'Messages Today',

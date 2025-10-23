@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/theme/services/theme_service.dart';
+import '../../../../shared/widgets/value_shimmer.dart';
 
 class StatsCardWidget extends StatelessWidget {
   final String title;
@@ -10,6 +11,7 @@ class StatsCardWidget extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
+  final bool isLoading;
 
   const StatsCardWidget({
     super.key,
@@ -18,6 +20,7 @@ class StatsCardWidget extends StatelessWidget {
     required this.icon,
     required this.color,
     this.onTap,
+    this.isLoading = false,
   });
 
   @override
@@ -81,15 +84,21 @@ class StatsCardWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: themeService.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
+        isLoading
+            ? const ValueShimmer(
+                width: 80,
+                height: 32,
+                borderRadius: 6,
+              )
+            : Text(
+                value,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: themeService.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
         const SizedBox(height: 4),
         Text(
           title,

@@ -3,12 +3,14 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/simple_touch_feedback.dart';
+import '../../../../shared/widgets/value_shimmer.dart';
 
 class EarningsCardWidget extends StatelessWidget {
   final double todayEarnings;
   final double totalEarnings;
   final VoidCallback? onRefresh;
   final VoidCallback? onTap;
+  final bool isLoading;
 
   const EarningsCardWidget({
     super.key,
@@ -16,6 +18,7 @@ class EarningsCardWidget extends StatelessWidget {
     required this.totalEarnings,
     this.onRefresh,
     this.onTap,
+    this.isLoading = false,
   });
 
   @override
@@ -77,13 +80,19 @@ class EarningsCardWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            currencyFormat.format(todayEarnings),
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          isLoading
+              ? const ValueShimmer(
+                  width: 150,
+                  height: 48,
+                  borderRadius: 8,
+                )
+              : Text(
+                  currencyFormat.format(todayEarnings),
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -100,13 +109,19 @@ class EarningsCardWidget extends StatelessWidget {
                     color: Colors.white.withOpacity(0.9),
                   ),
                 ),
-                Text(
-                  currencyFormat.format(totalEarnings),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                isLoading
+                    ? const ValueShimmer(
+                        width: 100,
+                        height: 20,
+                        borderRadius: 6,
+                      )
+                    : Text(
+                        currencyFormat.format(totalEarnings),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ],
             ),
           ),
