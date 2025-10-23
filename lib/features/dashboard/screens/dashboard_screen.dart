@@ -40,6 +40,7 @@ import '../../communication/screens/incoming_call_screen.dart';
 import '../../reviews/screens/reviews_overview_screen.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
+import '../../profile/screens/user_profile_screen.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../notifications/screens/notifications_screen.dart';
@@ -836,6 +837,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             text: 'Test Incoming Call',
                             icon: Icons.call_received,
                             backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            width: double.infinity,
+                            height: 56,
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Test Button for User Profile
+                          AnimatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const UserProfileScreen(),
+                                ),
+                              );
+                            },
+                            text: 'View Sample User Profile',
+                            icon: Icons.person_outline,
+                            backgroundColor: const Color(0xFF7C3AED),
                             foregroundColor: Colors.white,
                             width: double.infinity,
                             height: 56,
