@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'solar_system_widget.dart';
+import 'spiral_galaxy_widget.dart';
 
 /// Abstract playful illustration with organic shapes and device mockup
 /// Based on Android's onboarding design with floating decorative elements
@@ -16,59 +18,64 @@ class AbstractIllustration extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background decorative shapes
+          // Background decorative shapes - Astrology themed
+          // Shape 1: Saturn (Yellow, large)
           Positioned(
             left: 20,
             top: 60,
             child: _buildFloatingShape(
-              color: const Color(0xFFF8DC89), // Yellow daisy
+              color: const Color(0xFFF8DC89), // Yellow
               size: 120,
-              type: ShapeType.flower,
+              type: ShapeType.zodiacWheel,
             ),
           ),
+          // Shape 2: Star (Pink)
           Positioned(
             left: 40,
             top: 10,
             child: _buildFloatingShape(
-              color: const Color(0xFFF8A5A5), // Pink blob
+              color: const Color(0xFFF8A5A5), // Pink
               size: 80,
-              type: ShapeType.blob,
+              type: ShapeType.crystal,
             ),
           ),
+          // Shape 3: Constellation (Blue, small)
           Positioned(
             right: 30,
             top: 40,
             child: _buildFloatingShape(
-              color: const Color(0xFF4DA6FF), // Blue shape
+              color: const Color(0xFF4DA6FF), // Blue
               size: 50,
-              type: ShapeType.blob,
+              type: ShapeType.constellation,
             ),
           ),
+          // Shape 4: Shooting Star (Blue)
           Positioned(
             right: 60,
             top: 120,
             child: _buildFloatingShape(
-              color: const Color(0xFF4DA6FF), // Blue music note
+              color: const Color(0xFF4DA6FF), // Blue
               size: 60,
-              type: ShapeType.musicNote,
+              type: ShapeType.shootingStar,
             ),
           ),
+          // Shape 5: Crescent Moon (Light blue, large)
           Positioned(
             right: 20,
             bottom: 80,
             child: _buildFloatingShape(
               color: const Color(0xFF89B4F8), // Light blue
               size: 90,
-              type: ShapeType.blob,
+              type: ShapeType.crescentMoon,
             ),
           ),
-          Positioned(
+          // Shape 6: Spiral Galaxy (Green)
+          const Positioned(
             left: 30,
             bottom: 40,
-            child: _buildFloatingShape(
-              color: const Color(0xFF89F8B4), // Green blob
+            child: SpiralGalaxyWidget(
               size: 70,
-              type: ShapeType.heart,
+              color: Color(0xFF89F8B4), // Green
             ),
           ),
           
@@ -92,11 +99,9 @@ class AbstractIllustration extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Center(
-                child: Icon(
-                  Icons.android,
-                  size: 48,
-                  color: const Color(0xFF34A853), // Android green
+              child: const Center(
+                child: SolarSystemWidget(
+                  size: 140,
                 ),
               ),
             ),
@@ -118,7 +123,7 @@ class AbstractIllustration extends StatelessWidget {
   }
 }
 
-enum ShapeType { blob, flower, musicNote, heart }
+enum ShapeType { zodiacWheel, crystal, constellation, shootingStar, crescentMoon }
 
 class _ShapePainter extends CustomPainter {
   final Color color;
@@ -133,122 +138,266 @@ class _ShapePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     switch (type) {
-      case ShapeType.blob:
-        _drawBlob(canvas, size, paint);
+      case ShapeType.zodiacWheel:
+        _drawZodiacWheel(canvas, size, paint);
         break;
-      case ShapeType.flower:
-        _drawFlower(canvas, size, paint);
+      case ShapeType.crystal:
+        _drawCrystal(canvas, size, paint);
         break;
-      case ShapeType.musicNote:
-        _drawMusicNote(canvas, size, paint);
+      case ShapeType.constellation:
+        _drawConstellation(canvas, size, paint);
         break;
-      case ShapeType.heart:
-        _drawHeart(canvas, size, paint);
+      case ShapeType.shootingStar:
+        _drawShootingStar(canvas, size, paint);
+        break;
+      case ShapeType.crescentMoon:
+        _drawCrescentMoon(canvas, size, paint);
         break;
     }
   }
 
-  void _drawBlob(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
+  // 1. Saturn - Planet with iconic rings
+  void _drawZodiacWheel(Canvas canvas, Size size, Paint paint) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = size.width / 2;
+    final r = size.width / 2.8;
 
-    path.moveTo(cx + r * 0.8, cy);
-    path.cubicTo(
-      cx + r, cy - r * 0.5,
-      cx + r * 0.5, cy - r,
-      cx, cy - r * 0.8,
-    );
-    path.cubicTo(
-      cx - r * 0.5, cy - r,
-      cx - r, cy - r * 0.5,
-      cx - r * 0.8, cy,
-    );
-    path.cubicTo(
-      cx - r, cy + r * 0.5,
-      cx - r * 0.5, cy + r,
-      cx, cy + r * 0.8,
-    );
-    path.cubicTo(
-      cx + r * 0.5, cy + r,
-      cx + r, cy + r * 0.5,
-      cx + r * 0.8, cy,
-    );
-    path.close();
+    // Draw planet body with gradient effect
+    final planetPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          color.withOpacity(0.9),
+          color,
+        ],
+        stops: const [0.4, 1.0],
+      ).createShader(Rect.fromCircle(
+        center: Offset(cx, cy),
+        radius: r,
+      ));
 
-    canvas.drawPath(path, paint);
+    canvas.drawCircle(Offset(cx, cy), r, planetPaint);
+
+    // Draw horizontal bands (gas giant stripes)
+    final bandPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    canvas.drawLine(
+      Offset(cx - r * 0.8, cy - r * 0.3),
+      Offset(cx + r * 0.8, cy - r * 0.3),
+      bandPaint,
+    );
+    canvas.drawLine(
+      Offset(cx - r * 0.6, cy + r * 0.2),
+      Offset(cx + r * 0.6, cy + r * 0.2),
+      bandPaint,
+    );
+
+    // Draw iconic rings (elliptical)
+    final ringPaint = Paint()
+      ..color = color.withOpacity(0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+
+    final ringPath = Path();
+    ringPath.addOval(Rect.fromCenter(
+      center: Offset(cx, cy + r * 0.3),
+      width: r * 3.2,
+      height: r * 0.8,
+    ));
+    canvas.drawPath(ringPath, ringPaint);
+
+    // Second ring (inner)
+    final innerRingPaint = Paint()
+      ..color = color.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    final innerRingPath = Path();
+    innerRingPath.addOval(Rect.fromCenter(
+      center: Offset(cx, cy + r * 0.3),
+      width: r * 2.6,
+      height: r * 0.6,
+    ));
+    canvas.drawPath(innerRingPath, innerRingPaint);
+
+    // Add highlight for 3D effect on planet
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(Offset(cx - r * 0.3, cy - r * 0.3), r * 0.4, highlightPaint);
   }
 
-  void _drawFlower(Canvas canvas, Size size, Paint paint) {
+  // 2. Simple Star - Classic 5-pointed star
+  void _drawCrystal(Canvas canvas, Size size, Paint paint) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = size.width / 5;
+    final outerRadius = size.width / 2.5;
+    final innerRadius = outerRadius * 0.4;
 
-    // Draw 8 petals
-    for (int i = 0; i < 8; i++) {
-      final angle = (i * math.pi / 4);
-      final petalCx = cx + math.cos(angle) * r * 1.5;
-      final petalCy = cy + math.sin(angle) * r * 1.5;
-      canvas.drawCircle(Offset(petalCx, petalCy), r, paint);
+    final starPath = Path();
+    
+    // Draw 5-pointed star
+    for (int i = 0; i < 5; i++) {
+      // Outer point
+      final outerAngle = (i * 2 * math.pi / 5) - math.pi / 2;
+      final outerX = cx + math.cos(outerAngle) * outerRadius;
+      final outerY = cy + math.sin(outerAngle) * outerRadius;
+      
+      if (i == 0) {
+        starPath.moveTo(outerX, outerY);
+      } else {
+        starPath.lineTo(outerX, outerY);
+      }
+      
+      // Inner point
+      final innerAngle = outerAngle + math.pi / 5;
+      final innerX = cx + math.cos(innerAngle) * innerRadius;
+      final innerY = cy + math.sin(innerAngle) * innerRadius;
+      starPath.lineTo(innerX, innerY);
+    }
+    starPath.close();
+
+    canvas.drawPath(starPath, paint);
+
+    // Add glow effect for sparkle
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawPath(starPath, glowPaint);
+
+    // Add center highlight
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.3);
+    canvas.drawCircle(Offset(cx, cy), outerRadius * 0.2, highlightPaint);
+  }
+
+  // 3. Constellation - Connected stars pattern
+  void _drawConstellation(Canvas canvas, Size size, Paint paint) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width / 3;
+
+    // Define star positions (Big Dipper-like pattern)
+    final stars = [
+      Offset(cx - r * 0.8, cy - r * 0.6),
+      Offset(cx - r * 0.3, cy - r * 0.8),
+      Offset(cx + r * 0.2, cy - r * 0.7),
+      Offset(cx + r * 0.7, cy - r * 0.3),
+      Offset(cx + r * 0.5, cy + r * 0.3),
+    ];
+
+    // Draw connecting lines
+    final linePaint = Paint()
+      ..color = color.withOpacity(0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (int i = 0; i < stars.length - 1; i++) {
+      canvas.drawLine(stars[i], stars[i + 1], linePaint);
     }
 
-    // Draw center
-    final centerPaint = Paint()
-      ..color = color.withOpacity(0.8)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(cx, cy), r * 0.8, centerPaint);
+    // Draw stars on top
+    for (var star in stars) {
+      canvas.drawCircle(star, 3, paint);
+      // Add glow
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      canvas.drawCircle(star, 5, glowPaint);
+    }
   }
 
-  void _drawMusicNote(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
+  // 4. Shooting Star - Comet with tail
+  void _drawShootingStar(Canvas canvas, Size size, Paint paint) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = size.width / 6;
+    final starSize = size.width / 8;
 
-    // Note head
-    canvas.drawCircle(Offset(cx - r, cy + r), r, paint);
-
-    // Note stem
-    final stemPaint = Paint()
+    // Draw tail (gradient effect with multiple lines)
+    final tailPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = r / 2;
-    canvas.drawLine(
-      Offset(cx - r + r * 0.8, cy + r),
-      Offset(cx - r + r * 0.8, cy - r * 2),
-      stemPaint,
-    );
+      ..strokeCap = StrokeCap.round;
 
-    // Note flag (curved)
-    final flagPath = Path();
-    flagPath.moveTo(cx - r + r * 0.8, cy - r * 2);
-    flagPath.quadraticBezierTo(
-      cx + r * 1.5, cy - r * 1.5,
-      cx + r, cy - r,
-    );
-    canvas.drawPath(flagPath, stemPaint);
+    for (int i = 0; i < 5; i++) {
+      tailPaint
+        ..strokeWidth = 3 - (i * 0.5)
+        ..color = color.withOpacity(0.7 - (i * 0.15));
+      
+      final offsetX = i * 8.0;
+      final offsetY = i * 8.0;
+      canvas.drawLine(
+        Offset(cx - offsetX, cy + offsetY),
+        Offset(cx - offsetX - 15, cy + offsetY + 15),
+        tailPaint,
+      );
+    }
+
+    // Draw star head (5-pointed star)
+    final starPath = Path();
+    for (int i = 0; i < 5; i++) {
+      final angle = (i * 2 * math.pi / 5) - math.pi / 2;
+      final x = cx + math.cos(angle) * starSize;
+      final y = cy + math.sin(angle) * starSize;
+      
+      if (i == 0) {
+        starPath.moveTo(x, y);
+      } else {
+        starPath.lineTo(x, y);
+      }
+      
+      // Inner point
+      final innerAngle = angle + math.pi / 5;
+      final innerX = cx + math.cos(innerAngle) * starSize * 0.4;
+      final innerY = cy + math.sin(innerAngle) * starSize * 0.4;
+      starPath.lineTo(innerX, innerY);
+    }
+    starPath.close();
+
+    canvas.drawPath(starPath, paint);
+
+    // Add glow
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(Offset(cx, cy), starSize, glowPaint);
   }
 
-  void _drawHeart(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
+  // 5. Crescent Moon - Classic moon shape
+  void _drawCrescentMoon(Canvas canvas, Size size, Paint paint) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = size.width / 4;
+    final r = size.width / 2.5;
 
-    // Left lobe
-    path.addOval(Rect.fromCircle(center: Offset(cx - r / 2, cy - r / 2), radius: r / 2));
-    // Right lobe
-    path.addOval(Rect.fromCircle(center: Offset(cx + r / 2, cy - r / 2), radius: r / 2));
-
-    // Bottom point
-    final bottomPath = Path();
-    bottomPath.moveTo(cx - r, cy - r / 2);
-    bottomPath.quadraticBezierTo(cx, cy + r, cx, cy + r);
-    bottomPath.quadraticBezierTo(cx, cy + r, cx + r, cy - r / 2);
+    // Use Path to create crescent shape
+    final crescentPath = Path();
     
-    path.addPath(bottomPath, Offset.zero);
-    canvas.drawPath(path, paint);
+    // Add outer circle (full moon)
+    crescentPath.addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r));
+    
+    // Subtract inner circle to create crescent
+    final cutoutPath = Path();
+    cutoutPath.addOval(Rect.fromCircle(
+      center: Offset(cx + r * 0.4, cy - r * 0.1),
+      radius: r * 0.85,
+    ));
+    
+    // Create crescent by subtracting the cutout from the full moon
+    final finalPath = Path.combine(
+      PathOperation.difference,
+      crescentPath,
+      cutoutPath,
+    );
+
+    canvas.drawPath(finalPath, paint);
+
+    // Add highlight for 3D effect
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawCircle(Offset(cx - r * 0.3, cy - r * 0.3), r * 0.3, highlightPaint);
   }
 
   @override

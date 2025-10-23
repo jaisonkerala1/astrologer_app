@@ -28,14 +28,14 @@ class OnboardingSlide1 extends StatelessWidget {
                 // Astrology branding header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
+                  children: const [
+                    Icon(
                       Icons.auto_awesome,
                       color: Color(0xFF34A853),
                       size: 32,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
+                    SizedBox(width: 8),
+                    Text(
                       'AstroGuru',
                       style: TextStyle(
                         color: Colors.white,
@@ -52,7 +52,7 @@ class OnboardingSlide1 extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
-                    'Your journey\nbegins here',
+                    'Welcome to\nAstroGuru',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -121,6 +121,3 @@ class OnboardingSlide1 extends StatelessWidget {
     );
   }
 }
-
-
-
