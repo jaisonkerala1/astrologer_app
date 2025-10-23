@@ -65,7 +65,7 @@ class AstroGuruChatMockup extends StatelessWidget {
                 children: [
                   // Greeting
                   Text(
-                    isHindi ? 'नमस्ते, साधक' : 'Namaste, Seeker',
+                    isHindi ? 'स्वागत, गुरु' : 'Welcome, Guru',
                     style: const TextStyle(
                       color: Color(0xFF4285F4),
                       fontSize: 24,
@@ -74,7 +74,7 @@ class AstroGuruChatMockup extends StatelessWidget {
                   ).animate().fadeIn(duration: 500.ms, delay: 200.ms).slideY(begin: 0.3, end: 0),
                   const SizedBox(height: 16),
                   
-                  // Heal button
+                  // View consultations button
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
@@ -92,14 +92,14 @@ class AstroGuruChatMockup extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Icon(
-                            Icons.healing,
+                            Icons.calendar_today,
                             size: 11,
                             color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 7),
                         Text(
-                          isHindi ? 'उपचार यात्रा शुरू करें' : 'Start healing journey',
+                          isHindi ? 'परामर्श देखें' : 'View consultations',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11.5,
@@ -154,8 +154,8 @@ class AstroGuruChatMockup extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           isHindi 
-                              ? 'ज्योतिषियों से जुड़ें जो जीवन की चुनौतियों में आपका मार्गदर्शन कर सकते हैं'
-                              : 'Connect with astrologers who can guide you through life\'s challenges and help heal your spiritual journey',
+                              ? 'अपने मार्गदर्शन की तलाश करने वाले अनुयायियों से जुड़ें। बुकिंग प्रबंधित करें, परामर्श करें, और अपनी आध्यात्मिक प्रथा का निर्माण करें'
+                              : 'Connect with followers seeking your guidance. Manage bookings, conduct consultations, and build your spiritual practice.',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11.5,
