@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 enum LiveStreamCategory {
   general,
   astrology,
@@ -16,7 +18,7 @@ enum LiveStreamQuality {
   ultra,
 }
 
-class LiveStreamModel {
+class LiveStreamModel extends Equatable {
   final String id;
   final String astrologerId;
   final String astrologerName;
@@ -38,7 +40,7 @@ class LiveStreamModel {
   final LiveStreamCategory category;
   final int duration;
 
-  LiveStreamModel({
+  const LiveStreamModel({
     required this.id,
     required this.astrologerId,
     required this.astrologerName,
@@ -60,6 +62,13 @@ class LiveStreamModel {
     this.category = LiveStreamCategory.general,
     this.duration = 0,
   });
+
+  @override
+  List<Object?> get props => [
+    id, astrologerId, astrologerName, astrologerProfilePicture, astrologerSpecialty,
+    title, description, viewerCount, isLive, startedAt, thumbnailUrl, streamUrl,
+    tags, rating, totalSessions, language, isVerified, likes, category, duration,
+  ];
 
   factory LiveStreamModel.fromJson(Map<String, dynamic> json) {
     return LiveStreamModel(

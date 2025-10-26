@@ -1,4 +1,6 @@
-class HolidayModel {
+import 'package:equatable/equatable.dart';
+
+class HolidayModel extends Equatable {
   final String id;
   final String astrologerId;
   final DateTime date;
@@ -16,6 +18,17 @@ class HolidayModel {
     this.recurringPattern,
     required this.createdAt,
   });
+
+  @override
+  List<Object?> get props => [
+    id,
+    astrologerId,
+    date,
+    reason,
+    isRecurring,
+    recurringPattern,
+    createdAt,
+  ];
 
   factory HolidayModel.fromJson(Map<String, dynamic> json) {
     return HolidayModel(

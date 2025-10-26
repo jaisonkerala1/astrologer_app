@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
-import '../services/notification_service.dart';
+import '../bloc/notifications_bloc.dart';
+import '../bloc/notifications_event.dart';
+import '../bloc/notifications_state.dart';
 import '../models/notification_model.dart';
 import '../models/notification_filter.dart';
 import '../widgets/notification_card.dart';
@@ -29,9 +32,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationService>().initialize();
-    });
+    // Load notifications using BLoC
+    context.read<NotificationsBloc>().add(const LoadNotificationsEvent());
   }
 
   @override
@@ -151,42 +153,60 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildNotificationsList(NotificationFilter filter) {
-    return Consumer<NotificationService>(
-      builder: (context, notificationService, child) {
-        if (notificationService.isLoading && notificationService.notifications.isEmpty) {
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        // Loading state
+        if (state is NotificationsLoading) {
           return _buildSkeletonList();
         }
 
-        if (notificationService.error != null) {
-          return _buildErrorState(notificationService.error!);
+        // Error state
+        if (state is NotificationsErrorState) {
+          return _buildErrorState(state.message);
         }
 
-        final filteredNotifications = _getFilteredNotifications(
-          notificationService.notifications,
-          filter,
-        );
+        // Loaded state
+        if (state is NotificationsLoadedState) {
+          final filteredNotifications = _getFilteredNotifications(
+            state.notifications,
+            filter,
+          );
 
-        if (filteredNotifications.isEmpty) {
-          return NotificationEmptyState(filter: filter);
-        }
+          if (filteredNotifications.isEmpty) {
+            return NotificationEmptyState(filter: filter);
+          }
 
-        return RefreshIndicator(
-          onRefresh: () => notificationService.refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-            itemCount: filteredNotifications.length,
-            itemBuilder: (context, index) {
-              final notification = filteredNotifications[index];
-              return NotificationCard(
-                notification: notification,
-                onTap: () => _openNotificationDetail(notification),
-                onMarkAsRead: () => notificationService.markAsRead(notification.id),
-                onArchive: () => notificationService.archiveNotification(notification.id),
-                onDelete: () => notificationService.deleteNotification(notification.id),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<NotificationsBloc>().add(const RefreshNotificationsEvent());
+              // Wait for refresh to complete
+              await Future.delayed(const Duration(milliseconds: 500));
             },
-          ),
-        );
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              itemCount: filteredNotifications.length,
+              itemBuilder: (context, index) {
+                final notification = filteredNotifications[index];
+                return NotificationCard(
+                  notification: notification,
+                  onTap: () => _openNotificationDetail(notification),
+                  onMarkAsRead: () => context.read<NotificationsBloc>().add(
+                    MarkAsReadEvent(notification.id),
+                  ),
+                  onArchive: () => context.read<NotificationsBloc>().add(
+                    ArchiveNotificationEvent(notification.id),
+                  ),
+                  onDelete: () => context.read<NotificationsBloc>().add(
+                    DeleteNotificationEvent(notification.id),
+                  ),
+                );
+              },
+            ),
+          );
+        }
+
+        // Initial state
+        return _buildSkeletonList();
       },
     );
   }
@@ -239,7 +259,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.read<NotificationService>().refresh(),
+              onPressed: () => context.read<NotificationsBloc>().add(const RefreshNotificationsEvent()),
               child: const Text('Retry'),
             ),
           ],
@@ -249,15 +269,17 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildFloatingActionButton() {
-    return Consumer<NotificationService>(
-      builder: (context, notificationService, child) {
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
         final themeService = Provider.of<ThemeService>(context, listen: false);
-        if (notificationService.unreadCount == 0) {
+        
+        // Only show FAB if there are unread notifications
+        if (state is! NotificationsLoadedState || state.stats?.unread == 0) {
           return const SizedBox.shrink();
         }
 
         return FloatingActionButton(
-          onPressed: () => notificationService.markAllAsRead(),
+          onPressed: () => context.read<NotificationsBloc>().add(const MarkAllAsReadEvent()),
           backgroundColor: themeService.primaryColor,
           foregroundColor: Colors.white,
           child: const Icon(Icons.done_all),
@@ -348,11 +370,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   void _handleMenuAction(String action) {
-    final notificationService = context.read<NotificationService>();
+    final notificationsBloc = context.read<NotificationsBloc>();
     
     switch (action) {
       case 'mark_all_read':
-        notificationService.markAllAsRead();
+        notificationsBloc.add(const MarkAllAsReadEvent());
         break;
       case 'clear_all':
         _showClearAllDialog();
@@ -378,7 +400,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
           TextButton(
             onPressed: () {
-              context.read<NotificationService>().clearAllNotifications();
+              context.read<NotificationsBloc>().add(const DeleteAllNotificationsEvent());
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(

@@ -1,4 +1,6 @@
-class TimeSlotModel {
+import 'package:equatable/equatable.dart';
+
+class TimeSlotModel extends Equatable {
   final String id;
   final String astrologerId;
   final DateTime date;
@@ -24,6 +26,21 @@ class TimeSlotModel {
     required this.bufferTime,
     required this.createdAt,
   });
+
+  @override
+  List<Object?> get props => [
+    id,
+    astrologerId,
+    date,
+    startTime,
+    endTime,
+    duration,
+    isAvailable,
+    isBooked,
+    consultationId,
+    bufferTime,
+    createdAt,
+  ];
 
   factory TimeSlotModel.fromJson(Map<String, dynamic> json) {
     return TimeSlotModel(

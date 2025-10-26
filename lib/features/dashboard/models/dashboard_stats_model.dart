@@ -1,6 +1,7 @@
+import 'package:equatable/equatable.dart';
 import '../../auth/models/astrologer_model.dart';
 
-class DashboardStatsModel {
+class DashboardStatsModel extends Equatable {
   final double todayEarnings;
   final double totalEarnings;
   final int callsToday;
@@ -92,6 +93,20 @@ class DashboardStatsModel {
       astrologer: astrologer ?? this.astrologer,
     );
   }
+  
+  @override
+  List<Object?> get props => [
+    todayEarnings,
+    totalEarnings,
+    callsToday,
+    totalCalls,
+    isOnline,
+    totalSessions,
+    averageSessionDuration,
+    averageRating,
+    todayCount,
+    astrologer,
+  ];
 }
 
 

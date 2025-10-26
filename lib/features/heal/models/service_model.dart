@@ -1,4 +1,6 @@
-class ServiceModel {
+import 'package:equatable/equatable.dart';
+
+class ServiceModel extends Equatable {
   final String id;
   final String name;
   final String description;
@@ -12,7 +14,7 @@ class ServiceModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  ServiceModel({
+  const ServiceModel({
     required this.id,
     required this.name,
     required this.description,
@@ -26,6 +28,12 @@ class ServiceModel {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  @override
+  List<Object?> get props => [
+    id, name, description, category, price, duration,
+    requirements, benefits, isActive, imageUrl, createdAt, updatedAt,
+  ];
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
     return ServiceModel(

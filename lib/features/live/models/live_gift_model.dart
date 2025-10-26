@@ -1,4 +1,6 @@
-class LiveGiftModel {
+import 'package:equatable/equatable.dart';
+
+class LiveGiftModel extends Equatable {
   final String id;
   final String streamId;
   final String userId;
@@ -8,7 +10,7 @@ class LiveGiftModel {
   final int giftValue;
   final DateTime timestamp;
 
-  LiveGiftModel({
+  const LiveGiftModel({
     required this.id,
     required this.streamId,
     required this.userId,
@@ -18,6 +20,11 @@ class LiveGiftModel {
     required this.giftValue,
     required this.timestamp,
   });
+
+  @override
+  List<Object?> get props => [
+    id, streamId, userId, userName, giftName, giftEmoji, giftValue, timestamp,
+  ];
 
   factory LiveGiftModel.fromJson(Map<String, dynamic> json) {
     return LiveGiftModel(

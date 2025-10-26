@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'core/services/api_service.dart';
-import 'core/services/storage_service.dart';
+import 'core/di/service_locator.dart';
 import 'core/services/language_service.dart';
 import 'core/services/status_service.dart';
 import 'core/services/app_restart_service.dart';
@@ -16,6 +15,9 @@ import 'shared/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize dependency injection
+  await setupServiceLocator();
+  
   // Set system UI overlay style for transparent status bar
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -27,9 +29,7 @@ void main() async {
     ),
   );
   
-  // Initialize services
-  await StorageService().initialize();
-  await ApiService().initialize();
+  // Initialize services (Storage and API already initialized in service locator)
   final languageService = LanguageService();
   await languageService.initialize();
   final statusService = StatusService();

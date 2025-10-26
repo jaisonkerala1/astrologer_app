@@ -1,35 +1,39 @@
+import 'package:equatable/equatable.dart';
 import '../../auth/models/astrologer_model.dart';
 
-abstract class ProfileState {}
+abstract class ProfileState extends Equatable {
+  const ProfileState();
+  
+  @override
+  List<Object?> get props => [];
+}
 
-class ProfileInitial extends ProfileState {}
+class ProfileInitial extends ProfileState {
+  const ProfileInitial();
+}
 
-class ProfileLoading extends ProfileState {}
+class ProfileLoading extends ProfileState {
+  const ProfileLoading();
+}
 
 class ProfileLoadedState extends ProfileState {
   final AstrologerModel astrologer;
+  final String? successMessage; // Optional success message after updates
   
-  ProfileLoadedState(this.astrologer);
-}
-
-class ProfileUpdatedState extends ProfileState {
-  final AstrologerModel astrologer;
-  final String message;
+  ProfileLoadedState(this.astrologer, {this.successMessage});
   
-  ProfileUpdatedState({
-    required this.astrologer,
-    required this.message,
-  });
+  @override
+  List<Object?> get props => [astrologer, successMessage];
 }
 
 class ProfileErrorState extends ProfileState {
   final String message;
   
-  ProfileErrorState(this.message);
+  const ProfileErrorState(this.message);
+  
+  @override
+  List<Object?> get props => [message];
 }
 
-class ImageUploadedState extends ProfileState {
-  final String imageUrl;
-  
-  ImageUploadedState(this.imageUrl);
-}
+// ProfileUpdatedState removed - use ProfileLoadedState with successMessage instead
+// ImageUploadedState removed - use ProfileLoadedState with updated astrologer instead

@@ -1,4 +1,6 @@
-class AstrologerModel {
+import 'package:equatable/equatable.dart';
+
+class AstrologerModel extends Equatable {
   final String id;
   final String phone;
   final String name;
@@ -152,6 +154,32 @@ class AstrologerModel {
       acceptanceDeviceInfo: acceptanceDeviceInfo ?? this.acceptanceDeviceInfo,
     );
   }
+  
+  @override
+  List<Object?> get props => [
+    id,
+    phone,
+    name,
+    email,
+    profilePicture,
+    specializations,
+    languages,
+    experience,
+    ratePerMinute,
+    isOnline,
+    totalEarnings,
+    bio,
+    awards,
+    certificates,
+    createdAt,
+    updatedAt,
+    sessionId,
+    termsAccepted,
+    termsAcceptedAt,
+    acceptedTermsVersion,
+    acceptanceIpAddress,
+    acceptanceDeviceInfo,
+  ];
 }
 
 

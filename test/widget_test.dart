@@ -19,9 +19,6 @@ void main() {
   testWidgets('App builds without crashing', (tester) async {
     await tester.pumpWidget(AstrologerApp(
       languageService: LanguageService(),
-      statusService: StatusService(),
-      notificationService: NotificationService(),
-      liveStreamService: LiveStreamService(),
       themeService: ThemeService(),
     ));
     expect(find.byType(MaterialApp), findsOneWidget);

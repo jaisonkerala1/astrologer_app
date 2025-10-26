@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/notification_model.dart';
-import '../services/notification_service.dart';
+import '../bloc/notifications_bloc.dart';
+import '../bloc/notifications_event.dart';
 
 class NotificationDetailScreen extends StatefulWidget {
   final NotificationModel notification;
@@ -22,11 +23,11 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
   void initState() {
     super.initState();
     // Mark notification as read when opened
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.notification.isUnread) {
-        context.read<NotificationService>().markAsRead(widget.notification.id);
-      }
-    });
+    if (widget.notification.isUnread) {
+      context.read<NotificationsBloc>().add(
+        MarkAsReadEvent(widget.notification.id),
+      );
+    }
   }
 
   @override
@@ -454,16 +455,16 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
   }
 
   void _handleMenuAction(String action) {
-    final notificationService = context.read<NotificationService>();
+    final notificationsBloc = context.read<NotificationsBloc>();
     
     switch (action) {
       case 'mark_read':
         if (widget.notification.isUnread) {
-          notificationService.markAsRead(widget.notification.id);
+          notificationsBloc.add(MarkAsReadEvent(widget.notification.id));
         }
         break;
       case 'archive':
-        notificationService.archiveNotification(widget.notification.id);
+        notificationsBloc.add(ArchiveNotificationEvent(widget.notification.id));
         Navigator.pop(context);
         break;
       case 'delete':
@@ -487,7 +488,7 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
           ),
           TextButton(
             onPressed: () {
-              context.read<NotificationService>().deleteNotification(widget.notification.id);
+              context.read<NotificationsBloc>().add(DeleteNotificationEvent(widget.notification.id));
               Navigator.pop(context);
               Navigator.pop(context);
             },

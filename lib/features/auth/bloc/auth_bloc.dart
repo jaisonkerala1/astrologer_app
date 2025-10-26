@@ -1,20 +1,17 @@
-import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../data/repositories/auth/auth_repository.dart';
 import '../../../core/services/api_service.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/constants/api_constants.dart';
-import '../models/auth_response_model.dart';
 import '../models/astrologer_model.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import 'dart:async';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final ApiService _apiService = ApiService();
-  final StorageService _storageService = StorageService();
+  final AuthRepository repository;
+  final ApiService _apiService = ApiService(); // Still needed for unauthorized stream
   StreamSubscription<String>? _unauthorizedSubscription;
 
-  AuthBloc() : super(AuthInitial()) {
+  AuthBloc({required this.repository}) : super(AuthInitial()) {
     on<CheckPhoneExistsEvent>(_onCheckPhoneExists);
     on<SendOtpEvent>(_onSendOtp);
     on<VerifyOtpEvent>(_onVerifyOtp);
@@ -32,7 +29,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _initializeStorage() async {
-    await _storageService.initialize();
     _apiService.initialize();
     add(InitializeAuthEvent());
   }
@@ -53,8 +49,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     print('║ Timestamp: ${DateTime.now()}');
     print('╚═══════════════════════════════════════════════════════╝');
     print('');
-    await _clearAuthData();
-    _apiService.clearAuthToken();
+    await repository.clearAuthData();
     print('⚠️ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (from unauthorized event)');
     emit(AuthUnauthenticatedState());
   }
@@ -63,33 +58,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      final response = await _apiService.post(
-        ApiConstants.checkPhone,
-        data: {'phone': event.phoneNumber.trim()},
-      );
+      final result = await repository.checkPhoneExists(event.phoneNumber);
       
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final exists = data['exists'] ?? false;
-        final message = data['message'] ?? '';
-        
-        emit(PhoneCheckedState(
-          exists: exists,
-          message: message,
-          phoneNumber: event.phoneNumber,
-        ));
-      } else {
-        emit(AuthErrorState('Failed to check phone number. Please try again.'));
-      }
+      emit(PhoneCheckedState(
+        exists: result['exists'],
+        message: result['message'],
+        phoneNumber: event.phoneNumber,
+      ));
     } catch (e) {
       print('Check phone exists error: $e');
-      if (e.toString().contains('Connection refused')) {
-        emit(AuthErrorState('Cannot connect to server. Please check your internet connection.'));
-      } else if (e.toString().contains('timeout')) {
-        emit(AuthErrorState('Request timeout. Please check your internet connection.'));
-      } else {
-        emit(AuthErrorState('Failed to check phone number. Please try again.'));
-      }
+      emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
     }
   }
 
@@ -97,35 +75,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      // Try API call first
-      final response = await _apiService.post(
-        ApiConstants.sendOtp,
-        data: {'phone': event.phoneNumber.trim()},
-      );
+      final result = await repository.sendOtp(event.phoneNumber);
       
-      if (response.statusCode == 200) {
-        final authResponse = AuthResponseModel.fromJson(response.data);
-        if (authResponse.success) {
-          emit(OtpSentState(
-            message: authResponse.message,
-            otpId: authResponse.otpId,
-          ));
-        } else {
-          emit(AuthErrorState(authResponse.message));
-        }
-      } else {
-        emit(AuthErrorState('Failed to send OTP. Please try again.'));
-      }
+      emit(OtpSentState(
+        message: result['message'],
+        otpId: result['otpId'],
+      ));
     } catch (e) {
       print('Send OTP API Error: $e');
-      print('Error type: ${e.runtimeType}');
-      if (e.toString().contains('Connection refused')) {
-        emit(AuthErrorState('Cannot connect to server. Make sure backend is running on http://192.168.29.99:7566'));
-      } else if (e.toString().contains('timeout')) {
-        emit(AuthErrorState('Request timeout. Please check your internet connection.'));
-      } else {
-        emit(AuthErrorState('Failed to send OTP: ${e.toString()}'));
-      }
+      emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
     }
   }
 
@@ -133,67 +91,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      // Try API call first
-      final response = await _apiService.post(
-        ApiConstants.verifyOtp,
-        data: {
-          'phone': event.phoneNumber.trim(),
-          'otp': event.otp,
-          if (event.otpId != null) 'otpId': event.otpId,
-        },
+      final result = await repository.verifyOtp(
+        phoneNumber: event.phoneNumber,
+        otp: event.otp,
+        otpId: event.otpId,
       );
       
-      if (response.statusCode == 200) {
-        final authResponse = AuthResponseModel.fromJson(response.data);
-        if (authResponse.success && authResponse.astrologer != null && authResponse.token != null) {
-          // Save auth data
-          await _storageService.setAuthToken(authResponse.token!);
-          await _persistUserData({
-            ...authResponse.astrologer!.toJson(),
-            if (authResponse.sessionId != null) 'sessionId': authResponse.sessionId,
-          });
-          await _storageService.setSessionId(authResponse.sessionId ?? authResponse.astrologer!.sessionId);
-          await _storageService.setIsLoggedIn(true);
-          await _storageService.setPhoneNumber(event.phoneNumber.trim());
-          
-          // Set auth token for API calls
-          _apiService.setAuthToken(authResponse.token!);
-          
-          print('');
-          print('╔═══════════════════════════════════════════════════════╗');
-          print('║      ✅ AUTH BLOC: OTP VERIFICATION SUCCESS          ║');
-          print('╠═══════════════════════════════════════════════════════╣');
-          print('║ User: ${authResponse.astrologer!.name}');
-          print('║ Phone: ${event.phoneNumber}');
-          print('║ Timestamp: ${DateTime.now()}');
-          print('╚═══════════════════════════════════════════════════════╝');
-          print('');
-          print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from OTP verification)');
-          
-          emit(AuthSuccessState(
-            astrologer: authResponse.astrologer!,
-            token: authResponse.token!,
-            sessionId: authResponse.sessionId ?? authResponse.astrologer!.sessionId,
-          ));
-        } else {
-          emit(AuthErrorState(authResponse.message));
-        }
-      } else if (response.statusCode == 404) {
-        // Handle account not found - user needs to sign up first
-        final authResponse = AuthResponseModel.fromJson(response.data);
-        emit(AuthErrorState(authResponse.message));
-      } else {
-        emit(AuthErrorState('Failed to verify OTP. Please try again.'));
-      }
+      final astrologer = result['astrologer'] as AstrologerModel;
+      final token = result['token'] as String;
+      final sessionId = result['sessionId'] as String;
+      
+      print('');
+      print('╔═══════════════════════════════════════════════════════╗');
+      print('║      ✅ AUTH BLOC: OTP VERIFICATION SUCCESS          ║');
+      print('╠═══════════════════════════════════════════════════════╣');
+      print('║ User: ${astrologer.name}');
+      print('║ Phone: ${event.phoneNumber}');
+      print('║ Timestamp: ${DateTime.now()}');
+      print('╚═══════════════════════════════════════════════════════╝');
+      print('');
+      print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from OTP verification)');
+      
+      emit(AuthSuccessState(
+        astrologer: astrologer,
+        token: token,
+        sessionId: sessionId,
+      ));
     } catch (e) {
       print('Verify OTP API Error: $e');
-      
-      // Check if it's a 404 error (account not found)
-      if (e.toString().contains('Server Error 404')) {
-        emit(AuthErrorState('Account not found. Please sign up first.'));
-      } else {
-        emit(AuthErrorState('Failed to verify OTP. Please check your internet connection and try again.'));
-      }
+      emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
     }
   }
 
@@ -201,69 +127,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     try {
-      final response = await _apiService.postMultipart(
-        ApiConstants.signup,
-        data: {
-          'phone': event.phoneNumber.trim(),
-          'otp': event.otp,
-          if (event.otpId != null) 'otpId': event.otpId,
-          'name': event.name,
-          'email': event.email,
-          'experience': event.experience,
-          'specializations': event.specializations,
-          'languages': event.languages,
-          'bio': event.bio,
-          'awards': event.awards,
-          'certificates': event.certificates,
-        },
-        files: {
-          'profilePicture': event.profilePicture,
-        },
+      final result = await repository.signup(
+        phoneNumber: event.phoneNumber,
+        otp: event.otp,
+        otpId: event.otpId,
+        name: event.name,
+        email: event.email,
+        experience: event.experience,
+        specializations: event.specializations,
+        languages: event.languages,
+        bio: event.bio,
+        awards: event.awards,
+        certificates: event.certificates,
+        profilePicture: event.profilePicture.path,
       );
       
-      if (response.statusCode == 200) {
-        final authResponse = AuthResponseModel.fromJson(response.data);
-        if (authResponse.success && authResponse.astrologer != null && authResponse.token != null) {
-          await _storageService.setIsLoggedIn(true);
-          await _storageService.setAuthToken(authResponse.token!);
-          await _persistUserData({
-            ...authResponse.astrologer!.toJson(),
-            if (authResponse.sessionId != null) 'sessionId': authResponse.sessionId,
-          });
-          await _storageService.setSessionId(authResponse.sessionId ?? authResponse.astrologer!.sessionId);
-          
-          // Set auth token for API calls
-          _apiService.setAuthToken(authResponse.token!);
-          
-          print('');
-          print('╔═══════════════════════════════════════════════════════╗');
-          print('║      ✅ AUTH BLOC: SIGNUP SUCCESS                    ║');
-          print('╠═══════════════════════════════════════════════════════╣');
-          print('║ User: ${authResponse.astrologer!.name}');
-          print('║ Phone: ${event.phoneNumber}');
-          print('║ Timestamp: ${DateTime.now()}');
-          print('╚═══════════════════════════════════════════════════════╝');
-          print('');
-          print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from signup)');
-          
-          emit(AuthSuccessState(
-            astrologer: authResponse.astrologer!,
-            token: authResponse.token!,
-            sessionId: authResponse.sessionId ?? authResponse.astrologer!.sessionId,
-          ));
-        } else {
-          emit(AuthErrorState(authResponse.message));
-        }
-      } else {
-        emit(AuthErrorState('Failed to create account. Please try again.'));
-      }
+      final astrologer = result['astrologer'] as AstrologerModel;
+      final token = result['token'] as String;
+      final sessionId = result['sessionId'] as String;
+      
+      print('');
+      print('╔═══════════════════════════════════════════════════════╗');
+      print('║      ✅ AUTH BLOC: SIGNUP SUCCESS                    ║');
+      print('╠═══════════════════════════════════════════════════════╣');
+      print('║ User: ${astrologer.name}');
+      print('║ Phone: ${event.phoneNumber}');
+      print('║ Timestamp: ${DateTime.now()}');
+      print('╚═══════════════════════════════════════════════════════╝');
+      print('');
+      print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from signup)');
+      
+      emit(AuthSuccessState(
+        astrologer: astrologer,
+        token: token,
+        sessionId: sessionId,
+      ));
     } catch (e) {
       print('Signup API Error: $e');
-      if (e.toString().contains('already exists')) {
-        emit(AuthErrorState('Account with this phone number already exists. Please login instead.'));
-      } else {
-        emit(AuthErrorState('Failed to create account. Please check your internet connection and try again.'));
-      }
+      emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
     }
   }
 
@@ -277,20 +178,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     print('');
     
     try {
-      // Clear local storage
-      await _storageService.clearAuthData();
-      
-      // Clear API token
-      _apiService.clearAuthToken();
+      await repository.clearAuthData();
       add(InitializeAuthEvent());
       
       print('✅ [AUTH_BLOC] EMITTING: AuthLoggedOutState');
       emit(AuthLoggedOutState());
     } catch (e) {
       print('❌ [AUTH_BLOC] Logout error: $e');
-      // Even if there's an error, we should still log out locally
-      await _storageService.clearAuthData();
-      _apiService.clearAuthToken();
+      await repository.clearAuthData();
       add(InitializeAuthEvent());
       print('✅ [AUTH_BLOC] EMITTING: AuthLoggedOutState (after error)');
       emit(AuthLoggedOutState());
@@ -307,10 +202,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     print('');
     
     try {
-      final isLoggedIn = await _storageService.getIsLoggedIn();
-      final token = await _storageService.getAuthToken();
-      final sessionId = await _storageService.getSessionId();
-      final userData = await _storageService.getUserData();
+      final isLoggedIn = await repository.isLoggedIn();
+      final token = await repository.getAuthToken();
+      final sessionId = await repository.getSessionId();
+      final savedUser = await repository.getSavedUserData();
       
       print('');
       print('╔═══════════════════════════════════════════════════════╗');
@@ -318,62 +213,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('╠═══════════════════════════════════════════════════════╣');
       print('║ isLoggedIn: $isLoggedIn');
       print('║ hasToken: ${token != null}');
-      print('║ hasUserData: ${userData != null}');
+      print('║ hasUserData: ${savedUser != null}');
       print('║ hasSessionId: ${sessionId != null}');
       print('╚═══════════════════════════════════════════════════════╝');
       print('');
       
       // If no valid auth data, clear everything and go to login
-      if (isLoggedIn != true || token == null || userData == null || sessionId == null) {
+      if (!isLoggedIn || token == null || savedUser == null || sessionId == null) {
         print('⚠️ [AUTH_BLOC] No valid auth data found, clearing all data');
-        await _clearAuthData();
+        await repository.clearAuthData();
         print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (no valid auth data)');
         emit(AuthUnauthenticatedState());
         return;
       }
       
-      if (isLoggedIn == true && token != null && userData != null && sessionId != null) {
-        // Set auth token for API calls
-        _apiService.setAuthToken(token);
+      // Set auth token for API calls
+      _apiService.setAuthToken(token);
+      
+      // Validate token with server
+      try {
+        print('🔐 [AUTH_BLOC] Validating token with server...');
+        final astrologer = await repository.getProfile();
         
-        // Validate token with server by calling profile endpoint
-        try {
-          print('🔐 [AUTH_BLOC] Validating token with server...');
-          final response = await _apiService.get(ApiConstants.profile);
-          
-          if (response.statusCode == 200 && response.data['success'] == true) {
-            // Token is valid, get fresh user data from server
-            final serverUserData = response.data['data'];
-            final astrologer = AstrologerModel.fromJson(serverUserData);
-            
-            // Update local storage with fresh data
-            await _storageService.setSessionId(serverUserData['sessionId'] ?? sessionId);
-            await _persistUserData(serverUserData);
-            
-            print('✅ [AUTH_BLOC] Token valid, user authenticated');
-            print('👤 [AUTH_BLOC] User: ${astrologer.name}');
-            print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (token validated)');
-            emit(AuthSuccessState(
-              astrologer: astrologer,
-              token: token,
-              sessionId: sessionId,
-            ));
-          } else {
-            print('❌ [AUTH_BLOC] Server returned invalid response, clearing auth data');
-            await _clearAuthData();
-            print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (invalid server response)');
-            emit(AuthUnauthenticatedState());
-          }
-        } catch (e) {
-          print('❌ [AUTH_BLOC] Token validation failed: $e');
-          // Token is invalid or server error, clear auth data
-          await _clearAuthData();
-          print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (token validation failed)');
-          emit(AuthUnauthenticatedState());
-        }
-      } else {
-        print('❌ [AUTH_BLOC] User not authenticated');
-        print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (user not authenticated)');
+        print('✅ [AUTH_BLOC] Token valid, user authenticated');
+        print('👤 [AUTH_BLOC] User: ${astrologer.name}');
+        print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (token validated)');
+        emit(AuthSuccessState(
+          astrologer: astrologer,
+          token: token,
+          sessionId: sessionId,
+        ));
+      } catch (e) {
+        print('❌ [AUTH_BLOC] Token validation failed: $e');
+        await repository.clearAuthData();
+        print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (token validation failed)');
         emit(AuthUnauthenticatedState());
       }
     } catch (e) {
@@ -384,44 +257,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _clearAuthData() async {
-    try {
-      // Clear only auth-related data (preserves app preferences)
-      await _storageService.clearAuthData();
-      _apiService.clearAuthToken();
-      add(InitializeAuthEvent());
-      
-      print('AuthBloc: Cleared auth data (preserving app preferences)');
-    } catch (e) {
-      print('AuthBloc: Error clearing auth data: $e');
-    }
-  }
-
-  Future<void> _persistUserData(Map<String, dynamic> data) async {
-    try {
-      final mutableData = Map<String, dynamic>.from(data);
-      final idValue = mutableData['id'] ?? mutableData['_id'];
-      if (idValue != null) {
-        mutableData['id'] = idValue;
-        mutableData['_id'] = idValue;
-      }
-      await _storageService.setUserData(jsonEncode(mutableData));
-    } catch (e) {
-      print('AuthBloc: Error persisting user data: $e');
-      await _storageService.setUserData(jsonEncode(data));
-    }
-  }
 
   Future<void> _onRefreshToken(RefreshTokenEvent event, Emitter<AuthState> emit) async {
     try {
-      final response = await _apiService.post(ApiConstants.refreshToken);
-      
-      if (response.statusCode == 200) {
-        final authResponse = AuthResponseModel.fromJson(response.data);
-        if (authResponse.success && authResponse.token != null) {
-          await _storageService.setAuthToken(authResponse.token!);
-          _apiService.setAuthToken(authResponse.token!);
-        }
+      final newToken = await repository.refreshToken();
+      if (newToken != null) {
+        _apiService.setAuthToken(newToken);
+      } else {
+        // If refresh fails, logout user
+        add(LogoutEvent());
       }
     } catch (e) {
       // If refresh fails, logout user
@@ -431,17 +275,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onDeleteProfile(DeleteProfileEvent event, Emitter<AuthState> emit) async {
     try {
-      // Clear local storage
-      await _storageService.clearAuthData();
-      
-      // Clear API token
-      _apiService.clearAuthToken();
-      
+      await repository.clearAuthData();
       emit(AuthLoggedOutState());
     } catch (e) {
-      // Even if there's an error, we should still clear local data
-      await _storageService.clearAuthData();
-      _apiService.clearAuthToken();
+      await repository.clearAuthData();
       emit(AuthLoggedOutState());
     }
   }
@@ -452,44 +289,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       print('DeleteAccount: Starting account deletion...');
       
-      // Get current auth token
-      final token = await _storageService.getAuthToken();
-      print('DeleteAccount: Auth token: ${token != null ? "Present" : "Missing"}');
+      final success = await repository.deleteAccount();
       
-      if (token == null) {
-        emit(AuthErrorState('You must be logged in to delete your account.'));
-        return;
-      }
-      
-      // Set auth token for API calls
-      _apiService.setAuthToken(token);
-      
-      // Call the delete account API
-      print('DeleteAccount: Calling API endpoint: ${ApiConstants.deleteAccount}');
-      final response = await _apiService.delete(ApiConstants.deleteAccount);
-      print('DeleteAccount: API response status: ${response.statusCode}');
-      print('DeleteAccount: API response data: ${response.data}');
-      
-      // Always clear local data regardless of API response
-      // This ensures user is logged out even if backend fails
-      await _storageService.clearAuthData();
-      _apiService.clearAuthToken();
-      
-      if (response.statusCode == 200) {
+      if (success) {
         print('DeleteAccount: Account deleted successfully');
         emit(AccountDeletedState(message: 'Account has been permanently deleted'));
       } else {
-        print('DeleteAccount: API returned error status: ${response.statusCode}');
-        // Still log out user even if API failed
         emit(AccountDeletedState(message: 'Account deletion requested. You have been logged out.'));
       }
     } catch (e) {
       print('Delete account API Error: $e');
-      
-      // Even if API call fails, clear local data and log out user
-      await _storageService.clearAuthData();
-      _apiService.clearAuthToken();
-      
       emit(AccountDeletedState(message: 'Account deletion requested. You have been logged out.'));
     }
   }

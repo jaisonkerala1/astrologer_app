@@ -13,12 +13,18 @@ import '../features/auth/bloc/auth_bloc.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
 import '../features/consultations/bloc/consultations_bloc.dart';
+import '../features/calendar/bloc/calendar_bloc.dart';
+import '../features/earnings/bloc/earnings_bloc.dart';
+import '../features/communication/bloc/communication_bloc.dart';
+import '../features/heal/bloc/heal_bloc.dart';
+import '../features/help_support/bloc/help_support_bloc.dart';
+import '../features/live/bloc/live_bloc.dart';
+import '../features/notifications/bloc/notifications_bloc.dart';
 import '../features/reviews/bloc/reviews_bloc.dart';
-import '../features/reviews/repository/reviews_repository.dart';
 import '../shared/theme/app_theme.dart';
 import 'routes.dart';
 import '../features/auth/bloc/auth_event.dart';
-import '../core/services/api_service.dart';
+import '../core/di/service_locator.dart';
 
 class AstrologerApp extends StatefulWidget {
   final LanguageService languageService;
@@ -75,7 +81,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
           create: (context) => widget.notificationService,
         ),
         Provider<LiveStreamService>(
-          create: (context) => LiveStreamService(),
+          create: (context) => widget.liveStreamService,
         ),
         ChangeNotifierProvider<CommunicationService>(
           create: (context) => CommunicationService(),
@@ -87,23 +93,40 @@ class _AstrologerAppState extends State<AstrologerApp> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc()..add(InitializeAuthEvent()),
+            create: (context) => getIt<AuthBloc>()..add(InitializeAuthEvent()),
           ),
           BlocProvider<DashboardBloc>(
-            create: (context) => DashboardBloc(),
+            create: (context) => getIt<DashboardBloc>(),
           ),
           BlocProvider<ProfileBloc>(
-            create: (context) => ProfileBloc(),
+            create: (context) => getIt<ProfileBloc>(),
           ),
           BlocProvider<ConsultationsBloc>(
-            create: (context) => ConsultationsBloc(),
+            create: (context) => getIt<ConsultationsBloc>(),
+          ),
+          BlocProvider<CalendarBloc>(
+            create: (context) => getIt<CalendarBloc>(),
+          ),
+          BlocProvider<EarningsBloc>(
+            create: (context) => getIt<EarningsBloc>(),
+          ),
+          BlocProvider<CommunicationBloc>(
+            create: (context) => getIt<CommunicationBloc>(),
+          ),
+          BlocProvider<HealBloc>(
+            create: (context) => getIt<HealBloc>(),
+          ),
+          BlocProvider<HelpSupportBloc>(
+            create: (context) => getIt<HelpSupportBloc>(),
+          ),
+          BlocProvider<LiveBloc>(
+            create: (context) => getIt<LiveBloc>(),
+          ),
+          BlocProvider<NotificationsBloc>(
+            create: (context) => getIt<NotificationsBloc>(),
           ),
           BlocProvider<ReviewsBloc>(
-            create: (context) => ReviewsBloc(
-              reviewsRepository: ReviewsRepository(
-                apiService: ApiService(),
-              ),
-            ),
+            create: (context) => getIt<ReviewsBloc>(),
           ),
         ],
         child: MaterialApp(

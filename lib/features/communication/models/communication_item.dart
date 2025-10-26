@@ -1,5 +1,7 @@
+import 'package:equatable/equatable.dart';
+
 /// Model representing a unified communication item (message, call, or video call)
-class CommunicationItem {
+class CommunicationItem extends Equatable {
   final String id;
   final CommunicationType type;
   final String contactName;
@@ -13,7 +15,7 @@ class CommunicationItem {
   final double? chargedAmount; // For billing display
   final String? sessionId; // Link to backend Session
 
-  CommunicationItem({
+  const CommunicationItem({
     required this.id,
     required this.type,
     required this.contactName,
@@ -27,6 +29,22 @@ class CommunicationItem {
     this.chargedAmount,
     this.sessionId,
   });
+
+  @override
+  List<Object?> get props => [
+    id,
+    type,
+    contactName,
+    avatar,
+    timestamp,
+    preview,
+    unreadCount,
+    isOnline,
+    status,
+    duration,
+    chargedAmount,
+    sessionId,
+  ];
 
   /// Get display icon based on type (IconData for Material Icons)
   String get typeIcon {
@@ -69,6 +87,46 @@ class CommunicationItem {
     return '${(difference.inDays / 7).floor()}w';
   }
 
+  /// From JSON
+  factory CommunicationItem.fromJson(Map<String, dynamic> json) {
+    return CommunicationItem(
+      id: json['_id'] ?? json['id'] ?? '',
+      type: _parseType(json['type']),
+      contactName: json['contactName'] ?? '',
+      avatar: json['avatar'] ?? '',
+      timestamp: json['timestamp'] != null 
+          ? DateTime.parse(json['timestamp'])
+          : DateTime.now(),
+      preview: json['preview'] ?? '',
+      unreadCount: json['unreadCount'] ?? 0,
+      isOnline: json['isOnline'] ?? false,
+      status: _parseStatusFromString(json['status']),
+      duration: json['duration'],
+      chargedAmount: json['chargedAmount'] != null 
+          ? (json['chargedAmount'] as num).toDouble()
+          : null,
+      sessionId: json['sessionId'],
+    );
+  }
+
+  /// To JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type.name,
+      'contactName': contactName,
+      'avatar': avatar,
+      'timestamp': timestamp.toIso8601String(),
+      'preview': preview,
+      'unreadCount': unreadCount,
+      'isOnline': isOnline,
+      'status': status.name,
+      'duration': duration,
+      'chargedAmount': chargedAmount,
+      'sessionId': sessionId,
+    };
+  }
+
   /// Convert from legacy call format
   factory CommunicationItem.fromCall(Map<String, dynamic> call) {
     return CommunicationItem(
@@ -96,6 +154,40 @@ class CommunicationItem {
       isOnline: message['isOnline'] ?? false,
       status: CommunicationStatus.received,
     );
+  }
+
+  static CommunicationType _parseType(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'message':
+        return CommunicationType.message;
+      case 'voicecall':
+      case 'voice_call':
+      case 'call':
+        return CommunicationType.voiceCall;
+      case 'videocall':
+      case 'video_call':
+      case 'video':
+        return CommunicationType.videoCall;
+      default:
+        return CommunicationType.message;
+    }
+  }
+
+  static CommunicationStatus _parseStatusFromString(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'sent':
+        return CommunicationStatus.sent;
+      case 'received':
+        return CommunicationStatus.received;
+      case 'missed':
+        return CommunicationStatus.missed;
+      case 'incoming':
+        return CommunicationStatus.incoming;
+      case 'outgoing':
+        return CommunicationStatus.outgoing;
+      default:
+        return CommunicationStatus.received;
+    }
   }
 
   static DateTime _parseTime(String timeStr) {

@@ -1,4 +1,6 @@
-class LiveReactionModel {
+import 'package:equatable/equatable.dart';
+
+class LiveReactionModel extends Equatable {
   final String id;
   final String streamId;
   final String userId;
@@ -6,7 +8,7 @@ class LiveReactionModel {
   final String emoji;
   final DateTime timestamp;
 
-  LiveReactionModel({
+  const LiveReactionModel({
     required this.id,
     required this.streamId,
     required this.userId,
@@ -14,6 +16,9 @@ class LiveReactionModel {
     required this.emoji,
     required this.timestamp,
   });
+
+  @override
+  List<Object?> get props => [id, streamId, userId, userName, emoji, timestamp];
 
   factory LiveReactionModel.fromJson(Map<String, dynamic> json) {
     return LiveReactionModel(

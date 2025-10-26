@@ -558,7 +558,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_selectedImage != null) {
         print('Uploading profile picture...');
         final imageResponse = await _apiService.uploadFile(
-          ApiConstants.uploadImage,
+          ApiConstants.uploadProfileImage,
           _selectedImage!.path,
           fieldName: 'profilePicture',
         );

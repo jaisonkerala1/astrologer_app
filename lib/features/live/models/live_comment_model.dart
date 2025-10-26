@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import '../models/live_gift_model.dart';
 
 enum LiveReactionType {
@@ -9,7 +10,7 @@ enum LiveReactionType {
   love,
 }
 
-class LiveCommentModel {
+class LiveCommentModel extends Equatable {
   final String id;
   final String streamId;
   final String userId;
@@ -21,7 +22,7 @@ class LiveCommentModel {
   final LiveReactionType? reaction;
   final LiveGiftModel? gift;
 
-  LiveCommentModel({
+  const LiveCommentModel({
     required this.id,
     required this.streamId,
     required this.userId,
@@ -33,6 +34,12 @@ class LiveCommentModel {
     this.reaction,
     this.gift,
   });
+
+  @override
+  List<Object?> get props => [
+    id, streamId, userId, userName, userProfilePicture, message,
+    timestamp, isHost, reaction, gift,
+  ];
 
   factory LiveCommentModel.fromJson(Map<String, dynamic> json) {
     return LiveCommentModel(

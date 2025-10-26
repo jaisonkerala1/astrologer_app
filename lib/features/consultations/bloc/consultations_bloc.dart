@@ -1,13 +1,13 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../data/repositories/consultations/consultations_repository.dart';
 import '../models/consultation_model.dart';
-import '../services/consultations_service.dart';
 import 'consultations_event.dart';
 import 'consultations_state.dart';
 
 class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
-  final ConsultationsService _consultationsService = ConsultationsService();
+  final ConsultationsRepository repository;
 
-  ConsultationsBloc() : super(const ConsultationsInitial()) {
+  ConsultationsBloc({required this.repository}) : super(const ConsultationsInitial()) {
     on<LoadConsultationsEvent>(_onLoadConsultations);
     on<RefreshConsultationsEvent>(_onRefreshConsultations);
     on<UpdateConsultationStatusEvent>(_onUpdateConsultationStatus);
@@ -32,7 +32,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
       print('Loading consultations...');
       emit(const ConsultationsLoading());
       
-      final consultations = await _consultationsService.getConsultations();
+      final consultations = await repository.getConsultations();
       print('Loaded ${consultations.length} consultations');
       
       for (var consultation in consultations) {
@@ -42,7 +42,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
       emit(_buildLoadedState(consultations));
     } catch (e) {
       print('Error loading consultations: $e');
-      emit(ConsultationsError(message: e.toString()));
+      emit(ConsultationsError(message: e.toString().replaceAll('Exception: ', '')));
     }
   }
 
@@ -52,7 +52,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
   ) async {
     try {
       print('Refreshing consultations...');
-      final consultations = await _consultationsService.getConsultations();
+      final consultations = await repository.getConsultations();
       print('Refreshed ${consultations.length} consultations');
       
       // Preserve local startedAt timestamps for in-progress consultations
@@ -115,7 +115,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       emit(ConsultationUpdating(consultationId: event.consultationId));
       
-      final updatedConsultation = await _consultationsService.updateConsultationStatus(
+      final updatedConsultation = await repository.updateConsultationStatus(
         event.consultationId,
         event.newStatus,
         notes: event.notes,
@@ -158,7 +158,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     
     try {
       print('Adding consultation: ${event.consultation.clientName}');
-      final createdConsultation = await _consultationsService.addConsultation(event.consultation);
+      final createdConsultation = await repository.addConsultation(event.consultation);
       print('Consultation added successfully: ${createdConsultation.clientName}');
       
       // Update the optimistic consultation with the real one from server
@@ -220,7 +220,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       print('Cancelling consultation API call: ${event.consultationId}');
       
-      await _consultationsService.updateConsultationStatus(
+      await repository.updateConsultationStatus(
         event.consultationId,
         ConsultationStatus.cancelled,
       );
@@ -269,7 +269,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       print('Starting consultation API call: ${event.consultationId}');
       
-      await _consultationsService.updateConsultationStatus(
+      await repository.updateConsultationStatus(
         event.consultationId,
         ConsultationStatus.inProgress,
       );
@@ -315,7 +315,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       print('Completing consultation API call: ${event.consultationId}');
       
-      await _consultationsService.completeConsultation(
+      await repository.completeConsultation(
         event.consultationId,
         event.notes,
       );
@@ -417,7 +417,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       emit(ConsultationUpdating(consultationId: event.consultation.id));
       
-      final updatedConsultation = await _consultationsService.updateConsultation(
+      final updatedConsultation = await repository.updateConsultation(
         event.consultation,
       );
       
@@ -437,7 +437,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       emit(ConsultationUpdating(consultationId: event.consultationId));
       
-      await _consultationsService.deleteConsultation(event.consultationId);
+      await repository.deleteConsultation(event.consultationId);
       
       emit(const ConsultationDeleted());
       
@@ -455,7 +455,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       emit(ConsultationUpdating(consultationId: event.consultationId));
       
-      final updatedConsultation = await _consultationsService.addConsultationNotes(
+      final updatedConsultation = await repository.addConsultationNotes(
         event.consultationId,
         event.notes,
       );
@@ -476,9 +476,9 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     try {
       emit(ConsultationUpdating(consultationId: event.consultationId));
       
-      final updatedConsultation = await _consultationsService.addConsultationRating(
+      final updatedConsultation = await repository.addConsultationRating(
         event.consultationId,
-        event.rating,
+        event.rating.toDouble(),
         event.feedback,
       );
       

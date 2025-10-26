@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 enum RequestStatus {
   pending,
   confirmed,
@@ -6,7 +8,7 @@ enum RequestStatus {
   cancelled,
 }
 
-class ServiceRequest {
+class ServiceRequest extends Equatable {
   final String id;
   final String customerName;
   final String customerPhone;
@@ -23,7 +25,7 @@ class ServiceRequest {
   final DateTime? cancelledAt;
   final String? notes;
 
-  ServiceRequest({
+  const ServiceRequest({
     required this.id,
     required this.customerName,
     required this.customerPhone,
@@ -40,6 +42,13 @@ class ServiceRequest {
     this.cancelledAt,
     this.notes,
   });
+
+  @override
+  List<Object?> get props => [
+    id, customerName, customerPhone, serviceName, serviceCategory,
+    requestedDate, requestedTime, status, price, specialInstructions,
+    createdAt, startedAt, completedAt, cancelledAt, notes,
+  ];
 
   factory ServiceRequest.fromJson(Map<String, dynamic> json) {
     return ServiceRequest(

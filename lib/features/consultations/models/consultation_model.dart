@@ -1,6 +1,7 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-class StatusHistoryEntry {
+class StatusHistoryEntry extends Equatable {
   final String status;
   final DateTime timestamp;
   final String? notes;
@@ -32,9 +33,12 @@ class StatusHistoryEntry {
       'scheduledTime': scheduledTime?.toIso8601String(),
     };
   }
+  
+  @override
+  List<Object?> get props => [status, timestamp, notes, scheduledTime];
 }
 
-class ConsultationModel {
+class ConsultationModel extends Equatable {
   final String id;
   final String clientName;
   final String clientPhone;
@@ -220,6 +224,32 @@ class ConsultationModel {
       statusHistory: statusHistory ?? this.statusHistory,
     );
   }
+  
+  @override
+  List<Object?> get props => [
+    id,
+    clientName,
+    clientPhone,
+    scheduledTime,
+    duration,
+    amount,
+    status,
+    type,
+    notes,
+    createdAt,
+    startedAt,
+    completedAt,
+    cancelledAt,
+    astrologerRating,
+    astrologerFeedback,
+    astrologerRatedAt,
+    shareCount,
+    lastSharedAt,
+    rescheduleCount,
+    lastRescheduledAt,
+    originalScheduledTime,
+    statusHistory,
+  ];
 }
 
 enum ConsultationStatus {

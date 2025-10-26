@@ -447,15 +447,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 setState(() => _isFollowing = !_isFollowing);
                 HapticFeedback.lightImpact();
               },
-              icon: Icon(_isFollowing ? Icons.check : Icons.add, size: 16),
+              icon: Icon(_isFollowing ? Icons.check : Icons.add, size: 18),
               label: Text(
                 _isFollowing ? 'Following' : 'Follow',
-                style: const TextStyle(fontSize: 13),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isFollowing ? const Color(0xFFE4E6EB) : const Color(0xFF1877F2),
                 foregroundColor: _isFollowing ? const Color(0xFF050505) : Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -467,18 +466,18 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () {},
-              icon: const Icon(Icons.chat_bubble_outline, size: 16),
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
               label: const Text(
                 'Message',
-                style: TextStyle(fontSize: 13),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF050505),
                 side: const BorderSide(color: Color(0xFFCED0D4)),
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
+                elevation: 0,
               ),
             ),
           ),

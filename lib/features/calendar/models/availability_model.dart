@@ -1,4 +1,6 @@
-class AvailabilityModel {
+import 'package:equatable/equatable.dart';
+
+class AvailabilityModel extends Equatable {
   final String id;
   final String astrologerId;
   final int dayOfWeek; // 0=Sunday, 1=Monday, ..., 6=Saturday
@@ -20,6 +22,19 @@ class AvailabilityModel {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  @override
+  List<Object?> get props => [
+    id,
+    astrologerId,
+    dayOfWeek,
+    startTime,
+    endTime,
+    isActive,
+    breaks,
+    createdAt,
+    updatedAt,
+  ];
 
   factory AvailabilityModel.fromJson(Map<String, dynamic> json) {
     return AvailabilityModel(
@@ -86,7 +101,7 @@ class AvailabilityModel {
   }
 }
 
-class BreakTime {
+class BreakTime extends Equatable {
   final String startTime;
   final String endTime;
   final String reason;
@@ -96,6 +111,9 @@ class BreakTime {
     required this.endTime,
     required this.reason,
   });
+
+  @override
+  List<Object?> get props => [startTime, endTime, reason];
 
   factory BreakTime.fromJson(Map<String, dynamic> json) {
     return BreakTime(
