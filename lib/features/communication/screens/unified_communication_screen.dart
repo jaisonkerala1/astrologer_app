@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/services/theme_service.dart';
-import '../services/communication_service.dart';
+import '../../../shared/theme/app_theme.dart';
 import '../models/communication_item.dart';
 import '../widgets/communication_filter_chip.dart';
 import '../widgets/communication_item_card.dart';
+import '../bloc/communication_bloc.dart';
+import '../bloc/communication_event.dart';
+import '../bloc/communication_state.dart';
 import 'chat_screen.dart';
 import 'video_call_screen.dart';
 import 'dialer_screen.dart';
 
 /// World-class unified communication screen (Instagram-inspired)
+/// 
+/// ✨ FEATURES:
+/// - BLoC architecture for state management
+/// - Pull-to-refresh
+/// - Real-time search
+/// - Filter chips (All, Calls, Messages, Video)
+/// - Graceful fallback to dummy data
+/// - Professional loading states
 class UnifiedCommunicationScreen extends StatefulWidget {
   const UnifiedCommunicationScreen({super.key});
 
@@ -31,6 +43,8 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Initialize animations
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -50,6 +64,9 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       parent: _searchAnimationController,
       curve: Curves.easeInOut,
     );
+    
+    // Load communications via BLoC
+    context.read<CommunicationBloc>().add(const LoadCommunicationsEvent());
   }
 
   @override
@@ -77,15 +94,38 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<ThemeService, CommunicationService>(
-      builder: (context, themeService, commService, child) {
+    final themeService = Provider.of<ThemeService>(context);
+    
+    return BlocConsumer<CommunicationBloc, CommunicationState>(
+      listener: (context, state) {
+        // Show success messages
+        if (state is CommunicationLoadedState && state.successMessage != null) {
+          _showSnackBar(state.successMessage!);
+        }
+        
+        // Show error messages
+        if (state is CommunicationErrorState) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.errorColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
-          appBar: _buildAppBar(themeService, commService),
+          appBar: _buildAppBar(themeService, state),
           body: Column(
             children: [
               // Filter chips row
-              _buildFilterChips(themeService, commService),
+              _buildFilterChips(themeService, state),
               
               // Divider
               Container(
@@ -104,17 +144,17 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
               
               // Main content
               Expanded(
-                child: _buildContent(themeService, commService),
+                child: _buildContent(themeService, state),
               ),
             ],
           ),
-          floatingActionButton: _buildFAB(themeService, commService),
+          floatingActionButton: _buildFAB(themeService, state),
         );
       },
     );
   }
 
-  PreferredSizeWidget _buildAppBar(ThemeService themeService, CommunicationService commService) {
+  PreferredSizeWidget _buildAppBar(ThemeService themeService, CommunicationState state) {
     return AppBar(
       backgroundColor: themeService.backgroundColor,
       elevation: 0,
@@ -219,72 +259,15 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
           ),
           onPressed: _toggleSearch,
         ),
-        
-        // More options (hide when searching)
-        if (!_isSearching)
-          PopupMenuButton<String>(
-            icon: Icon(
-              Icons.more_vert_rounded,
-            color: themeService.textPrimary,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          offset: const Offset(0, 50),
-          onSelected: (value) {
-            switch (value) {
-              case 'test_message':
-                commService.simulateNewMessage();
-                _showSnackBar('Simulated new message');
-                break;
-              case 'test_call':
-                commService.simulateMissedCall();
-                _showSnackBar('Simulated missed call');
-                break;
-              case 'reset':
-                commService.resetUnreadCounts();
-                _showSnackBar('Reset all badges');
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'test_message',
-              child: Row(
-                children: [
-                  Icon(Icons.message_rounded),
-                  SizedBox(width: 12),
-                  Text('Test New Message'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'test_call',
-              child: Row(
-                children: [
-                  Icon(Icons.phone_rounded),
-                  SizedBox(width: 12),
-                  Text('Test Missed Call'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'reset',
-              child: Row(
-                children: [
-                  Icon(Icons.refresh_rounded),
-                  SizedBox(width: 12),
-                  Text('Reset Badges'),
-                ],
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
 
-  Widget _buildFilterChips(ThemeService themeService, CommunicationService commService) {
+  Widget _buildFilterChips(ThemeService themeService, CommunicationState state) {
+    if (state is! CommunicationLoadedState) {
+      return const SizedBox(height: 60);
+    }
+    
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -294,75 +277,159 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
         children: [
           CommunicationFilterChip(
             filter: CommunicationFilter.all,
-            isActive: commService.activeFilter == CommunicationFilter.all,
-            count: commService.getCountForFilter(CommunicationFilter.all),
+            isActive: state.activeFilter == CommunicationFilter.all,
+            count: state.getCountForFilter(CommunicationFilter.all),
             themeService: themeService,
-            onTap: () => _onFilterTap(commService, CommunicationFilter.all),
+            onTap: () => _onFilterTap(CommunicationFilter.all),
           ),
           const SizedBox(width: 8),
           CommunicationFilterChip(
             filter: CommunicationFilter.calls,
-            isActive: commService.activeFilter == CommunicationFilter.calls,
-            count: commService.getCountForFilter(CommunicationFilter.calls),
+            isActive: state.activeFilter == CommunicationFilter.calls,
+            count: state.getCountForFilter(CommunicationFilter.calls),
             themeService: themeService,
-            onTap: () => _onFilterTap(commService, CommunicationFilter.calls),
+            onTap: () => _onFilterTap(CommunicationFilter.calls),
           ),
           const SizedBox(width: 8),
           CommunicationFilterChip(
             filter: CommunicationFilter.messages,
-            isActive: commService.activeFilter == CommunicationFilter.messages,
-            count: commService.getCountForFilter(CommunicationFilter.messages),
+            isActive: state.activeFilter == CommunicationFilter.messages,
+            count: state.getCountForFilter(CommunicationFilter.messages),
             themeService: themeService,
-            onTap: () => _onFilterTap(commService, CommunicationFilter.messages),
+            onTap: () => _onFilterTap(CommunicationFilter.messages),
           ),
           const SizedBox(width: 8),
           CommunicationFilterChip(
             filter: CommunicationFilter.video,
-            isActive: commService.activeFilter == CommunicationFilter.video,
-            count: commService.getCountForFilter(CommunicationFilter.video),
+            isActive: state.activeFilter == CommunicationFilter.video,
+            count: state.getCountForFilter(CommunicationFilter.video),
             themeService: themeService,
-            onTap: () => _onFilterTap(commService, CommunicationFilter.video),
+            onTap: () => _onFilterTap(CommunicationFilter.video),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent(ThemeService themeService, CommunicationService commService) {
-    var communications = commService.filteredCommunications;
-    
-    // Apply search filter if searching
-    if (_isSearching && _searchController.text.isNotEmpty) {
-      final query = _searchController.text.toLowerCase();
-      communications = communications.where((item) {
-        return item.contactName.toLowerCase().contains(query) ||
-               item.preview.toLowerCase().contains(query);
-      }).toList();
+  Widget _buildContent(ThemeService themeService, CommunicationState state) {
+    // Loading state
+    if (state is CommunicationLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(themeService.primaryColor),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading communications...',
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    if (communications.isEmpty) {
-      return _buildEmptyState(themeService, commService);
+    // Error state
+    if (state is CommunicationErrorState) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: themeService.textHint,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load communications',
+              style: TextStyle(
+                color: themeService.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.message,
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
+              },
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeService.primaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: ListView.builder(
-        key: ValueKey('${commService.activeFilter}_${_searchController.text}'),
-        padding: const EdgeInsets.all(16),
-        itemCount: communications.length,
-        itemBuilder: (context, index) {
-          final item = communications[index];
-          return CommunicationItemCard(
-            item: item,
-            themeService: themeService,
-            onTap: () => _onItemTap(item),
-          );
+    // Loaded state
+    if (state is CommunicationLoadedState) {
+      var communications = state.filteredCommunications;
+      
+      // Apply search filter if searching
+      if (_isSearching && _searchController.text.isNotEmpty) {
+        final query = _searchController.text.toLowerCase();
+        communications = communications.where((item) {
+          return item.contactName.toLowerCase().contains(query) ||
+                 item.preview.toLowerCase().contains(query);
+        }).toList();
+      }
+
+      if (communications.isEmpty) {
+        return _buildEmptyState(themeService, state);
+      }
+
+      return RefreshIndicator(
+        onRefresh: () async {
+          context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
+          await Future.delayed(const Duration(milliseconds: 500));
         },
-      ),
-    );
+        color: themeService.primaryColor,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: ListView.builder(
+            key: ValueKey('${state.activeFilter}_${_searchController.text}'),
+            padding: const EdgeInsets.all(16),
+            itemCount: communications.length,
+            itemBuilder: (context, index) {
+              final item = communications[index];
+              return CommunicationItemCard(
+                item: item,
+                themeService: themeService,
+                onTap: () => _onItemTap(item),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    // Default state
+    return const SizedBox.shrink();
   }
 
-  Widget _buildEmptyState(ThemeService themeService, CommunicationService commService) {
+  Widget _buildEmptyState(ThemeService themeService, CommunicationLoadedState state) {
     String message;
     IconData icon;
     
@@ -371,7 +438,7 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       message = 'No results found';
       icon = Icons.search_off_rounded;
     } else {
-      switch (commService.activeFilter) {
+      switch (state.activeFilter) {
         case CommunicationFilter.all:
           message = 'No communications yet';
           icon = Icons.forum_rounded;
@@ -430,13 +497,17 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     );
   }
 
-  Widget _buildFAB(ThemeService themeService, CommunicationService commService) {
+  Widget _buildFAB(ThemeService themeService, CommunicationState state) {
+    if (state is! CommunicationLoadedState) {
+      return const SizedBox.shrink();
+    }
+    
     // Different FAB based on active filter
     IconData icon;
     String tooltip;
     VoidCallback onPressed;
     
-    switch (commService.activeFilter) {
+    switch (state.activeFilter) {
       case CommunicationFilter.all:
         // Speed dial for all options
         return _buildSpeedDial(themeService);
@@ -597,19 +668,21 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     );
   }
 
-  void _onFilterTap(CommunicationService commService, CommunicationFilter filter) {
-    commService.setFilter(filter);
+  void _onFilterTap(CommunicationFilter filter) {
+    context.read<CommunicationBloc>().add(FilterCommunicationsEvent(filter));
     _fabAnimationController.forward().then((_) => _fabAnimationController.reverse());
   }
 
   void _onItemTap(CommunicationItem item) {
-    final commService = Provider.of<CommunicationService>(context, listen: false);
+    final state = context.read<CommunicationBloc>().state;
+    
+    if (state is! CommunicationLoadedState) return;
     
     // Instagram-style behavior:
     // - In "All" filter: Always open chat (user chooses action from there)
     // - In specific filters: Direct action
     
-    if (commService.activeFilter == CommunicationFilter.all) {
+    if (state.activeFilter == CommunicationFilter.all) {
       // Always go to chat in unified "All" view
       _openChat(item.contactName);
     } else {
