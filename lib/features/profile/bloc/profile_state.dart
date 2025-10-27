@@ -20,10 +20,31 @@ class ProfileLoadedState extends ProfileState {
   final AstrologerModel astrologer;
   final String? successMessage; // Optional success message after updates
   
-  ProfileLoadedState(this.astrologer, {this.successMessage});
+  const ProfileLoadedState(this.astrologer, {this.successMessage});
   
   @override
   List<Object?> get props => [astrologer, successMessage];
+  
+  // Helper to create a copy with updated fields
+  ProfileLoadedState copyWith({
+    AstrologerModel? astrologer,
+    String? successMessage,
+  }) {
+    return ProfileLoadedState(
+      astrologer ?? this.astrologer,
+      successMessage: successMessage,
+    );
+  }
+}
+
+class ProfileUpdating extends ProfileState {
+  final String field; // "profile", "image", "specializations", "languages", "rate"
+  final AstrologerModel currentAstrologer; // Keep current data visible
+  
+  const ProfileUpdating(this.field, this.currentAstrologer);
+  
+  @override
+  List<Object?> get props => [field, currentAstrologer];
 }
 
 class ProfileErrorState extends ProfileState {
@@ -34,6 +55,3 @@ class ProfileErrorState extends ProfileState {
   @override
   List<Object?> get props => [message];
 }
-
-// ProfileUpdatedState removed - use ProfileLoadedState with successMessage instead
-// ImageUploadedState removed - use ProfileLoadedState with updated astrologer instead

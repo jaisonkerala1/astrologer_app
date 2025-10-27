@@ -2,7 +2,11 @@ import '../../auth/models/astrologer_model.dart';
 
 abstract class ProfileEvent {}
 
-class LoadProfileEvent extends ProfileEvent {}
+class LoadProfileEvent extends ProfileEvent {
+  final bool forceRefresh; // If true, reload even if data exists
+  
+  LoadProfileEvent({this.forceRefresh = false});
+}
 
 class UpdateProfileEvent extends ProfileEvent {
   final AstrologerModel astrologer;

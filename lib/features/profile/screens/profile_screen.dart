@@ -28,6 +28,7 @@ import '../../theme/screens/theme_selection_screen.dart';
 import '../../settings/screens/privacy_settings_screen.dart';
 import '../../settings/screens/terms_privacy_screen.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
+import '../widgets/profile_screen_skeleton.dart';
 import 'about_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -51,8 +52,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
   }
 
   void _onProfileUpdated() {
-    // Reload profile using BLoC
-    context.read<ProfileBloc>().add(LoadProfileEvent());
+    // Force reload profile using BLoC
+    context.read<ProfileBloc>().add(LoadProfileEvent(forceRefresh: true));
     // Call the parent callback if provided
     widget.onProfileUpdated?.call();
   }
@@ -105,29 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
         builder: (context, themeService, child) {
           return BlocBuilder<ProfileBloc, ProfileState>(
             builder: (context, profileState) {
-              // Handle loading state
+              // Handle loading state with beautiful skeleton loader
               if (profileState is ProfileLoading) {
-                return Scaffold(
-                  backgroundColor: themeService.backgroundColor,
-                  appBar: AppBar(
-                    backgroundColor: themeService.primaryColor,
-                    elevation: 0,
-                    title: const Text('Profile', style: TextStyle(color: Colors.white)),
-                  ),
-                  body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(color: themeService.primaryColor),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Loading profile...',
-                          style: TextStyle(color: themeService.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                return ProfileScreenSkeleton(themeService: themeService);
               }
 
               // Handle error state
@@ -163,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton(
-                            onPressed: () => context.read<ProfileBloc>().add(LoadProfileEvent()),
+                            onPressed: () => context.read<ProfileBloc>().add(LoadProfileEvent(forceRefresh: true)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: themeService.primaryColor,
                               foregroundColor: Colors.white,
@@ -177,10 +158,16 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 );
               }
 
-              // Get astrologer from loaded state
+              // Get astrologer from loaded state or updating state
               final astrologer = profileState is ProfileLoadedState 
                   ? profileState.astrologer 
-                  : null;
+                  : profileState is ProfileUpdating
+                      ? profileState.currentAstrologer
+                      : null;
+              
+              // Check if we're currently updating
+              final isUpdating = profileState is ProfileUpdating;
+              final updatingField = isUpdating ? (profileState as ProfileUpdating).field : null;
 
               // Show success message if available
               if (profileState is ProfileLoadedState && profileState.successMessage != null) {
@@ -189,6 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                     SnackBar(
                       content: Text(profileState.successMessage!),
                       backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 });
@@ -201,25 +189,64 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   elevation: 0,
                   centerTitle: false,
                   titleSpacing: 16,
-                  title: Text(
-                    'Profile',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                    ),
+                  title: Row(
+                    children: [
+                      Text(
+                        'Profile',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      if (isUpdating) ...[
+                        const SizedBox(width: 12),
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
+                  actions: [
+                    if (isUpdating)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Text(
+                            'Updating ${updatingField ?? ""}...',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 floatingActionButton: FloatingChatButton(userProfile: astrologer),
-                body: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Profile Header - Full width
-                  _buildProfileHeader(context, astrologer, themeService),
-                  const SizedBox(height: 32),
+                body: RefreshIndicator(
+                  onRefresh: () async {
+                    // Force refresh profile from backend
+                    context.read<ProfileBloc>().add(LoadProfileEvent(forceRefresh: true));
+                    
+                    // Wait for the state to update
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  },
+                  color: themeService.primaryColor,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Profile Header - Full width
+                        _buildProfileHeader(context, astrologer, themeService),
+                        const SizedBox(height: 32),
                   
                   // Content with padding
                   Padding(
@@ -341,8 +368,9 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                     ),
                   ),
                 ],
-              ),
-            ),
+                    ),
+                  ),
+                ),
               );
             },
           );
