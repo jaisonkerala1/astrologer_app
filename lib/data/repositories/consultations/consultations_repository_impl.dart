@@ -276,9 +276,13 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
     String? notes,
   ) async {
     try {
+      // Use the status endpoint instead of non-existent complete endpoint
       final response = await apiService.patch(
-        '/api/consultation/complete/$consultationId',
-        data: {'notes': notes},
+        '/api/consultation/status/$consultationId',
+        data: {
+          'status': 'completed',
+          'notes': notes,
+        },
       );
 
       if (response.data['success'] == true) {
