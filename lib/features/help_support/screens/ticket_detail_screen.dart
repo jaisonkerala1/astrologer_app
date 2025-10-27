@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/help_article.dart';
-import '../services/help_support_service.dart';
+import '../bloc/help_support_bloc.dart';
+import '../bloc/help_support_event.dart';
+import '../bloc/help_support_state.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final SupportTicket ticket;
@@ -19,8 +22,14 @@ class TicketDetailScreen extends StatefulWidget {
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final HelpSupportService _helpSupportService = HelpSupportService();
-  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load fresh ticket data from backend
+    print('🎫 [TicketDetail] Loading ticket: ${widget.ticket.id}');
+    context.read<HelpSupportBloc>().add(LoadTicketDetailEvent(widget.ticket.id));
+  }
 
   @override
   void dispose() {
@@ -28,84 +37,124 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _sendMessage() async {
+  void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    final message = _messageController.text.trim();
+    print('📤 [TicketDetail] Sending message: $message');
 
-    try {
-      await _helpSupportService.addTicketMessage(
+    // Dispatch BLoC event to send message
+    context.read<HelpSupportBloc>().add(
+      AddTicketMessageEvent(
         ticketId: widget.ticket.id,
-        message: _messageController.text.trim(),
-        senderId: 'current_user_id', // Replace with actual user ID
-        senderName: 'You',
-        senderType: 'user',
-      );
+        message: message,
+      ),
+    );
 
-      _messageController.clear();
-      widget.onTicketUpdated();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Message sent successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send message: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    // Clear input immediately for better UX
+    _messageController.clear();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Ticket Details',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+  void _closeTicket() {
+    print('🔒 [TicketDetail] Closing ticket: ${widget.ticket.id}');
+    
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Close Ticket'),
+        content: const Text('Are you sure you want to close this ticket? You won\'t be able to send messages after closing.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
           ),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Ticket header
-          _buildTicketHeader(),
-          
-          // Messages
-          Expanded(
-            child: _buildMessagesList(),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<HelpSupportBloc>().add(CloseTicketEvent(widget.ticket.id));
+              widget.onTicketUpdated();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Close Ticket'),
           ),
-          
-          // Message input
-          _buildMessageInput(),
         ],
       ),
     );
   }
 
-  Widget _buildTicketHeader() {
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<HelpSupportBloc, HelpSupportState>(
+      listener: (context, state) {
+        if (state is HelpSupportErrorState) {
+          print('❌ [TicketDetail] Error: ${state.message}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.errorColor,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        // Get the ticket from BLoC state (or fallback to widget.ticket)
+        final ticket = (state is HelpSupportLoadedState && state.selectedTicket != null)
+            ? state.selectedTicket!
+            : widget.ticket;
+
+        final isSendingMessage = state is MessageSending && state.ticketId == ticket.id;
+        final canSendMessage = ticket.status.toLowerCase() != 'closed';
+
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: AppBar(
+            title: const Text(
+              'Ticket Details',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: AppTheme.primaryColor,
+            elevation: 0,
+            actions: [
+              if (canSendMessage)
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Close Ticket',
+                  onPressed: _closeTicket,
+                ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Ticket header
+              _buildTicketHeader(ticket),
+              
+              // Messages
+              Expanded(
+                child: _buildMessagesList(ticket),
+              ),
+              
+              // Message input
+              if (canSendMessage)
+                _buildMessageInput(isSendingMessage)
+              else
+                _buildClosedTicketBanner(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTicketHeader(SupportTicket ticket) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -125,7 +174,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             children: [
               Expanded(
                 child: Text(
-                  widget.ticket.title,
+                  ticket.title,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -133,12 +182,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ),
                 ),
               ),
-              _buildStatusChip(widget.ticket.status),
+              _buildStatusChip(ticket.status),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            widget.ticket.description,
+            ticket.description,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -154,15 +203,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: _getPriorityColor(widget.ticket.priority).withOpacity(0.1),
+                  color: _getPriorityColor(ticket.priority).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  widget.ticket.priority,
+                  ticket.priority,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: _getPriorityColor(widget.ticket.priority),
+                    color: _getPriorityColor(ticket.priority),
                   ),
                 ),
               ),
@@ -177,7 +226,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  widget.ticket.category,
+                  ticket.category,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -187,7 +236,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
               const Spacer(),
               Text(
-                _formatDate(widget.ticket.createdAt),
+                _formatDate(ticket.createdAt),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[500],
@@ -200,8 +249,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
-  Widget _buildMessagesList() {
-    if (widget.ticket.messages.isEmpty) {
+  Widget _buildMessagesList(SupportTicket ticket) {
+    if (ticket.messages.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -235,9 +284,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: widget.ticket.messages.length,
+      itemCount: ticket.messages.length,
       itemBuilder: (context, index) {
-        final message = widget.ticket.messages[index];
+        final message = ticket.messages[index];
         return _buildMessageBubble(message);
       },
     );
@@ -324,7 +373,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(bool isSending) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -342,6 +391,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
+              enabled: !isSending,
               decoration: InputDecoration(
                 hintText: 'Type your message...',
                 border: OutlineInputBorder(
@@ -363,19 +413,19 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
               maxLines: null,
               textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
+              onSubmitted: (_) => !isSending ? _sendMessage() : null,
             ),
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: _isLoading ? null : _sendMessage,
+            onTap: isSending ? null : _sendMessage,
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _isLoading ? Colors.grey[300] : AppTheme.primaryColor,
+                color: isSending ? Colors.grey[300] : AppTheme.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: _isLoading
+              child: isSending
                   ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -389,6 +439,38 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       color: Colors.white,
                       size: 20,
                     ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClosedTicketBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        border: Border(
+          top: BorderSide(color: Colors.grey[300]!),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: Colors.grey[600],
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'This ticket is closed. You cannot send new messages.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

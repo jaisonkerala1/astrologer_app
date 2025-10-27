@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/simple_shimmer.dart';
 import '../models/help_article.dart';
-import '../services/help_support_service.dart';
 import 'create_ticket_screen.dart';
 import 'ticket_detail_screen.dart';
 
@@ -23,8 +22,6 @@ class TicketScreen extends StatefulWidget {
 }
 
 class _TicketScreenState extends State<TicketScreen> {
-  final HelpSupportService _helpSupportService = HelpSupportService();
-
   @override
   Widget build(BuildContext context) {
     return Column(

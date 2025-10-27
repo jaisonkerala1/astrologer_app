@@ -9,9 +9,12 @@ class LoadProfileEvent extends ProfileEvent {
 }
 
 class UpdateProfileEvent extends ProfileEvent {
-  final AstrologerModel astrologer;
+  final Map<String, dynamic>? profileData; // For partial updates
+  final AstrologerModel? astrologer; // For full model updates
   
-  UpdateProfileEvent(this.astrologer);
+  UpdateProfileEvent({this.profileData, this.astrologer})
+      : assert(profileData != null || astrologer != null,
+            'Either profileData or astrologer must be provided');
 }
 
 class UploadProfileImageEvent extends ProfileEvent {

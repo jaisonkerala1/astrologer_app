@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/help_article.dart';
 
@@ -27,9 +29,7 @@ class HelpArticleDetailScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {
-              // Implement share functionality
-            },
+            onPressed: () => _shareArticle(context),
           ),
         ],
       ),
@@ -55,7 +55,7 @@ class HelpArticleDetailScreen extends StatelessWidget {
             const SizedBox(height: 30),
             
             // Helpful section
-            _buildHelpfulSection(),
+            _buildHelpfulSection(context),
           ],
         ),
       ),
@@ -304,7 +304,7 @@ class HelpArticleDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHelpfulSection() {
+  Widget _buildHelpfulSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -336,18 +336,14 @@ class HelpArticleDetailScreen extends StatelessWidget {
                 icon: Icons.thumb_up,
                 label: 'Yes',
                 color: Colors.green,
-                onTap: () {
-                  // Implement helpful feedback
-                },
+                onTap: () => _markHelpful(context, true),
               ),
               const SizedBox(width: 16),
               _buildHelpfulButton(
                 icon: Icons.thumb_down,
                 label: 'No',
                 color: Colors.red,
-                onTap: () {
-                  // Implement not helpful feedback
-                },
+                onTap: () => _markHelpful(context, false),
               ),
             ],
           ),
@@ -412,5 +408,71 @@ class HelpArticleDetailScreen extends StatelessWidget {
     } else {
       return 'Just now';
     }
+  }
+
+  void _shareArticle(BuildContext context) {
+    print('📄 [HelpArticleDetail] Sharing article: ${article.title}');
+    
+    final shareText = '''
+📄 ${article.title}
+
+${article.content.length > 200 ? '${article.content.substring(0, 200)}...' : article.content}
+
+Category: ${article.category}
+Views: ${article.viewCount}
+
+#AstrologerApp #Help #${article.category.replaceAll(' ', '')}
+''';
+
+    try {
+      Share.share(
+        shareText,
+        subject: article.title,
+      );
+      
+      // Show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Article shared successfully!'),
+          backgroundColor: AppTheme.successColor,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('❌ [HelpArticleDetail] Error sharing: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error sharing article: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  void _markHelpful(BuildContext context, bool isHelpful) {
+    print('📄 [HelpArticleDetail] Marked as ${isHelpful ? 'helpful' : 'not helpful'}: ${article.id}');
+    
+    // Show feedback with appropriate color
+    final message = isHelpful
+        ? 'Thank you! Glad this article was helpful 👍'
+        : 'Thanks for your feedback. We\'ll improve this article 👎';
+    
+    final color = isHelpful ? AppTheme.successColor : Colors.orange;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+    
+    // Note: In a real app with backend, we would dispatch:
+    // context.read<HelpSupportBloc>().add(MarkArticleHelpfulEvent(article.id, isHelpful));
   }
 }

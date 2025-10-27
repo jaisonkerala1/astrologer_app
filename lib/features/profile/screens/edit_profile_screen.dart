@@ -1,15 +1,15 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/constants/api_constants.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/services/api_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/animated_button.dart';
-import '../../../shared/widgets/animated_card.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
+import '../widgets/edit_profile_screen_skeleton.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final AstrologerModel? currentUser;
@@ -36,15 +36,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _awardsController = TextEditingController();
   final _certificatesController = TextEditingController();
   
-  final StorageService _storageService = StorageService();
-  final ApiService _apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
   
   File? _selectedImage;
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
-  
-  bool _isLoading = false;
 
   final List<String> _availableSpecializations = [
     'Vedic Astrology',
@@ -117,33 +113,88 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppTheme.textColor,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: _isLoading ? Colors.grey : AppTheme.primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
+    return BlocConsumer<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (state is ProfileLoadedState) {
+          // Profile updated successfully
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile updated successfully!'),
+              backgroundColor: AppTheme.successColor,
+              duration: Duration(seconds: 2),
             ),
+          );
+          widget.onProfileUpdated();
+          Navigator.pop(context);
+        } else if (state is ProfileErrorState) {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.errorColor,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        // Show skeleton loader on initial loading
+        if (state is ProfileLoading && widget.currentUser == null) {
+          return const EditProfileScreenSkeleton();
+        }
+
+        // Determine if we're currently updating
+        final isUpdating = state is ProfileUpdating;
+        
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: AppBar(
+            title: Row(
+              children: [
+                const Text('Edit Profile'),
+                if (isUpdating) ...[
+                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            foregroundColor: AppTheme.textColor,
+            actions: [
+              TextButton(
+                onPressed: isUpdating ? null : _saveProfile,
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    color: isUpdating ? Colors.grey : AppTheme.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          body: RefreshIndicator(
+            onRefresh: () async {
+              context.read<ProfileBloc>().add(LoadProfileEvent(forceRefresh: true));
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            color: AppTheme.primaryColor,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // Profile Photo Section
               _buildProfilePhotoSection(),
               const SizedBox(height: 32),
@@ -285,9 +336,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _availableSpecializations,
                 _selectedSpecializations,
                 (selected) {
-                  setState(() {
-                    _selectedSpecializations = selected;
-                  });
+                  // Local UI state only - no setState needed
+                  _selectedSpecializations = selected;
                 },
               ),
               const SizedBox(height: 32),
@@ -300,9 +350,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _availableLanguages,
                 _selectedLanguages,
                 (selected) {
-                  setState(() {
-                    _selectedLanguages = selected;
-                  });
+                  // Local UI state only - no setState needed
+                  _selectedLanguages = selected;
                 },
               ),
               const SizedBox(height: 32),
@@ -314,14 +363,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: 56,
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
-                isLoading: _isLoading,
-                onPressed: _isLoading ? null : _saveProfile,
+                isLoading: isUpdating,
+                onPressed: isUpdating ? null : _saveProfile,
               ),
               const SizedBox(height: 32),
-            ],
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -441,51 +493,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     List<String> selectedOptions,
     Function(List<String>) onSelectionChanged,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTheme.textColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
-          children: options.map((option) {
-            final isSelected = selectedOptions.contains(option);
-            return FilterChip(
-              label: Text(option),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    selectedOptions.add(option);
-                  } else {
-                    selectedOptions.remove(option);
-                  }
-                  onSelectionChanged(selectedOptions);
-                });
-              },
-              selectedColor: AppTheme.primaryColor.withOpacity(0.8),
-              checkmarkColor: Colors.white,
-              labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isSelected ? Colors.white : AppTheme.textColor,
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppTheme.textColor,
+                fontWeight: FontWeight.w600,
               ),
-              backgroundColor: AppTheme.cardColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.textColor.withOpacity(0.3),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              children: options.map((option) {
+                final isSelected = selectedOptions.contains(option);
+                return FilterChip(
+                  label: Text(option),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setLocalState(() {
+                      if (selected) {
+                        selectedOptions.add(option);
+                      } else {
+                        selectedOptions.remove(option);
+                      }
+                      onSelectionChanged(selectedOptions);
+                    });
+                  },
+                  selectedColor: AppTheme.primaryColor.withOpacity(0.8),
+                  checkmarkColor: Colors.white,
+                  labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isSelected ? Colors.white : AppTheme.textColor,
+                  ),
+                  backgroundColor: AppTheme.cardColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isSelected ? AppTheme.primaryColor : AppTheme.textColor.withOpacity(0.3),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -499,17 +555,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       
       if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
+        // Update local state for UI preview
+        _selectedImage = File(image.path);
+        // Force rebuild to show the new image
+        // ignore: invalid_use_of_protected_member
+        (context as Element).markNeedsBuild();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error picking image: $e'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
     }
   }
 
@@ -518,6 +578,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    // Validate specializations
     if (_selectedSpecializations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -528,6 +589,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    // Validate languages
     if (_selectedLanguages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -538,94 +600,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    print('📝 [EditProfileScreen] Saving profile changes...');
 
-    try {
-      // Get auth token
-      final token = await _storageService.getAuthToken();
-      if (token == null) {
-        throw Exception('No authentication token found');
-      }
-
-      // Set auth token for API calls
-      _apiService.setAuthToken(token);
-
-      String? profilePictureUrl;
-
-      // Upload image first if selected
-      if (_selectedImage != null) {
-        print('Uploading profile picture...');
-        final imageResponse = await _apiService.uploadFile(
-          ApiConstants.uploadProfileImage,
-          _selectedImage!.path,
-          fieldName: 'profilePicture',
-        );
-        
-        if (imageResponse.statusCode == 200) {
-          profilePictureUrl = imageResponse.data['data']['profilePicture'];
-          print('Image uploaded successfully: $profilePictureUrl');
-        } else {
-          throw Exception('Failed to upload profile picture: ${imageResponse.data['message']}');
-        }
-      }
-
-      // Prepare update data
-      final updateData = {
-        'name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'specializations': _selectedSpecializations,
-        'languages': _selectedLanguages,
-        'experience': int.parse(_experienceController.text.trim()),
-        'ratePerMinute': double.parse(_rateController.text.trim()),
-        'bio': _bioController.text.trim(),
-        'awards': _awardsController.text.trim(),
-        'certificates': _certificatesController.text.trim(),
-        if (profilePictureUrl != null) 'profilePicture': profilePictureUrl,
-      };
-
-      print('Updating profile with data: $updateData');
-
-      // Call API to update profile
-      final response = await _apiService.put(ApiConstants.updateProfile, data: updateData);
-      
-      if (response.statusCode == 200) {
-        // Parse the updated user data from API response
-        final updatedUserData = response.data['data'];
-        final updatedUser = AstrologerModel.fromJson(updatedUserData);
-
-        // Save to local storage
-        await _storageService.setUserData(jsonEncode(updatedUser.toJson()));
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully!'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-
-        // Callback to refresh parent screen
-        widget.onProfileUpdated();
-
-        // Navigate back
-        Navigator.pop(context);
-      } else {
-        throw Exception('Failed to update profile: ${response.data['message'] ?? 'Unknown error'}');
-      }
-    } catch (e) {
-      print('Error updating profile: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating profile: $e'),
-          backgroundColor: AppTheme.errorColor,
-        ),
+    // Upload image first if selected
+    if (_selectedImage != null) {
+      print('📸 [EditProfileScreen] Uploading profile image...');
+      context.read<ProfileBloc>().add(
+        UploadProfileImageEvent(_selectedImage!.path),
       );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Wait a moment for the image upload to complete
+      await Future.delayed(const Duration(milliseconds: 500));
     }
+
+    // Prepare update data
+    final updateData = {
+      'name': _nameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'specializations': _selectedSpecializations,
+      'languages': _selectedLanguages,
+      'experience': int.parse(_experienceController.text.trim()),
+      'ratePerMinute': double.parse(_rateController.text.trim()),
+      'bio': _bioController.text.trim(),
+      'awards': _awardsController.text.trim(),
+      'certificates': _certificatesController.text.trim(),
+    };
+
+    print('📝 [EditProfileScreen] Dispatching UpdateProfileEvent with data: ${updateData.keys}');
+
+    // Dispatch update event to ProfileBloc
+    context.read<ProfileBloc>().add(
+      UpdateProfileEvent(profileData: updateData),
+    );
   }
 }

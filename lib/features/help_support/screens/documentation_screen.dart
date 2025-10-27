@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/simple_shimmer.dart';
 import '../models/help_article.dart';
-import '../services/help_support_service.dart';
 import 'help_article_detail_screen.dart';
 import 'help_support_screen.dart';
 
@@ -28,7 +27,18 @@ class _DocumentationScreenState extends State<DocumentationScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<HelpArticle> _filteredArticles = [];
   String _selectedCategory = 'All';
-  final HelpSupportService _helpSupportService = HelpSupportService();
+  
+  // Categories list
+  final List<String> _categories = [
+    'All',
+    'Getting Started',
+    'Account & Profile',
+    'Calendar & Scheduling',
+    'Consultations',
+    'Payments',
+    'Technical Issues',
+    'General',
+  ];
 
   @override
   void initState() {
@@ -103,16 +113,14 @@ class _DocumentationScreenState extends State<DocumentationScreen> {
   }
 
   Widget _buildCategoryFilter() {
-    final categories = ['All', ..._helpSupportService.getHelpCategories()];
-    
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
+        itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final category = categories[index];
+          final category = _categories[index];
           final isSelected = category == _selectedCategory;
           
           return Container(

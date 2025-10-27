@@ -51,7 +51,17 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
     
     try {
-      final updatedAstrologer = await repository.updateProfile(event.astrologer);
+      AstrologerModel updatedAstrologer;
+      
+      // Handle both profileData (Map) and astrologer (Model) updates
+      if (event.profileData != null) {
+        print('📝 [ProfileBloc] Updating profile with data: ${event.profileData!.keys}');
+        updatedAstrologer = await repository.updateProfileWithData(event.profileData!);
+      } else {
+        print('📝 [ProfileBloc] Updating profile with model');
+        updatedAstrologer = await repository.updateProfile(event.astrologer!);
+      }
+      
       print('✅ [ProfileBloc] Profile updated successfully');
       
       emit(ProfileLoadedState(

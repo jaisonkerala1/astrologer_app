@@ -14,6 +14,9 @@ abstract class ProfileRepository {
   /// Update astrologer profile
   Future<AstrologerModel> updateProfile(AstrologerModel astrologer);
 
+  /// Update astrologer profile with raw data (Map)
+  Future<AstrologerModel> updateProfileWithData(Map<String, dynamic> profileData);
+
   /// Upload profile picture
   /// Returns the uploaded image URL
   Future<String> uploadProfileImage(String imagePath);

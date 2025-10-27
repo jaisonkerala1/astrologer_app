@@ -69,6 +69,34 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
   }
 
   @override
+  Future<AstrologerModel> updateProfileWithData(Map<String, dynamic> profileData) async {
+    try {
+      print('📝 [ProfileRepositoryImpl] Updating profile with data: ${profileData.keys}');
+      
+      final response = await apiService.put(
+        ApiConstants.updateProfile,
+        data: profileData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final updatedAstrologer = AstrologerModel.fromJson(response.data['data']);
+        
+        // Update cache and local storage
+        await cacheProfile(updatedAstrologer);
+        await storageService.setUserData(jsonEncode(updatedAstrologer.toJson()));
+        
+        print('✅ [ProfileRepositoryImpl] Profile updated successfully: ${updatedAstrologer.name}');
+        return updatedAstrologer;
+      } else {
+        throw Exception('Failed to update profile: ${response.data['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      print('❌ [ProfileRepositoryImpl] Error updating profile: $e');
+      throw Exception(handleError(e));
+    }
+  }
+
+  @override
   Future<String> uploadProfileImage(String imagePath) async {
     try {
       final response = await apiService.postMultipart(

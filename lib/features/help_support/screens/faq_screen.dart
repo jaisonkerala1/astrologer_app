@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/simple_shimmer.dart';
 import '../models/help_article.dart';
-import '../services/help_support_service.dart';
 import 'help_support_screen.dart';
 
 class FAQScreen extends StatefulWidget {
@@ -27,7 +26,17 @@ class _FAQScreenState extends State<FAQScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<FAQItem> _filteredFAQ = [];
   String _selectedCategory = 'All';
-  final HelpSupportService _helpSupportService = HelpSupportService();
+  
+  // FAQ Categories list
+  final List<String> _categories = [
+    'All',
+    'General',
+    'Account',
+    'Calendar',
+    'Consultations',
+    'Payments',
+    'Technical',
+  ];
 
   @override
   void initState() {
@@ -110,16 +119,14 @@ class _FAQScreenState extends State<FAQScreen> {
   }
 
   Widget _buildCategoryFilter() {
-    final categories = ['All', ..._helpSupportService.getFAQCategories()];
-    
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
+        itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final category = categories[index];
+          final category = _categories[index];
           final isSelected = category == _selectedCategory;
           
           return Container(

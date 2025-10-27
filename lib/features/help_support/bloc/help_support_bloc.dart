@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/help_support/help_support_repository.dart';
+import '../models/help_article.dart';
 import 'help_support_event.dart';
 import 'help_support_state.dart';
 
@@ -24,14 +25,24 @@ class HelpSupportBloc extends Bloc<HelpSupportEvent, HelpSupportState> {
   }
 
   Future<void> _onLoadHelpArticles(LoadHelpArticlesEvent event, Emitter<HelpSupportState> emit) async {
+    // Preserve existing tickets if state is already loaded
+    final existingTickets = state is HelpSupportLoadedState 
+        ? (state as HelpSupportLoadedState).tickets 
+        : <SupportTicket>[];
+    
+    print('🔍 [HelpSupportBloc] Loading articles, preserving ${existingTickets.length} existing tickets');
+    
     emit(const HelpSupportLoading());
     try {
       final articles = await repository.getHelpArticles();
       final faqs = await repository.getFAQItems();
+      
+      print('✅ [HelpSupportBloc] Articles loaded, emitting state with ${existingTickets.length} tickets');
+      
       emit(HelpSupportLoadedState(
         helpArticles: articles,
         faqItems: faqs,
-        tickets: [],
+        tickets: existingTickets, // PRESERVE existing tickets!
       ));
     } catch (e) {
       emit(HelpSupportErrorState(e.toString().replaceAll('Exception: ', '')));
@@ -138,12 +149,21 @@ class HelpSupportBloc extends Bloc<HelpSupportEvent, HelpSupportState> {
   }
 
   Future<void> _onLoadUserTickets(LoadUserTicketsEvent event, Emitter<HelpSupportState> emit) async {
+    print('🎫 [HelpSupportBloc] LoadUserTicketsEvent triggered');
+    print('🔍 [HelpSupportBloc] BLoC instance: ${hashCode}');
+    print('🔍 [HelpSupportBloc] Repository instance: ${repository.hashCode}');
     try {
       final tickets = await repository.getUserTickets('current_user'); // Will be replaced with actual user ID
+      print('✅ [HelpSupportBloc] Got ${tickets.length} tickets from repository');
+      for (var i = 0; i < tickets.length; i++) {
+        print('   🎫 Ticket $i: ${tickets[i].id} - ${tickets[i].title} - ${tickets[i].status}');
+      }
       if (state is HelpSupportLoadedState) {
         final currentState = state as HelpSupportLoadedState;
+        print('🔍 [HelpSupportBloc] Updating existing LoadedState with ${tickets.length} tickets');
         emit(currentState.copyWith(tickets: tickets));
       } else {
+        print('🔍 [HelpSupportBloc] Creating new LoadedState with ${tickets.length} tickets');
         emit(HelpSupportLoadedState(
           helpArticles: [],
           faqItems: [],
@@ -151,6 +171,7 @@ class HelpSupportBloc extends Bloc<HelpSupportEvent, HelpSupportState> {
         ));
       }
     } catch (e) {
+      print('❌ [HelpSupportBloc] Error loading tickets: $e');
       emit(HelpSupportErrorState(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -171,24 +192,53 @@ class HelpSupportBloc extends Bloc<HelpSupportEvent, HelpSupportState> {
     CreateSupportTicketEvent event,
     Emitter<HelpSupportState> emit,
   ) async {
+    // Store current state before emitting TicketCreating
+    final previousState = state is HelpSupportLoadedState ? state as HelpSupportLoadedState : null;
+    
     emit(const TicketCreating());
+    
     try {
+      print('🎫 [HelpSupportBloc] Creating ticket: ${event.title}');
       final ticket = await repository.createSupportTicket(
         title: event.title,
         description: event.description,
         category: event.category,
         priority: event.priority,
       );
-      if (state is HelpSupportLoadedState) {
-        final currentState = state as HelpSupportLoadedState;
-        final updatedTickets = List.of(currentState.tickets)..add(ticket);
-        emit(currentState.copyWith(
+      
+      print('✅ [HelpSupportBloc] Ticket created successfully: ${ticket.id}');
+      
+      // Use previous state to emit updated state with new ticket
+      if (previousState != null) {
+        final updatedTickets = List<SupportTicket>.from(previousState.tickets)..add(ticket);
+        emit(previousState.copyWith(
           tickets: updatedTickets,
+          successMessage: 'Support ticket created successfully',
+        ));
+      } else {
+        // Fallback: Create new loaded state with just the new ticket
+        emit(HelpSupportLoadedState(
+          helpArticles: [],
+          faqItems: [],
+          tickets: [ticket],
           successMessage: 'Support ticket created successfully',
         ));
       }
     } catch (e) {
-      emit(HelpSupportErrorState(e.toString().replaceAll('Exception: ', '')));
+      print('❌ [HelpSupportBloc] Error creating ticket: $e');
+      
+      // Emit back to previous state with error message, don't lose data
+      if (previousState != null) {
+        emit(previousState.copyWith(
+          successMessage: null,
+        ));
+        // Emit error state briefly, then go back to loaded state
+        emit(HelpSupportErrorState(e.toString().replaceAll('Exception: ', '')));
+        await Future.delayed(const Duration(milliseconds: 100));
+        emit(previousState);
+      } else {
+        emit(HelpSupportErrorState(e.toString().replaceAll('Exception: ', '')));
+      }
     }
   }
 
@@ -220,7 +270,10 @@ class HelpSupportBloc extends Bloc<HelpSupportEvent, HelpSupportState> {
   }
 
   Future<void> _onRefresh(RefreshHelpSupportEvent event, Emitter<HelpSupportState> emit) async {
+    print('🔄 [HelpSupportBloc] Refreshing all help & support data');
+    // Reload all data (articles, FAQs, and tickets)
     add(const LoadHelpArticlesEvent());
+    add(const LoadUserTicketsEvent());
   }
 }
 

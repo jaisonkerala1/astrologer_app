@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/help_article.dart';
-import '../services/help_support_service.dart';
+import '../bloc/help_support_bloc.dart';
+import '../bloc/help_support_event.dart';
+import '../bloc/help_support_state.dart';
 
 class CreateTicketScreen extends StatefulWidget {
   final VoidCallback onTicketCreated;
@@ -19,16 +22,32 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final HelpSupportService _helpSupportService = HelpSupportService();
   
-  String _selectedCategory = '';
+  String _selectedCategory = 'Account Issues';
   String _selectedPriority = 'Medium';
-  bool _isLoading = false;
+
+  // Local category and priority lists
+  final List<String> _ticketCategories = [
+    'Account Issues',
+    'Calendar Problems',
+    'Consultation Issues',
+    'Payment Problems',
+    'Technical Support',
+    'Feature Request',
+    'Bug Report',
+    'Other',
+  ];
+
+  final List<String> _priorityLevels = [
+    'Low',
+    'Medium',
+    'High',
+    'Urgent',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = _helpSupportService.getTicketCategories().first;
   }
 
   @override
@@ -38,105 +57,108 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     super.dispose();
   }
 
-  Future<void> _createTicket() async {
+  void _createTicket() {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _helpSupportService.createSupportTicket(
+    print('🎫 [CreateTicket] Creating ticket: ${_titleController.text}');
+    
+    // Dispatch BLoC event to create ticket
+    context.read<HelpSupportBloc>().add(
+      CreateSupportTicketEvent(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         category: _selectedCategory,
         priority: _selectedPriority,
-        userId: 'current_user_id', // Replace with actual user ID
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Support ticket created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        widget.onTicketCreated();
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to create ticket: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Create Support Ticket',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section
-              _buildHeader(),
-              
-              // Form content
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title field
-                    _buildTitleField(),
-                    const SizedBox(height: 24),
-                    
-                    // Category dropdown
-                    _buildCategoryDropdown(),
-                    const SizedBox(height: 24),
-                    
-                    // Priority dropdown
-                    _buildPriorityDropdown(),
-                    const SizedBox(height: 24),
-                    
-                    // Description field
-                    _buildDescriptionField(),
-                    const SizedBox(height: 32),
-                    
-                    // Create button
-                    _buildCreateButton(),
-                  ],
-                ),
+    return BlocConsumer<HelpSupportBloc, HelpSupportState>(
+      listener: (context, state) {
+        if (state is HelpSupportLoadedState && state.successMessage != null) {
+          // Ticket created successfully
+          print('✅ [CreateTicket] Ticket created successfully');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.successMessage!),
+              backgroundColor: AppTheme.successColor,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          widget.onTicketCreated();
+          Navigator.pop(context);
+        } else if (state is HelpSupportErrorState) {
+          // Error creating ticket
+          print('❌ [CreateTicket] Error: ${state.message}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to create ticket: ${state.message}'),
+              backgroundColor: AppTheme.errorColor,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isCreating = state is TicketCreating;
+
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: AppBar(
+            title: const Text(
+              'Create Support Ticket',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-            ],
+            ),
+            backgroundColor: AppTheme.primaryColor,
+            elevation: 0,
           ),
-        ),
-      ),
+          body: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header section
+                  _buildHeader(),
+                  
+                  // Form content
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title field
+                        _buildTitleField(),
+                        const SizedBox(height: 24),
+                        
+                        // Category dropdown
+                        _buildCategoryDropdown(),
+                        const SizedBox(height: 24),
+                        
+                        // Priority dropdown
+                        _buildPriorityDropdown(),
+                        const SizedBox(height: 24),
+                        
+                        // Description field
+                        _buildDescriptionField(),
+                        const SizedBox(height: 32),
+                        
+                        // Create button
+                        _buildCreateButton(isCreating),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -290,7 +312,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 vertical: 16,
               ),
             ),
-            items: _helpSupportService.getTicketCategories().map((category) {
+            items: _ticketCategories.map((category) {
               return DropdownMenuItem(
                 value: category,
                 child: Text(
@@ -354,7 +376,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 vertical: 16,
               ),
             ),
-            items: _helpSupportService.getPriorityLevels().map((priority) {
+            items: _priorityLevels.map((priority) {
               return DropdownMenuItem(
                 value: priority,
                 child: Row(
@@ -446,15 +468,15 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     );
   }
 
-  Widget _buildCreateButton() {
+  Widget _buildCreateButton(bool isCreating) {
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: _isLoading ? null : _createTicket,
-            icon: _isLoading
+            onPressed: isCreating ? null : _createTicket,
+            icon: isCreating
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -465,7 +487,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   )
                 : const Icon(Icons.send, size: 20),
             label: Text(
-              _isLoading ? 'Creating Ticket...' : 'Create Support Ticket',
+              isCreating ? 'Creating Ticket...' : 'Create Support Ticket',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

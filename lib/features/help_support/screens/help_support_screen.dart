@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_shimmer.dart';
 import '../models/help_article.dart';
-import '../services/help_support_service.dart';
+import '../bloc/help_support_bloc.dart';
+import '../bloc/help_support_event.dart';
+import '../bloc/help_support_state.dart';
 import 'documentation_screen.dart';
 import 'faq_screen.dart';
 import 'ticket_screen.dart';
 import '../../chat/widgets/floating_chat_button.dart';
 import '../../auth/models/astrologer_model.dart';
+import '../../../core/services/storage_service.dart';
+import 'dart:convert';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -20,13 +25,9 @@ class HelpSupportScreen extends StatefulWidget {
 class _HelpSupportScreenState extends State<HelpSupportScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final HelpSupportService _helpSupportService = HelpSupportService();
   final TextEditingController _searchController = TextEditingController();
+  final StorageService _storageService = StorageService();
   
-  List<HelpArticle> _helpArticles = [];
-  List<FAQItem> _faqItems = [];
-  List<SupportTicket> _userTickets = [];
-  bool _isLoading = true;
   String _searchQuery = '';
   AstrologerModel? _currentUser;
 
@@ -34,8 +35,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadData();
     _loadUserData();
+    // Dispatch BLoC event to load all help & support data
+    context.read<HelpSupportBloc>().add(const LoadHelpArticlesEvent());
+    context.read<HelpSupportBloc>().add(const LoadUserTicketsEvent());
+    print('📘 [HelpSupportScreen] Dispatched load events');
   }
 
   @override
@@ -45,38 +49,18 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final results = await Future.wait([
-        _helpSupportService.getHelpArticles(),
-        _helpSupportService.getFAQItems(),
-        _helpSupportService.getUserTickets('current_user_id'), // Replace with actual user ID
-      ]);
-
-      setState(() {
-        _helpArticles = results[0] as List<HelpArticle>;
-        _faqItems = results[1] as List<FAQItem>;
-        _userTickets = results[2] as List<SupportTicket>;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      // Handle error
-    }
-  }
-
   Future<void> _loadUserData() async {
-    // Load user data for Loona AI
-    // This is a simplified version - you might want to use your actual user loading logic
-    setState(() {
-      _currentUser = null; // Set to null for now, or load from storage
-    });
+    try {
+      final userData = await _storageService.getUserData();
+      if (userData != null) {
+        final userDataMap = jsonDecode(userData);
+        setState(() {
+          _currentUser = AstrologerModel.fromJson(userDataMap);
+        });
+      }
+    } catch (e) {
+      print('⚠️ [HelpSupportScreen] Error loading user data: $e');
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -85,57 +69,74 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     });
   }
 
+  void _onRefresh() {
+    print('📘 [HelpSupportScreen] Refreshing help & support data');
+    context.read<HelpSupportBloc>().add(const RefreshHelpSupportEvent());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return Scaffold(
-          backgroundColor: themeService.backgroundColor,
-          appBar: AppBar(
-            title: const Text(
-              'Help & Support',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+        return BlocBuilder<HelpSupportBloc, HelpSupportState>(
+          builder: (context, state) {
+            // Extract data from state
+            final isLoading = state is HelpSupportLoading;
+            final helpArticles = state is HelpSupportLoadedState ? state.helpArticles : <HelpArticle>[];
+            final faqItems = state is HelpSupportLoadedState ? state.faqItems : <FAQItem>[];
+            final userTickets = state is HelpSupportLoadedState ? state.tickets : <SupportTicket>[];
+
+            print('📘 [HelpSupportScreen] State: ${state.runtimeType}, Articles: ${helpArticles.length}, FAQs: ${faqItems.length}, Tickets: ${userTickets.length}');
+
+            return Scaffold(
+              backgroundColor: themeService.backgroundColor,
+              appBar: AppBar(
+                title: const Text(
+                  'Help & Support',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: themeService.primaryColor,
+                elevation: 0,
+                bottom: TabBar(
+                  controller: _tabController,
+                  indicatorColor: Colors.white,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white70,
+                  tabs: const [
+                    Tab(text: 'Documentation', icon: Icon(Icons.article, size: 20)),
+                    Tab(text: 'FAQ', icon: Icon(Icons.help_outline, size: 20)),
+                    Tab(text: 'Tickets', icon: Icon(Icons.support_agent, size: 20)),
+                  ],
+                ),
               ),
-            ),
-            backgroundColor: themeService.primaryColor,
-            elevation: 0,
-            bottom: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              tabs: const [
-                Tab(text: 'Documentation', icon: Icon(Icons.article, size: 20)),
-                Tab(text: 'FAQ', icon: Icon(Icons.help_outline, size: 20)),
-                Tab(text: 'Tickets', icon: Icon(Icons.support_agent, size: 20)),
-              ],
-            ),
-          ),
-      floatingActionButton: FloatingChatButton(userProfile: _currentUser),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          DocumentationScreen(
-            helpArticles: _helpArticles,
-            isLoading: _isLoading,
-            searchQuery: _searchQuery,
-            onSearchChanged: _onSearchChanged,
-          ),
-          FAQScreen(
-            faqItems: _faqItems,
-            isLoading: _isLoading,
-            searchQuery: _searchQuery,
-            onSearchChanged: _onSearchChanged,
-          ),
-          TicketScreen(
-            userTickets: _userTickets,
-            isLoading: _isLoading,
-            onRefresh: _loadData,
-          ),
-        ],
-      ),
+              floatingActionButton: FloatingChatButton(userProfile: _currentUser),
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  DocumentationScreen(
+                    helpArticles: helpArticles,
+                    isLoading: isLoading,
+                    searchQuery: _searchQuery,
+                    onSearchChanged: _onSearchChanged,
+                  ),
+                  FAQScreen(
+                    faqItems: faqItems,
+                    isLoading: isLoading,
+                    searchQuery: _searchQuery,
+                    onSearchChanged: _onSearchChanged,
+                  ),
+                  TicketScreen(
+                    userTickets: userTickets,
+                    isLoading: isLoading,
+                    onRefresh: _onRefresh,
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
