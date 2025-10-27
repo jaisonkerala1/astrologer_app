@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/services/storage_service.dart';
 import '../../../core/services/status_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -16,6 +14,9 @@ import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../auth/models/astrologer_model.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
 import 'edit_profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
 import '../../settings/screens/language_selection_screen.dart';
@@ -39,34 +40,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveClientMixin {
-  AstrologerModel? _currentUser;
-  final StorageService _storageService = StorageService();
-
   @override
   bool get wantKeepAlive => true; // Preserve state on tab switch
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    try {
-      final userData = await _storageService.getUserData();
-      if (userData != null) {
-        final userDataMap = jsonDecode(userData);
-        setState(() {
-          _currentUser = AstrologerModel.fromJson(userDataMap);
-        });
-      }
-    } catch (e) {
-      print('Error loading user data: $e');
-    }
+    // Load profile data using BLoC
+    context.read<ProfileBloc>().add(LoadProfileEvent());
   }
 
   void _onProfileUpdated() {
-    _loadUserData();
+    // Reload profile using BLoC
+    context.read<ProfileBloc>().add(LoadProfileEvent());
     // Call the parent callback if provided
     widget.onProfileUpdated?.call();
   }
@@ -117,31 +103,122 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
       },
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
-          return Scaffold(
-            backgroundColor: themeService.backgroundColor,
-            appBar: AppBar(
-              backgroundColor: themeService.primaryColor,
-              elevation: 0,
-              centerTitle: false,
-              titleSpacing: 16,
-              title: Text(
-                'Profile',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
+          return BlocBuilder<ProfileBloc, ProfileState>(
+            builder: (context, profileState) {
+              // Handle loading state
+              if (profileState is ProfileLoading) {
+                return Scaffold(
+                  backgroundColor: themeService.backgroundColor,
+                  appBar: AppBar(
+                    backgroundColor: themeService.primaryColor,
+                    elevation: 0,
+                    title: const Text('Profile', style: TextStyle(color: Colors.white)),
+                  ),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: themeService.primaryColor),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Loading profile...',
+                          style: TextStyle(color: themeService.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              // Handle error state
+              if (profileState is ProfileErrorState) {
+                return Scaffold(
+                  backgroundColor: themeService.backgroundColor,
+                  appBar: AppBar(
+                    backgroundColor: themeService.primaryColor,
+                    elevation: 0,
+                    title: const Text('Profile', style: TextStyle(color: Colors.white)),
+                  ),
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 64, color: themeService.errorColor),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error Loading Profile',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: themeService.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            profileState.message,
+                            style: TextStyle(color: themeService.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: () => context.read<ProfileBloc>().add(LoadProfileEvent()),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: themeService.primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // Get astrologer from loaded state
+              final astrologer = profileState is ProfileLoadedState 
+                  ? profileState.astrologer 
+                  : null;
+
+              // Show success message if available
+              if (profileState is ProfileLoadedState && profileState.successMessage != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(profileState.successMessage!),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                });
+              }
+
+              return Scaffold(
+                backgroundColor: themeService.backgroundColor,
+                appBar: AppBar(
+                  backgroundColor: themeService.primaryColor,
+                  elevation: 0,
+                  centerTitle: false,
+                  titleSpacing: 16,
+                  title: Text(
+                    'Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            floatingActionButton: FloatingChatButton(userProfile: _currentUser),
-            body: SingleChildScrollView(
+                floatingActionButton: FloatingChatButton(userProfile: astrologer),
+                body: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Profile Header - Full width
-                  _buildProfileHeader(context, _currentUser, themeService),
+                  _buildProfileHeader(context, astrologer, themeService),
                   const SizedBox(height: 32),
                   
                   // Content with padding
@@ -162,9 +239,9 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                         _buildProfileSection(
                           'Personal Information',
                           [
-                            _buildInfoTile(Icons.person, 'Full Name', _currentUser?.name ?? 'Loading...', themeService),
-                            _buildInfoTile(Icons.phone, 'Phone', _currentUser?.phone ?? 'Loading...', themeService),
-                            _buildInfoTile(Icons.email, 'Email', _currentUser?.email ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.person, 'Full Name', astrologer?.name ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.phone, 'Phone', astrologer?.phone ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.email, 'Email', astrologer?.email ?? 'Loading...', themeService),
                             _buildInfoTile(Icons.cake, 'Date of Birth', '15 Aug, 1985', themeService),
                           ],
                           themeService,
@@ -174,10 +251,10 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                         _buildProfileSection(
                           'Professional Details',
                           [
-                            _buildInfoTile(Icons.school, 'Experience', '${_currentUser?.experience ?? 0} Years', themeService),
-                            _buildInfoTile(Icons.star, 'Specializations', _currentUser?.specializations.join(', ') ?? 'Loading...', themeService),
-                            _buildInfoTile(Icons.language, 'Languages', _currentUser?.languages.join(', ') ?? 'Loading...', themeService),
-                            _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${_currentUser?.ratePerMinute ?? 0}', themeService),
+                            _buildInfoTile(Icons.school, 'Experience', '${astrologer?.experience ?? 0} Years', themeService),
+                            _buildInfoTile(Icons.star, 'Specializations', astrologer?.specializations.join(', ') ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.language, 'Languages', astrologer?.languages.join(', ') ?? 'Loading...', themeService),
+                            _buildInfoTile(Icons.currency_rupee, 'Rate per Minute', '₹${astrologer?.ratePerMinute ?? 0}', themeService),
                           ],
                           themeService,
                         ),
@@ -258,7 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                         const SizedBox(height: 24),
                         
                         // Action Buttons
-                        _buildActionButtons(context, themeService),
+                        _buildActionButtons(context, themeService, astrologer),
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -266,6 +343,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 ],
               ),
             ),
+              );
+            },
           );
         },
       ),
@@ -288,7 +367,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 context,
                 MaterialPageRoute(
                   builder: (context) => EditProfileScreen(
-                    currentUser: _currentUser,
+                    currentUser: user,
                     onProfileUpdated: _onProfileUpdated,
                   ),
                 ),
@@ -297,10 +376,10 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
             child: Stack(
               children: [
                 ProfileAvatarWidget(
-                  imagePath: _currentUser?.profilePicture,
+                  imagePath: user?.profilePicture,
                   radius: 45,
-                  fallbackText: _currentUser?.name?.isNotEmpty == true 
-                      ? _currentUser!.name!.substring(0, 1).toUpperCase()
+                  fallbackText: user?.name?.isNotEmpty == true 
+                      ? user!.name!.substring(0, 1).toUpperCase()
                       : 'A',
                   backgroundColor: themeService.primaryColor,
                   textColor: Colors.white,
@@ -786,7 +865,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, ThemeService themeService) {
+  Widget _buildActionButtons(BuildContext context, ThemeService themeService, AstrologerModel? astrologer) {
     return Column(
       children: [
         // Primary Actions Row
@@ -802,7 +881,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                     context,
                     MaterialPageRoute(
                       builder: (context) => EditProfileScreen(
-                        currentUser: _currentUser,
+                        currentUser: astrologer,
                         onProfileUpdated: _onProfileUpdated,
                       ),
                     ),
@@ -818,7 +897,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 icon: Icons.share_outlined,
                 color: themeService.infoColor,
                 onPressed: () {
-                  _showShareOptions(context);
+                  _showShareOptions(context, astrologer);
                 },
                 themeService: themeService,
               ),
@@ -970,7 +1049,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     );
   }
 
-  void _showShareOptions(BuildContext context) {
+  void _showShareOptions(BuildContext context, AstrologerModel? astrologer) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1033,7 +1112,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _shareProfileAsText();
+                  _shareProfileAsText(astrologer);
                 },
               ),
               ListTile(
@@ -1065,7 +1144,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _shareProfileWithImage();
+                  _shareProfileWithImage(astrologer);
                 },
               ),
               ListTile(
@@ -1097,7 +1176,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _shareProfileLink();
+                  _shareProfileLink(astrologer);
                 },
               ),
               const SizedBox(height: 20),
@@ -1108,41 +1187,41 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     );
   }
 
-  void _shareProfileAsText() {
-    if (_currentUser == null) return;
+  void _shareProfileAsText(AstrologerModel? astrologer) {
+    if (astrologer == null) return;
 
-    final profileText = _generateProfileText();
+    final profileText = _generateProfileText(astrologer);
     
     Share.share(
       profileText,
-      subject: '${_currentUser!.name} - Professional Astrologer Profile',
+      subject: '${astrologer.name} - Professional Astrologer Profile',
     );
   }
 
-  void _shareProfileWithImage() {
-    if (_currentUser == null) return;
+  void _shareProfileWithImage(AstrologerModel? astrologer) {
+    if (astrologer == null) return;
 
-    final profileText = _generateProfileText();
+    final profileText = _generateProfileText(astrologer);
     
-    if (_currentUser!.profilePicture != null && 
-        _currentUser!.profilePicture!.isNotEmpty) {
+    if (astrologer.profilePicture != null && 
+        astrologer.profilePicture!.isNotEmpty) {
       // Share with image
       Share.shareXFiles(
-        [XFile(_currentUser!.profilePicture!)],
+        [XFile(astrologer.profilePicture!)],
         text: profileText,
-        subject: '${_currentUser!.name} - Professional Astrologer Profile',
+        subject: '${astrologer.name} - Professional Astrologer Profile',
       );
     } else {
       // Fallback to text only if no image
-      _shareProfileAsText();
+      _shareProfileAsText(astrologer);
     }
   }
 
-  void _shareProfileLink() {
-    if (_currentUser == null) return;
+  void _shareProfileLink(AstrologerModel? astrologer) {
+    if (astrologer == null) return;
 
-    final profileText = _generateProfileText();
-    final profileLink = 'https://astrologerapp.com/profile/${_currentUser!.id}';
+    final profileText = _generateProfileText(astrologer);
+    final profileLink = 'https://astrologerapp.com/profile/${astrologer.id}';
     
     final linkText = '''
 $profileText
@@ -1154,7 +1233,7 @@ Download the Astrologer App to connect with me and get personalized astrological
 
     Share.share(
       linkText,
-      subject: '${_currentUser!.name} - Professional Astrologer Profile',
+      subject: '${astrologer.name} - Professional Astrologer Profile',
     );
   }
 
@@ -1175,32 +1254,29 @@ Download the Astrologer App to connect with me and get personalized astrological
     );
   }
 
-  String _generateProfileText() {
-    if (_currentUser == null) return '';
-
-    final user = _currentUser!;
-    final specializations = user.specializations.join(', ');
-    final languages = user.languages.join(', ');
+  String _generateProfileText(AstrologerModel astrologer) {
+    final specializations = astrologer.specializations.join(', ');
+    final languages = astrologer.languages.join(', ');
     
     return '''
-🌟 ${user.name} - Professional Astrologer
+🌟 ${astrologer.name} - Professional Astrologer
 
-📱 Phone: ${user.phone}
-📧 Email: ${user.email}
+📱 Phone: ${astrologer.phone}
+📧 Email: ${astrologer.email}
 
 🔮 Specializations: $specializations
 🗣️ Languages: $languages
-⭐ Experience: ${user.experience} years
-💰 Rate: ₹${user.ratePerMinute}/minute
+⭐ Experience: ${astrologer.experience} years
+💰 Rate: ₹${astrologer.ratePerMinute}/minute
 
 📊 Profile Stats:
 • Total Consultations: 127
 • Average Rating: 4.8/5
 • This Month: 23 sessions
 
-✨ Get personalized astrological guidance and insights from a professional astrologer with ${user.experience} years of experience!
+✨ Get personalized astrological guidance and insights from a professional astrologer with ${astrologer.experience} years of experience!
 
-#Astrology #ProfessionalAstrologer #${user.specializations.first.replaceAll(' ', '')} #SpiritualGuidance
+#Astrology #ProfessionalAstrologer #${astrologer.specializations.first.replaceAll(' ', '')} #SpiritualGuidance
 ''';
   }
 }
