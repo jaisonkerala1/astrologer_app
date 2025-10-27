@@ -255,10 +255,20 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final today = DateTime(now.year, now.month, now.day);
     final selectedDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     
+    // Debug: Log all consultations
+    print('📅 [CalendarWidget] Total consultations received: ${widget.consultations.length}');
+    print('📅 [CalendarWidget] Selected date: $_selectedDate');
+    for (var consultation in widget.consultations) {
+      print('📅 [CalendarWidget] Consultation: ${consultation.clientName} at ${consultation.scheduledTime} (local time)');
+      print('📅 [CalendarWidget] Is same day? ${_isSameDay(consultation.scheduledTime, _selectedDate)}');
+    }
+    
     // Show consultations for the selected date
     final dayConsultations = widget.consultations
         .where((consultation) => _isSameDay(consultation.scheduledTime, _selectedDate))
         .toList();
+    
+    print('📅 [CalendarWidget] Filtered consultations for selected day: ${dayConsultations.length}');
     
     // Sort consultations by time and status based on the selected date
     dayConsultations.sort((a, b) {
@@ -420,13 +430,21 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   void _previousMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+      // Select first day of new month to trigger loading consultations for that month
+      _selectedDate = DateTime(_currentMonth.year, _currentMonth.month, 1);
     });
+    // Notify parent to load consultations for the new month
+    widget.onDateSelected(_selectedDate);
   }
 
   void _nextMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+      // Select first day of new month to trigger loading consultations for that month
+      _selectedDate = DateTime(_currentMonth.year, _currentMonth.month, 1);
     });
+    // Notify parent to load consultations for the new month
+    widget.onDateSelected(_selectedDate);
   }
 
   void _selectDate(DateTime date) {

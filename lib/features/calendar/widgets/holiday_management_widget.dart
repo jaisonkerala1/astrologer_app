@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../models/holiday_model.dart';
+import '../bloc/calendar_bloc.dart';
+import '../bloc/calendar_event.dart';
+import '../bloc/calendar_state.dart';
+import 'dart:convert';
 
 class HolidayManagementWidget extends StatefulWidget {
   const HolidayManagementWidget({super.key});
@@ -11,9 +17,6 @@ class HolidayManagementWidget extends StatefulWidget {
 }
 
 class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
-  List<HolidayModel> _holidays = [];
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
@@ -21,104 +24,137 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
   }
 
   Future<void> _loadHolidays() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    // Get astrologer ID and load holidays using BLoC
     try {
-      // TODO: Load from API
-      _generateSampleHolidays();
+      final storageService = StorageService();
+      final userData = await storageService.getUserData();
+      if (userData != null) {
+        final userDataMap = jsonDecode(userData);
+        final astrologerId = userDataMap['id'] ?? userDataMap['_id'] as String?;
+        if (astrologerId != null && mounted) {
+          context.read<CalendarBloc>().add(LoadHolidaysEvent(astrologerId));
+        }
+      }
     } catch (e) {
-      print('Error loading holidays: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      print('❌ [HolidayWidget] Error getting astrologer ID: $e');
     }
-  }
-
-  void _generateSampleHolidays() {
-    final holidays = <HolidayModel>[];
-    
-    // Add some sample holidays
-    holidays.addAll([
-      HolidayModel(
-        id: 'holiday_1',
-        astrologerId: 'current_astrologer',
-        date: DateTime(2025, 1, 26), // Republic Day
-        reason: 'Republic Day',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-      HolidayModel(
-        id: 'holiday_2',
-        astrologerId: 'current_astrologer',
-        date: DateTime(2025, 3, 8), // Holi
-        reason: 'Holi',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-      HolidayModel(
-        id: 'holiday_3',
-        astrologerId: 'current_astrologer',
-        date: DateTime(2025, 4, 14), // Ambedkar Jayanti
-        reason: 'Ambedkar Jayanti',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-    ]);
-    
-    setState(() {
-      _holidays = holidays;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
+        return BlocBuilder<CalendarBloc, CalendarState>(
+          builder: (context, state) {
+            // Show loading skeleton
+            if (state is CalendarLoading && state.isInitialLoad) {
+              return _buildLoadingSkeleton(themeService);
+            }
+
+            // Show error state
+            if (state is CalendarErrorState) {
+              return _buildErrorState(themeService, state.message);
+            }
+
+            // Get holidays from BLoC state
+            final holidays = state is CalendarLoadedState 
+                ? state.holidays 
+                : <HolidayModel>[];
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Holidays & Unavailable Days',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: themeService.textPrimary,
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Holidays & Unavailable Days',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: themeService.textPrimary,
+                          ),
+                        ),
                       ),
-                    ),
+                      IconButton(
+                        onPressed: _addHoliday,
+                        icon: const Icon(Icons.add_circle_outline),
+                        color: themeService.primaryColor,
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: _addHoliday,
-                    icon: const Icon(Icons.add_circle_outline),
-                    color: themeService.primaryColor,
-                  ),
+              
+                  const SizedBox(height: 16),
+              
+                  // Holidays List
+                  if (holidays.isEmpty)
+                    _buildEmptyState(themeService)
+                  else
+                    ...holidays.map((holiday) => _buildHolidayCard(holiday, themeService)),
                 ],
               ),
-          
-          const SizedBox(height: 16),
-          
-          // Holidays List
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_holidays.isEmpty)
-            _buildEmptyState(themeService)
-          else
-            ..._holidays.map((holiday) => _buildHolidayCard(holiday, themeService)),
-        ],
-      ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildLoadingSkeleton(ThemeService themeService) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CircularProgressIndicator(color: themeService.primaryColor),
+            const SizedBox(height: 16),
+            Text(
+              'Loading holidays...',
+              style: TextStyle(color: themeService.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeService themeService, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 64, color: themeService.errorColor),
+            const SizedBox(height: 16),
+            Text(
+              'Error Loading Holidays',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(color: themeService.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadHolidays,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeService.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -330,9 +366,8 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
       context: context,
       builder: (context) => _HolidayDialog(
         onSave: (holiday) {
-          setState(() {
-            _holidays.add(holiday);
-          });
+          // Dispatch BLoC event instead of setState
+          context.read<CalendarBloc>().add(CreateHolidayEvent(holiday));
         },
       ),
     );
@@ -344,12 +379,13 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
       builder: (context) => _HolidayDialog(
         holiday: holiday,
         onSave: (updatedHoliday) {
-          setState(() {
-            final index = _holidays.indexWhere((h) => h.id == holiday.id);
-            if (index != -1) {
-              _holidays[index] = updatedHoliday;
-            }
-          });
+          // Dispatch BLoC event instead of setState
+          context.read<CalendarBloc>().add(
+            UpdateHolidayEvent(
+              id: holiday.id,
+              holiday: updatedHoliday,
+            ),
+          );
         },
       ),
     );
@@ -368,9 +404,8 @@ class _HolidayManagementWidgetState extends State<HolidayManagementWidget> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _holidays.removeWhere((h) => h.id == holiday.id);
-              });
+              // Dispatch BLoC event instead of setState
+              context.read<CalendarBloc>().add(DeleteHolidayEvent(holiday.id));
               Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),

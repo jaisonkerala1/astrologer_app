@@ -1,23 +1,19 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import '../../../core/services/storage_service.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/error_state_widget.dart';
-import '../../../shared/widgets/transition_animations.dart';
 import '../../../shared/widgets/custom_refresh_indicator.dart';
-import '../../../shared/widgets/simple_shimmer.dart';
 import '../../consultations/models/consultation_model.dart';
-import '../../consultations/services/consultations_service.dart';
 import '../../consultations/screens/consultation_detail_screen.dart';
+import '../bloc/calendar_bloc.dart';
+import '../bloc/calendar_event.dart';
+import '../bloc/calendar_state.dart';
 import '../widgets/calendar_widget.dart';
-import '../widgets/calendar_skeleton_widget.dart';
 import '../widgets/simple_calendar_skeleton.dart';
 import '../widgets/availability_management_widget.dart';
 import '../widgets/holiday_management_widget.dart';
-import '../models/calendar_loading_state.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -28,123 +24,27 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  DateTime _selectedDate = DateTime.now();
-  List<ConsultationModel> _consultations = [];
-  String? _astrologerId;
-  CalendarLoadingModel _loadingState = CalendarLoadingModel.initial();
-  final ConsultationsService _consultationsService = ConsultationsService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadAstrologerId();
+    // Load calendar data for the entire current month (not just today)
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    context.read<CalendarBloc>().add(
+      LoadConsultationsForDateRangeEvent(
+        startDate: firstDayOfMonth,
+        endDate: lastDayOfMonth,
+      ),
+    );
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadAstrologerId() async {
-    setState(() {
-      _loadingState = CalendarLoadingModel.loading(CalendarLoadingState.loadingAstrologerId);
-    });
-
-    try {
-      final userDataString = await StorageService().getUserData();
-      if (userDataString != null) {
-        final decoded = jsonDecode(userDataString);
-        if (decoded is Map<String, dynamic>) {
-          final sanitized = Map<String, dynamic>.from(decoded);
-          final astrologerId = sanitized['id'] ?? sanitized['_id'];
-          if (astrologerId != null && astrologerId.toString().isNotEmpty) {
-            setState(() {
-              _astrologerId = astrologerId.toString();
-            });
-            _loadConsultations();
-          } else {
-            setState(() {
-              _loadingState = CalendarLoadingModel.error('User ID not found');
-            });
-          }
-        } else {
-          setState(() {
-            _loadingState = CalendarLoadingModel.error('Invalid user data format');
-          });
-        }
-      } else {
-        setState(() {
-          _loadingState = CalendarLoadingModel.error('User data not found');
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _loadingState = CalendarLoadingModel.error('Error loading profile: ${e.toString()}');
-      });
-    }
-  }
-
-  Future<void> _loadConsultations() async {
-    if (_astrologerId == null) return;
-    
-    setState(() {
-      _loadingState = CalendarLoadingModel.loading(CalendarLoadingState.loadingConsultations);
-    });
-
-    try {
-      // Load consultations from the existing API
-      final consultations = await _consultationsService.getConsultations();
-      setState(() {
-        _consultations = consultations;
-        _loadingState = CalendarLoadingModel.loaded();
-      });
-    } catch (e) {
-      setState(() {
-        _loadingState = CalendarLoadingModel.error('Failed to load consultations: ${e.toString()}');
-      });
-    }
-  }
-
-  Future<void> _refreshConsultations() async {
-    if (_astrologerId == null) return;
-    
-    setState(() {
-      _loadingState = CalendarLoadingModel.refreshing();
-    });
-
-    try {
-      final consultations = await _consultationsService.getConsultations();
-      setState(() {
-        _consultations = consultations;
-        _loadingState = CalendarLoadingModel.loaded();
-      });
-    } catch (e) {
-      setState(() {
-        _loadingState = CalendarLoadingModel.error('Failed to refresh consultations: ${e.toString()}');
-      });
-    }
-  }
-
-  void _retryLoading() {
-    if (_astrologerId == null) {
-      _loadAstrologerId();
-    } else {
-      _loadConsultations();
-    }
-  }
-
-  List<ConsultationModel> _getConsultationsForDate(DateTime date) {
-    return _consultations.where((consultation) {
-      final consultationDate = DateTime(
-        consultation.scheduledTime.year,
-        consultation.scheduledTime.month,
-        consultation.scheduledTime.day,
-      );
-      final targetDate = DateTime(date.year, date.month, date.day);
-      return consultationDate.isAtSameMomentAs(targetDate);
-    }).toList();
   }
 
   void _showConsultationDetails(ConsultationModel consultation) {
@@ -168,8 +68,10 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
+    final themeService = Provider.of<ThemeService>(context);
+    
+    return BlocBuilder<CalendarBloc, CalendarState>(
+      builder: (context, state) {
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
@@ -182,7 +84,7 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
                     color: Colors.white,
                   ),
                 ),
-                if (_loadingState.state == CalendarLoadingState.refreshing) ...[
+                if (state is CalendarLoading && !state.isInitialLoad) ...[
                   const SizedBox(width: 12),
                   const SizedBox(
                     width: 16,
@@ -197,76 +99,80 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
             ),
             backgroundColor: themeService.primaryColor,
             elevation: 0,
-        actions: [
-          if (_loadingState.isLoading && _loadingState.state != CalendarLoadingState.refreshing)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: const LoadingIndicator(
-                size: 20,
-                color: Colors.white,
-                message: null,
-                showMessage: false,
-              ),
-            ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Calendar', icon: Icon(Icons.calendar_today, size: 20)),
-            Tab(text: 'Availability', icon: Icon(Icons.schedule, size: 20)),
-            Tab(text: 'Holidays', icon: Icon(Icons.event_busy, size: 20)),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildCalendarTab(),
-          _buildAvailabilityTab(),
-          _buildHolidaysTab(),
-        ],
-      ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCalendarTab() {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return CustomRefreshIndicator(
-          onRefresh: _refreshConsultations,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Calendar Widget with Loading States
-                _buildCalendarContent(),
-                
-                const SizedBox(height: 16),
-                
-                // Quick Actions
-                _buildQuickActions(themeService),
+            actions: [
+              if (state is CalendarLoading && state.isInitialLoad)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: const LoadingIndicator(
+                    size: 20,
+                    color: Colors.white,
+                    message: null,
+                    showMessage: false,
+                  ),
+                ),
+            ],
+            bottom: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              tabs: const [
+                Tab(text: 'Calendar', icon: Icon(Icons.calendar_today, size: 20)),
+                Tab(text: 'Availability', icon: Icon(Icons.schedule, size: 20)),
+                Tab(text: 'Holidays', icon: Icon(Icons.event_busy, size: 20)),
               ],
             ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildCalendarTab(state),
+              _buildAvailabilityTab(state),
+              _buildHolidaysTab(state),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildCalendarContent() {
+  Widget _buildCalendarTab(CalendarState state) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    
+    return CustomRefreshIndicator(
+      onRefresh: () async {
+        context.read<CalendarBloc>().add(const RefreshCalendarEvent());
+        // Wait a bit for the refresh to complete
+        await Future.delayed(const Duration(milliseconds: 500));
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Calendar Widget with Loading States
+            _buildCalendarContent(state),
+            
+            const SizedBox(height: 16),
+            
+            // Quick Actions
+            _buildQuickActions(themeService),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarContent(CalendarState state) {
     // Show error state
-    if (_loadingState.hasError) {
-      return Container(
+    if (state is CalendarErrorState) {
+      return SizedBox(
         height: 400,
         child: ErrorStateWidget(
           title: 'Unable to Load Calendar',
-          message: _loadingState.errorMessage ?? 'Something went wrong',
-          onRetry: _retryLoading,
+          message: state.message,
+          onRetry: () {
+            context.read<CalendarBloc>().add(LoadConsultationsForDateEvent(DateTime.now()));
+          },
           icon: Icons.calendar_today,
           iconColor: Colors.orange,
         ),
@@ -274,7 +180,7 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     }
 
     // Show skeleton while loading
-    if (_loadingState.isLoading) {
+    if (state is CalendarLoading && state.isInitialLoad) {
       return const SimpleCalendarSkeleton(
         showConsultations: true,
         enabled: true,
@@ -282,25 +188,35 @@ class _CalendarScreenState extends State<CalendarScreen> with SingleTickerProvid
     }
 
     // Show real calendar when loaded
-    return CalendarWidget(
-      consultations: _consultations,
-      selectedDate: _selectedDate,
-      onDateSelected: (date) {
-        setState(() {
-          _selectedDate = date;
-        });
-      },
-      onConsultationSelected: (consultation) {
-        _showConsultationDetails(consultation);
-      },
+    if (state is CalendarLoadedState) {
+      return CalendarWidget(
+        consultations: state.consultations,
+        selectedDate: state.selectedDate,
+        onDateSelected: (date) {
+          context.read<CalendarBloc>().add(ChangeSelectedDateEvent(date));
+        },
+        onConsultationSelected: (consultation) {
+          _showConsultationDetails(consultation);
+        },
+      );
+    }
+
+    // Show skeleton as fallback
+    return const SimpleCalendarSkeleton(
+      showConsultations: true,
+      enabled: true,
     );
   }
 
-  Widget _buildAvailabilityTab() {
+  Widget _buildAvailabilityTab(CalendarState state) {
+    // For now, availability widget manages its own state
+    // We'll migrate it in Phase 2
     return const AvailabilityManagementWidget();
   }
 
-  Widget _buildHolidaysTab() {
+  Widget _buildHolidaysTab(CalendarState state) {
+    // For now, holiday widget manages its own state
+    // We'll migrate it in Phase 3
     return const HolidayManagementWidget();
   }
 

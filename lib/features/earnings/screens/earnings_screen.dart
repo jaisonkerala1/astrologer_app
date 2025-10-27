@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
+import '../../../data/repositories/earnings/earnings_repository.dart';
 import '../widgets/earnings_chart_widget.dart';
+import '../bloc/earnings_bloc.dart';
+import '../bloc/earnings_event.dart';
+import '../bloc/earnings_state.dart';
+import '../models/withdrawal_model.dart';
+import '../models/earnings_analytics_model.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -15,12 +23,13 @@ class EarningsScreen extends StatefulWidget {
 
 class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-  String _selectedPeriod = 'This Month';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Load earnings data using BLoC
+    context.read<EarningsBloc>().add(const LoadEarningsSummaryEvent(EarningsPeriod.thisMonth));
   }
 
   @override
@@ -36,43 +45,175 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final l10n = AppLocalizations.of(context)!;
+    final themeService = Provider.of<ThemeService>(context);
     
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
+    return BlocBuilder<EarningsBloc, EarningsState>(
+      builder: (context, state) {
+        // Loading state
+        if (state is EarningsLoading && state.isInitialLoad) {
+          return Scaffold(
+            backgroundColor: themeService.backgroundColor,
+            body: _buildLoadingState(themeService),
+          );
+        }
+
+        // Error state
+        if (state is EarningsErrorState) {
+          return Scaffold(
+            backgroundColor: themeService.backgroundColor,
+            body: _buildErrorState(state.message, themeService),
+          );
+        }
+
+        // Loaded state
+        if (state is EarningsLoadedState) {
+          return Scaffold(
+            backgroundColor: themeService.backgroundColor,
+            body: Column(
+              children: [
+                const SizedBox(height: 40),
+                
+                // Header with period selector
+                _buildHeader(themeService, state),
+                
+                // Earnings Overview
+                _buildEarningsOverview(l10n, themeService, state),
+                
+                // Tab Bar
+                _buildTabBar(l10n, themeService),
+                
+                // Tab Content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTransactionsTab(themeService, state),
+                      _buildAnalyticsTab(themeService, state),
+                      _buildWithdrawalsTab(themeService, state),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Initial state
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
-          body: Column(
-            children: [
-              const SizedBox(height: 40),
-              
-              // Header with period selector
-              _buildHeader(themeService),
-              
-              // Earnings Overview
-              _buildEarningsOverview(l10n, themeService),
-              
-              // Tab Bar
-              _buildTabBar(l10n, themeService),
-              
-              // Tab Content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildTransactionsTab(themeService),
-                    _buildAnalyticsTab(themeService),
-                    _buildWithdrawalsTab(themeService),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          body: _buildLoadingState(themeService),
         );
       },
     );
   }
 
-  Widget _buildHeader(ThemeService themeService) {
+  Widget _buildLoadingState(ThemeService themeService) {
+    return Column(
+      children: [
+        const SizedBox(height: 40),
+        Padding(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const SkeletonLoader(width: 120, height: 28),
+              SkeletonLoader(
+                width: 150,
+                height: 40,
+                borderRadius: themeService.borderRadius,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+          child: SkeletonLoader(
+            width: double.infinity,
+            height: 150,
+            borderRadius: themeService.borderRadius,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+          child: Row(
+            children: [
+              Expanded(
+                child: SkeletonLoader(
+                  width: double.infinity,
+                  height: 100,
+                  borderRadius: themeService.borderRadius,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SkeletonLoader(
+                  width: double.infinity,
+                  height: 100,
+                  borderRadius: themeService.borderRadius,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SkeletonLoader(
+                  width: double.infinity,
+                  height: 100,
+                  borderRadius: themeService.borderRadius,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(String error, ThemeService themeService) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: themeService.errorColor,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading earnings',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: TextStyle(
+                color: themeService.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.read<EarningsBloc>().add(const RefreshEarningsEvent()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeService.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeService themeService, EarningsLoadedState state) {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Row(
@@ -94,23 +235,35 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               border: Border.all(color: themeService.primaryColor.withOpacity(0.3)),
             ),
             child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedPeriod,
+              child: DropdownButton<EarningsPeriod>(
+                value: state.selectedPeriod,
                 isDense: true,
                 style: TextStyle(
                   color: themeService.primaryColor,
                   fontWeight: FontWeight.w500,
                 ),
-                items: ['Today', 'This Week', 'This Month', 'This Year']
-                    .map((period) => DropdownMenuItem(
-                          value: period,
-                          child: Text(period),
-                        ))
-                    .toList(),
+                items: const [
+                  DropdownMenuItem(
+                    value: EarningsPeriod.today,
+                    child: Text('Today'),
+                  ),
+                  DropdownMenuItem(
+                    value: EarningsPeriod.thisWeek,
+                    child: Text('This Week'),
+                  ),
+                  DropdownMenuItem(
+                    value: EarningsPeriod.thisMonth,
+                    child: Text('This Month'),
+                  ),
+                  DropdownMenuItem(
+                    value: EarningsPeriod.thisYear,
+                    child: Text('This Year'),
+                  ),
+                ],
                 onChanged: (value) {
-                  setState(() {
-                    _selectedPeriod = value!;
-                  });
+                  if (value != null) {
+                    context.read<EarningsBloc>().add(ChangePeriodEvent(value));
+                  }
                 },
               ),
             ),
@@ -120,7 +273,8 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildEarningsOverview(AppLocalizations l10n, ThemeService themeService) {
+  Widget _buildEarningsOverview(AppLocalizations l10n, ThemeService themeService, EarningsLoadedState state) {
+    final summary = state.summary;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
       child: Column(
@@ -147,9 +301,9 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  '₹15,247',
-                  style: TextStyle(
+                Text(
+                  summary.formattedTotalEarnings,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
@@ -159,10 +313,14 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.trending_up, color: Colors.green, size: 16),
+                    Icon(
+                      summary.hasPositiveGrowth ? Icons.trending_up : Icons.trending_down,
+                      color: summary.hasPositiveGrowth ? Colors.green : Colors.red,
+                      size: 16,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      '+12.5% from last month',
+                      '${summary.formattedGrowthPercentage} from last month',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
@@ -182,7 +340,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               Expanded(
                 child: _buildStatCard(
                   'Available',
-                  '₹8,450',
+                  summary.formattedAvailableBalance,
                   Icons.account_balance_wallet,
                   themeService.successColor,
                   themeService,
@@ -192,7 +350,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               Expanded(
                 child: _buildStatCard(
                   'Pending',
-                  '₹3,200',
+                  summary.formattedPendingAmount,
                   Icons.pending,
                   themeService.warningColor,
                   themeService,
@@ -202,7 +360,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               Expanded(
                 child: _buildStatCard(
                   'Withdrawn',
-                  '₹3,597',
+                  summary.formattedWithdrawnAmount,
                   Icons.arrow_upward,
                   themeService.infoColor,
                   themeService,
@@ -306,79 +464,93 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildTransactionsTab(ThemeService themeService) {
+  Widget _buildTransactionsTab(ThemeService themeService, EarningsLoadedState state) {
+    if (state.transactions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 64, color: themeService.textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'No transactions yet',
+              style: TextStyle(color: themeService.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.only(left: AppConstants.defaultPadding, right: AppConstants.defaultPadding, bottom: AppConstants.defaultPadding),
-      itemCount: _mockTransactions.length,
+      itemCount: state.transactions.length,
       itemBuilder: (context, index) {
-        final transaction = _mockTransactions[index];
-        return _buildTransactionTile(transaction, themeService);
+        final transaction = state.transactions[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: themeService.cardColor,
+            borderRadius: themeService.borderRadius,
+            boxShadow: [themeService.cardShadow],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: transaction.isCredit 
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  transaction.isCredit ? Icons.add : Icons.remove,
+                  color: transaction.isCredit ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.description,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      transaction.formattedDate,
+                      style: TextStyle(
+                        color: themeService.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                transaction.formattedAmount,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: transaction.isCredit ? Colors.green : Colors.red,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
-  Widget _buildTransactionTile(Map<String, dynamic> transaction, ThemeService themeService) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: themeService.cardColor,
-        borderRadius: themeService.borderRadius,
-        boxShadow: [themeService.cardShadow],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: transaction['type'] == 'credit' 
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              transaction['type'] == 'credit' ? Icons.add : Icons.remove,
-              color: transaction['type'] == 'credit' ? Colors.green : Colors.red,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction['description'],
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: themeService.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  transaction['date'],
-                  style: TextStyle(
-                    color: themeService.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${transaction['type'] == 'credit' ? '+' : '-'}₹${transaction['amount']}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: transaction['type'] == 'credit' ? Colors.green : Colors.red,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnalyticsTab(ThemeService themeService) {
+  Widget _buildAnalyticsTab(ThemeService themeService, EarningsLoadedState state) {
+    final analytics = state.analytics;
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.only(left: AppConstants.defaultPadding, right: AppConstants.defaultPadding, bottom: AppConstants.defaultPadding),
       child: Column(
@@ -386,7 +558,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
         children: [
           // Weekly Earnings Trend
           EarningsChartWidget(
-            data: _weeklyEarningsData,
+            data: analytics.weeklyTrend.map((point) => {'label': point.label, 'value': point.value}).toList(),
             title: 'Weekly Earnings Trend',
             primaryColor: themeService.primaryColor,
             secondaryColor: themeService.accentColor,
@@ -396,7 +568,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           
           // Daily Earnings Bar Chart
           EarningsBarChartWidget(
-            data: _dailyEarningsData,
+            data: analytics.dailyTrend.map((point) => {'label': point.label, 'value': point.value}).toList(),
             title: 'Daily Earnings (This Week)',
             primaryColor: themeService.successColor,
           ),
@@ -404,23 +576,23 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           const SizedBox(height: 20),
           
           // Performance metrics
-          _buildMetricsGrid(themeService),
+          _buildMetricsGrid(themeService, analytics),
           
           const SizedBox(height: 20),
           
           // Earnings by Consultation Type
-          _buildConsultationTypeAnalysis(themeService),
+          _buildConsultationTypeAnalysis(themeService, analytics),
           
           const SizedBox(height: 20),
           
           // Peak Hours Analysis
-          _buildPeakHoursAnalysis(themeService),
+          _buildPeakHoursAnalysis(themeService, analytics),
         ],
       ),
     );
   }
 
-  Widget _buildMetricsGrid(ThemeService themeService) {
+  Widget _buildMetricsGrid(ThemeService themeService, EarningsAnalyticsModel analytics) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -429,10 +601,10 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
       crossAxisSpacing: 16,
       childAspectRatio: 1.2,
       children: [
-        _buildMetricCard('Average per Call', '₹287', Icons.phone, themeService.primaryColor, themeService),
-        _buildMetricCard('Best Day', '₹1,250', Icons.calendar_today, themeService.successColor, themeService),
-        _buildMetricCard('Total Calls', '53', Icons.call_made, themeService.infoColor, themeService),
-        _buildMetricCard('Peak Hours', '7-9 PM', Icons.access_time, themeService.accentColor, themeService),
+        _buildMetricCard('Average per Call', '₹${analytics.averagePerCall.toStringAsFixed(0)}', Icons.phone, themeService.primaryColor, themeService),
+        _buildMetricCard('Best Day', '₹${analytics.bestDayEarnings.toStringAsFixed(0)}', Icons.calendar_today, themeService.successColor, themeService),
+        _buildMetricCard('Total Calls', '${analytics.totalCalls}', Icons.call_made, themeService.infoColor, themeService),
+        _buildMetricCard('Peak Hours', analytics.peakHours, Icons.access_time, themeService.accentColor, themeService),
       ],
     );
   }
@@ -472,7 +644,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildWithdrawalsTab(ThemeService themeService) {
+  Widget _buildWithdrawalsTab(ThemeService themeService, EarningsLoadedState state) {
     return Padding(
       padding: const EdgeInsets.only(left: AppConstants.defaultPadding, right: AppConstants.defaultPadding, bottom: AppConstants.defaultPadding),
       child: Column(
@@ -481,9 +653,9 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                _showWithdrawDialog();
-              },
+              onPressed: state.canRequestWithdrawal ? () {
+                _showWithdrawDialog(state);
+              } : null,
               icon: const Icon(Icons.arrow_upward),
               label: const Text('Request Withdrawal'),
               style: ElevatedButton.styleFrom(
@@ -515,23 +687,37 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           const SizedBox(height: 16),
           
           Expanded(
-            child: ListView.builder(
-              itemCount: _mockWithdrawals.length,
-              itemBuilder: (context, index) {
-                final withdrawal = _mockWithdrawals[index];
-                return _buildWithdrawalTile(withdrawal, themeService);
-              },
-            ),
+            child: state.withdrawals.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.arrow_upward, size: 64, color: themeService.textSecondary.withOpacity(0.5)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No withdrawals yet',
+                        style: TextStyle(color: themeService.textSecondary),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: state.withdrawals.length,
+                  itemBuilder: (context, index) {
+                    final withdrawal = state.withdrawals[index];
+                    return _buildWithdrawalTile(withdrawal, themeService);
+                  },
+                ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWithdrawalTile(Map<String, dynamic> withdrawal, ThemeService themeService) {
-    Color statusColor = withdrawal['status'] == 'completed' 
-        ? themeService.successColor 
-        : withdrawal['status'] == 'pending'
+  Widget _buildWithdrawalTile(WithdrawalModel withdrawal, ThemeService themeService) {
+    Color statusColor = withdrawal.isCompleted
+        ? themeService.successColor
+        : withdrawal.isPending
             ? themeService.warningColor
             : themeService.errorColor;
 
@@ -552,7 +738,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '₹${withdrawal['amount']}',
+                  withdrawal.formattedAmount,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -561,7 +747,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  withdrawal['date'],
+                  withdrawal.formattedRequestDate,
                   style: TextStyle(
                     color: themeService.textSecondary,
                     fontSize: 12,
@@ -577,7 +763,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              withdrawal['status'].toUpperCase(),
+              withdrawal.statusText,
               style: TextStyle(
                 color: statusColor,
                 fontSize: 12,
@@ -590,11 +776,13 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  void _showWithdrawDialog() {
+  void _showWithdrawDialog(EarningsLoadedState state) {
     final themeService = Provider.of<ThemeService>(context, listen: false);
+    final amountController = TextEditingController();
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: themeService.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
@@ -608,7 +796,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Available Balance: ₹8,450',
+              'Available Balance: ${state.summary.formattedAvailableBalance}',
               style: TextStyle(
                 color: themeService.textSecondary,
                 fontSize: 16,
@@ -616,6 +804,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: amountController,
               style: TextStyle(color: themeService.textPrimary),
               decoration: InputDecoration(
                 labelText: 'Amount to Withdraw',
@@ -643,7 +832,7 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             style: TextButton.styleFrom(
               foregroundColor: themeService.textSecondary,
             ),
@@ -667,15 +856,28 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Withdrawal request submitted successfully'),
-                      backgroundColor: Colors.green.shade600,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
+                  final amount = double.tryParse(amountController.text);
+                  if (amount != null && amount > 0 && amount <= state.summary.availableBalance) {
+                    // Dispatch withdrawal request event
+                    context.read<EarningsBloc>().add(RequestWithdrawalEvent(amount: amount));
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Withdrawal request submitted successfully'),
+                        backgroundColor: Colors.green.shade600,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text('Please enter a valid amount (max ${state.summary.formattedAvailableBalance})'),
+                        backgroundColor: Colors.red.shade600,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: const Padding(
@@ -696,7 +898,14 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildConsultationTypeAnalysis(ThemeService themeService) {
+  Widget _buildConsultationTypeAnalysis(ThemeService themeService, EarningsAnalyticsModel analytics) {
+    final colors = [
+      const Color(0xFF1E40AF), // Primary blue
+      const Color(0xFF3B82F6), // Info blue
+      const Color(0xFF10B981), // Success green
+      const Color(0xFFF59E0B), // Warning amber
+    ];
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -716,60 +925,59 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
             ),
           ),
           const SizedBox(height: 16),
-          ..._consultationTypeData.map((item) => _buildTypeAnalysisItem(item, themeService)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeAnalysisItem(Map<String, dynamic> item, ThemeService themeService) {
-    final percentage = item['percentage'] as double;
-    final color = item['color'] as Color;
-    
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              item['type'] as String,
-              style: TextStyle(
-                fontSize: 14,
-                color: themeService.textPrimary,
+          ...analytics.earningsByType.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final color = colors[index % colors.length];
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item.type,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '₹${item.amount.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: themeService.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${item.percentage.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: themeService.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          Text(
-            '₹${(item['amount'] as double).toStringAsFixed(0)}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: themeService.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${percentage.toStringAsFixed(1)}%',
-            style: TextStyle(
-              fontSize: 12,
-              color: themeService.textSecondary,
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildPeakHoursAnalysis(ThemeService themeService) {
+  Widget _buildPeakHoursAnalysis(ThemeService themeService, EarningsAnalyticsModel analytics) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -792,11 +1000,23 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           Row(
             children: [
               Expanded(
-                child: _buildPeakHourItem('Morning', '6 AM - 12 PM', '₹2,450', themeService.warningColor, themeService),
+                child: _buildPeakHourItem(
+                  analytics.peakHoursAnalysis.morning.period, 
+                  analytics.peakHoursAnalysis.morning.timeRange, 
+                  '₹${analytics.peakHoursAnalysis.morning.earnings.toStringAsFixed(0)}', 
+                  themeService.warningColor, 
+                  themeService,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildPeakHourItem('Afternoon', '12 PM - 6 PM', '₹1,850', themeService.infoColor, themeService),
+                child: _buildPeakHourItem(
+                  analytics.peakHoursAnalysis.afternoon.period, 
+                  analytics.peakHoursAnalysis.afternoon.timeRange, 
+                  '₹${analytics.peakHoursAnalysis.afternoon.earnings.toStringAsFixed(0)}', 
+                  themeService.infoColor, 
+                  themeService,
+                ),
               ),
             ],
           ),
@@ -804,11 +1024,23 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
           Row(
             children: [
               Expanded(
-                child: _buildPeakHourItem('Evening', '6 PM - 12 AM', '₹4,200', themeService.successColor, themeService),
+                child: _buildPeakHourItem(
+                  analytics.peakHoursAnalysis.evening.period, 
+                  analytics.peakHoursAnalysis.evening.timeRange, 
+                  '₹${analytics.peakHoursAnalysis.evening.earnings.toStringAsFixed(0)}', 
+                  themeService.successColor, 
+                  themeService,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildPeakHourItem('Night', '12 AM - 6 AM', '₹750', themeService.accentColor, themeService),
+                child: _buildPeakHourItem(
+                  analytics.peakHoursAnalysis.night.period, 
+                  analytics.peakHoursAnalysis.night.timeRange, 
+                  '₹${analytics.peakHoursAnalysis.night.earnings.toStringAsFixed(0)}', 
+                  themeService.accentColor, 
+                  themeService,
+                ),
               ),
             ],
           ),
@@ -858,103 +1090,3 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
     );
   }
 }
-
-// Mock data
-final List<Map<String, dynamic>> _mockTransactions = [
-  {
-    'description': 'Consultation with Priya Sharma',
-    'amount': '450',
-    'date': 'Today, 2:30 PM',
-    'type': 'credit',
-  },
-  {
-    'description': 'Consultation with Amit Kumar',
-    'amount': '300',
-    'date': 'Today, 11:15 AM',
-    'type': 'credit',
-  },
-  {
-    'description': 'Platform Fee',
-    'amount': '45',
-    'date': 'Yesterday, 6:00 PM',
-    'type': 'debit',
-  },
-  {
-    'description': 'Consultation with Sunita Gupta',
-    'amount': '600',
-    'date': 'Yesterday, 4:30 PM',
-    'type': 'credit',
-  },
-  {
-    'description': 'Consultation with Vikas Singh',
-    'amount': '375',
-    'date': '2 days ago, 8:45 PM',
-    'type': 'credit',
-  },
-];
-
-final List<Map<String, dynamic>> _mockWithdrawals = [
-  {
-    'amount': '5000',
-    'date': '15 Sep, 2024',
-    'status': 'completed',
-  },
-  {
-    'amount': '3000',
-    'date': '10 Sep, 2024',
-    'status': 'pending',
-  },
-  {
-    'amount': '2500',
-    'date': '5 Sep, 2024',
-    'status': 'completed',
-  },
-];
-
-// Analytics mock data
-final List<Map<String, dynamic>> _weeklyEarningsData = [
-  {'label': 'Mon', 'value': 1200.0},
-  {'label': 'Tue', 'value': 1850.0},
-  {'label': 'Wed', 'value': 2100.0},
-  {'label': 'Thu', 'value': 1650.0},
-  {'label': 'Fri', 'value': 2400.0},
-  {'label': 'Sat', 'value': 3200.0},
-  {'label': 'Sun', 'value': 2800.0},
-];
-
-final List<Map<String, dynamic>> _dailyEarningsData = [
-  {'label': 'Mon', 'value': 1200.0},
-  {'label': 'Tue', 'value': 1850.0},
-  {'label': 'Wed', 'value': 2100.0},
-  {'label': 'Thu', 'value': 1650.0},
-  {'label': 'Fri', 'value': 2400.0},
-  {'label': 'Sat', 'value': 3200.0},
-  {'label': 'Sun', 'value': 2800.0},
-];
-
-final List<Map<String, dynamic>> _consultationTypeData = [
-  {
-    'type': 'Phone Calls',
-    'amount': 8500.0,
-    'percentage': 55.7,
-    'color': const Color(0xFF1E40AF), // Primary blue
-  },
-  {
-    'type': 'Video Calls',
-    'amount': 4200.0,
-    'percentage': 27.5,
-    'color': const Color(0xFF3B82F6), // Info blue
-  },
-  {
-    'type': 'In-Person',
-    'amount': 1800.0,
-    'percentage': 11.8,
-    'color': const Color(0xFF10B981), // Success green
-  },
-  {
-    'type': 'Chat',
-    'amount': 747.0,
-    'percentage': 4.9,
-    'color': const Color(0xFFF59E0B), // Warning amber
-  },
-];

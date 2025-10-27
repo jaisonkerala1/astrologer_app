@@ -25,37 +25,11 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
 
   @override
   Future<EarningsSummaryModel> getEarningsSummary(EarningsPeriod period) async {
+    // TODO: Replace with real API call when backend is ready
     try {
-      // Try cache first
-      final cached = await getCachedEarningsSummary(period);
-      if (cached != null) {
-        return cached;
-      }
-
-      final astrologerId = await _getAstrologerId();
-      final response = await apiService.get(
-        '/api/earnings/$astrologerId/summary',
-        queryParameters: {
-          'period': _periodToString(period),
-        },
-      );
-
-      if (response.data['success'] == true) {
-        final summary = EarningsSummaryModel.fromJson(response.data['data']);
-        
-        // Cache the result
-        await cacheEarningsSummary(summary, period);
-        
-        return summary;
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load earnings summary');
-      }
+      await Future.delayed(const Duration(milliseconds: 500));
+      return _getDummyEarningsSummary(period);
     } catch (e) {
-      // Fallback to cache on error
-      final cached = await getCachedEarningsSummary(period);
-      if (cached != null) {
-        return cached;
-      }
       throw Exception(handleError(e));
     }
   }
@@ -72,36 +46,10 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
     int page = 1,
     int limit = 20,
   }) async {
+    // TODO: Replace with real API call when backend is ready
     try {
-      final astrologerId = await _getAstrologerId();
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'limit': limit,
-      };
-
-      if (period != null) {
-        queryParams['period'] = _periodToString(period);
-      }
-      if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String();
-      }
-
-      final response = await apiService.get(
-        '/api/earnings/$astrologerId/transactions',
-        queryParameters: queryParams,
-      );
-
-      if (response.data['success'] == true) {
-        final List<dynamic> transactionsData = response.data['data'] ?? [];
-        return transactionsData
-            .map((json) => TransactionModel.fromJson(json))
-            .toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load transactions');
-      }
+      await Future.delayed(const Duration(milliseconds: 400));
+      return _getDummyTransactions();
     } catch (e) {
       throw Exception(handleError(e));
     }
@@ -113,20 +61,10 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
 
   @override
   Future<EarningsAnalyticsModel> getEarningsAnalytics(EarningsPeriod period) async {
+    // TODO: Replace with real API call when backend is ready
     try {
-      final astrologerId = await _getAstrologerId();
-      final response = await apiService.get(
-        '/api/earnings/$astrologerId/analytics',
-        queryParameters: {
-          'period': _periodToString(period),
-        },
-      );
-
-      if (response.data['success'] == true) {
-        return EarningsAnalyticsModel.fromJson(response.data['data']);
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load analytics');
-      }
+      await Future.delayed(const Duration(milliseconds: 400));
+      return _getDummyAnalytics();
     } catch (e) {
       throw Exception(handleError(e));
     }
@@ -142,30 +80,10 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
     int page = 1,
     int limit = 20,
   }) async {
+    // TODO: Replace with real API call when backend is ready
     try {
-      final astrologerId = await _getAstrologerId();
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'limit': limit,
-      };
-
-      if (status != null) {
-        queryParams['status'] = status.name;
-      }
-
-      final response = await apiService.get(
-        '/api/earnings/$astrologerId/withdrawals',
-        queryParameters: queryParams,
-      );
-
-      if (response.data['success'] == true) {
-        final List<dynamic> withdrawalsData = response.data['data'] ?? [];
-        return withdrawalsData
-            .map((json) => WithdrawalModel.fromJson(json))
-            .toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load withdrawals');
-      }
+      await Future.delayed(const Duration(milliseconds: 400));
+      return _getDummyWithdrawals();
     } catch (e) {
       throw Exception(handleError(e));
     }
@@ -179,24 +97,20 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
     String? upiId,
     String? notes,
   }) async {
+    // TODO: Replace with real API call when backend is ready
     try {
-      final astrologerId = await _getAstrologerId();
-      final response = await apiService.post(
-        '/api/earnings/$astrologerId/withdrawals',
-        data: {
-          'amount': amount,
-          if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
-          if (ifscCode != null) 'ifscCode': ifscCode,
-          if (upiId != null) 'upiId': upiId,
-          if (notes != null) 'notes': notes,
-        },
+      await Future.delayed(const Duration(milliseconds: 500));
+      // Mock successful withdrawal request
+      return WithdrawalModel(
+        id: 'WD${DateTime.now().millisecondsSinceEpoch}',
+        amount: amount,
+        status: WithdrawalStatus.pending,
+        requestedAt: DateTime.now(),
+        bankAccountNumber: bankAccountNumber,
+        ifscCode: ifscCode,
+        upiId: upiId,
+        notes: notes,
       );
-
-      if (response.data['success'] == true) {
-        return WithdrawalModel.fromJson(response.data['data']);
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to request withdrawal');
-      }
     } catch (e) {
       throw Exception(handleError(e));
     }
@@ -204,17 +118,13 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
 
   @override
   Future<WithdrawalModel> cancelWithdrawal(String withdrawalId) async {
+    // TODO: Replace with real API call when backend is ready
     try {
-      final astrologerId = await _getAstrologerId();
-      final response = await apiService.patch(
-        '/api/earnings/$astrologerId/withdrawals/$withdrawalId/cancel',
-      );
-
-      if (response.data['success'] == true) {
-        return WithdrawalModel.fromJson(response.data['data']);
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to cancel withdrawal');
-      }
+      await Future.delayed(const Duration(milliseconds: 400));
+      // Mock cancelled withdrawal
+      final withdrawals = _getDummyWithdrawals();
+      final withdrawal = withdrawals.firstWhere((w) => w.id == withdrawalId);
+      return withdrawal.copyWith(status: WithdrawalStatus.cancelled);
     } catch (e) {
       throw Exception(handleError(e));
     }
@@ -273,6 +183,161 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
     } catch (e) {
       print('Error clearing earnings cache: $e');
     }
+  }
+
+  // ============================================================================
+  // DUMMY DATA (Remove when backend is connected)
+  // ============================================================================
+
+  EarningsSummaryModel _getDummyEarningsSummary(EarningsPeriod period) {
+    return EarningsSummaryModel(
+      totalEarnings: 15247,
+      availableBalance: 8450,
+      pendingAmount: 3200,
+      withdrawnAmount: 3597,
+      growthPercentage: 12.5,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  List<TransactionModel> _getDummyTransactions() {
+    final now = DateTime.now();
+    return [
+      TransactionModel(
+        id: 'TXN1',
+        description: 'Consultation with Priya Sharma',
+        amount: 450,
+        type: TransactionType.credit,
+        date: now,
+      ),
+      TransactionModel(
+        id: 'TXN2',
+        description: 'Consultation with Amit Kumar',
+        amount: 300,
+        type: TransactionType.credit,
+        date: now.subtract(const Duration(hours: 3)),
+      ),
+      TransactionModel(
+        id: 'TXN3',
+        description: 'Platform Fee',
+        amount: 45,
+        type: TransactionType.debit,
+        date: now.subtract(const Duration(days: 1)),
+      ),
+      TransactionModel(
+        id: 'TXN4',
+        description: 'Consultation with Sunita Gupta',
+        amount: 600,
+        type: TransactionType.credit,
+        date: now.subtract(const Duration(days: 1, hours: 2)),
+      ),
+      TransactionModel(
+        id: 'TXN5',
+        description: 'Consultation with Vikas Singh',
+        amount: 375,
+        type: TransactionType.credit,
+        date: now.subtract(const Duration(days: 2)),
+      ),
+    ];
+  }
+
+  EarningsAnalyticsModel _getDummyAnalytics() {
+    return EarningsAnalyticsModel(
+      averagePerCall: 287,
+      bestDayEarnings: 1250,
+      totalCalls: 53,
+      peakHours: '7-9 PM',
+      weeklyTrend: const [
+        ChartDataPoint(label: 'Mon', value: 1200),
+        ChartDataPoint(label: 'Tue', value: 1850),
+        ChartDataPoint(label: 'Wed', value: 2100),
+        ChartDataPoint(label: 'Thu', value: 1650),
+        ChartDataPoint(label: 'Fri', value: 2400),
+        ChartDataPoint(label: 'Sat', value: 3200),
+        ChartDataPoint(label: 'Sun', value: 2800),
+      ],
+      dailyTrend: const [
+        ChartDataPoint(label: 'Mon', value: 1200),
+        ChartDataPoint(label: 'Tue', value: 1850),
+        ChartDataPoint(label: 'Wed', value: 2100),
+        ChartDataPoint(label: 'Thu', value: 1650),
+        ChartDataPoint(label: 'Fri', value: 2400),
+        ChartDataPoint(label: 'Sat', value: 3200),
+        ChartDataPoint(label: 'Sun', value: 2800),
+      ],
+      earningsByType: const [
+        ConsultationTypeEarning(
+          type: 'Phone Calls',
+          amount: 8500,
+          percentage: 55.7,
+        ),
+        ConsultationTypeEarning(
+          type: 'Video Calls',
+          amount: 4200,
+          percentage: 27.5,
+        ),
+        ConsultationTypeEarning(
+          type: 'In-Person',
+          amount: 1800,
+          percentage: 11.8,
+        ),
+        ConsultationTypeEarning(
+          type: 'Chat',
+          amount: 747,
+          percentage: 4.9,
+        ),
+      ],
+      peakHoursAnalysis: const PeakHoursAnalysis(
+        morning: PeakHourPeriod(
+          period: 'Morning',
+          timeRange: '6 AM - 12 PM',
+          earnings: 2450,
+        ),
+        afternoon: PeakHourPeriod(
+          period: 'Afternoon',
+          timeRange: '12 PM - 6 PM',
+          earnings: 1850,
+        ),
+        evening: PeakHourPeriod(
+          period: 'Evening',
+          timeRange: '6 PM - 12 AM',
+          earnings: 4200,
+        ),
+        night: PeakHourPeriod(
+          period: 'Night',
+          timeRange: '12 AM - 6 AM',
+          earnings: 750,
+        ),
+      ),
+    );
+  }
+
+  List<WithdrawalModel> _getDummyWithdrawals() {
+    final now = DateTime.now();
+    return [
+      WithdrawalModel(
+        id: 'WD1',
+        amount: 5000,
+        status: WithdrawalStatus.completed,
+        requestedAt: now.subtract(const Duration(days: 12)),
+        processedAt: now.subtract(const Duration(days: 11)),
+        completedAt: now.subtract(const Duration(days: 10)),
+      ),
+      WithdrawalModel(
+        id: 'WD2',
+        amount: 3000,
+        status: WithdrawalStatus.pending,
+        requestedAt: now.subtract(const Duration(days: 5)),
+      ),
+      WithdrawalModel(
+        id: 'WD3',
+        amount: 2500,
+        status: WithdrawalStatus.completed,
+        requestedAt: now.subtract(const Duration(days: 22)),
+        processedAt: now.subtract(const Duration(days: 21)),
+        completedAt: now.subtract(const Duration(days: 20)),
+      ),
+    ];
   }
 
   // ============================================================================

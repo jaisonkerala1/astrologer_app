@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../models/availability_model.dart';
+import '../bloc/calendar_bloc.dart';
+import '../bloc/calendar_event.dart';
+import '../bloc/calendar_state.dart';
+import 'dart:convert';
 
 class AvailabilityManagementWidget extends StatefulWidget {
   const AvailabilityManagementWidget({super.key});
@@ -11,9 +17,6 @@ class AvailabilityManagementWidget extends StatefulWidget {
 }
 
 class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWidget> {
-  List<AvailabilityModel> _availability = [];
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
@@ -21,94 +24,137 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
   }
 
   Future<void> _loadAvailability() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    // Get astrologer ID and load availability using BLoC
     try {
-      // TODO: Load from API
-      _generateSampleAvailability();
+      final storageService = StorageService();
+      final userData = await storageService.getUserData();
+      if (userData != null) {
+        final userDataMap = jsonDecode(userData);
+        final astrologerId = userDataMap['id'] ?? userDataMap['_id'] as String?;
+        if (astrologerId != null && mounted) {
+          context.read<CalendarBloc>().add(LoadAvailabilityEvent(astrologerId));
+        }
+      }
     } catch (e) {
-      print('Error loading availability: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      print('❌ [AvailabilityWidget] Error getting astrologer ID: $e');
     }
-  }
-
-  void _generateSampleAvailability() {
-    final availability = <AvailabilityModel>[];
-    
-    // Generate availability for Monday to Friday
-    for (int day = 1; day <= 5; day++) {
-      availability.add(AvailabilityModel(
-        id: 'avail_$day',
-        astrologerId: 'current_astrologer',
-        dayOfWeek: day,
-        startTime: '09:00',
-        endTime: '18:00',
-        isActive: true,
-        breaks: [
-          BreakTime(
-            startTime: '13:00',
-            endTime: '14:00',
-            reason: 'Lunch Break',
-          ),
-        ],
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ));
-    }
-    
-    setState(() {
-      _availability = availability;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
+        return BlocBuilder<CalendarBloc, CalendarState>(
+          builder: (context, state) {
+            // Show loading skeleton
+            if (state is CalendarLoading && state.isInitialLoad) {
+              return _buildLoadingSkeleton(themeService);
+            }
+
+            // Show error state
+            if (state is CalendarErrorState) {
+              return _buildErrorState(themeService, state.message);
+            }
+
+            // Get availabilities from BLoC state
+            final availabilities = state is CalendarLoadedState 
+                ? state.availabilities 
+                : <AvailabilityModel>[];
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Your Availability',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: themeService.textPrimary,
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Your Availability',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: themeService.textPrimary,
+                          ),
+                        ),
                       ),
-                    ),
+                      IconButton(
+                        onPressed: _addAvailability,
+                        icon: const Icon(Icons.add_circle_outline),
+                        color: themeService.primaryColor,
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: _addAvailability,
-                    icon: const Icon(Icons.add_circle_outline),
-                    color: themeService.primaryColor,
-                  ),
+              
+                  const SizedBox(height: 16),
+              
+                  // Availability List
+                  if (availabilities.isEmpty)
+                    _buildEmptyState(themeService)
+                  else
+                    ...availabilities.map((avail) => _buildAvailabilityCard(avail, themeService)),
                 ],
               ),
-          
-          const SizedBox(height: 16),
-          
-          // Availability List
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_availability.isEmpty)
-            _buildEmptyState(themeService)
-          else
-            ..._availability.map((avail) => _buildAvailabilityCard(avail, themeService)),
-        ],
-      ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildLoadingSkeleton(ThemeService themeService) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CircularProgressIndicator(color: themeService.primaryColor),
+            const SizedBox(height: 16),
+            Text(
+              'Loading availability...',
+              style: TextStyle(color: themeService.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeService themeService, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 64, color: themeService.errorColor),
+            const SizedBox(height: 16),
+            Text(
+              'Error Loading Availability',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(color: themeService.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadAvailability,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeService.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -275,9 +321,8 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
       context: context,
       builder: (context) => _AvailabilityDialog(
         onSave: (availability) {
-          setState(() {
-            _availability.add(availability);
-          });
+          // Dispatch BLoC event instead of setState
+          context.read<CalendarBloc>().add(CreateAvailabilityEvent(availability));
         },
       ),
     );
@@ -289,12 +334,13 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
       builder: (context) => _AvailabilityDialog(
         availability: availability,
         onSave: (updatedAvailability) {
-          setState(() {
-            final index = _availability.indexWhere((a) => a.id == availability.id);
-            if (index != -1) {
-              _availability[index] = updatedAvailability;
-            }
-          });
+          // Dispatch BLoC event instead of setState
+          context.read<CalendarBloc>().add(
+            UpdateAvailabilityEvent(
+              id: availability.id,
+              availability: updatedAvailability,
+            ),
+          );
         },
       ),
     );
@@ -313,9 +359,8 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _availability.removeWhere((a) => a.id == availability.id);
-              });
+              // Dispatch BLoC event instead of setState
+              context.read<CalendarBloc>().add(DeleteAvailabilityEvent(availability.id));
               Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -326,12 +371,14 @@ class _AvailabilityManagementWidgetState extends State<AvailabilityManagementWid
   }
 
   void _toggleAvailability(AvailabilityModel availability, bool isActive) {
-    setState(() {
-      final index = _availability.indexWhere((a) => a.id == availability.id);
-      if (index != -1) {
-        _availability[index] = availability.copyWith(isActive: isActive);
-      }
-    });
+    // Dispatch BLoC event instead of setState
+    final updatedAvailability = availability.copyWith(isActive: isActive);
+    context.read<CalendarBloc>().add(
+      UpdateAvailabilityEvent(
+        id: availability.id,
+        availability: updatedAvailability,
+      ),
+    );
   }
 }
 

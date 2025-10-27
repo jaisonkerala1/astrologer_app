@@ -26,45 +26,60 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
   @override
   Future<List<ConsultationModel>> getConsultationsForDate(DateTime date) async {
     try {
-      // Try cache first for today
-      if (_isToday(date)) {
-        final cached = await getCachedConsultations();
-        if (cached != null && cached.isNotEmpty) {
-          return cached.where((c) => _isSameDay(c.scheduledTime, date)).toList();
-        }
-      }
-
-      // Fetch from API
+      print('📅 [CalendarRepo] Fetching consultations for date: ${date.toIso8601String()}');
+      
+      // Fetch from API FIRST (not cache first!)
       final astrologerId = await _getAstrologerId();
+      print('🔑 [CalendarRepo] Using astrologer ID: $astrologerId');
+      
+      final startDate = DateTime(date.year, date.month, date.day).toIso8601String();
+      final endDate = DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String();
+      
+      print('📡 [CalendarRepo] Calling API: /api/consultation/$astrologerId');
+      print('📡 [CalendarRepo] Query params: startDate=$startDate, endDate=$endDate');
+      
       final response = await apiService.get(
         '/api/consultation/$astrologerId',
         queryParameters: {
-          'startDate': DateTime(date.year, date.month, date.day).toIso8601String(),
-          'endDate': DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String(),
+          'startDate': startDate,
+          'endDate': endDate,
         },
       );
 
+      print('✅ [CalendarRepo] API Response received: ${response.statusCode}');
+
       if (response.data['success'] == true) {
         final consultationsData = response.data['data']['consultations'] as List;
+        print('✅ [CalendarRepo] Found ${consultationsData.length} consultations from API');
+        
         final consultations = consultationsData
             .map((json) => ConsultationModel.fromJson(json))
             .toList();
         
-        // Cache if today
+        // Cache the fresh data from API for offline use
         if (_isToday(date)) {
           await cacheConsultations(consultations);
+          print('💾 [CalendarRepo] Cached ${consultations.length} consultations for offline use');
         }
         
         return consultations;
       } else {
-        throw Exception(response.data['message'] ?? 'Failed to fetch consultations');
+        final errorMsg = response.data['message'] ?? 'Failed to fetch consultations';
+        print('❌ [CalendarRepo] API returned success=false: $errorMsg');
+        throw Exception(errorMsg);
       }
     } catch (e) {
-      // Fallback to cache on error
+      print('❌ [CalendarRepo] Error fetching consultations from API: $e');
+      print('❌ [CalendarRepo] Error type: ${e.runtimeType}');
+      
+      // Fallback to cache ONLY on error (offline mode)
       final cached = await getCachedConsultations();
-      if (cached != null) {
+      if (cached != null && cached.isNotEmpty) {
+        print('💾 [CalendarRepo] Using cached consultations as fallback (${cached.length} total)');
         return cached.where((c) => _isSameDay(c.scheduledTime, date)).toList();
       }
+      
+      print('❌ [CalendarRepo] No cached data available, throwing error');
       throw Exception(handleError(e));
     }
   }
@@ -103,33 +118,27 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
 
   @override
   Future<List<AvailabilityModel>> getAvailability(String astrologerId) async {
+    // TODO: Implement backend endpoint /api/calendar/availability/:astrologerId
+    // For now, return empty list as backend doesn't have this endpoint yet
     try {
-      final response = await apiService.get('/api/calendar/availability/$astrologerId');
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> items = response.data['data'] ?? [];
-        return items.map((json) => AvailabilityModel.fromJson(json)).toList();
-      }
-      throw Exception('Failed to load availability');
+      print('📅 [CalendarRepo] getAvailability called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300)); // Simulate network delay
+      return [];
     } catch (e) {
-      throw Exception(handleError(e));
+      print('❌ [CalendarRepo] Error in getAvailability: $e');
+      return [];
     }
   }
 
   @override
   Future<AvailabilityModel> createAvailability(AvailabilityModel availability) async {
+    // TODO: Implement backend endpoint POST /api/calendar/availability
     try {
-      final response = await apiService.post(
-        '/api/calendar/availability',
-        data: availability.toJson(),
-      );
-      
-      if (response.data['success'] == true) {
-        return AvailabilityModel.fromJson(response.data['data']);
-      }
-      throw Exception('Failed to create availability');
+      print('📅 [CalendarRepo] createAvailability called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      return availability; // Return the same object for now
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
@@ -138,31 +147,25 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
     String id,
     AvailabilityModel availability,
   ) async {
+    // TODO: Implement backend endpoint PUT /api/calendar/availability/:id
     try {
-      final response = await apiService.put(
-        '/api/calendar/availability/$id',
-        data: availability.toJson(),
-      );
-      
-      if (response.data['success'] == true) {
-        return AvailabilityModel.fromJson(response.data['data']);
-      }
-      throw Exception('Failed to update availability');
+      print('📅 [CalendarRepo] updateAvailability called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      return availability; // Return the same object for now
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
   @override
   Future<void> deleteAvailability(String id) async {
+    // TODO: Implement backend endpoint DELETE /api/calendar/availability/:id
     try {
-      final response = await apiService.delete('/api/calendar/availability/$id');
-      
-      if (response.data['success'] != true) {
-        throw Exception('Failed to delete availability');
-      }
+      print('📅 [CalendarRepo] deleteAvailability called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      // Success - do nothing
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
@@ -172,63 +175,51 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
 
   @override
   Future<List<HolidayModel>> getHolidays(String astrologerId) async {
+    // TODO: Implement backend endpoint /api/calendar/holidays/:astrologerId
+    // For now, return empty list as backend doesn't have this endpoint yet
     try {
-      final response = await apiService.get('/api/calendar/holidays/$astrologerId');
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> items = response.data['data'] ?? [];
-        return items.map((json) => HolidayModel.fromJson(json)).toList();
-      }
-      throw Exception('Failed to load holidays');
+      print('📅 [CalendarRepo] getHolidays called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      return [];
     } catch (e) {
-      throw Exception(handleError(e));
+      print('❌ [CalendarRepo] Error in getHolidays: $e');
+      return [];
     }
   }
 
   @override
   Future<HolidayModel> createHoliday(HolidayModel holiday) async {
+    // TODO: Implement backend endpoint POST /api/calendar/holidays
     try {
-      final response = await apiService.post(
-        '/api/calendar/holidays',
-        data: holiday.toJson(),
-      );
-      
-      if (response.data['success'] == true) {
-        return HolidayModel.fromJson(response.data['data']);
-      }
-      throw Exception('Failed to create holiday');
+      print('📅 [CalendarRepo] createHoliday called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      return holiday; // Return the same object for now
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
   @override
   Future<HolidayModel> updateHoliday(String id, HolidayModel holiday) async {
+    // TODO: Implement backend endpoint PUT /api/calendar/holidays/:id
     try {
-      final response = await apiService.put(
-        '/api/calendar/holidays/$id',
-        data: holiday.toJson(),
-      );
-      
-      if (response.data['success'] == true) {
-        return HolidayModel.fromJson(response.data['data']);
-      }
-      throw Exception('Failed to update holiday');
+      print('📅 [CalendarRepo] updateHoliday called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      return holiday; // Return the same object for now
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
   @override
   Future<void> deleteHoliday(String id) async {
+    // TODO: Implement backend endpoint DELETE /api/calendar/holidays/:id
     try {
-      final response = await apiService.delete('/api/calendar/holidays/$id');
-      
-      if (response.data['success'] != true) {
-        throw Exception('Failed to delete holiday');
-      }
+      print('📅 [CalendarRepo] deleteHoliday called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      // Success - do nothing
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
@@ -238,53 +229,37 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
 
   @override
   Future<List<TimeSlotModel>> getAvailableTimeSlots(DateTime date) async {
+    // TODO: Implement backend endpoint /api/calendar/timeslots/:astrologerId
+    // For now, return empty list as backend doesn't have this endpoint yet
     try {
-      final astrologerId = await _getAstrologerId();
-      final response = await apiService.get(
-        '/api/calendar/timeslots/$astrologerId',
-        queryParameters: {
-          'date': date.toIso8601String(),
-        },
-      );
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> items = response.data['data'] ?? [];
-        return items.map((json) => TimeSlotModel.fromJson(json)).toList();
-      }
-      throw Exception('Failed to load time slots');
+      print('📅 [CalendarRepo] getAvailableTimeSlots called - Backend not implemented yet');
+      await Future.delayed(const Duration(milliseconds: 300));
+      return [];
     } catch (e) {
-      throw Exception(handleError(e));
+      print('❌ [CalendarRepo] Error in getAvailableTimeSlots: $e');
+      return [];
     }
   }
 
   @override
   Future<TimeSlotModel> bookTimeSlot(String slotId) async {
+    // TODO: Implement backend endpoint POST /api/calendar/timeslots/:slotId/book
     try {
-      final response = await apiService.post(
-        '/api/calendar/timeslots/$slotId/book',
-      );
-      
-      if (response.data['success'] == true) {
-        return TimeSlotModel.fromJson(response.data['data']);
-      }
-      throw Exception('Failed to book time slot');
+      print('📅 [CalendarRepo] bookTimeSlot called - Backend not implemented yet');
+      throw Exception('Backend endpoint not implemented yet');
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
   @override
   Future<void> cancelTimeSlot(String slotId) async {
+    // TODO: Implement backend endpoint POST /api/calendar/timeslots/:slotId/cancel
     try {
-      final response = await apiService.post(
-        '/api/calendar/timeslots/$slotId/cancel',
-      );
-      
-      if (response.data['success'] != true) {
-        throw Exception('Failed to cancel time slot');
-      }
+      print('📅 [CalendarRepo] cancelTimeSlot called - Backend not implemented yet');
+      throw Exception('Backend endpoint not implemented yet');
     } catch (e) {
-      throw Exception(handleError(e));
+      throw Exception('Backend endpoint not implemented yet');
     }
   }
 
@@ -345,16 +320,29 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
 
   Future<String> _getAstrologerId() async {
     try {
+      print('🔍 [CalendarRepo] Getting astrologer ID from storage...');
       final userData = await storageService.getUserData();
+      
       if (userData != null) {
+        print('📦 [CalendarRepo] User data found in storage');
         final userDataMap = jsonDecode(userData);
+        print('📦 [CalendarRepo] User data map keys: ${userDataMap.keys.toList()}');
+        
         final astrologerId = userDataMap['id'] ?? userDataMap['_id'] as String?;
+        
         if (astrologerId != null) {
+          print('✅ [CalendarRepo] Astrologer ID retrieved: $astrologerId');
           return astrologerId;
+        } else {
+          print('❌ [CalendarRepo] Astrologer ID is null in user data');
+          print('📦 [CalendarRepo] Full user data: $userDataMap');
         }
+      } else {
+        print('❌ [CalendarRepo] No user data found in storage');
       }
     } catch (e) {
-      print('Error getting astrologer ID: $e');
+      print('❌ [CalendarRepo] Error getting astrologer ID: $e');
+      print('❌ [CalendarRepo] Error type: ${e.runtimeType}');
     }
     throw Exception('Astrologer ID not found');
   }
