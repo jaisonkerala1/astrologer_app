@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/di/service_locator.dart';
 import '../screens/service_management_screen.dart';
 import '../screens/service_requests_screen.dart';
+import '../bloc/heal_bloc.dart';
+import '../bloc/heal_event.dart';
 
 class HealScreen extends StatefulWidget {
   const HealScreen({super.key});
@@ -63,11 +67,13 @@ class _HealScreenState extends State<HealScreen> with TickerProviderStateMixin, 
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final l10n = AppLocalizations.of(context)!;
     
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Scaffold(
-          backgroundColor: themeService.backgroundColor,
-          appBar: AppBar(
+    return BlocProvider(
+      create: (context) => getIt<HealBloc>()..add(const LoadServicesEvent()),
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Scaffold(
+            backgroundColor: themeService.backgroundColor,
+            appBar: AppBar(
             backgroundColor: themeService.primaryColor,
             elevation: 0,
             titleSpacing: 16,
@@ -198,6 +204,7 @@ class _HealScreenState extends State<HealScreen> with TickerProviderStateMixin, 
           body: ServiceRequestsScreen(searchQuery: _searchController.text),
         );
       },
+    ),
     );
   }
 }
