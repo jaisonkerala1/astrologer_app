@@ -64,14 +64,6 @@ class CommunicationItemCard extends StatelessWidget {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                themeService.primaryColor,
-                themeService.primaryColor.withOpacity(0.7),
-              ],
-            ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -81,15 +73,64 @@ class CommunicationItemCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Center(
-            child: Text(
+          child: ClipOval(
+            child: Image.network(
               item.avatar,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to initials if image fails to load
+                return Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        themeService.primaryColor,
+                        themeService.primaryColor.withOpacity(0.7),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      _getInitials(item.contactName),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                );
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: themeService.surfaceColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          themeService.primaryColor.withOpacity(0.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -114,6 +155,15 @@ class CommunicationItemCard extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  /// Get initials from contact name for fallback
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
   Widget _buildNameAndTime() {
