@@ -272,70 +272,68 @@ class ServiceRequestCardWidget extends StatelessWidget {
       case RequestStatus.pending:
         return [
           Expanded(
-            child: SimpleTouchFeedback(
-              onTap: onReject,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.errorColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AppTheme.errorColor.withOpacity(0.3),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444), // Red solid
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onReject,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.close, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Reject',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.close,
-                      size: 16,
-                      color: AppTheme.errorColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Reject',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.errorColor,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: SimpleTouchFeedback(
-              onTap: onAccept,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.successColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AppTheme.successColor.withOpacity(0.3),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981), // Green solid
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onAccept,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.check, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Accept',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.check,
-                      size: 16,
-                      color: AppTheme.successColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Accept',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.successColor,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -345,35 +343,68 @@ class ServiceRequestCardWidget extends StatelessWidget {
       case RequestStatus.confirmed:
         return [
           Expanded(
-            child: SimpleTouchFeedback(
-              onTap: onStart,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.green, // Green solid
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onStart,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.play_arrow, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Start',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.play_arrow,
-                      size: 16,
-                      color: AppTheme.primaryColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400, // Grey solid
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onReject,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.close, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Start Service',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -383,35 +414,34 @@ class ServiceRequestCardWidget extends StatelessWidget {
       case RequestStatus.inProgress:
         return [
           Expanded(
-            child: SimpleTouchFeedback(
-              onTap: onComplete,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.successColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AppTheme.successColor.withOpacity(0.3),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.green, // Green solid
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onComplete,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.check, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Complete',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 16,
-                      color: AppTheme.successColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Mark Complete',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.successColor,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -423,10 +453,10 @@ class ServiceRequestCardWidget extends StatelessWidget {
         return [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              height: 36,
               decoration: BoxDecoration(
                 color: AppTheme.textColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -444,7 +474,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
                         ? 'Completed'
                         : 'Cancelled',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textColor.withOpacity(0.6),
                     ),

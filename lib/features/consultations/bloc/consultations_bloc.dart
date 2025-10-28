@@ -29,19 +29,36 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     Emitter<ConsultationsState> emit,
   ) async {
     try {
-      print('Loading consultations...');
-      emit(const ConsultationsLoading());
+      print('🔄 [ConsultationsBloc] Loading consultations (two-phase pattern)...');
       
-      final consultations = await repository.getConsultations();
-      print('Loaded ${consultations.length} consultations');
-      
-      for (var consultation in consultations) {
-        print('Consultation ${consultation.id}: ${consultation.clientName} - ${consultation.status.displayName}');
+      // PHASE 1: Instant loading from cache (synchronous)
+      try {
+        final instantData = repository.getInstantData();
+        if (instantData.isNotEmpty) {
+          print('⚡ [ConsultationsBloc] Phase 1: Emitting ${instantData.length} consultations from cache (isRefreshing: true)');
+          emit(_buildLoadedState(instantData, isRefreshing: true));
+        } else {
+          print('⚠️ [ConsultationsBloc] No instant data available, showing loading state');
+          emit(const ConsultationsLoading());
+        }
+      } catch (e) {
+        print('⚠️ [ConsultationsBloc] Error in Phase 1: $e, showing loading state');
+        emit(const ConsultationsLoading());
       }
       
-      emit(_buildLoadedState(consultations));
+      // PHASE 2: Background refresh from API
+      print('🌐 [ConsultationsBloc] Phase 2: Fetching fresh data from API...');
+      final consultations = await repository.getConsultations();
+      print('✅ [ConsultationsBloc] Phase 2: Loaded ${consultations.length} fresh consultations from API');
+      
+      for (var consultation in consultations) {
+        print('   - Consultation ${consultation.id}: ${consultation.clientName} - ${consultation.status.displayName}');
+      }
+      
+      emit(_buildLoadedState(consultations, isRefreshing: false));
+      print('✅ [ConsultationsBloc] Two-phase loading complete!');
     } catch (e) {
-      print('Error loading consultations: $e');
+      print('❌ [ConsultationsBloc] Error loading consultations: $e');
       emit(ConsultationsError(message: e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -350,6 +367,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
     List<ConsultationModel> allConsultations, {
     ConsultationStatus? activeFilter,
     DateTime? dateFilter,
+    bool isRefreshing = false,
   }) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -407,6 +425,7 @@ class ConsultationsBloc extends Bloc<ConsultationsEvent, ConsultationsState> {
       completedConsultations: completedConsultations,
       activeFilter: activeFilter,
       dateFilter: dateFilter,
+      isRefreshing: isRefreshing,
     );
   }
 

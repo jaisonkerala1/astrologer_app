@@ -75,5 +75,10 @@ abstract class ConsultationsRepository {
 
   /// Clear cached consultations
   Future<void> clearCache();
+
+  /// Get instant data synchronously from in-memory or persistent cache
+  /// Used for instant loading (stale-while-revalidate pattern)
+  /// Returns empty list if no cache available
+  List<ConsultationModel> getInstantData();
 }
 

@@ -11,6 +11,9 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
   final ApiService apiService;
   final StorageService storageService;
 
+  // In-memory cache for instant loading
+  List<ConsultationModel> _localConsultations = [];
+
   ConsultationsRepositoryImpl({
     required this.apiService,
     required this.storageService,
@@ -108,6 +111,9 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
             .map((json) => ConsultationModel.fromJson(json))
             .toList();
         
+        // Update in-memory cache
+        _localConsultations = consultations;
+        
         // Cache for offline access
         await cacheConsultations(consultations);
         
@@ -120,6 +126,7 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
       final cachedConsultations = await getCachedConsultations();
       if (cachedConsultations != null) {
         print('ConsultationsRepository: Using cached data due to error: $e');
+        _localConsultations = cachedConsultations; // Update in-memory cache
         return cachedConsultations;
       }
       throw Exception(handleError(e));
@@ -154,11 +161,16 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
       if (response.data['success'] == true) {
         final createdConsultation = ConsultationModel.fromJson(response.data['data']);
         
-        // Update cache
+        // Update in-memory cache
+        _localConsultations.add(createdConsultation);
+        
+        // Update persistent cache
         final cached = await getCachedConsultations();
         if (cached != null) {
           cached.add(createdConsultation);
           await cacheConsultations(cached);
+        } else {
+          await cacheConsultations([createdConsultation]);
         }
         
         return createdConsultation;
@@ -181,7 +193,13 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
       if (response.data['success'] == true) {
         final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
         
-        // Update cache
+        // Update in-memory cache
+        final memIndex = _localConsultations.indexWhere((c) => c.id == consultation.id);
+        if (memIndex != -1) {
+          _localConsultations[memIndex] = updatedConsultation;
+        }
+        
+        // Update persistent cache
         final cached = await getCachedConsultations();
         if (cached != null) {
           final index = cached.indexWhere((c) => c.id == consultation.id);
@@ -206,7 +224,10 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
       final response = await apiService.delete('/api/consultation/$consultationId');
 
       if (response.data['success'] == true) {
-        // Update cache
+        // Update in-memory cache
+        _localConsultations.removeWhere((c) => c.id == consultationId);
+        
+        // Update persistent cache
         final cached = await getCachedConsultations();
         if (cached != null) {
           cached.removeWhere((c) => c.id == consultationId);
@@ -251,7 +272,13 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
       if (response.data['success'] == true) {
         final updatedConsultation = ConsultationModel.fromJson(response.data['data']);
         
-        // Update cache
+        // Update in-memory cache
+        final memIndex = _localConsultations.indexWhere((c) => c.id == consultationId);
+        if (memIndex != -1) {
+          _localConsultations[memIndex] = updatedConsultation;
+        }
+        
+        // Update persistent cache
         final cached = await getCachedConsultations();
         if (cached != null) {
           final index = cached.indexWhere((c) => c.id == consultationId);
@@ -286,7 +313,25 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
       );
 
       if (response.data['success'] == true) {
-        return ConsultationModel.fromJson(response.data['data']);
+        final completedConsultation = ConsultationModel.fromJson(response.data['data']);
+        
+        // Update in-memory cache
+        final memIndex = _localConsultations.indexWhere((c) => c.id == consultationId);
+        if (memIndex != -1) {
+          _localConsultations[memIndex] = completedConsultation;
+        }
+        
+        // Update persistent cache
+        final cached = await getCachedConsultations();
+        if (cached != null) {
+          final index = cached.indexWhere((c) => c.id == consultationId);
+          if (index != -1) {
+            cached[index] = completedConsultation;
+            await cacheConsultations(cached);
+          }
+        }
+        
+        return completedConsultation;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to complete consultation');
       }
@@ -397,9 +442,45 @@ class ConsultationsRepositoryImpl extends BaseRepository implements Consultation
   Future<void> clearCache() async {
     try {
       await storageService.remove('consultations_cache');
+      _localConsultations.clear();
     } catch (e) {
       print('Error clearing consultations cache: $e');
     }
+  }
+
+  @override
+  List<ConsultationModel> getInstantData() {
+    print('📦 [ConsultationsRepo] getInstantData() called');
+    
+    // First, try in-memory cache (fastest)
+    if (_localConsultations.isNotEmpty) {
+      print('✅ [ConsultationsRepo] Returning ${_localConsultations.length} consultations from in-memory cache');
+      return List.from(_localConsultations);
+    }
+
+    // Second, try persistent cache (synchronous read)
+    try {
+      final cachedData = storageService.getStringSync('consultations_cache');
+      if (cachedData != null) {
+        final List<dynamic> jsonList = jsonDecode(cachedData);
+        final consultations = jsonList
+            .map((json) => ConsultationModel.fromJson(json))
+            .toList();
+        
+        if (consultations.isNotEmpty) {
+          print('✅ [ConsultationsRepo] Returning ${consultations.length} consultations from persistent cache');
+          // Populate in-memory cache for next time
+          _localConsultations = consultations;
+          return consultations;
+        }
+      }
+    } catch (e) {
+      print('⚠️ [ConsultationsRepo] Error loading from persistent cache: $e');
+    }
+
+    // No cache available
+    print('⚠️ [ConsultationsRepo] No instant data available');
+    return [];
   }
 }
 

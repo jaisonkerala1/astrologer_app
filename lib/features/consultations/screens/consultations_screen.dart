@@ -271,22 +271,24 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
-            },
-            child: Column(
-              children: [
-                // Removed inline search bar; using AppBar-integrated search
-                
-                // Stats section (only show when not searching) - shows loading state
-                if (loadedState == null || !loadedState.isSearching) ...[
-                  ConsultationStatsWidget(
-                    todayCount: loadedState?.todayCount ?? 0,
-                    todayEarnings: loadedState?.todayEarnings ?? 0.0,
-                    nextConsultation: loadedState?.nextConsultation,
-                    isLoading: isLoading,
-                  ),
+          return Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: () async {
+                  context.read<ConsultationsBloc>().add(const RefreshConsultationsEvent());
+                },
+                child: Column(
+                  children: [
+                    // Removed inline search bar; using AppBar-integrated search
+                    
+                    // Stats section (only show when not searching) - shows loading state
+                    if (loadedState == null || !loadedState.isSearching) ...[
+                      ConsultationStatsWidget(
+                        todayCount: loadedState?.todayCount ?? 0,
+                        todayEarnings: loadedState?.todayEarnings ?? 0.0,
+                        nextConsultation: loadedState?.nextConsultation,
+                        isLoading: isLoading,
+                      ),
                   
                   // Filter section - always visible
                   ConsultationFilterWidget(
@@ -329,6 +331,25 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                 ),
               ],
             ),
+          ),
+              
+              // Subtle refresh indicator at top (Instagram/WhatsApp-style)
+              if (loadedState?.isRefreshing == true)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 3,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        themeService.primaryColor.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),

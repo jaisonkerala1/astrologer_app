@@ -31,6 +31,9 @@ import '../../profile/screens/profile_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
 import '../../communication/services/communication_service.dart';
 import '../../communication/models/communication_item.dart';
+import '../../communication/bloc/communication_bloc.dart';
+import '../../communication/bloc/communication_event.dart';
+import '../../communication/bloc/communication_state.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../heal/screens/heal_screen.dart';
 import '../../heal/screens/discussion_screen.dart';
@@ -333,26 +336,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Method to open communication screen with specific tab
   void _openCommunicationScreen(String tab) {
-    // Use Provider to get CommunicationService and set the filter
-    final commService = Provider.of<CommunicationService>(context, listen: false);
+    print('🔍 [Dashboard] Opening Communication screen with tab: $tab');
     
     // Map string tab to CommunicationFilter enum
     CommunicationFilter filter;
     switch (tab) {
       case 'calls':
         filter = CommunicationFilter.calls;
+        print('✅ [Dashboard] Setting filter to CALLS');
         break;
       case 'messages':
         filter = CommunicationFilter.messages;
+        print('✅ [Dashboard] Setting filter to MESSAGES');
         break;
       case 'video':
         filter = CommunicationFilter.video;
+        print('✅ [Dashboard] Setting filter to VIDEO');
         break;
       default:
         filter = CommunicationFilter.all;
+        print('✅ [Dashboard] Setting filter to ALL');
     }
     
-    commService.setFilter(filter);
+    // Use BLoC to set the filter (not old CommunicationService)
+    context.read<CommunicationBloc>().add(FilterCommunicationsEvent(filter));
     
     // Animate to Communication tab (index 2) with smooth sliding
     // Page structure: 0=LivePrep(hidden), 1=Dashboard, 2=Communication, 3=Heal, 4=Consultations, 5=Profile
@@ -361,6 +368,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+    
+    print('🚀 [Dashboard] Navigating to Communication tab with filter: $filter');
   }
 
   // Method to simulate incoming call

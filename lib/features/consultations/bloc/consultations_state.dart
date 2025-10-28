@@ -31,6 +31,7 @@ class ConsultationsLoaded extends ConsultationsState {
   final DateTime? dateFilter;
   final String searchQuery;
   final bool isSearching;
+  final bool isRefreshing; // For instant loading (stale-while-revalidate)
 
   const ConsultationsLoaded({
     required this.allConsultations,
@@ -42,6 +43,7 @@ class ConsultationsLoaded extends ConsultationsState {
     this.dateFilter,
     this.searchQuery = '',
     this.isSearching = false,
+    this.isRefreshing = false,
   });
 
   @override
@@ -55,6 +57,7 @@ class ConsultationsLoaded extends ConsultationsState {
         dateFilter,
         searchQuery,
         isSearching,
+        isRefreshing,
       ];
 
   ConsultationsLoaded copyWith({
@@ -67,6 +70,7 @@ class ConsultationsLoaded extends ConsultationsState {
     DateTime? dateFilter,
     String? searchQuery,
     bool? isSearching,
+    bool? isRefreshing,
     bool clearFilters = false,
   }) {
     return ConsultationsLoaded(
@@ -79,6 +83,7 @@ class ConsultationsLoaded extends ConsultationsState {
       dateFilter: clearFilters ? null : (dateFilter ?? this.dateFilter),
       searchQuery: searchQuery ?? this.searchQuery,
       isSearching: isSearching ?? this.isSearching,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 

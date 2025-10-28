@@ -31,16 +31,23 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
     LoadCommunicationsEvent event,
     Emitter<CommunicationState> emit,
   ) async {
+    // Preserve the current filter if exists
+    CommunicationFilter currentFilter = CommunicationFilter.all;
+    if (state is CommunicationLoadedState) {
+      currentFilter = (state as CommunicationLoadedState).activeFilter;
+      print('🔖 [CommunicationBloc] Preserving current filter: $currentFilter');
+    }
+
     // 🚀 PHASE 1: INSTANT LOAD - Show data immediately (no spinner!)
     // This makes the app feel instant like WhatsApp/Instagram
     try {
       final instantData = repository.getInstantData(); // Synchronous, no await!
       
       if (instantData.isNotEmpty) {
-        // Emit data instantly with refreshing flag
+        // Emit data instantly with refreshing flag (preserve filter!)
         emit(CommunicationLoadedState(
           allCommunications: instantData,
-          activeFilter: CommunicationFilter.all,
+          activeFilter: currentFilter, // Use preserved filter
           unreadMessagesCount: 0, // Will update in phase 2
           missedCallsCount: 0,
           missedVideoCallsCount: 0,
@@ -62,7 +69,7 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
 
       emit(CommunicationLoadedState(
         allCommunications: communications,
-        activeFilter: CommunicationFilter.all,
+        activeFilter: currentFilter, // Use preserved filter
         unreadMessagesCount: unreadCounts['messages'] ?? 0,
         missedCallsCount: unreadCounts['missedCalls'] ?? 0,
         missedVideoCallsCount: unreadCounts['missedVideoCalls'] ?? 0,
@@ -94,7 +101,8 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
     RefreshCommunicationsEvent event,
     Emitter<CommunicationState> emit,
   ) async {
-    add(const LoadCommunicationsEvent());
+    // Simply reload communications (filter is now preserved in _onLoadCommunications)
+    await _onLoadCommunications(const LoadCommunicationsEvent(), emit);
   }
 
   // ============================================================================

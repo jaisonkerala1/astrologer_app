@@ -577,9 +577,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
             child: Container(
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: const Color(0xFFEF4444), // Red solid like service request reject
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -588,23 +587,23 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: _isCancelling
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade600),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.close, size: 16, color: Colors.grey.shade600),
-                              const SizedBox(width: 4),
+                            children: const [
+                              Icon(Icons.close, size: 16, color: Colors.white),
+                              SizedBox(width: 4),
                               Text(
-                                _isCancelling ? 'Cancelling...' : 'Cancel',
+                                'Cancel',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 14,
                                 ),

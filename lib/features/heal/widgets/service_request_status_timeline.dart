@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/theme/services/theme_service.dart';
 import '../models/service_request_model.dart';
 
 class ServiceRequestStatusTimeline extends StatelessWidget {
@@ -12,47 +13,25 @@ class ServiceRequestStatusTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> statusEvents = _buildStatusEvents();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Status History',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: statusEvents.length,
-            itemBuilder: (context, index) {
-              final event = statusEvents[index];
-              final isLast = index == statusEvents.length - 1;
-              return _TimelineTile(
-                isFirst: index == 0,
-                isLast: isLast,
-                status: event['status'],
-                timestamp: event['timestamp'],
-              );
-            },
-          ),
-        ],
-      ),
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: statusEvents.length,
+          itemBuilder: (context, index) {
+            final event = statusEvents[index];
+            final isLast = index == statusEvents.length - 1;
+            return _TimelineTile(
+              isFirst: index == 0,
+              isLast: isLast,
+              status: event['status'],
+              timestamp: event['timestamp'],
+              themeService: themeService,
+            );
+          },
+        );
+      },
     );
   }
 
@@ -101,17 +80,19 @@ class _TimelineTile extends StatelessWidget {
   final bool isLast;
   final RequestStatus status;
   final DateTime timestamp;
+  final ThemeService themeService;
 
   const _TimelineTile({
     required this.isFirst,
     required this.isLast,
     required this.status,
     required this.timestamp,
+    required this.themeService,
   });
 
   @override
   Widget build(BuildContext context) {
-    Color lineColor = _getStatusColor(status);
+    Color lineColor = _getStatusColor(status, themeService);
     IconData icon = _getStatusIcon(status);
     String statusText = _getStatusText(status);
 
@@ -125,7 +106,7 @@ class _TimelineTile extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: lineColor.withOpacity(0.5),
+                    color: themeService.borderColor,
                   ),
                 ),
               Container(
@@ -134,7 +115,7 @@ class _TimelineTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: lineColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
+                  border: Border.all(color: themeService.surfaceColor, width: 3),
                   boxShadow: [
                     BoxShadow(
                       color: lineColor.withOpacity(0.3),
@@ -149,7 +130,7 @@ class _TimelineTile extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: lineColor.withOpacity(0.5),
+                    color: themeService.borderColor,
                   ),
                 ),
             ],
@@ -164,16 +145,18 @@ class _TimelineTile extends StatelessWidget {
                 children: [
                   Text(
                     statusText,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: themeService.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('MMM dd, yyyy - HH:mm').format(timestamp),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textColor.withOpacity(0.7),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: themeService.textSecondary,
                     ),
                   ),
                 ],
@@ -185,18 +168,18 @@ class _TimelineTile extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(RequestStatus status) {
+  Color _getStatusColor(RequestStatus status, ThemeService themeService) {
     switch (status) {
       case RequestStatus.pending:
-        return const Color(0xFFFFA500); // Orange
+        return themeService.primaryColor; // Match consultation 'scheduled' color
       case RequestStatus.confirmed:
-        return AppTheme.primaryColor;
+        return const Color(0xFF3B82F6); // Blue like consultation 'rescheduled'
       case RequestStatus.inProgress:
-        return AppTheme.successColor;
+        return themeService.successColor;
       case RequestStatus.completed:
-        return AppTheme.successColor;
+        return themeService.successColor;
       case RequestStatus.cancelled:
-        return AppTheme.errorColor;
+        return themeService.errorColor;
     }
   }
 
