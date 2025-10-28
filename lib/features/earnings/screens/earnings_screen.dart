@@ -69,12 +69,14 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
         if (state is EarningsLoadedState) {
           return Scaffold(
             backgroundColor: themeService.backgroundColor,
-            body: Column(
+            body: Stack(
               children: [
-                const SizedBox(height: 40),
-                
-                // Header with period selector
-                _buildHeader(themeService, state),
+                Column(
+                  children: [
+                    const SizedBox(height: 40),
+                    
+                    // Header with period selector
+                    _buildHeader(themeService, state),
                 
                 // Earnings Overview
                 _buildEarningsOverview(l10n, themeService, state),
@@ -82,17 +84,32 @@ class _EarningsScreenState extends State<EarningsScreen> with TickerProviderStat
                 // Tab Bar
                 _buildTabBar(l10n, themeService),
                 
-                // Tab Content
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTransactionsTab(themeService, state),
-                      _buildAnalyticsTab(themeService, state),
-                      _buildWithdrawalsTab(themeService, state),
-                    ],
-                  ),
+                    // Tab Content
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildTransactionsTab(themeService, state),
+                          _buildAnalyticsTab(themeService, state),
+                          _buildWithdrawalsTab(themeService, state),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                
+                // Subtle refresh indicator at top
+                if (state.isRefreshing)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(themeService.primaryColor),
+                      minHeight: 3,
+                    ),
+                  ),
               ],
             ),
           );

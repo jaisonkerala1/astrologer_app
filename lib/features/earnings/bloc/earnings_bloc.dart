@@ -1,5 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/earnings/earnings_repository.dart';
+import '../models/earnings_summary_model.dart';
+import '../models/transaction_model.dart';
+import '../models/earnings_analytics_model.dart';
+import '../models/withdrawal_model.dart';
 import 'earnings_event.dart';
 import 'earnings_state.dart';
 
@@ -29,25 +33,98 @@ class EarningsBloc extends Bloc<EarningsEvent, EarningsState> {
     LoadEarningsSummaryEvent event,
     Emitter<EarningsState> emit,
   ) async {
-    emit(const EarningsLoading());
+    // PHASE 1: Check for cached data and emit instantly
+    final cachedData = repository.getInstantData(event.period);
+    
+    if (cachedData != null) {
+      try {
+        // Parse cached data
+        final summary = EarningsSummaryModel.fromJson(cachedData['summary'] as Map<String, dynamic>);
+        final transactions = (cachedData['transactions'] as List)
+            .map((e) => TransactionModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        final analytics = EarningsAnalyticsModel.fromJson(cachedData['analytics'] as Map<String, dynamic>);
+        final withdrawals = (cachedData['withdrawals'] as List)
+            .map((e) => WithdrawalModel.fromJson(e as Map<String, dynamic>))
+            .toList();
 
+        // Emit cached data instantly
+        emit(EarningsLoadedState(
+          selectedPeriod: event.period,
+          summary: summary,
+          transactions: transactions,
+          analytics: analytics,
+          withdrawals: withdrawals,
+          isRefreshing: false,
+        ));
+        print('✅ Earnings: Instant load complete');
+      } catch (e) {
+        print('Error parsing cached earnings data: $e');
+        // If parsing fails, show loading state
+        emit(const EarningsLoading());
+      }
+    } else {
+      // No cache, show loading state
+      emit(const EarningsLoading());
+    }
+
+    // PHASE 2: Fetch fresh data in background
     try {
+      // Update to refreshing state if we had cached data
+      if (cachedData != null && state is EarningsLoadedState) {
+        final currentState = state as EarningsLoadedState;
+        emit(currentState.copyWith(isRefreshing: true));
+      }
+
       final summary = await repository.getEarningsSummary(event.period);
-      
-      // Also load transactions and analytics for the period
       final transactions = await repository.getTransactions(period: event.period);
       final analytics = await repository.getEarningsAnalytics(event.period);
       final withdrawals = await repository.getWithdrawals();
 
+      // Cache the fresh data
+      await _cacheEarningsData(summary, transactions, analytics, withdrawals, event.period);
+
+      // Emit fresh data
       emit(EarningsLoadedState(
         selectedPeriod: event.period,
         summary: summary,
         transactions: transactions,
         analytics: analytics,
         withdrawals: withdrawals,
+        isRefreshing: false,
       ));
+      print('✅ Earnings: Background refresh complete');
     } catch (e) {
-      emit(EarningsErrorState(e.toString().replaceAll('Exception: ', '')));
+      // Only emit error if we don't have cached data showing
+      if (state is! EarningsLoadedState) {
+        emit(EarningsErrorState(e.toString().replaceAll('Exception: ', '')));
+      } else {
+        // We have cached data showing, just stop refreshing
+        final currentState = state as EarningsLoadedState;
+        emit(currentState.copyWith(isRefreshing: false));
+        print('⚠️ Earnings: Background refresh failed, showing cached data');
+      }
+    }
+  }
+
+  Future<void> _cacheEarningsData(
+    EarningsSummaryModel summary,
+    List<TransactionModel> transactions,
+    EarningsAnalyticsModel analytics,
+    List<WithdrawalModel> withdrawals,
+    EarningsPeriod period,
+  ) async {
+    try {
+      final data = {
+        'summary': summary.toJson(),
+        'transactions': transactions.map((e) => e.toJson()).toList(),
+        'analytics': analytics.toJson(),
+        'withdrawals': withdrawals.map((e) => e.toJson()).toList(),
+      };
+      
+      await repository.cacheAllEarningsData(data, period);
+    } catch (e) {
+      print('Error caching earnings data in bloc: $e');
     }
   }
 

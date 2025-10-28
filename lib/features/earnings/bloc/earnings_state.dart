@@ -36,6 +36,7 @@ class EarningsLoadedState extends EarningsState {
   final EarningsAnalyticsModel analytics;
   final List<WithdrawalModel> withdrawals;
   final String? successMessage;
+  final bool isRefreshing;
 
   EarningsLoadedState({
     required this.selectedPeriod,
@@ -44,6 +45,7 @@ class EarningsLoadedState extends EarningsState {
     required this.analytics,
     required this.withdrawals,
     this.successMessage,
+    this.isRefreshing = false,
   });
 
   @override
@@ -54,6 +56,7 @@ class EarningsLoadedState extends EarningsState {
         analytics,
         withdrawals,
         successMessage,
+        isRefreshing,
       ];
 
   /// Copy with method for easy state updates
@@ -64,6 +67,7 @@ class EarningsLoadedState extends EarningsState {
     EarningsAnalyticsModel? analytics,
     List<WithdrawalModel>? withdrawals,
     String? successMessage,
+    bool? isRefreshing,
   }) {
     return EarningsLoadedState(
       selectedPeriod: selectedPeriod ?? this.selectedPeriod,
@@ -72,6 +76,7 @@ class EarningsLoadedState extends EarningsState {
       analytics: analytics ?? this.analytics,
       withdrawals: withdrawals ?? this.withdrawals,
       successMessage: successMessage,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 

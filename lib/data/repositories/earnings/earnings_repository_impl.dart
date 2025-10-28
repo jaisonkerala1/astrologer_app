@@ -14,10 +14,64 @@ class EarningsRepositoryImpl extends BaseRepository implements EarningsRepositor
   final ApiService apiService;
   final StorageService storageService;
 
+  // In-memory cache for instant loading
+  Map<String, dynamic>? _cachedData;
+  EarningsPeriod? _cachedPeriod;
+
   EarningsRepositoryImpl({
     required this.apiService,
     required this.storageService,
   });
+
+  // ============================================================================
+  // INSTANT DATA (Synchronous Cache Access)
+  // ============================================================================
+
+  @override
+  Map<String, dynamic>? getInstantData(EarningsPeriod period) {
+    try {
+      // 1. Check in-memory cache first
+      if (_cachedData != null && _cachedPeriod == period) {
+        print('📊 Earnings: Instant data from memory cache');
+        return _cachedData;
+      }
+
+      // 2. Try to read from SharedPreferences synchronously
+      final key = 'earnings_data_${period.name}';
+      final jsonString = storageService.getStringSync(key);
+      
+      if (jsonString != null) {
+        print('📊 Earnings: Instant data from persistent cache');
+        final data = jsonDecode(jsonString) as Map<String, dynamic>;
+        _cachedData = data;
+        _cachedPeriod = period;
+        return data;
+      }
+
+      // 3. Return null if no cache available
+      print('📊 Earnings: No instant data available');
+      return null;
+    } catch (e) {
+      print('Error getting instant earnings data: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> cacheAllEarningsData(Map<String, dynamic> data, EarningsPeriod period) async {
+    try {
+      // Update in-memory cache
+      _cachedData = data;
+      _cachedPeriod = period;
+
+      // Save to persistent storage
+      final key = 'earnings_data_${period.name}';
+      await storageService.setString(key, jsonEncode(data));
+      print('💾 Earnings data cached for period: ${period.name}');
+    } catch (e) {
+      print('Error caching earnings data: $e');
+    }
+  }
 
   // ============================================================================
   // SUMMARY

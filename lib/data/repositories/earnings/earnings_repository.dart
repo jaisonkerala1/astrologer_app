@@ -14,6 +14,9 @@ enum EarningsPeriod {
 
 /// Abstract interface for Earnings operations
 abstract class EarningsRepository {
+  // Instant data access (synchronous cache)
+  Map<String, dynamic>? getInstantData(EarningsPeriod period);
+  
   // Summary
   Future<EarningsSummaryModel> getEarningsSummary(EarningsPeriod period);
   
@@ -45,6 +48,7 @@ abstract class EarningsRepository {
   Future<WithdrawalModel> cancelWithdrawal(String withdrawalId);
   
   // Cache management
+  Future<void> cacheAllEarningsData(Map<String, dynamic> data, EarningsPeriod period);
   Future<void> cacheEarningsSummary(EarningsSummaryModel summary, EarningsPeriod period);
   Future<EarningsSummaryModel?> getCachedEarningsSummary(EarningsPeriod period);
   Future<void> clearCache();
