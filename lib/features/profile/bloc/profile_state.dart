@@ -19,20 +19,27 @@ class ProfileLoading extends ProfileState {
 class ProfileLoadedState extends ProfileState {
   final AstrologerModel astrologer;
   final String? successMessage; // Optional success message after updates
+  final bool isRefreshing; // Instagram/WhatsApp-style background refresh
   
-  const ProfileLoadedState(this.astrologer, {this.successMessage});
+  const ProfileLoadedState(
+    this.astrologer, {
+    this.successMessage,
+    this.isRefreshing = false,
+  });
   
   @override
-  List<Object?> get props => [astrologer, successMessage];
+  List<Object?> get props => [astrologer, successMessage, isRefreshing];
   
   // Helper to create a copy with updated fields
   ProfileLoadedState copyWith({
     AstrologerModel? astrologer,
     String? successMessage,
+    bool? isRefreshing,
   }) {
     return ProfileLoadedState(
       astrologer ?? this.astrologer,
       successMessage: successMessage,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 }

@@ -41,6 +41,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   File? _selectedImage;
   List<String> _selectedSpecializations = [];
   List<String> _selectedLanguages = [];
+  
+  // Track if WE initiated the update (not a background refresh)
+  bool _isUpdating = false;
 
   final List<String> _availableSpecializations = [
     'Vedic Astrology',
@@ -115,7 +118,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
-        if (state is ProfileLoadedState) {
+        // Only react if WE initiated an update
+        if (state is ProfileLoadedState && _isUpdating) {
+          print('✅ [EditProfileScreen] Update successful! Popping screen...');
+          _isUpdating = false; // Reset flag
+          
           // Profile updated successfully
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -126,7 +133,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           );
           widget.onProfileUpdated();
           Navigator.pop(context);
-        } else if (state is ProfileErrorState) {
+        } else if (state is ProfileErrorState && _isUpdating) {
+          print('❌ [EditProfileScreen] Update failed: ${state.message}');
+          _isUpdating = false; // Reset flag
+          
           // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -135,6 +145,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               duration: const Duration(seconds: 3),
             ),
           );
+        } else if (state is ProfileLoadedState && !_isUpdating) {
+          print('ℹ️ [EditProfileScreen] Background refresh detected, ignoring...');
         }
       },
       builder: (context, state) {
@@ -546,6 +558,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
+    print('🖼️ [EditProfile] Starting image picker...');
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -555,13 +568,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       
       if (image != null) {
-        // Update local state for UI preview
-        _selectedImage = File(image.path);
-        // Force rebuild to show the new image
-        // ignore: invalid_use_of_protected_member
-        (context as Element).markNeedsBuild();
+        print('✅ [EditProfile] Image selected: ${image.path}');
+        // Update local state for UI preview using proper setState
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+        print('✅ [EditProfile] Image state updated, UI will rebuild');
+      } else {
+        print('ℹ️ [EditProfile] Image selection cancelled');
       }
     } catch (e) {
+      print('❌ [EditProfile] Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -601,15 +618,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     print('📝 [EditProfileScreen] Saving profile changes...');
+    print('   - Name: ${_nameController.text.trim()}');
+    print('   - Email: ${_emailController.text.trim()}');
+    print('   - Specializations: $_selectedSpecializations');
+    print('   - Languages: $_selectedLanguages');
 
     // Upload image first if selected
     if (_selectedImage != null) {
-      print('📸 [EditProfileScreen] Uploading profile image...');
+      print('📸 [EditProfileScreen] Uploading profile image: ${_selectedImage!.path}');
       context.read<ProfileBloc>().add(
         UploadProfileImageEvent(_selectedImage!.path),
       );
       // Wait a moment for the image upload to complete
+      print('⏳ [EditProfileScreen] Waiting for image upload...');
       await Future.delayed(const Duration(milliseconds: 500));
+      print('✅ [EditProfileScreen] Image upload dispatched');
     }
 
     // Prepare update data
@@ -625,7 +648,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'certificates': _certificatesController.text.trim(),
     };
 
-    print('📝 [EditProfileScreen] Dispatching UpdateProfileEvent with data: ${updateData.keys}');
+    print('📝 [EditProfileScreen] Dispatching UpdateProfileEvent');
+    print('   - Data keys: ${updateData.keys}');
+
+    // Set flag to track that WE initiated this update
+    setState(() {
+      _isUpdating = true;
+    });
 
     // Dispatch update event to ProfileBloc
     context.read<ProfileBloc>().add(

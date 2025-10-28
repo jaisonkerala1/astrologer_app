@@ -260,17 +260,20 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
         return _buildEmptyState(l10n, themeService);
       }
 
-      return RefreshIndicator(
-        onRefresh: () async {
-          context.read<HealBloc>().add(const LoadServiceRequestsEvent());
-          await Future.delayed(const Duration(seconds: 1));
-        },
-        child: ListView.builder(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          itemCount: filteredRequests.length,
-          itemBuilder: (context, index) {
-            final request = filteredRequests[index];
-            return ServiceRequestCardWidget(
+      return Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: () async {
+              context.read<HealBloc>().add(const RefreshHealEvent());
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            color: themeService.primaryColor,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              itemCount: filteredRequests.length,
+              itemBuilder: (context, index) {
+                final request = filteredRequests[index];
+                return ServiceRequestCardWidget(
               request: request,
               onAccept: () => _updateRequestStatus(request, RequestStatus.confirmed),
               onReject: () => _updateRequestStatus(request, RequestStatus.cancelled),
@@ -279,6 +282,25 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
             );
           },
         ),
+      ),
+          
+          // Subtle refresh indicator at top (Instagram/WhatsApp-style)
+          if (state.isRefreshing)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 3,
+                child: LinearProgressIndicator(
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    themeService.primaryColor.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            ),
+        ],
       );
     }
 

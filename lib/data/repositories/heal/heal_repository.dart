@@ -3,6 +3,9 @@ import '../../../features/heal/models/service_request_model.dart';
 
 /// Abstract interface for Heal/Service Centre operations
 abstract class HealRepository {
+  // Instant Data (WhatsApp/Instagram-style instant load)
+  Map<String, dynamic> getInstantData();
+  
   // Services Management
   Future<List<ServiceModel>> getServices({String? category});
   Future<ServiceModel> getServiceById(String id);

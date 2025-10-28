@@ -25,28 +25,32 @@ class HealLoadedState extends HealState {
   final List<ServiceRequest> serviceRequests;
   final Map<String, dynamic>? statistics;
   final String? successMessage;
+  final bool isRefreshing; // Instagram/WhatsApp-style background refresh
 
   HealLoadedState({
     required this.services,
     required this.serviceRequests,
     this.statistics,
     this.successMessage,
+    this.isRefreshing = false,
   });
 
   @override
-  List<Object?> get props => [services, serviceRequests, statistics, successMessage];
+  List<Object?> get props => [services, serviceRequests, statistics, successMessage, isRefreshing];
 
   HealLoadedState copyWith({
     List<ServiceModel>? services,
     List<ServiceRequest>? serviceRequests,
     Map<String, dynamic>? statistics,
     String? successMessage,
+    bool? isRefreshing,
   }) {
     return HealLoadedState(
       services: services ?? this.services,
       serviceRequests: serviceRequests ?? this.serviceRequests,
       statistics: statistics ?? this.statistics,
       successMessage: successMessage,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 

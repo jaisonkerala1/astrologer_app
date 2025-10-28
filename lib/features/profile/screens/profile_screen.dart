@@ -230,17 +230,19 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   ],
                 ),
                 floatingActionButton: FloatingChatButton(userProfile: astrologer),
-                body: RefreshIndicator(
-                  onRefresh: () async {
-                    // Force refresh profile from backend
-                    context.read<ProfileBloc>().add(LoadProfileEvent(forceRefresh: true));
-                    
-                    // Wait for the state to update
-                    await Future.delayed(const Duration(milliseconds: 500));
-                  },
-                  color: themeService.primaryColor,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
+                body: Stack(
+                  children: [
+                    RefreshIndicator(
+                      onRefresh: () async {
+                        // Force refresh profile from backend
+                        context.read<ProfileBloc>().add(LoadProfileEvent(forceRefresh: true));
+                        
+                        // Wait for the state to update
+                        await Future.delayed(const Duration(milliseconds: 500));
+                      },
+                      color: themeService.primaryColor,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -367,9 +369,28 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                       ],
                     ),
                   ),
-                ],
+                      ],
                     ),
                   ),
+                    ),
+                    
+                    // Subtle refresh indicator at top (Instagram/WhatsApp-style)
+                    if (profileState is ProfileLoadedState && profileState.isRefreshing)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 3,
+                          child: LinearProgressIndicator(
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              themeService.primaryColor.withOpacity(0.8),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               );
             },

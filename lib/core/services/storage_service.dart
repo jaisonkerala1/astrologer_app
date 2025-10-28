@@ -45,6 +45,12 @@ class StorageService {
     return null;
   }
 
+  /// Get string synchronously (for instant data loading)
+  /// Returns null if storage is not initialized
+  String? getStringSync(String key) {
+    return _prefs?.getString(key);
+  }
+
   Future<bool> setInt(String key, int value) async {
     if (_prefs != null) {
       return await _prefs!.setInt(key, value);

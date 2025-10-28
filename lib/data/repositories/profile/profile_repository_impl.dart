@@ -13,10 +13,46 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
   final ApiService apiService;
   final StorageService storageService;
 
+  // In-memory cache for instant access
+  AstrologerModel? _cachedProfile;
+
   ProfileRepositoryImpl({
     required this.apiService,
     required this.storageService,
   });
+
+  // ============================================================================
+  // INSTANT DATA (Instagram/WhatsApp-style instant load)
+  // ============================================================================
+
+  @override
+  AstrologerModel? getInstantData() {
+    // 1. Check in-memory cache first (fastest)
+    if (_cachedProfile != null) {
+      print('⚡ [ProfileRepo] Returning profile from memory cache');
+      return _cachedProfile;
+    }
+
+    // 2. Try to load from persistent storage (still fast, survives restart)
+    try {
+      final cachedData = storageService.getStringSync('profile_cache');
+      if (cachedData != null) {
+        final json = jsonDecode(cachedData);
+        _cachedProfile = AstrologerModel.fromJson(json);
+        print('⚡ [ProfileRepo] Loaded profile from persistent cache (survived restart!)');
+        return _cachedProfile;
+      }
+    } catch (e) {
+      print('⚠️ [ProfileRepo] Error loading from persistent cache: $e');
+    }
+
+    print('ℹ️ [ProfileRepo] No cached profile available');
+    return null;
+  }
+
+  // ============================================================================
+  // LOAD PROFILE (with persistent caching)
+  // ============================================================================
 
   @override
   Future<AstrologerModel> loadProfile() async {
@@ -26,8 +62,10 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final astrologer = AstrologerModel.fromJson(response.data['data']);
         
-        // Cache for offline access
+        // Cache in memory AND persist to disk
+        _cachedProfile = astrologer;
         await cacheProfile(astrologer);
+        print('💾 [ProfileRepo] Profile saved to memory + persistent cache');
         
         return astrologer;
       } else {

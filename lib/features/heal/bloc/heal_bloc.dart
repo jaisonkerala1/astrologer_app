@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/heal/heal_repository.dart';
+import '../models/service_model.dart';
+import '../models/service_request_model.dart';
 import 'heal_event.dart';
 import 'heal_state.dart';
 
@@ -21,13 +23,48 @@ class HealBloc extends Bloc<HealEvent, HealState> {
   }
 
   Future<void> _onLoadServices(LoadServicesEvent event, Emitter<HealState> emit) async {
-    emit(const HealLoading());
+    // 🚀 PHASE 1: INSTANT LOAD - Show data immediately (no spinner!)
+    // This makes the app feel instant like WhatsApp/Instagram
+    try {
+      final instantData = repository.getInstantData(); // Synchronous, no await!
+      final instantServices = (instantData['services'] as List).cast<ServiceModel>();
+      final instantRequests = (instantData['requests'] as List).cast<ServiceRequest>();
+      
+      if (instantServices.isNotEmpty) {
+        // Emit data instantly with refreshing flag
+        emit(HealLoadedState(
+          services: instantServices,
+          serviceRequests: instantRequests,
+          isRefreshing: true, // Show subtle refresh indicator
+        ));
+      } else {
+        // Only show full loading spinner if absolutely no data exists
+        emit(const HealLoading());
+      }
+    } catch (e) {
+      // If instant data fails (shouldn't happen), show spinner
+      emit(const HealLoading());
+    }
+
+    // 🔄 PHASE 2: BACKGROUND REFRESH - Silently fetch fresh data
     try {
       final services = await repository.getServices(category: event.category);
       final requests = await repository.getServiceRequests();
-      emit(HealLoadedState(services: services, serviceRequests: requests));
+      
+      emit(HealLoadedState(
+        services: services,
+        serviceRequests: requests,
+        isRefreshing: false, // Hide refresh indicator
+      ));
     } catch (e) {
-      emit(HealErrorState(e.toString().replaceAll('Exception: ', '')));
+      // If refresh fails but we already showed data, just hide refresh indicator
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        emit(currentState.copyWith(isRefreshing: false));
+      } else {
+        // Only show error if no data was shown
+        emit(HealErrorState(e.toString().replaceAll('Exception: ', '')));
+      }
     }
   }
 

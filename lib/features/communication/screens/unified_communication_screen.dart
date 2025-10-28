@@ -400,28 +400,49 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
         return _buildEmptyState(themeService, state);
       }
 
-      return RefreshIndicator(
-        onRefresh: () async {
-          context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        color: themeService.primaryColor,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: ListView.builder(
-            key: ValueKey('${state.activeFilter}_${_searchController.text}'),
-            padding: const EdgeInsets.all(16),
-            itemCount: communications.length,
-            itemBuilder: (context, index) {
-              final item = communications[index];
-              return CommunicationItemCard(
-                item: item,
-                themeService: themeService,
-                onTap: () => _onItemTap(item),
-              );
+      return Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: () async {
+              context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
+              await Future.delayed(const Duration(milliseconds: 500));
             },
+            color: themeService.primaryColor,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: ListView.builder(
+                key: ValueKey('${state.activeFilter}_${_searchController.text}'),
+                padding: const EdgeInsets.all(16),
+                itemCount: communications.length,
+                itemBuilder: (context, index) {
+                  final item = communications[index];
+                  return CommunicationItemCard(
+                    item: item,
+                    themeService: themeService,
+                    onTap: () => _onItemTap(item),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
+          
+          // Subtle refresh indicator at top (Instagram/WhatsApp-style)
+          if (state.isRefreshing)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 3,
+                child: LinearProgressIndicator(
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    themeService.primaryColor.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            ),
+        ],
       );
     }
 

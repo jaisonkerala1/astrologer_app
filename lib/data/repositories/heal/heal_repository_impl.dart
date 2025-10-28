@@ -19,6 +19,63 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
     required this.storageService,
   });
 
+  // ============================================================================
+  // INSTANT DATA (Instagram/WhatsApp-style instant load)
+  // ============================================================================
+
+  @override
+  Map<String, dynamic> getInstantData() {
+    // 1. Check in-memory cache first (fastest)
+    if (_localServices.isNotEmpty || _localRequests.isNotEmpty) {
+      print('⚡ [HealRepo] Returning ${_localServices.length} services + ${_localRequests.length} requests from memory');
+      return {
+        'services': [..._localServices],
+        'requests': [..._localRequests],
+      };
+    }
+    
+    // 2. Try to load from persistent storage (still fast, survives restart!)
+    try {
+      final cachedServicesData = storageService.getStringSync('heal_services_cache');
+      final cachedRequestsData = storageService.getStringSync('heal_requests_cache');
+      
+      if (cachedServicesData != null || cachedRequestsData != null) {
+        // Load services from disk
+        if (cachedServicesData != null) {
+          final List<dynamic> jsonList = jsonDecode(cachedServicesData);
+          _localServices.addAll(jsonList.map((json) => ServiceModel.fromJson(json)));
+          print('⚡ [HealRepo] Loaded ${_localServices.length} services from persistent cache');
+        }
+        
+        // Load requests from disk
+        if (cachedRequestsData != null) {
+          final List<dynamic> jsonList = jsonDecode(cachedRequestsData);
+          _localRequests.addAll(jsonList.map((json) => ServiceRequest.fromJson(json)));
+          print('⚡ [HealRepo] Loaded ${_localRequests.length} requests from persistent cache');
+        }
+        
+        print('⚡ [HealRepo] Total from persistent cache (survived restart!)');
+        return {
+          'services': [..._localServices],
+          'requests': [..._localRequests],
+        };
+      }
+    } catch (e) {
+      print('⚠️ [HealRepo] Error loading from persistent cache: $e');
+    }
+    
+    // 3. If no persistent cache, generate dummy data
+    print('ℹ️ [HealRepo] No cached data, using dummy data');
+    return {
+      'services': _generateDummyServices(),
+      'requests': _generateDummyRequests(),
+    };
+  }
+
+  // ============================================================================
+  // SERVICES MANAGEMENT
+  // ============================================================================
+
   @override
   Future<List<ServiceModel>> getServices({String? category}) async {
     print('🔍 [HealRepo] Loading services, category: ${category ?? "all"}');
@@ -32,7 +89,10 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       if (response.data['success'] == true) {
         final List<dynamic> data = response.data['data'] ?? [];
         final services = data.map((json) => ServiceModel.fromJson(json)).toList();
-        print('✅ [HealRepo] Got ${services.length} services from API');
+        
+        // Save to persistent storage
+        await _cacheServices(services);
+        print('✅ [HealRepo] Got ${services.length} services from API + saved to persistent cache');
         return services;
       }
       throw Exception('Failed to load services');
@@ -199,7 +259,10 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       if (response.data['success'] == true) {
         final List<dynamic> data = response.data['data'] ?? [];
         final requests = data.map((json) => ServiceRequest.fromJson(json)).toList();
-        print('✅ [HealRepo] Got ${requests.length} requests from API');
+        
+        // Save to persistent storage
+        await _cacheRequests(requests);
+        print('✅ [HealRepo] Got ${requests.length} requests from API + saved to persistent cache');
         return requests;
       }
       throw Exception('Failed to load service requests');
@@ -482,6 +545,34 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       print('Error getting astrologer ID: $e');
     }
     throw Exception('Astrologer ID not found');
+  }
+
+  // ============================================================================
+  // PERSISTENT CACHE HELPERS (survives app restart)
+  // ============================================================================
+
+  Future<void> _cacheServices(List<ServiceModel> services) async {
+    try {
+      final jsonString = jsonEncode(
+        services.map((s) => s.toJson()).toList(),
+      );
+      await storageService.setString('heal_services_cache', jsonString);
+      print('💾 [HealRepo] Saved ${services.length} services to persistent cache');
+    } catch (e) {
+      print('⚠️ [HealRepo] Error caching services: $e');
+    }
+  }
+
+  Future<void> _cacheRequests(List<ServiceRequest> requests) async {
+    try {
+      final jsonString = jsonEncode(
+        requests.map((r) => r.toJson()).toList(),
+      );
+      await storageService.setString('heal_requests_cache', jsonString);
+      print('💾 [HealRepo] Saved ${requests.length} requests to persistent cache');
+    } catch (e) {
+      print('⚠️ [HealRepo] Error caching requests: $e');
+    }
   }
 }
 

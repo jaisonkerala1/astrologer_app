@@ -24,15 +24,38 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
   }
 
   // ============================================================================
-  // LOAD COMMUNICATIONS
+  // LOAD COMMUNICATIONS (Instagram/WhatsApp-style instant load)
   // ============================================================================
 
   Future<void> _onLoadCommunications(
     LoadCommunicationsEvent event,
     Emitter<CommunicationState> emit,
   ) async {
-    emit(const CommunicationLoading());
+    // 🚀 PHASE 1: INSTANT LOAD - Show data immediately (no spinner!)
+    // This makes the app feel instant like WhatsApp/Instagram
+    try {
+      final instantData = repository.getInstantData(); // Synchronous, no await!
+      
+      if (instantData.isNotEmpty) {
+        // Emit data instantly with refreshing flag
+        emit(CommunicationLoadedState(
+          allCommunications: instantData,
+          activeFilter: CommunicationFilter.all,
+          unreadMessagesCount: 0, // Will update in phase 2
+          missedCallsCount: 0,
+          missedVideoCallsCount: 0,
+          isRefreshing: true, // Show subtle refresh indicator
+        ));
+      } else {
+        // Only show full loading spinner if absolutely no data exists
+        emit(const CommunicationLoading());
+      }
+    } catch (e) {
+      // If instant data fails (shouldn't happen), show spinner
+      emit(const CommunicationLoading());
+    }
 
+    // 🔄 PHASE 2: BACKGROUND REFRESH - Silently fetch fresh data
     try {
       final communications = await repository.getAllCommunications(page: event.page);
       final unreadCounts = await repository.getUnreadCounts();
@@ -43,9 +66,17 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
         unreadMessagesCount: unreadCounts['messages'] ?? 0,
         missedCallsCount: unreadCounts['missedCalls'] ?? 0,
         missedVideoCallsCount: unreadCounts['missedVideoCalls'] ?? 0,
+        isRefreshing: false, // Hide refresh indicator
       ));
     } catch (e) {
-      emit(CommunicationErrorState(e.toString().replaceAll('Exception: ', '')));
+      // If refresh fails but we already showed data, just hide refresh indicator
+      if (state is CommunicationLoadedState) {
+        final currentState = state as CommunicationLoadedState;
+        emit(currentState.copyWith(isRefreshing: false));
+      } else {
+        // Only show error if no data was shown
+        emit(CommunicationErrorState(e.toString().replaceAll('Exception: ', '')));
+      }
     }
   }
 

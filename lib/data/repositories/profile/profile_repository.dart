@@ -8,6 +8,10 @@ import '../../../features/auth/models/astrologer_model.dart';
 /// - Test ProfileBloc without real API calls
 /// - Keep business logic separate from data logic
 abstract class ProfileRepository {
+  /// Get instant data from persistent cache (WhatsApp/Instagram-style)
+  /// Returns cached profile immediately (synchronously) or null
+  AstrologerModel? getInstantData();
+  
   /// Load astrologer profile from API
   Future<AstrologerModel> loadProfile();
 

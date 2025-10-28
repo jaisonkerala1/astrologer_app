@@ -32,6 +32,7 @@ class CommunicationLoadedState extends CommunicationState {
   final int missedCallsCount;
   final int missedVideoCallsCount;
   final String? successMessage;
+  final bool isRefreshing; // Flag for background refresh (Instagram-style)
 
   CommunicationLoadedState({
     required this.allCommunications,
@@ -40,6 +41,7 @@ class CommunicationLoadedState extends CommunicationState {
     required this.missedCallsCount,
     required this.missedVideoCallsCount,
     this.successMessage,
+    this.isRefreshing = false,
   });
 
   @override
@@ -50,6 +52,7 @@ class CommunicationLoadedState extends CommunicationState {
         missedCallsCount,
         missedVideoCallsCount,
         successMessage,
+        isRefreshing,
       ];
 
   /// Copy with method
@@ -60,6 +63,7 @@ class CommunicationLoadedState extends CommunicationState {
     int? missedCallsCount,
     int? missedVideoCallsCount,
     String? successMessage,
+    bool? isRefreshing,
   }) {
     return CommunicationLoadedState(
       allCommunications: allCommunications ?? this.allCommunications,
@@ -68,6 +72,7 @@ class CommunicationLoadedState extends CommunicationState {
       missedCallsCount: missedCallsCount ?? this.missedCallsCount,
       missedVideoCallsCount: missedVideoCallsCount ?? this.missedVideoCallsCount,
       successMessage: successMessage,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 

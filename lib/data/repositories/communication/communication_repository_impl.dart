@@ -28,6 +28,52 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
   });
 
   // ============================================================================
+  // INSTANT DATA (Instagram/WhatsApp-style instant load)
+  // ============================================================================
+
+  @override
+  List<CommunicationItem> getInstantData() {
+    // 1. Check in-memory cache first (fastest)
+    final allData = [
+      ..._localMessages,
+      ..._localCalls,
+      ..._localVideoCalls,
+    ];
+    
+    if (allData.isNotEmpty) {
+      print('⚡ [CommRepo] Returning ${allData.length} items from memory cache');
+      return allData;
+    }
+    
+    // 2. Try to load from persistent storage (still fast, survives restart!)
+    try {
+      final cachedData = storageService.getStringSync('communications_cache');
+      if (cachedData != null) {
+        final List<dynamic> jsonList = jsonDecode(cachedData);
+        final items = jsonList.map((json) => CommunicationItem.fromJson(json)).toList();
+        
+        // Fill in-memory cache from disk
+        _localMessages.addAll(items.where((i) => i.type == CommunicationType.message));
+        _localCalls.addAll(items.where((i) => i.type == CommunicationType.voiceCall));
+        _localVideoCalls.addAll(items.where((i) => i.type == CommunicationType.videoCall));
+        
+        print('⚡ [CommRepo] Loaded ${items.length} items from persistent cache (survived restart!)');
+        return items;
+      }
+    } catch (e) {
+      print('⚠️ [CommRepo] Error loading from persistent cache: $e');
+    }
+    
+    // 3. If no persistent cache, generate dummy data
+    print('ℹ️ [CommRepo] No cached data, using dummy data');
+    return [
+      ..._generateDummyMessages('dummy_astrologer_id'),
+      ..._generateDummyCalls('dummy_astrologer_id'),
+      ..._generateDummyVideoCalls('dummy_astrologer_id'),
+    ];
+  }
+
+  // ============================================================================
   // COMMUNICATIONS LIST
   // ============================================================================
 
@@ -58,8 +104,9 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
             .map((json) => CommunicationItem.fromJson(json))
             .toList();
         
-        // Cache the result
+        // Cache to persistent storage (disk)
         await cacheCommunications(items);
+        print('💾 [CommRepo] Saved ${items.length} items to persistent cache');
         
         // Merge with local items
         return [..._localMessages, ..._localCalls, ..._localVideoCalls, ...items];

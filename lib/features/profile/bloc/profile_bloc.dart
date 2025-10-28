@@ -23,21 +23,47 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       return; // Keep existing data
     }
     
-    // Only show loading state if we don't have data yet (initial load)
-    if (state is! ProfileLoadedState) {
+    // 🚀 PHASE 1: INSTANT LOAD - Show cached data immediately (WhatsApp/Instagram-style)
+    try {
+      final instantProfile = repository.getInstantData(); // Synchronous, no await!
+      
+      if (instantProfile != null) {
+        // Emit cached data instantly with refreshing flag
+        print('⚡ [ProfileBloc] Showing profile from persistent cache (survived restart!)');
+        emit(ProfileLoadedState(
+          instantProfile,
+          isRefreshing: true, // Show subtle refresh indicator
+        ));
+      } else {
+        // Only show full loading spinner if no cache exists
+        print('⏳ [ProfileBloc] No cache found, showing loading spinner');
+        emit(const ProfileLoading());
+      }
+    } catch (e) {
+      // If instant data fails, show spinner
+      print('⚠️ [ProfileBloc] Error loading instant data: $e');
       emit(const ProfileLoading());
-      print('⏳ [ProfileBloc] Initial profile load...');
-    } else {
-      print('🔄 [ProfileBloc] Refreshing profile in background...');
     }
     
+    // 🔄 PHASE 2: BACKGROUND REFRESH - Fetch fresh data from API
     try {
       final astrologer = await repository.loadProfile();
-      print('✅ [ProfileBloc] Profile loaded: ${astrologer.name}');
-      emit(ProfileLoadedState(astrologer));
+      print('✅ [ProfileBloc] Profile loaded from API: ${astrologer.name}');
+      emit(ProfileLoadedState(
+        astrologer,
+        isRefreshing: false, // Hide refresh indicator
+      ));
     } catch (e) {
-      print('❌ [ProfileBloc] Error loading profile: $e');
-      emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+      // If refresh fails but we already showed cached data, just hide refresh indicator
+      if (state is ProfileLoadedState) {
+        final currentState = state as ProfileLoadedState;
+        print('⚠️ [ProfileBloc] API refresh failed, keeping cached data');
+        emit(currentState.copyWith(isRefreshing: false));
+      } else {
+        // Only show error if no data was shown
+        print('❌ [ProfileBloc] Error loading profile: $e');
+        emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+      }
     }
   }
 

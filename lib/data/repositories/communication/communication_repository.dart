@@ -7,6 +7,10 @@ abstract class CommunicationRepository {
     int page = 1,
     int limit = 50,
   });
+
+  /// Get instant cached/dummy data synchronously (for instant UI load)
+  /// This should NEVER throw and should ALWAYS return data (even if dummy)
+  List<CommunicationItem> getInstantData();
   
   Future<List<CommunicationItem>> getFilteredCommunications({
     required CommunicationFilter filter,
