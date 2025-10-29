@@ -487,7 +487,7 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
             child: Container(
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.green,
+                color: const Color(0xFF10B981), // Match service card accept button green
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Material(

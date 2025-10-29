@@ -346,7 +346,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
             child: Container(
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.green, // Green solid
+                color: const Color(0xFF10B981), // Match Accept button green
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Material(
@@ -417,7 +417,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
             child: Container(
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.green, // Green solid
+                color: const Color(0xFF10B981), // Match Accept button green
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Material(

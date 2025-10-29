@@ -137,6 +137,7 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
   @override
   Future<String> uploadProfileImage(String imagePath) async {
     try {
+      print('📸 [ProfileRepositoryImpl] Uploading image: $imagePath');
       final response = await apiService.postMultipart(
         ApiConstants.uploadProfileImage,
         files: {
@@ -144,13 +145,42 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
         },
       );
 
+      print('📸 [ProfileRepositoryImpl] Upload response status: ${response.statusCode}');
+      print('📸 [ProfileRepositoryImpl] Upload response success: ${response.data['success']}');
+
       if (response.statusCode == 200 && response.data['success'] == true) {
-        final imageUrl = response.data['data']['imageUrl'] as String;
-        return imageUrl;
+        // The API returns the full user object with 'profilePicture', not 'imageUrl'
+        final profilePicture = response.data['data']['profilePicture'] as String?;
+        
+        if (profilePicture == null) {
+          print('⚠️ [ProfileRepositoryImpl] No profilePicture in response, trying imageUrl...');
+          final imageUrl = response.data['data']['imageUrl'] as String?;
+          if (imageUrl != null) {
+            print('✅ [ProfileRepositoryImpl] Image uploaded (imageUrl): $imageUrl');
+            return imageUrl;
+          }
+          throw Exception('Image uploaded but no URL returned from server');
+        }
+        
+        print('✅ [ProfileRepositoryImpl] Image uploaded (profilePicture): $profilePicture');
+        
+        // Also cache the updated profile since API returns full user object
+        try {
+          final updatedAstrologer = AstrologerModel.fromJson(response.data['data']);
+          await cacheProfile(updatedAstrologer);
+          await storageService.setUserData(jsonEncode(updatedAstrologer.toJson()));
+          print('✅ [ProfileRepositoryImpl] Cached updated profile with new image');
+        } catch (e) {
+          print('⚠️ [ProfileRepositoryImpl] Could not cache profile: $e');
+          // Don't fail the upload, just log the warning
+        }
+        
+        return profilePicture;
       } else {
         throw Exception('Failed to upload image: ${response.data['message'] ?? 'Unknown error'}');
       }
     } catch (e) {
+      print('❌ [ProfileRepositoryImpl] Upload error: $e');
       throw Exception(handleError(e));
     }
   }

@@ -118,21 +118,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
+        print('🔔 [EditProfileScreen] BlocListener triggered! State: ${state.runtimeType}, _isUpdating: $_isUpdating');
+        
+        // Log detailed state information
+        if (state is ProfileLoadedState) {
+          print('   └─ ProfileLoadedState with message: "${state.successMessage}"');
+        } else if (state is ProfileErrorState) {
+          print('   └─ ProfileErrorState: ${state.message}');
+        } else if (state is ProfileUpdating) {
+          print('   └─ ProfileUpdating: ${state.field}');
+        }
+        
         // Only react if WE initiated an update
         if (state is ProfileLoadedState && _isUpdating) {
-          print('✅ [EditProfileScreen] Update successful! Popping screen...');
-          _isUpdating = false; // Reset flag
+          final message = state.successMessage;
+          print('✅ [EditProfileScreen] Update successful! Message: "$message"');
           
-          // Profile updated successfully
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile updated successfully!'),
-              backgroundColor: AppTheme.successColor,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          widget.onProfileUpdated();
-          Navigator.pop(context);
+          // ONLY pop screen and show toast for PROFILE UPDATE, not image upload
+          if (message == 'Profile updated successfully') {
+            print('✅ [EditProfileScreen] Full profile update complete! Popping screen...');
+            _isUpdating = false; // Reset flag
+            
+            // Profile updated successfully
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile updated successfully!'),
+                backgroundColor: AppTheme.successColor,
+                duration: Duration(seconds: 2),
+              ),
+            );
+            widget.onProfileUpdated();
+            Navigator.pop(context);
+          } else if (message == 'Profile image uploaded successfully') {
+            // Just log, don't pop screen - waiting for full profile update
+            print('📸 [EditProfileScreen] Image uploaded, waiting for profile update...');
+          } else {
+            // Unknown success message, reset flag but don't pop
+            print('⚠️ [EditProfileScreen] Unknown success message, resetting flag');
+            _isUpdating = false;
+          }
         } else if (state is ProfileErrorState && _isUpdating) {
           print('❌ [EditProfileScreen] Update failed: ${state.message}');
           _isUpdating = false; // Reset flag
@@ -147,6 +171,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           );
         } else if (state is ProfileLoadedState && !_isUpdating) {
           print('ℹ️ [EditProfileScreen] Background refresh detected, ignoring...');
+        } else if (state is ProfileUpdating) {
+          print('⏳ [EditProfileScreen] Update in progress: ${state.field}');
         }
       },
       builder: (context, state) {
@@ -591,12 +617,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    print('\n🚀 [EditProfileScreen] ========== SAVE PROFILE STARTED ==========');
+    print('   Current time: ${DateTime.now()}');
+    
     if (!_formKey.currentState!.validate()) {
+      print('❌ [EditProfileScreen] Form validation failed');
       return;
     }
 
     // Validate specializations
     if (_selectedSpecializations.isEmpty) {
+      print('❌ [EditProfileScreen] No specializations selected');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select at least one specialization'),
@@ -608,6 +639,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     // Validate languages
     if (_selectedLanguages.isEmpty) {
+      print('❌ [EditProfileScreen] No languages selected');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select at least one language'),
@@ -617,22 +649,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    print('📝 [EditProfileScreen] Saving profile changes...');
+    print('✅ [EditProfileScreen] All validations passed');
+    print('📝 [EditProfileScreen] Profile data:');
     print('   - Name: ${_nameController.text.trim()}');
     print('   - Email: ${_emailController.text.trim()}');
     print('   - Specializations: $_selectedSpecializations');
     print('   - Languages: $_selectedLanguages');
+    print('   - Image selected: ${_selectedImage != null}');
+
+    // Set flag BEFORE dispatching any events
+    print('🏁 [EditProfileScreen] Setting _isUpdating = true');
+    setState(() {
+      _isUpdating = true;
+    });
 
     // Upload image first if selected
     if (_selectedImage != null) {
-      print('📸 [EditProfileScreen] Uploading profile image: ${_selectedImage!.path}');
+      print('\n📸 [EditProfileScreen] ========== IMAGE UPLOAD PHASE ==========');
+      print('   Image path: ${_selectedImage!.path}');
+      print('   Dispatching UploadProfileImageEvent...');
+      
       context.read<ProfileBloc>().add(
         UploadProfileImageEvent(_selectedImage!.path),
       );
-      // Wait a moment for the image upload to complete
-      print('⏳ [EditProfileScreen] Waiting for image upload...');
-      await Future.delayed(const Duration(milliseconds: 500));
-      print('✅ [EditProfileScreen] Image upload dispatched');
+      
+      // Wait for image upload to complete (increased timeout)
+      print('⏳ [EditProfileScreen] Waiting 2 seconds for image upload...');
+      await Future.delayed(const Duration(seconds: 2));
+      print('✅ [EditProfileScreen] Image upload wait completed');
     }
 
     // Prepare update data
@@ -648,17 +692,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'certificates': _certificatesController.text.trim(),
     };
 
-    print('📝 [EditProfileScreen] Dispatching UpdateProfileEvent');
-    print('   - Data keys: ${updateData.keys}');
-
-    // Set flag to track that WE initiated this update
-    setState(() {
-      _isUpdating = true;
-    });
+    print('\n📝 [EditProfileScreen] ========== PROFILE UPDATE PHASE ==========');
+    print('   Update data keys: ${updateData.keys}');
+    print('   Dispatching UpdateProfileEvent...');
 
     // Dispatch update event to ProfileBloc
     context.read<ProfileBloc>().add(
       UpdateProfileEvent(profileData: updateData),
     );
+    
+    print('✅ [EditProfileScreen] UpdateProfileEvent dispatched');
+    print('========== SAVE PROFILE METHOD COMPLETED ==========\n');
   }
 }

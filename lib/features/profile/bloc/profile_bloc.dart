@@ -68,11 +68,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }
 
   Future<void> _onUpdateProfile(UpdateProfileEvent event, Emitter<ProfileState> emit) async {
+    print('\n📝 [ProfileBloc] ========== UPDATE PROFILE STARTED ==========');
+    print('   Current time: ${DateTime.now()}');
+    print('   Has profileData: ${event.profileData != null}');
+    print('   Has astrologer: ${event.astrologer != null}');
+    
     // Keep current data visible during update
     if (state is ProfileLoadedState) {
       final currentState = state as ProfileLoadedState;
+      print('   Emitting ProfileUpdating("profile")...');
       emit(ProfileUpdating('profile', currentState.astrologer));
     } else {
+      print('   No current profile loaded, emitting ProfileLoading...');
       emit(const ProfileLoading());
     }
     
@@ -81,47 +88,76 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       
       // Handle both profileData (Map) and astrologer (Model) updates
       if (event.profileData != null) {
-        print('📝 [ProfileBloc] Updating profile with data: ${event.profileData!.keys}');
+        print('📝 [ProfileBloc] Updating profile with data map');
+        print('   Data keys: ${event.profileData!.keys}');
+        print('⏳ [ProfileBloc] Calling repository.updateProfileWithData()...');
         updatedAstrologer = await repository.updateProfileWithData(event.profileData!);
       } else {
         print('📝 [ProfileBloc] Updating profile with model');
+        print('⏳ [ProfileBloc] Calling repository.updateProfile()...');
         updatedAstrologer = await repository.updateProfile(event.astrologer!);
       }
       
-      print('✅ [ProfileBloc] Profile updated successfully');
+      print('✅ [ProfileBloc] Profile updated successfully!');
+      print('   Updated profile name: ${updatedAstrologer.name}');
+      print('   Updated profile email: ${updatedAstrologer.email}');
       
+      print('📤 [ProfileBloc] Emitting ProfileLoadedState with success message');
       emit(ProfileLoadedState(
         updatedAstrologer,
         successMessage: 'Profile updated successfully',
       ));
+      print('✅ [ProfileBloc] ProfileLoadedState emitted for profile update');
+      print('========== UPDATE PROFILE COMPLETED ==========\n');
     } catch (e) {
       print('❌ [ProfileBloc] Error updating profile: $e');
+      print('   Stack trace: ${StackTrace.current}');
+      print('📤 [ProfileBloc] Emitting ProfileErrorState');
       emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+      print('========== UPDATE PROFILE FAILED ==========\n');
     }
   }
 
   Future<void> _onUploadProfileImage(UploadProfileImageEvent event, Emitter<ProfileState> emit) async {
+    print('\n📸 [ProfileBloc] ========== UPLOAD PROFILE IMAGE STARTED ==========');
+    print('   Image path: ${event.imagePath}');
+    print('   Current time: ${DateTime.now()}');
+    
     // Keep current data visible during image upload
     if (state is ProfileLoadedState) {
       final currentState = state as ProfileLoadedState;
+      print('   Emitting ProfileUpdating("image")...');
       emit(ProfileUpdating('image', currentState.astrologer));
     } else {
+      print('   No current profile loaded, emitting ProfileLoading...');
       emit(const ProfileLoading());
     }
     
     try {
+      print('⏳ [ProfileBloc] Calling repository.uploadProfileImage()...');
       final imageUrl = await repository.uploadProfileImage(event.imagePath);
-      print('✅ [ProfileBloc] Profile image uploaded: $imageUrl');
+      print('✅ [ProfileBloc] Image uploaded! URL: $imageUrl');
       
       // Reload profile to get complete astrologer data with new image
+      print('⏳ [ProfileBloc] Reloading profile to get updated data...');
       final updatedAstrologer = await repository.loadProfile();
+      print('✅ [ProfileBloc] Profile reloaded with new image');
+      print('   Profile name: ${updatedAstrologer.name}');
+      print('   Profile picture: ${updatedAstrologer.profilePicture}');
+      
+      print('📤 [ProfileBloc] Emitting ProfileLoadedState with success message');
       emit(ProfileLoadedState(
         updatedAstrologer,
         successMessage: 'Profile image uploaded successfully',
       ));
+      print('✅ [ProfileBloc] ProfileLoadedState emitted for image upload');
+      print('========== UPLOAD PROFILE IMAGE COMPLETED ==========\n');
     } catch (e) {
       print('❌ [ProfileBloc] Error uploading image: $e');
+      print('   Stack trace: ${StackTrace.current}');
+      print('📤 [ProfileBloc] Emitting ProfileErrorState');
       emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+      print('========== UPLOAD PROFILE IMAGE FAILED ==========\n');
     }
   }
 
