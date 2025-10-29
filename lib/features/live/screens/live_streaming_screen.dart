@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -19,17 +21,21 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   late AnimationController _pulseController;
   late AnimationController _fadeController;
   late AnimationController _slideController;
+  late AnimationController _commentController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   
   bool _isEnding = false;
   bool _isControlsVisible = true;
-  bool _isCommentsVisible = false;
-  bool _isEffectsVisible = false;
+  bool _isFloatingCommentsVisible = true; // Floating comments visibility
+  bool _isExpandedCommentsVisible = false; // Expanded panel visibility
   bool _isSettingsVisible = false;
   
   final ScrollController _commentsController = ScrollController();
+  Timer? _commentSimulationTimer;
+  final List<Map<String, String>> _floatingComments = [];
+  final Random _random = Random();
 
   @override
   void initState() {
@@ -38,6 +44,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _initializeAnimations();
     _hideSystemUI();
     _startStream();
+    _startCommentSimulation();
   }
 
   @override
@@ -45,7 +52,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _pulseController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
+    _commentController.dispose();
     _commentsController.dispose();
+    _commentSimulationTimer?.cancel();
     _showSystemUI();
     super.dispose();
   }
@@ -63,6 +72,11 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _commentController = AnimationController(
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     
@@ -134,23 +148,22 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     });
   }
 
-  void _toggleComments() {
+  void _toggleFloatingComments() {
     setState(() {
-      _isCommentsVisible = !_isCommentsVisible;
-      if (_isCommentsVisible) {
-        _isEffectsVisible = false;
-        _isSettingsVisible = false;
-      }
+      _isFloatingCommentsVisible = !_isFloatingCommentsVisible;
     });
   }
 
-  void _toggleEffects() {
+  void _openExpandedComments() {
     setState(() {
-      _isEffectsVisible = !_isEffectsVisible;
-      if (_isEffectsVisible) {
-        _isCommentsVisible = false;
-        _isSettingsVisible = false;
-      }
+      _isExpandedCommentsVisible = true;
+      _isSettingsVisible = false;
+    });
+  }
+
+  void _closeExpandedComments() {
+    setState(() {
+      _isExpandedCommentsVisible = false;
     });
   }
 
@@ -158,8 +171,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     setState(() {
       _isSettingsVisible = !_isSettingsVisible;
       if (_isSettingsVisible) {
-        _isCommentsVisible = false;
-        _isEffectsVisible = false;
+        _isExpandedCommentsVisible = false;
       }
     });
   }
@@ -232,6 +244,51 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     });
   }
 
+  void _startCommentSimulation() {
+    // Add initial comments
+    _addSimulatedComment();
+    
+    // Add new comment every 3-5 seconds
+    _commentSimulationTimer = Timer.periodic(
+      Duration(seconds: 3 + _random.nextInt(3)),
+      (timer) {
+        if (mounted) {
+          _addSimulatedComment();
+        } else {
+          timer.cancel();
+        }
+      },
+    );
+  }
+
+  void _addSimulatedComment() {
+    final dummyComments = [
+      {'user': 'Priya S.', 'message': 'Namaste Guruji! 🙏', 'emoji': '🙏'},
+      {'user': 'Rahul M.', 'message': 'Please read my horoscope next', 'emoji': '⭐'},
+      {'user': 'Anjali K.', 'message': 'Your predictions are always accurate! ✨', 'emoji': '✨'},
+      {'user': 'Vikram R.', 'message': 'Thank you for the guidance 🙏', 'emoji': '🙏'},
+      {'user': 'Neha P.', 'message': 'Can you talk about Rahu Ketu? 🔮', 'emoji': '🔮'},
+      {'user': 'Amit J.', 'message': 'Love your energy Guruji! 💫', 'emoji': '💫'},
+      {'user': 'Kavita L.', 'message': 'This is so helpful! 🌟', 'emoji': '🌟'},
+      {'user': 'Sanjay B.', 'message': 'What about Saturn transit? 🪐', 'emoji': '🪐'},
+      {'user': 'Deepa M.', 'message': 'Amazing session today! 🌺', 'emoji': '🌺'},
+      {'user': 'Kiran P.', 'message': 'Can you explain my birth chart? 📊', 'emoji': '📊'},
+      {'user': 'Meera S.', 'message': 'Your readings are life-changing 💖', 'emoji': '💖'},
+      {'user': 'Suresh K.', 'message': 'Please talk about career predictions 💼', 'emoji': '💼'},
+    ];
+
+    setState(() {
+      // Keep only last 4 comments
+      if (_floatingComments.length >= 4) {
+        _floatingComments.removeAt(0);
+      }
+      
+      // Add new random comment
+      final randomComment = dummyComments[_random.nextInt(dummyComments.length)];
+      _floatingComments.add(randomComment);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
@@ -258,6 +315,14 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   // Bottom gradient overlay
                   _buildBottomGradient(),
                   
+                  // Tap to toggle controls (must be before buttons so buttons are on top)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: _toggleControls,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  
                   // Live indicator with animation
               _buildLiveIndicator(),
               
@@ -270,25 +335,18 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   // Duration
                   _buildDuration(stream),
                   
+                  // Floating comments (show/hide based on toggle)
+                  if (_isFloatingCommentsVisible && !_isExpandedCommentsVisible) 
+                    _buildFloatingComments(),
+                  
                   // Main controls
                   if (_isControlsVisible) _buildMainControls(themeService),
                   
-                  // Comments panel
-                  if (_isCommentsVisible) _buildCommentsPanel(themeService),
-                  
-                  // Effects panel
-                  if (_isEffectsVisible) _buildEffectsPanel(themeService),
+                  // Expanded comments panel (opened by tapping a comment)
+                  if (_isExpandedCommentsVisible) _buildCommentsPanel(themeService),
                   
                   // Settings panel
                   if (_isSettingsVisible) _buildSettingsPanel(themeService),
-                  
-                  // Tap to toggle controls
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: _toggleControls,
-                      child: Container(color: Colors.transparent),
-                    ),
-                  ),
                   
                   // Ending overlay
               if (_isEnding) _buildEndingOverlay(),
@@ -626,18 +684,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             _buildControlButton(
               icon: Icons.chat_bubble_outline,
               label: 'Comments',
-              onTap: _toggleComments,
-              isActive: _isCommentsVisible,
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Effects button
-            _buildControlButton(
-              icon: Icons.auto_awesome,
-              label: 'Effects',
-              onTap: _toggleEffects,
-              isActive: _isEffectsVisible,
+              onTap: _toggleFloatingComments,
+              isActive: !_isFloatingCommentsVisible,
             ),
             
             const SizedBox(height: 12),
@@ -738,20 +786,115 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  Widget _buildCommentsPanel(ThemeService themeService) {
+  Widget _buildFloatingComments() {
+    if (_floatingComments.isEmpty) return const SizedBox.shrink();
+    
     return Positioned(
       bottom: MediaQuery.of(context).padding.bottom + 20,
       left: 16,
       right: 80,
-      height: 300,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _floatingComments.asMap().entries.map((entry) {
+          final index = entry.key;
+          final comment = entry.value;
+          final opacity = 1.0 - ((_floatingComments.length - 1 - index) * 0.15);
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 300),
+              tween: Tween(begin: 0.0, end: 1.0),
+              builder: (context, value, child) {
+                return Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: Opacity(
+                    opacity: value * opacity,
+                    child: child,
+                  ),
+                );
+              },
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _openExpandedComments();
+                },
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 280),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: RichText(
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${comment['user']} ',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        TextSpan(
+                          text: comment['message'],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCommentsPanel(ThemeService themeService) {
+    // Generate more dummy comments for the expanded view
+    final allComments = [
+      {'user': 'Priya S.', 'message': 'Namaste Guruji! 🙏', 'time': '5m'},
+      {'user': 'Rahul M.', 'message': 'Please read my horoscope next', 'time': '4m'},
+      {'user': 'Anjali K.', 'message': 'Your predictions are always accurate! ✨', 'time': '3m'},
+      {'user': 'Vikram R.', 'message': 'Thank you for the guidance 🙏', 'time': '2m'},
+      {'user': 'Neha P.', 'message': 'Can you talk about Rahu Ketu? 🔮', 'time': '2m'},
+      {'user': 'Amit J.', 'message': 'Love your energy Guruji! 💫', 'time': '1m'},
+      {'user': 'Kavita L.', 'message': 'This is so helpful! 🌟', 'time': '45s'},
+      {'user': 'Sanjay B.', 'message': 'What about Saturn transit? 🪐', 'time': '30s'},
+      {'user': 'Deepa M.', 'message': 'Amazing session today! 🌺', 'time': '15s'},
+      {'user': 'Kiran P.', 'message': 'Can you explain my birth chart? 📊', 'time': '10s'},
+      {'user': 'Meera S.', 'message': 'Your readings are life-changing 💖', 'time': '5s'},
+      {'user': 'Suresh K.', 'message': 'Please talk about career predictions 💼', 'time': 'now'},
+    ];
+    
+    return Positioned(
+      bottom: MediaQuery.of(context).padding.bottom + 20,
+      left: 16,
+      right: 80,
+      height: 400,
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.8),
+            color: Colors.black.withOpacity(0.85),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.2),
               width: 1,
             ),
           ),
@@ -777,7 +920,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     ),
                     const SizedBox(width: 8),
               const Text(
-                      'Live Comments',
+                      'All Comments',
                 style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -786,7 +929,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     ),
                     const Spacer(),
                     GestureDetector(
-                      onTap: _toggleComments,
+                      onTap: _closeExpandedComments,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
@@ -804,14 +947,14 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                 ),
               ),
               
-              // Comments list
+              // Comments list (full history)
               Expanded(
                 child: ListView.builder(
                   controller: _commentsController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: 5, // Mock comments
+                  itemCount: allComments.length,
                   itemBuilder: (context, index) {
-                    return _buildCommentItem(index);
+                    return _buildExpandedCommentItem(allComments[index]);
                   },
                 ),
               ),
@@ -822,39 +965,30 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  Widget _buildCommentItem(int index) {
-    final comments = [
-      {'user': 'Sarah M.', 'message': 'Amazing reading! 🙏', 'time': '2m'},
-      {'user': 'Mike R.', 'message': 'Can you read my chart next?', 'time': '1m'},
-      {'user': 'Emma L.', 'message': 'This is so accurate! ✨', 'time': '30s'},
-      {'user': 'John D.', 'message': 'Thank you for the insights!', 'time': '15s'},
-      {'user': 'Lisa K.', 'message': 'Love your energy! 💫', 'time': '5s'},
-    ];
-    
-    final comment = comments[index];
-    
+  Widget _buildExpandedCommentItem(Map<String, String> comment) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 12,
+            radius: 14,
             backgroundColor: Colors.white.withOpacity(0.2),
             child: Text(
               comment['user']!.substring(0, 1),
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -864,22 +998,23 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     comment['user']!,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     comment['message']!,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                   ),
                 ],
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             comment['time']!,
             style: TextStyle(
@@ -888,123 +1023,6 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEffectsPanel(ThemeService themeService) {
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      left: 16,
-      right: 80,
-      height: 200,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Live Effects',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _toggleEffects,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Effects grid
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.2,
-                    ),
-                    itemCount: 8,
-                    itemBuilder: (context, index) {
-                      final effects = ['✨', '🌟', '💫', '⭐', '🔥', '💎', '🎉', '❤️'];
-                      return _buildEffectButton(effects[index]);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEffectButton(String emoji) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _liveService.incrementLikes();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            emoji,
-            style: const TextStyle(fontSize: 24),
-          ),
-        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ class LiveStreamControlsWidget extends StatelessWidget {
   final VoidCallback onReactionsTap;
   final VoidCallback onShareTap;
   final VoidCallback onReportTap;
+  final bool isCommentsHidden;
 
   const LiveStreamControlsWidget({
     super.key,
@@ -17,6 +18,7 @@ class LiveStreamControlsWidget extends StatelessWidget {
     required this.onReactionsTap,
     required this.onShareTap,
     required this.onReportTap,
+    this.isCommentsHidden = false,
   });
 
   @override
@@ -31,6 +33,7 @@ class LiveStreamControlsWidget extends StatelessWidget {
               icon: Icons.chat_bubble_outline,
               label: 'Comments',
               onTap: onCommentsTap,
+              isActive: isCommentsHidden,
               themeService: themeService,
             ),
             
@@ -84,6 +87,7 @@ class LiveStreamControlsWidget extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
     required ThemeService themeService,
+    bool isActive = false,
   }) {
     return GestureDetector(
       onTap: () {
@@ -94,11 +98,15 @@ class LiveStreamControlsWidget extends StatelessWidget {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
+          color: isActive 
+              ? Colors.white.withOpacity(0.25)
+              : Colors.black.withOpacity(0.6),
           shape: BoxShape.circle,
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
+            color: isActive
+                ? Colors.white.withOpacity(0.4)
+                : Colors.white.withOpacity(0.2),
+            width: isActive ? 2 : 1,
           ),
         ),
         child: Column(
