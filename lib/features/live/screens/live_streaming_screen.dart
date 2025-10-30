@@ -177,6 +177,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   void _endStream() {
+    print('🛑 [LIVE_STREAMING] _endStream() called - Showing confirmation dialog');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -202,7 +203,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              print('🛑 [LIVE_STREAMING] User cancelled ending stream');
+              Navigator.of(context).pop();
+            },
             child: const Text(
               'Cancel',
               style: TextStyle(
@@ -213,7 +217,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
           ),
           TextButton(
             onPressed: () {
+              print('🛑 [LIVE_STREAMING] User confirmed ending stream - Closing dialog');
               Navigator.of(context).pop();
+              print('🛑 [LIVE_STREAMING] Dialog closed - Calling _confirmEndStream()');
               _confirmEndStream();
             },
             child: const Text(
@@ -231,15 +237,34 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   void _confirmEndStream() {
+    print('🛑 [LIVE_STREAMING] _confirmEndStream() started');
+    print('🛑 [LIVE_STREAMING] Widget mounted: $mounted');
+    print('🛑 [LIVE_STREAMING] Context valid: ${context != null}');
+    print('🛑 [LIVE_STREAMING] Navigator.canPop: ${Navigator.of(context).canPop()}');
+    
     setState(() {
       _isEnding = true;
     });
+    print('🛑 [LIVE_STREAMING] Set _isEnding = true');
     
     _liveService.endLiveStream();
+    print('🛑 [LIVE_STREAMING] Called _liveService.endLiveStream()');
     
     Future.delayed(const Duration(seconds: 2), () {
+      print('🛑 [LIVE_STREAMING] Delay finished (2 seconds)');
+      print('🛑 [LIVE_STREAMING] Widget mounted: $mounted');
       if (mounted) {
-        Navigator.of(context).pop();
+        print('🛑 [LIVE_STREAMING] Attempting Navigator.pop()');
+        print('🛑 [LIVE_STREAMING] Navigator.canPop: ${Navigator.of(context).canPop()}');
+        try {
+          Navigator.of(context).pop();
+          print('✅ [LIVE_STREAMING] Navigator.pop() executed successfully');
+        } catch (e, stackTrace) {
+          print('❌ [LIVE_STREAMING] ERROR during Navigator.pop(): $e');
+          print('❌ [LIVE_STREAMING] StackTrace: $stackTrace');
+        }
+      } else {
+        print('⚠️ [LIVE_STREAMING] Widget not mounted - Cannot pop');
       }
     });
   }

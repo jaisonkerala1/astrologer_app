@@ -278,7 +278,19 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       final dummyRequests = _generateDummyRequests();
       print('🔍 [HealRepo] Generated ${dummyRequests.length} dummy requests');
       
-      final allRequests = [..._localRequests, ...dummyRequests];
+      // Filter out dummy requests that exist in local requests (local takes precedence)
+      final localIds = _localRequests.map((r) => r.id).toSet();
+      final filteredDummyRequests = dummyRequests.where((d) => !localIds.contains(d.id)).toList();
+      print('🔍 [HealRepo] Filtered ${dummyRequests.length - filteredDummyRequests.length} dummy requests (already in local)');
+      
+      // Store the dummy requests in _localRequests so they can be updated later
+      if (_localRequests.isEmpty && filteredDummyRequests.isNotEmpty) {
+        _localRequests.addAll(filteredDummyRequests);
+        print('💾 [HealRepo] Stored ${filteredDummyRequests.length} dummy requests in _localRequests for future updates');
+      }
+      
+      // Return all local requests (which now includes the dummy data if it was empty before)
+      final allRequests = _localRequests;
       
       // Apply status filter if needed
       if (status != null) {
@@ -287,7 +299,7 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
         return filtered;
       }
       
-      print('✅ [HealRepo] Returning ${allRequests.length} total requests (${_localRequests.length} local + ${dummyRequests.length} dummy)');
+      print('✅ [HealRepo] Returning ${allRequests.length} total requests');
       return allRequests;
     }
   }
@@ -321,13 +333,42 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       // Update in local storage
       final index = _localRequests.indexWhere((r) => r.id == id);
       if (index != -1) {
-        final updatedRequest = _localRequests[index].copyWith(status: status);
+        // Set startedAt when changing to inProgress
+        final updatedRequest = _localRequests[index].copyWith(
+          status: status,
+          startedAt: status == RequestStatus.inProgress 
+              ? (_localRequests[index].startedAt ?? DateTime.now())
+              : _localRequests[index].startedAt,
+        );
         _localRequests[index] = updatedRequest;
-        print('✅ [HealRepo] Request status updated locally: $id');
+        print('✅ [HealRepo] Request status updated locally: $id → ${status.name}');
+        if (status == RequestStatus.inProgress) {
+          print('   ⏱️ Started at: ${updatedRequest.startedAt}');
+        }
         return updatedRequest;
       }
       
-      throw Exception('Request not found');
+      // If not found in local requests, try to find it in dummy data and add it
+      print('⚠️ [HealRepo] Request $id not found in local storage');
+      final dummyRequests = _generateDummyRequests();
+      final dummyRequest = dummyRequests.where((r) => r.id == id).firstOrNull;
+      
+      if (dummyRequest != null) {
+        print('✅ [HealRepo] Found request in dummy data, updating and adding to local storage');
+        final updatedRequest = dummyRequest.copyWith(
+          status: status,
+          startedAt: status == RequestStatus.inProgress ? DateTime.now() : null,
+        );
+        _localRequests.add(updatedRequest);
+        if (status == RequestStatus.inProgress) {
+          print('   ⏱️ Started at: ${updatedRequest.startedAt}');
+        }
+        return updatedRequest;
+      }
+      
+      // Last resort: throw error (should not happen with the new logic)
+      print('❌ [HealRepo] Request $id not found anywhere');
+      throw Exception('Service request not found');
     }
   }
 

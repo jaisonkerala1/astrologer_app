@@ -81,123 +81,72 @@ class _ServiceRequestTimerWidgetState extends State<ServiceRequestTimerWidget> w
   Widget build(BuildContext context) {
     final bool isInProgress = widget.request.status == RequestStatus.inProgress;
 
+    if (!isInProgress) {
+      return const SizedBox.shrink(); // Don't show timer if not in progress
+    }
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        gradient: isInProgress
-            ? const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF059669)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : const LinearGradient(
-                colors: [Color(0xFFF3F4F6), Color(0xFFE5E7EB)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: (isInProgress ? const Color(0xFF10B981) : Colors.black).withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF10B981).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Service Timer',
-                style: TextStyle(
-                  color: isInProgress ? Colors.white : AppTheme.textColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+              FadeTransition(
+                opacity: _pulseController,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-              if (isInProgress)
-                FadeTransition(
-                  opacity: _pulseController,
-                  child: const Icon(Icons.circle, color: Colors.white, size: 12),
+              const SizedBox(width: 12),
+              const Text(
+                'Service in Progress',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Center(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Text(
               _formatDuration(_elapsedTime),
-              style: TextStyle(
-                fontFamily: 'monospace', // Use a monospace font for timer
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: isInProgress ? Colors.white : AppTheme.textColor,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
                 letterSpacing: 0.5,
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          if (widget.request.status == RequestStatus.confirmed)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Implement start service functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Start service functionality not implemented yet')),
-                  );
-                },
-                icon: const Icon(Icons.play_arrow, color: Colors.white),
-                label: const Text('Start Service', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          if (widget.request.status == RequestStatus.inProgress)
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Implement pause functionality if needed
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pause not implemented yet')),
-                      );
-                    },
-                    icon: const Icon(Icons.pause, color: AppTheme.primaryColor),
-                    label: const Text('Pause', style: TextStyle(color: AppTheme.primaryColor)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Implement complete service functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Complete service functionality not implemented yet')),
-                      );
-                    },
-                    icon: const Icon(Icons.check, color: Colors.white),
-                    label: const Text('Mark as Complete', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.successColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
         ],
       ),
     );

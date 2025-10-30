@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -5,12 +6,13 @@ import '../models/service_request_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../screens/service_request_detail_screen.dart';
 
-class ServiceRequestCardWidget extends StatelessWidget {
+class ServiceRequestCardWidget extends StatefulWidget {
   final ServiceRequest request;
   final VoidCallback onAccept;
   final VoidCallback onReject;
   final VoidCallback onComplete;
   final VoidCallback onStart;
+  final VoidCallback? onPause;
   final VoidCallback? onTap;
 
   const ServiceRequestCardWidget({
@@ -20,12 +22,82 @@ class ServiceRequestCardWidget extends StatelessWidget {
     required this.onReject,
     required this.onComplete,
     required this.onStart,
+    this.onPause,
     this.onTap,
   });
 
   @override
+  State<ServiceRequestCardWidget> createState() => _ServiceRequestCardWidgetState();
+}
+
+class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
+  Timer? _timer;
+  Duration _elapsedTime = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(ServiceRequestCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.request.status != oldWidget.request.status ||
+        widget.request.startedAt != oldWidget.request.startedAt) {
+      _stopTimer();
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopTimer();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    if (widget.request.status == RequestStatus.inProgress && widget.request.startedAt != null) {
+      _timer?.cancel();
+      _elapsedTime = DateTime.now().difference(widget.request.startedAt!);
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() {
+            _elapsedTime = DateTime.now().difference(widget.request.startedAt!);
+          });
+        }
+      });
+    } else {
+      _stopTimer();
+    }
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    if (duration.inHours > 0) {
+      String hours = twoDigits(duration.inHours);
+      return '$hours:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final request = widget.request; // Local reference for cleaner code
+    final onTap = widget.onTap;
+    final onAccept = widget.onAccept;
+    final onReject = widget.onReject;
+    final onComplete = widget.onComplete;
+    final onStart = widget.onStart;
+    final onPause = widget.onPause;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -234,6 +306,47 @@ class ServiceRequestCardWidget extends StatelessWidget {
   }
 
   Widget _buildStatusChip() {
+    // Show minimal timer for in-progress requests
+    if (widget.request.status == RequestStatus.inProgress && widget.request.startedAt != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              _getStatusColor().withOpacity(0.15),
+              _getStatusColor().withOpacity(0.08),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: _getStatusColor(),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _formatDuration(_elapsedTime),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: _getStatusColor(),
+                fontFamily: 'monospace',
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Default status chip
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -241,7 +354,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        request.statusText,
+        widget.request.statusText,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
@@ -268,7 +381,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
   }
 
   List<Widget> _getActionButtons(BuildContext context, AppLocalizations l10n) {
-    switch (request.status) {
+    switch (widget.request.status) {
       case RequestStatus.pending:
         return [
           Expanded(
@@ -281,7 +394,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: onReject,
+                  onTap: widget.onReject,
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -315,7 +428,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: onAccept,
+                  onTap: widget.onAccept,
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -352,7 +465,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: onStart,
+                  onTap: widget.onStart,
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -386,7 +499,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: onReject,
+                  onTap: widget.onReject,
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -413,6 +526,42 @@ class ServiceRequestCardWidget extends StatelessWidget {
       
       case RequestStatus.inProgress:
         return [
+          if (widget.onPause != null) ...[
+            Expanded(
+              child: Container(
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B), // Orange for pause
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onPause,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.pause, size: 16, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Pause',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           Expanded(
             child: Container(
               height: 36,
@@ -423,7 +572,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: onComplete,
+                  onTap: widget.onComplete,
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -462,7 +611,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    request.status == RequestStatus.completed
+                    widget.request.status == RequestStatus.completed
                         ? Icons.check_circle
                         : Icons.cancel,
                     size: 16,
@@ -470,7 +619,7 @@ class ServiceRequestCardWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    request.status == RequestStatus.completed
+                    widget.request.status == RequestStatus.completed
                         ? 'Completed'
                         : 'Cancelled',
                     style: TextStyle(
@@ -484,11 +633,13 @@ class ServiceRequestCardWidget extends StatelessWidget {
             ),
           ),
         ];
+      default:
+        return [];
     }
   }
 
   Color _getStatusColor() {
-    return Color(int.parse(request.statusColor.replaceFirst('#', '0xFF')));
+    return Color(int.parse(widget.request.statusColor.replaceFirst('#', '0xFF')));
   }
 
   String _formatDate(DateTime date) {

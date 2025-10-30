@@ -522,7 +522,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
       );
 
       if (success && mounted) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => const LiveStreamingScreen(),
           ),

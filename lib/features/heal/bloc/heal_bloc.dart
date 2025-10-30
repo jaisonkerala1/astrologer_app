@@ -153,20 +153,32 @@ class HealBloc extends Bloc<HealEvent, HealState> {
   }
 
   Future<void> _onUpdateRequestStatus(UpdateRequestStatusEvent event, Emitter<HealState> emit) async {
-    emit(RequestUpdating(event.id));
+    print('📘 [HealBloc] Updating request status: ${event.id} to ${event.status.name}');
+    
+    // Don't emit RequestUpdating to avoid screen flicker
+    // Just update silently in the background
+    final previousState = state is HealLoadedState ? state as HealLoadedState : null;
+    
+    if (previousState == null) {
+      print('⚠️ [HealBloc] Cannot update request - no loaded state');
+      return;
+    }
+    
     try {
       final updated = await repository.updateRequestStatus(event.id, event.status);
-      if (state is HealLoadedState) {
-        final currentState = state as HealLoadedState;
-        final updatedRequests = currentState.serviceRequests.map((r) => 
-          r.id == event.id ? updated : r
-        ).toList();
-        emit(currentState.copyWith(
-          serviceRequests: updatedRequests,
-          successMessage: 'Request status updated',
-        ));
-      }
+      
+      final updatedRequests = previousState.serviceRequests.map((r) => 
+        r.id == event.id ? updated : r
+      ).toList();
+      
+      print('📘 [HealBloc] Emitting updated state with ${updatedRequests.length} requests');
+      
+      emit(previousState.copyWith(
+        serviceRequests: updatedRequests,
+        successMessage: 'Request status updated',
+      ));
     } catch (e) {
+      print('❌ [HealBloc] Error updating request status: $e');
       emit(HealErrorState(e.toString().replaceAll('Exception: ', '')));
     }
   }

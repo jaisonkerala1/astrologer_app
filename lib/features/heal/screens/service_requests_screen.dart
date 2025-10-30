@@ -279,6 +279,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
               onReject: () => _updateRequestStatus(request, RequestStatus.cancelled),
               onComplete: () => _updateRequestStatus(request, RequestStatus.completed),
               onStart: () => _updateRequestStatus(request, RequestStatus.inProgress),
+              onPause: () => _updateRequestStatus(request, RequestStatus.confirmed), // Pause = back to confirmed state
             );
           },
         ),
