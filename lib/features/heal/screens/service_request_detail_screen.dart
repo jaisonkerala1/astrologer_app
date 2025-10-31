@@ -113,9 +113,9 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
         }
       },
       child: Consumer<ThemeService>(
-        builder: (context, themeService, child) {
-          return Scaffold(
-            backgroundColor: themeService.backgroundColor,
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: themeService.backgroundColor,
             body: SafeArea(
               child: Column(
                 children: [
@@ -312,8 +312,8 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Next Request',
@@ -453,9 +453,9 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: themeService.surfaceColor,
-          borderRadius: const BorderRadius.only(
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
+            borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
@@ -498,8 +498,8 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
             _buildOptionTile(
               icon: Icons.share,
               title: 'Share Details',
-              onTap: () {
-                Navigator.pop(context);
+                onTap: () {
+                  Navigator.pop(context);
                 HapticFeedback.lightImpact();
                 // TODO: Share request
               },
@@ -508,8 +508,8 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
             _buildOptionTile(
               icon: Icons.delete_outline,
               title: 'Delete',
-              onTap: () {
-                Navigator.pop(context);
+                onTap: () {
+                  Navigator.pop(context);
                 HapticFeedback.mediumImpact();
                 _showDeleteConfirmation(themeService);
               },
@@ -573,7 +573,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: themeService.surfaceColor,
+          backgroundColor: themeService.surfaceColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -585,7 +585,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
             color: themeService.textPrimary,
           ),
         ),
-        content: Text(
+          content: Text(
           'Are you sure you want to delete the request from ${_currentRequest.customerName}? This action cannot be undone.',
           style: TextStyle(
             fontSize: 14,
@@ -593,7 +593,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
           ),
         ),
         actions: [
-          TextButton(
+            TextButton(
             onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.pop(context);
@@ -605,24 +605,24 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          TextButton(
-            onPressed: () {
+            ),
+            TextButton(
+              onPressed: () {
               HapticFeedback.mediumImpact();
-              Navigator.pop(context);
+                Navigator.pop(context);
               // TODO: Delete request using BLoC
               // context.read<HealBloc>().add(DeleteServiceRequestEvent(...));
               Navigator.pop(context); // Pop the detail screen
-            },
-            child: Text(
-              'Delete',
+              },
+              child: Text(
+                'Delete',
               style: TextStyle(
                 color: themeService.errorColor,
                 fontWeight: FontWeight.w600,
               ),
+              ),
             ),
-          ),
-        ],
+          ],
       ),
     );
   }

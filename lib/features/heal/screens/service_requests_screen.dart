@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,8 @@ class ServiceRequestsScreen extends StatefulWidget {
 
 class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
   String _selectedFilter = 'all';
+  String? _lastUpdatedRequestId;
+  RequestStatus? _lastStatus;
 
   @override
   void initState() {
@@ -38,23 +41,63 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
       builder: (context, themeService, child) {
         return BlocConsumer<HealBloc, HealState>(
           listener: (context, state) {
-            // Show success messages
-            if (state is HealLoadedState && state.successMessage != null) {
+            // ❌ ONLY show error messages with retry (optimistic UI shows success visually)
+            if (state is HealLoadedState && state.errorMessage != null) {
+              HapticFeedback.mediumImpact();
+              
+              ScaffoldMessenger.of(context).clearSnackBars();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.successMessage!),
-                  backgroundColor: Colors.green,
+                  content: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          state.errorMessage!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.red.shade600,
                   behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 4),
+                  action: _lastUpdatedRequestId != null && _lastStatus != null
+                      ? SnackBarAction(
+                          label: 'RETRY',
+                          textColor: Colors.white,
+                          onPressed: () {
+                            context.read<HealBloc>().add(
+                              UpdateRequestStatusEvent(
+                                _lastUpdatedRequestId!,
+                                _lastStatus!,
+                              ),
+                            );
+                          },
+                        )
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: EdgeInsets.all(16),
                 ),
               );
             }
             
-            // Show errors
+            // Show errors (old error state - fallback)
             if (state is HealErrorState) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.red,
+                  backgroundColor: Colors.red.shade600,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -387,7 +430,16 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
   }
 
   void _updateRequestStatus(ServiceRequest request, RequestStatus newStatus) {
-    // Use BLoC to update request status
+    // Store for undo/retry functionality
+    setState(() {
+      _lastUpdatedRequestId = request.id;
+      _lastStatus = newStatus;
+    });
+    
+    // Subtle haptic feedback on button press (not too aggressive)
+    HapticFeedback.lightImpact();
+    
+    // Use BLoC to update request status (optimistic update happens in BLoC)
     context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, newStatus));
   }
 }

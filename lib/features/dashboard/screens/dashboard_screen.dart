@@ -449,9 +449,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     // Calculate responsive sizes for bottom navigation
     final double navBarHeight = 60.0; // Slightly increased for better visual balance
-    final double selectedIconSize = screenWidth < 360 ? 23.0 : 26.0;
-    final double unselectedIconSize = screenWidth < 360 ? 20.0 : 22.0;
-    final double iconWidth = screenWidth < 360 ? 24.0 : screenWidth < 400 ? 26.0 : 29.0;
+    final double selectedIconSize = screenWidth < 360 ? 27.0 : 30.0;
+    final double unselectedIconSize = screenWidth < 360 ? 24.0 : 26.0;
+    final double iconWidth = screenWidth < 360 ? 28.0 : screenWidth < 400 ? 30.0 : 33.0;
     final double selectedFontSize = screenWidth < 360 ? 9.0 : 11.0;
     final double unselectedFontSize = screenWidth < 360 ? 8.5 : 10.0;
     
@@ -1443,20 +1443,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             child: Row(
               children: [
-                // Left side - Icon container with backdrop blur effect
+                // Left side - Icon container as circle (same size as profile picture)
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     color: isVedic 
                         ? const Color(0xFFF59E0B)
                         : themeService.primaryColor,
-                    borderRadius: BorderRadius.circular(16),
+                    shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.phone,
                     color: Colors.white,
-                    size: 32,
+                    size: 28,
                   ),
                 ),
               const SizedBox(width: 20),
@@ -1567,18 +1567,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             child: Row(
               children: [
-                // Left side - Icon container
+                // Left side - Icon container as circle (same size as profile picture)
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     color: themeService.primaryColor,
-                    borderRadius: BorderRadius.circular(16),
+                    shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.chat_bubble_outline,
                     color: Colors.white,
-                    size: 32,
+                    size: 28,
                   ),
                 ),
               const SizedBox(width: 20),

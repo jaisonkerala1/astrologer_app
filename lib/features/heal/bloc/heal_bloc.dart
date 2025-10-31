@@ -153,10 +153,8 @@ class HealBloc extends Bloc<HealEvent, HealState> {
   }
 
   Future<void> _onUpdateRequestStatus(UpdateRequestStatusEvent event, Emitter<HealState> emit) async {
-    print('📘 [HealBloc] Updating request status: ${event.id} to ${event.status.name}');
+    print('📘 [HealBloc] Optimistic update: ${event.id} to ${event.status.name}');
     
-    // Don't emit RequestUpdating to avoid screen flicker
-    // Just update silently in the background
     final previousState = state is HealLoadedState ? state as HealLoadedState : null;
     
     if (previousState == null) {
@@ -164,22 +162,59 @@ class HealBloc extends Bloc<HealEvent, HealState> {
       return;
     }
     
+    // Find the request being updated
+    final originalRequest = previousState.serviceRequests.firstWhere(
+      (r) => r.id == event.id,
+      orElse: () => previousState.serviceRequests.first,
+    );
+    
+    // ⚡ STEP 1: UPDATE UI IMMEDIATELY (Optimistic)
+    final optimisticRequests = previousState.serviceRequests.map((r) {
+      if (r.id == event.id) {
+        return r.copyWith(
+          status: event.status,
+          startedAt: event.status == RequestStatus.inProgress 
+              ? (r.startedAt ?? DateTime.now())
+              : r.startedAt,
+        );
+      }
+      return r;
+    }).toList();
+    
+    print('⚡ [HealBloc] UI updated instantly (optimistic)');
+    
+    emit(previousState.copyWith(
+      serviceRequests: optimisticRequests,
+    ));
+    
+    // 🌐 STEP 2: SEND TO SERVER IN BACKGROUND
     try {
       final updated = await repository.updateRequestStatus(event.id, event.status);
       
-      final updatedRequests = previousState.serviceRequests.map((r) => 
+      // ✅ STEP 3: CONFIRM WITH SERVER DATA
+      final confirmedRequests = previousState.serviceRequests.map((r) => 
         r.id == event.id ? updated : r
       ).toList();
       
-      print('📘 [HealBloc] Emitting updated state with ${updatedRequests.length} requests');
+      print('✅ [HealBloc] Server confirmed update');
       
+      // No success message needed - optimistic UI already showed the change!
       emit(previousState.copyWith(
-        serviceRequests: updatedRequests,
-        successMessage: 'Request status updated',
+        serviceRequests: confirmedRequests,
       ));
     } catch (e) {
-      print('❌ [HealBloc] Error updating request status: $e');
-      emit(HealErrorState(e.toString().replaceAll('Exception: ', '')));
+      // ❌ STEP 4: REVERT ON ERROR
+      print('❌ [HealBloc] Server failed, reverting optimistic update: $e');
+      
+      // Restore original state
+      final revertedRequests = previousState.serviceRequests.map((r) => 
+        r.id == event.id ? originalRequest : r
+      ).toList();
+      
+      emit(previousState.copyWith(
+        serviceRequests: revertedRequests,
+        errorMessage: 'Failed to update request. Please try again.',
+      ));
     }
   }
 

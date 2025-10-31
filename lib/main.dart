@@ -6,6 +6,7 @@ import 'core/di/service_locator.dart';
 import 'core/services/language_service.dart';
 import 'core/services/status_service.dart';
 import 'core/services/app_restart_service.dart';
+import 'core/services/connectivity_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/live/services/live_stream_service.dart';
 import 'shared/theme/services/theme_service.dart';
@@ -34,6 +35,8 @@ void main() async {
   await languageService.initialize();
   final statusService = StatusService();
   await statusService.initialize();
+  final connectivityService = ConnectivityService();
+  await connectivityService.initialize();
   final notificationService = NotificationService();
   await notificationService.initialize();
   final liveStreamService = LiveStreamService();
@@ -52,6 +55,7 @@ void main() async {
     child: AstrologerApp(
       languageService: languageService, 
       statusService: statusService,
+      connectivityService: connectivityService,
       notificationService: notificationService,
       liveStreamService: liveStreamService,
       themeService: themeService,

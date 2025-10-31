@@ -5,10 +5,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../core/services/language_service.dart';
 import '../core/services/status_service.dart';
+import '../core/services/connectivity_service.dart';
 import '../features/notifications/services/notification_service.dart';
 import '../features/live/services/live_stream_service.dart';
 import '../features/communication/services/communication_service.dart';
 import '../shared/theme/services/theme_service.dart';
+import '../shared/widgets/offline_indicator.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
@@ -29,6 +31,7 @@ import '../core/di/service_locator.dart';
 class AstrologerApp extends StatefulWidget {
   final LanguageService languageService;
   final StatusService statusService;
+  final ConnectivityService connectivityService;
   final NotificationService notificationService;
   final LiveStreamService liveStreamService;
   final ThemeService themeService;
@@ -37,6 +40,7 @@ class AstrologerApp extends StatefulWidget {
     super.key, 
     required this.languageService, 
     required this.statusService,
+    required this.connectivityService,
     required this.notificationService,
     required this.liveStreamService,
     required this.themeService,
@@ -76,6 +80,9 @@ class _AstrologerAppState extends State<AstrologerApp> {
         ),
         ChangeNotifierProvider<StatusService>(
           create: (context) => widget.statusService,
+        ),
+        ChangeNotifierProvider<ConnectivityService>(
+          create: (context) => widget.connectivityService,
         ),
         ChangeNotifierProvider<NotificationService>(
           create: (context) => widget.notificationService,
@@ -149,7 +156,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
           initialRoute: AppRoutes.splash,
           onGenerateRoute: AppRoutes.generateRoute,
           builder: (context, child) {
-            return child!;
+            return OfflineIndicator(child: child!);
           },
         ),
       ),
