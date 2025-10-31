@@ -260,7 +260,50 @@ class HealBloc extends Bloc<HealEvent, HealState> {
   }
 
   Future<void> _onRefresh(RefreshHealEvent event, Emitter<HealState> emit) async {
-    add(const LoadServicesEvent());
+    try {
+      print('🔄 [HealBloc] Refreshing service requests...');
+      
+      // If we have loaded data, emit with isRefreshing: true (keeps cards visible)
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        emit(currentState.copyWith(
+          isRefreshing: true,
+          errorMessage: null,
+          successMessage: null,
+        ));
+      }
+      
+      // Fetch fresh data in background
+      final requests = await repository.getServiceRequests();
+      print('✅ [HealBloc] Refreshed ${requests.length} service requests');
+      
+      // Emit loaded state with fresh data and isRefreshing: false
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        emit(currentState.copyWith(
+          serviceRequests: requests,
+          isRefreshing: false,
+          errorMessage: null,
+          successMessage: null,
+        ));
+      } else {
+        // Fallback: if not in loaded state, just emit new loaded state
+        emit(HealLoadedState(
+          services: [],
+          serviceRequests: requests,
+          isRefreshing: false,
+        ));
+      }
+    } catch (e) {
+      print('❌ [HealBloc] Error refreshing: $e');
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        emit(currentState.copyWith(
+          isRefreshing: false,
+          errorMessage: 'Failed to refresh. Please try again.',
+        ));
+      }
+    }
   }
 }
 

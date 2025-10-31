@@ -8,6 +8,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/constants/app_constants.dart';
 import '../models/service_request_model.dart';
 import '../widgets/service_request_card_widget.dart';
+import '../widgets/service_request_list_skeleton.dart';
 import '../bloc/heal_bloc.dart';
 import '../bloc/heal_event.dart';
 import '../bloc/heal_state.dart';
@@ -234,21 +235,9 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
   }
 
   Widget _buildRequestsList(HealState state, AppLocalizations l10n, ThemeService themeService) {
-    // Loading state
+    // Loading state - show skeleton loaders (Instagram/WhatsApp style)
     if (state is HealLoading && state.isInitialLoad) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: themeService.primaryColor),
-            const SizedBox(height: 16),
-            Text(
-              'Loading service requests...',
-              style: TextStyle(color: themeService.textSecondary),
-            ),
-          ],
-        ),
-      );
+      return const ServiceRequestListSkeleton();
     }
 
     // Error state
