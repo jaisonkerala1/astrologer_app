@@ -37,6 +37,7 @@ import '../../communication/bloc/communication_state.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../heal/screens/heal_screen.dart';
 import '../../heal/screens/discussion_screen.dart';
+import '../../../shared/widgets/empty_states/empty_state_gallery_screen.dart';
 import '../../communication/screens/communication_screen.dart';
 import '../../calendar/screens/calendar_screen.dart';
 import '../../communication/screens/incoming_call_screen.dart';
@@ -900,6 +901,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             text: 'Reset Onboarding (Test)',
                             icon: Icons.refresh,
                             backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            width: double.infinity,
+                            height: 56,
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // 🎨 Empty States Gallery Button - Swiggy Style!
+                          AnimatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EmptyStateGalleryScreen(),
+                                ),
+                              );
+                            },
+                            text: '🎨 View Empty States Gallery',
+                            icon: Icons.palette,
+                            backgroundColor: const Color(0xFFFC5185),
                             foregroundColor: Colors.white,
                             width: double.infinity,
                             height: 56,

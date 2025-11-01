@@ -12,6 +12,8 @@ import '../widgets/service_request_list_skeleton.dart';
 import '../bloc/heal_bloc.dart';
 import '../bloc/heal_event.dart';
 import '../bloc/heal_state.dart';
+import '../../../shared/widgets/empty_states/empty_state_widget.dart';
+import '../../../shared/widgets/empty_states/illustrations/healing_empty_illustration.dart';
 
 class ServiceRequestsScreen extends StatefulWidget {
   final String searchQuery;
@@ -342,40 +344,50 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
   }
 
   Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_cart_outlined,
-              size: 64,
-              color: themeService.textHint,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No service requests found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: themeService.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _selectedFilter == 'all'
-                  ? 'No service requests yet'
-                  : 'No requests in this category',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: themeService.textSecondary,
-              ),
-            ),
-          ],
-        ),
+    // Swiggy-style empty state with personality
+    String title;
+    String message;
+    
+    if (_selectedFilter == 'all') {
+      title = 'No Service Requests';
+      message = 'Your healing journey awaits!\nWhen clients request services, they\'ll appear here.';
+    } else {
+      // Filter-specific messages
+      switch (_selectedFilter) {
+        case 'pending':
+          title = 'No Pending Requests';
+          message = 'All caught up! No requests waiting for your response.';
+          break;
+        case 'confirmed':
+          title = 'No Confirmed Services';
+          message = 'Ready to accept more healing requests!';
+          break;
+        case 'in_progress':
+          title = 'No Active Sessions';
+          message = 'Complete pending confirmations to start healing sessions.';
+          break;
+        case 'completed':
+          title = 'No Completed Services';
+          message = 'Your completed healing sessions will appear here.';
+          break;
+        case 'cancelled':
+          title = 'No Cancelled Requests';
+          message = 'Great! You don\'t have any cancelled requests.';
+          break;
+        default:
+          title = 'No Requests Found';
+          message = 'Try changing your filter to see more.';
+      }
+    }
+    
+    return EmptyStateWidget(
+      illustration: HealingEmptyIllustration(
+        themeService: themeService,
       ),
+      title: title,
+      message: message,
+      themeService: themeService,
+      // No action button for filtered states
     );
   }
 

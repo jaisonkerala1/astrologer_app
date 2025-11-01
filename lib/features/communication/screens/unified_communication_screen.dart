@@ -12,6 +12,10 @@ import '../bloc/communication_state.dart';
 import 'chat_screen.dart';
 import 'video_call_screen.dart';
 import 'dialer_screen.dart';
+import '../../../shared/widgets/empty_states/empty_state_widget.dart';
+import '../../../shared/widgets/empty_states/illustrations/communication_empty_illustration.dart';
+import '../../../shared/widgets/empty_states/illustrations/calls_empty_illustration.dart';
+import '../../../shared/widgets/empty_states/illustrations/video_call_empty_illustration.dart';
 
 /// World-class unified communication screen (Instagram-inspired)
 /// 
@@ -451,70 +455,46 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
   }
 
   Widget _buildEmptyState(ThemeService themeService, CommunicationLoadedState state) {
+    String title;
     String message;
-    IconData icon;
+    Widget illustration;
     
     // Check if empty due to search
     if (_isSearching && _searchController.text.isNotEmpty) {
-      message = 'No results found';
-      icon = Icons.search_off_rounded;
+      title = 'No Results Found';
+      message = 'Try a different search term or filter.';
+      illustration = CommunicationEmptyIllustration(themeService: themeService);
     } else {
+      // Filter-specific messages AND illustrations
       switch (state.activeFilter) {
         case CommunicationFilter.all:
-          message = 'No communications yet';
-          icon = Icons.forum_rounded;
+          title = 'No Conversations';
+          message = 'Your inbox is quiet for now!\nMessages and calls will appear here.';
+          illustration = CommunicationEmptyIllustration(themeService: themeService);
           break;
         case CommunicationFilter.calls:
-          message = 'No calls yet';
-          icon = Icons.phone_rounded;
+          title = 'No Voice Calls';
+          message = 'Ready to connect!\nYour call history will show up here.';
+          illustration = CallsEmptyIllustration(themeService: themeService);
           break;
         case CommunicationFilter.messages:
-          message = 'No messages yet';
-          icon = Icons.message_rounded;
+          title = 'No Messages';
+          message = 'Start a conversation!\nYour messages will appear here.';
+          illustration = CommunicationEmptyIllustration(themeService: themeService);
           break;
         case CommunicationFilter.video:
-          message = 'No video calls yet';
-          icon = Icons.videocam_rounded;
+          title = 'No Video Calls';
+          message = 'Face-to-face consultations!\nVideo call history will display here.';
+          illustration = VideoCallEmptyIllustration(themeService: themeService);
           break;
       }
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: themeService.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              size: 56,
-              color: themeService.primaryColor.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            message,
-            style: TextStyle(
-              color: themeService.textSecondary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start a conversation',
-            style: TextStyle(
-              color: themeService.textHint,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
+    return EmptyStateWidget(
+      illustration: illustration,
+      title: title,
+      message: message,
+      themeService: themeService,
     );
   }
 

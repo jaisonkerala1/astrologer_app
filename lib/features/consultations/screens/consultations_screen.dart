@@ -12,6 +12,8 @@ import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
 // Removed inline search bar in favor of AppBar-integrated search
 import '../widgets/consultation_list_skeleton.dart';
+import '../../../shared/widgets/empty_states/empty_state_widget.dart';
+import '../../../shared/widgets/empty_states/illustrations/consultation_empty_illustration.dart';
 
 class ConsultationsScreen extends StatefulWidget {
   const ConsultationsScreen({super.key});
@@ -447,31 +449,13 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
   Widget _buildEmptyState(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.event_note,
-                size: 64,
-                color: themeService.textHint,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No consultations found',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: themeService.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Add your first consultation to get started',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: themeService.textHint,
-                ),
-              ),
-            ],
+        return EmptyStateWidget(
+          illustration: ConsultationEmptyIllustration(
+            themeService: themeService,
           ),
+          title: 'No Consultations Yet',
+          message: 'Your cosmic calendar is clear!\nNew consultations will shine here when booked.',
+          themeService: themeService,
         );
       },
     );
