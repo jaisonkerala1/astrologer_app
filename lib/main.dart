@@ -32,18 +32,25 @@ void main() async {
   
   // Initialize services (Storage and API already initialized in service locator)
   final languageService = LanguageService();
-  await languageService.initialize();
   final statusService = StatusService();
-  await statusService.initialize();
   final connectivityService = ConnectivityService();
-  await connectivityService.initialize();
   final notificationService = NotificationService();
-  await notificationService.initialize();
   final liveStreamService = LiveStreamService();
   final themeService = ThemeService();
-  await themeService.initialize();
   
-  print('Main: Language service initialized with locale: ${languageService.currentLocale}');
+  // Kick off non-critical initializations in background (do not block first frame)
+  // These services will notify listeners when ready
+  // Avoid awaiting here to minimize time before runApp
+  // ignore: discarded_futures
+  languageService.initialize();
+  // ignore: discarded_futures
+  statusService.initialize();
+  // ignore: discarded_futures
+  connectivityService.initialize();
+  // ignore: discarded_futures
+  notificationService.initialize();
+  // ignore: discarded_futures
+  themeService.initialize();
   
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

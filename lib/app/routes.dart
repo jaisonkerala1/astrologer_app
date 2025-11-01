@@ -7,6 +7,7 @@ import '../features/auth/bloc/auth_event.dart';
 import '../features/auth/bloc/auth_state.dart';
 import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
+import '../core/di/service_locator.dart';
 import '../core/constants/api_constants.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
 import '../features/profile/bloc/profile_bloc.dart';
@@ -77,22 +78,17 @@ class _SplashScreenState extends State<SplashScreen> {
     print('🚀 [SPLASH] Starting _checkAuthAndNavigate...');
     final startTime = DateTime.now();
     
-    // Reduced splash delay for faster startup
-    print('⏳ [SPLASH] Starting 500ms delay...');
-    await Future.delayed(const Duration(milliseconds: 500));
-    print('✅ [SPLASH] Delay complete (took ${DateTime.now().difference(startTime).inMilliseconds}ms)');
+    // Remove artificial delay for faster startup
+    print('⏳ [SPLASH] Skipping artificial delay');
     
     if (!mounted) {
       print('❌ [SPLASH] Widget not mounted after delay, aborting');
       return;
     }
     
-    // Initialize storage and check app state
-    print('💾 [SPLASH] Initializing StorageService...');
-    final storageInitStart = DateTime.now();
-    final storage = StorageService();
-    await storage.initialize();
-    print('✅ [SPLASH] StorageService initialized (took ${DateTime.now().difference(storageInitStart).inMilliseconds}ms)');
+    // Use already-initialized StorageService from DI
+    print('💾 [SPLASH] Using StorageService from DI');
+    final storage = getIt<StorageService>();
     
     // Read all storage values in parallel for better performance
     print('📖 [SPLASH] Reading storage values in parallel...');
