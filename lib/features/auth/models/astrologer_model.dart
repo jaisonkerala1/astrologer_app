@@ -19,6 +19,13 @@ class AstrologerModel extends Equatable {
   final DateTime updatedAt;
   final String? sessionId;
   
+  // Verification status
+  final bool isVerified;
+  final String verificationStatus; // 'none', 'pending', 'approved', 'rejected'
+  final DateTime? verificationSubmittedAt;
+  final DateTime? verificationApprovedAt;
+  final String? verificationRejectionReason;
+  
   // Terms acceptance tracking
   final bool termsAccepted;
   final DateTime? termsAcceptedAt;
@@ -44,6 +51,11 @@ class AstrologerModel extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.sessionId,
+    this.isVerified = false,
+    this.verificationStatus = 'none',
+    this.verificationSubmittedAt,
+    this.verificationApprovedAt,
+    this.verificationRejectionReason,
     this.termsAccepted = false,
     this.termsAcceptedAt,
     this.acceptedTermsVersion = 0,
@@ -70,6 +82,11 @@ class AstrologerModel extends Equatable {
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
       sessionId: json['sessionId'] ?? json['activeSession']?['sessionId'],
+      isVerified: json['isVerified'] ?? false,
+      verificationStatus: json['verificationStatus'] ?? 'none',
+      verificationSubmittedAt: json['verificationSubmittedAt'] != null ? DateTime.parse(json['verificationSubmittedAt']) : null,
+      verificationApprovedAt: json['verificationApprovedAt'] != null ? DateTime.parse(json['verificationApprovedAt']) : null,
+      verificationRejectionReason: json['verificationRejectionReason'],
       termsAccepted: json['termsAccepted'] ?? false,
       termsAcceptedAt: json['termsAcceptedAt'] != null ? DateTime.parse(json['termsAcceptedAt']) : null,
       acceptedTermsVersion: json['acceptedTermsVersion'] ?? 0,
@@ -97,6 +114,11 @@ class AstrologerModel extends Equatable {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'sessionId': sessionId,
+      'isVerified': isVerified,
+      'verificationStatus': verificationStatus,
+      'verificationSubmittedAt': verificationSubmittedAt?.toIso8601String(),
+      'verificationApprovedAt': verificationApprovedAt?.toIso8601String(),
+      'verificationRejectionReason': verificationRejectionReason,
       'termsAccepted': termsAccepted,
       'termsAcceptedAt': termsAcceptedAt?.toIso8601String(),
       'acceptedTermsVersion': acceptedTermsVersion,
@@ -123,6 +145,11 @@ class AstrologerModel extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? sessionId,
+    bool? isVerified,
+    String? verificationStatus,
+    DateTime? verificationSubmittedAt,
+    DateTime? verificationApprovedAt,
+    String? verificationRejectionReason,
     bool? termsAccepted,
     DateTime? termsAcceptedAt,
     int? acceptedTermsVersion,
@@ -147,6 +174,11 @@ class AstrologerModel extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       sessionId: sessionId ?? this.sessionId,
+      isVerified: isVerified ?? this.isVerified,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      verificationSubmittedAt: verificationSubmittedAt ?? this.verificationSubmittedAt,
+      verificationApprovedAt: verificationApprovedAt ?? this.verificationApprovedAt,
+      verificationRejectionReason: verificationRejectionReason ?? this.verificationRejectionReason,
       termsAccepted: termsAccepted ?? this.termsAccepted,
       termsAcceptedAt: termsAcceptedAt ?? this.termsAcceptedAt,
       acceptedTermsVersion: acceptedTermsVersion ?? this.acceptedTermsVersion,
@@ -174,6 +206,11 @@ class AstrologerModel extends Equatable {
     createdAt,
     updatedAt,
     sessionId,
+    isVerified,
+    verificationStatus,
+    verificationSubmittedAt,
+    verificationApprovedAt,
+    verificationRejectionReason,
     termsAccepted,
     termsAcceptedAt,
     acceptedTermsVersion,

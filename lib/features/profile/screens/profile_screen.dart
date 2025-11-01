@@ -29,7 +29,9 @@ import '../../settings/screens/privacy_settings_screen.dart';
 import '../../settings/screens/terms_privacy_screen.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../widgets/profile_screen_skeleton.dart';
+import '../widgets/verification_status_card.dart';
 import 'about_screen.dart';
+import '../../../shared/widgets/verification_badge.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -260,6 +262,14 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                         _buildProfileStats(themeService),
                         const SizedBox(height: 24),
                         
+                        // Verification Status Card
+                        if (astrologer != null)
+                          VerificationStatusCard(
+                            astrologer: astrologer,
+                            themeService: themeService,
+                          ),
+                        const SizedBox(height: 24),
+                        
                         // Earnings Section - Quick Access
                         _buildEarningsQuickAccess(themeService),
                         const SizedBox(height: 24),
@@ -423,16 +433,33 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
               );
             },
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                ProfileAvatarWidget(
-                  imagePath: user?.profilePicture,
-                  radius: 45,
-                  fallbackText: user?.name?.isNotEmpty == true 
-                      ? user!.name!.substring(0, 1).toUpperCase()
-                      : 'A',
-                  backgroundColor: themeService.primaryColor,
-                  textColor: Colors.white,
-                ),
+                // Wrap avatar with verification badge if verified
+                if (user?.isVerified == true)
+                  VerifiedAvatarBadge(
+                    badgeSize: 24,
+                    badgeOffset: 2,
+                    child: ProfileAvatarWidget(
+                      imagePath: user?.profilePicture,
+                      radius: 45,
+                      fallbackText: user?.name?.isNotEmpty == true 
+                          ? user!.name!.substring(0, 1).toUpperCase()
+                          : 'A',
+                      backgroundColor: themeService.primaryColor,
+                      textColor: Colors.white,
+                    ),
+                  )
+                else
+                  ProfileAvatarWidget(
+                    imagePath: user?.profilePicture,
+                    radius: 45,
+                    fallbackText: user?.name?.isNotEmpty == true 
+                        ? user!.name!.substring(0, 1).toUpperCase()
+                        : 'A',
+                    backgroundColor: themeService.primaryColor,
+                    textColor: Colors.white,
+                  ),
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -454,14 +481,27 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            user?.name ?? 'Loading...',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: themeService.textPrimary,
+          // Name with verification badge
+          if (user?.isVerified == true)
+            VerifiedTextBadge(
+              text: user?.name ?? 'Loading...',
+              textStyle: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
+              badgeSize: 20,
+              spacing: 8,
+            )
+          else
+            Text(
+              user?.name ?? 'Loading...',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
             ),
-          ),
           const SizedBox(height: 4),
           Text(
             'Professional Astrologer',
