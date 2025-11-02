@@ -46,6 +46,8 @@ import '../../auth/models/astrologer_model.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../profile/screens/user_profile_screen.dart';
 import '../../profile/screens/astrologer_profile_screen.dart';
+import '../../clients/screens/client_detail_screen.dart';
+import '../../clients/models/client_model.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../notifications/screens/notifications_screen.dart';
@@ -858,10 +860,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           // Test Button for User Profile
                           AnimatedButton(
                             onPressed: () {
+                              // Use the first mock client (Priya Sharma - VIP client)
+                              final sampleClient = MockClientsData.getMockClients()[0];
+                              
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const UserProfileScreen(),
+                                  builder: (context) => ClientDetailScreen(
+                                    client: sampleClient,
+                                  ),
                                 ),
                               );
                             },

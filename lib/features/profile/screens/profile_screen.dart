@@ -32,6 +32,7 @@ import '../widgets/profile_screen_skeleton.dart';
 import '../widgets/verification_status_card.dart';
 import 'about_screen.dart';
 import '../../../shared/widgets/verification_badge.dart';
+import '../../clients/screens/my_clients_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onProfileUpdated;
@@ -610,12 +611,12 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
         const SizedBox(width: 16),
         Expanded(
           child: _buildInteractiveStatCard(
-            title: 'Total Consultations',
-            value: '127',
-            icon: Icons.event_note,
+            title: 'Total Clients',
+            value: '45',
+            icon: Icons.people,
             color: themeService.infoColor,
             themeService: themeService,
-            onTap: () => _navigateToConsultationAnalytics(initialTabIndex: 2), // All Time tab
+            onTap: () => _navigateToMyClients(), // Navigate to My Clients
           ),
         ),
       ],
@@ -1340,6 +1341,15 @@ Download the Astrologer App to connect with me and get personalized astrological
       context, 
       '/consultation-analytics',
       arguments: {'initialTabIndex': initialTabIndex},
+    );
+  }
+
+  void _navigateToMyClients() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyClientsScreen(),
+      ),
     );
   }
 

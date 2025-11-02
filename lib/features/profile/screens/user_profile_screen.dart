@@ -6,7 +6,14 @@ import '../../../shared/widgets/profile_avatar_widget.dart';
 /// User/Follower Profile Screen - Instagram-inspired design
 /// Shows detailed information about a user/follower from astrologer's perspective
 class UserProfileScreen extends StatefulWidget {
-  const UserProfileScreen({super.key});
+  final String? clientName;
+  final String? clientPhone;
+  
+  const UserProfileScreen({
+    super.key,
+    this.clientName,
+    this.clientPhone,
+  });
 
   @override
   State<UserProfileScreen> createState() => _UserProfileScreenState();
@@ -14,29 +21,39 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  // Mock user data
-  final Map<String, dynamic> _mockUser = {
-    'name': 'Priya Sharma',
-    'age': 28,
-    'gender': 'Female',
-    'location': 'Mumbai, Maharashtra',
-    'sunSign': 'Aries ♈',
-    'moonSign': 'Cancer ♋',
-    'risingSign': 'Leo ♌',
-    'birthDate': 'March 21, 1995',
-    'birthTime': '06:30 AM',
-    'birthPlace': 'Mumbai, India',
-    'totalConsultations': 12,
-    'lastConsultation': '3 days ago',
-    'preferredMethod': 'Video Call',
-    'followerSince': 'January 10, 2024',
-    'totalSpent': 8500,
-    'avgDuration': '35 mins',
-    'phone': '+91 98765 43210',
-    'email': 'priya.sharma@example.com',
-    'about': 'Looking for career guidance and relationship advice. Interested in understanding my life path through Vedic astrology.',
-    'concerns': ['Career Growth', 'Relationship', 'Health'],
-  };
+  
+  // Mock user data - use passed client data if available
+  late Map<String, dynamic> _mockUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    
+    // Initialize with passed data or default
+    _mockUser = {
+      'name': widget.clientName ?? 'Priya Sharma',
+      'age': 28,
+      'gender': 'Female',
+      'location': 'Mumbai, Maharashtra',
+      'sunSign': 'Aries ♈',
+      'moonSign': 'Cancer ♋',
+      'risingSign': 'Leo ♌',
+      'birthDate': 'March 21, 1995',
+      'birthTime': '06:30 AM',
+      'birthPlace': 'Mumbai, India',
+      'totalConsultations': 12,
+      'lastConsultation': '3 days ago',
+      'preferredMethod': 'Video Call',
+      'followerSince': 'January 10, 2024',
+      'totalSpent': 8500,
+      'avgDuration': '35 mins',
+      'phone': widget.clientPhone ?? '+91 98765 43210',
+      'email': 'priya.sharma@example.com',
+      'about': 'Looking for career guidance and relationship advice. Interested in understanding my life path through Vedic astrology.',
+      'concerns': ['Career Growth', 'Relationship', 'Health'],
+    };
+  }
 
   // Mock discussion posts from user
   final List<Map<String, dynamic>> _mockPosts = [
@@ -66,14 +83,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
     },
   ];
 
-  // Mock notes
+  // Mock notes - personalized based on client
   String _astrologerNotes = 'Client is going through career transition. Recommended wearing Ruby gemstone. Saturn transit affecting 10th house. Suggest follow-up consultation in April 2024.';
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
 
   @override
   void dispose() {
