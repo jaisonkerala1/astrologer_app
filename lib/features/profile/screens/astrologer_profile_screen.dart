@@ -174,9 +174,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   void _scrollListener() {
-    if (_scrollController.offset > 200 && !_showStickyHeader) {
+    if (_scrollController.offset > 150 && !_showStickyHeader) {
       setState(() => _showStickyHeader = true);
-    } else if (_scrollController.offset <= 200 && _showStickyHeader) {
+    } else if (_scrollController.offset <= 150 && _showStickyHeader) {
       setState(() => _showStickyHeader = false);
     }
   }
@@ -245,6 +245,15 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 ),
               ),
               
+              // Sticky header when scrolling
+              if (_showStickyHeader)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildStickyHeader(),
+                ),
+              
               // Sticky booking button
               Positioned(
                 left: 0,
@@ -252,9 +261,6 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 bottom: 0,
                 child: _buildBookingButton(),
               ),
-              
-              // Sticky header when scrolling
-              if (_showStickyHeader) _buildStickyHeader(),
             ],
           ),
         );
@@ -488,13 +494,28 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
 
   Widget _buildStickyHeader() {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: SafeArea(
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
               onPressed: () => Navigator.pop(context),
               padding: const EdgeInsets.all(8),
               constraints: const BoxConstraints(),

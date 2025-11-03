@@ -23,6 +23,8 @@ import '../../data/repositories/live/live_repository.dart';
 import '../../data/repositories/live/live_repository_impl.dart';
 import '../../data/repositories/notifications/notifications_repository.dart';
 import '../../data/repositories/notifications/notifications_repository_impl.dart';
+import '../../data/repositories/clients/clients_repository.dart';
+import '../../data/repositories/clients/clients_repository_impl.dart';
 import '../../features/auth/bloc/auth_bloc.dart';
 import '../../features/dashboard/bloc/dashboard_bloc.dart';
 import '../../features/consultations/bloc/consultations_bloc.dart';
@@ -34,6 +36,7 @@ import '../../features/heal/bloc/heal_bloc.dart';
 import '../../features/help_support/bloc/help_support_bloc.dart';
 import '../../features/live/bloc/live_bloc.dart';
 import '../../features/notifications/bloc/notifications_bloc.dart';
+import '../../features/clients/bloc/clients_bloc.dart';
 import '../../features/reviews/repository/reviews_repository.dart';
 import '../../features/reviews/bloc/reviews_bloc.dart';
 
@@ -98,6 +101,7 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<ReviewsRepository>(
     () => ReviewsRepository(
       apiService: getIt<ApiService>(),
+      storageService: getIt<StorageService>(),
     ),
   );
   
@@ -152,6 +156,14 @@ Future<void> setupServiceLocator() async {
   // Notifications Repository
   getIt.registerLazySingleton<NotificationsRepository>(
     () => NotificationsRepositoryImpl(
+      apiService: getIt<ApiService>(),
+      storageService: getIt<StorageService>(),
+    ),
+  );
+  
+  // Clients Repository
+  getIt.registerLazySingleton<ClientsRepository>(
+    () => ClientsRepositoryImpl(
       apiService: getIt<ApiService>(),
       storageService: getIt<StorageService>(),
     ),
@@ -220,10 +232,15 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<NotificationsBloc>(
     () => NotificationsBloc(repository: getIt<NotificationsRepository>()),
   );
+  
+  // Clients BLoC
+  getIt.registerFactory<ClientsBloc>(
+    () => ClientsBloc(repository: getIt<ClientsRepository>()),
+  );
 
   print('✅ Service Locator: All dependencies registered successfully');
-  print('   - 12 Repositories: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications');
-  print('   - 12 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications');
+  print('   - 13 Repositories: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
+  print('   - 13 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
 }
 
 /// Reset service locator (useful for testing)

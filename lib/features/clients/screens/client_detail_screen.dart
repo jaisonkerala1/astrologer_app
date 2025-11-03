@@ -23,21 +23,29 @@ class ClientDetailScreen extends StatefulWidget {
 class _ClientDetailScreenState extends State<ClientDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController _scrollController;
+  final ScrollController _scrollController = ScrollController();
   String _astrologerNotes = '';
-  bool _showCompactHeader = false;
+  bool _showStickyHeader = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _scrollController = ScrollController()
-      ..addListener(() {
-        setState(() {
-          _showCompactHeader = _scrollController.offset > 100;
-        });
-      });
+    _scrollController.addListener(_scrollListener);
     _astrologerNotes = widget.client.lastNotes ?? 'No notes yet for this client.';
+  }
+
+  void _scrollListener() {
+    if (_scrollController.offset > 150 && !_showStickyHeader) {
+      setState(() => _showStickyHeader = true);
+    } else if (_scrollController.offset <= 150 && _showStickyHeader) {
+      setState(() => _showStickyHeader = false);
+    }
+  }
+
+  // Generate consistent profile image URL
+  String _getProfileImageUrl() {
+    return 'https://i.pravatar.cc/150?img=${widget.client.clientName.hashCode.abs() % 70}';
   }
 
   @override
@@ -53,94 +61,179 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       builder: (context, themeService, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
-          body: NestedScrollView(
-            controller: _scrollController,
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                // App Bar
-                SliverAppBar(
-                  backgroundColor: Colors.white,
-                  elevation: 0.5,
-                  pinned: true,
-                  expandedHeight: _showCompactHeader ? 56 : 210,
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A2E)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  title: AnimatedOpacity(
-                    opacity: _showCompactHeader ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      widget.client.clientName,
-                      style: const TextStyle(
-                        color: Color(0xFF1A1A2E),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.more_vert, color: Color(0xFF6B6B8D)),
-                      onPressed: () {},
-                    ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: AnimatedOpacity(
-                      opacity: _showCompactHeader ? 0.0 : 1.0,
-                      duration: const Duration(milliseconds: 200),
+          body: Stack(
+            children: [
+              NestedScrollView(
+                controller: _scrollController,
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    // App Bar - floating style like astrologer profile
+                    _buildAppBar(),
+                    // Header content in SliverToBoxAdapter for smooth scrolling
+                    SliverToBoxAdapter(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           _buildHeaderCard(),
                           _buildActionButtons(),
                         ],
                       ),
                     ),
-                  ),
-                ),
-                
-                // Tab Bar
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SliverTabBarDelegate(
-                    TabBar(
-                      controller: _tabController,
-                      labelColor: const Color(0xFF7C3AED),
-                      unselectedLabelColor: const Color(0xFF6B6B8D),
-                      indicatorColor: const Color(0xFF7C3AED),
-                      indicatorWeight: 3,
-                      labelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    // Tab Bar
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _SliverTabBarDelegate(
+                        TabBar(
+                          controller: _tabController,
+                          labelColor: const Color(0xFF7C3AED),
+                          unselectedLabelColor: const Color(0xFF6B6B8D),
+                          indicatorColor: const Color(0xFF7C3AED),
+                          indicatorWeight: 3,
+                          labelStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          tabs: const [
+                            Tab(text: 'Overview'),
+                            Tab(text: 'Posts'),
+                            Tab(text: 'History'),
+                            Tab(text: 'Notes'),
+                          ],
+                        ),
                       ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      tabs: const [
-                        Tab(text: 'Overview'),
-                        Tab(text: 'Posts'),
-                        Tab(text: 'History'),
-                        Tab(text: 'Notes'),
-                      ],
                     ),
-                  ),
+                  ];
+                },
+                body: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildOverviewTab(),
+                    _buildPostsTab(),
+                    _buildHistoryTab(),
+                    _buildNotesTab(),
+                  ],
                 ),
-              ];
-            },
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOverviewTab(),
-                _buildPostsTab(),
-                _buildHistoryTab(),
-                _buildNotesTab(),
-              ],
-            ),
+              ),
+              
+              // Sticky header when scrolling (matching astrologer profile)
+              if (_showStickyHeader)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildStickyHeader(),
+                ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      floating: true,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.more_vert, color: Color(0xFF050505)),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStickyHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: SafeArea(
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
+              onPressed: () => Navigator.pop(context),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 4),
+            ProfileAvatarWidget(
+              imagePath: _getProfileImageUrl(),
+              radius: 16,
+              fallbackText: widget.client.initials,
+              backgroundColor: widget.client.avatarColor.withOpacity(0.1),
+              textColor: widget.client.avatarColor,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.client.clientName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF050505),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.event_available, color: Color(0xFF7C3AED), size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${widget.client.totalConsultations} sessions',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF65676B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: Color(0xFF050505)),
+              onPressed: () {},
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -154,8 +247,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           Stack(
             children: [
               ProfileAvatarWidget(
-                imagePath: 'https://i.pravatar.cc/300?u=' + 
-                    Uri.encodeComponent(widget.client.clientName),
+                imagePath: _getProfileImageUrl(),
                 radius: 40,
                 fallbackText: widget.client.initials,
                 backgroundColor: widget.client.avatarColor.withOpacity(0.1),

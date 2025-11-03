@@ -9,11 +9,17 @@ class LoadReviews extends ReviewsEvent {
   final int? filterRating;
   final String? sortBy; // 'newest', 'oldest', 'rating_high', 'rating_low'
   final bool? needsReply;
+  final bool forceRefresh;
   
-  LoadReviews({this.filterRating, this.sortBy, this.needsReply});
+  LoadReviews({
+    this.filterRating,
+    this.sortBy,
+    this.needsReply,
+    this.forceRefresh = false,
+  });
   
   @override
-  List<Object?> get props => [filterRating, sortBy, needsReply];
+  List<Object?> get props => [filterRating, sortBy, needsReply, forceRefresh];
 }
 
 class LoadRatingStats extends ReviewsEvent {}

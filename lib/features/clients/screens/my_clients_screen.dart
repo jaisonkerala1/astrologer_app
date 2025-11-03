@@ -1,34 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../shared/theme/services/theme_service.dart';
-import '../models/client_model.dart';
+import '../bloc/clients_bloc.dart';
+import '../bloc/clients_event.dart';
+import '../bloc/clients_state.dart';
 import '../widgets/client_card_widget.dart';
 import '../widgets/client_search_bar.dart';
 import '../widgets/client_filter_chips.dart';
-import '../widgets/client_stats_widget.dart';
 import '../widgets/clients_skeleton_loader.dart';
 
 /// My Clients Screen - Beautiful, modern UI for client management
 /// Shows all past clients with search and filter capabilities
-class MyClientsScreen extends StatefulWidget {
+/// Uses BLoC for state management with two-phase loading pattern
+class MyClientsScreen extends StatelessWidget {
   const MyClientsScreen({super.key});
 
   @override
-  State<MyClientsScreen> createState() => _MyClientsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => getIt<ClientsBloc>()..add(const LoadClientsEvent()),
+      child: const _MyClientsScreenContent(),
+    );
+  }
 }
 
-class _MyClientsScreenState extends State<MyClientsScreen>
-    with SingleTickerProviderStateMixin {
+class _MyClientsScreenContent extends StatefulWidget {
+  const _MyClientsScreenContent();
+
+  @override
+  State<_MyClientsScreenContent> createState() => _MyClientsScreenContentState();
+}
+
+class _MyClientsScreenContentState extends State<_MyClientsScreenContent>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true; // Preserve state on tab switch
+  
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  // Data
-  List<ClientModel> _allClients = [];
-  List<ClientModel> _filteredClients = [];
-  ClientFilter _selectedFilter = ClientFilter.all;
-  String _searchQuery = '';
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -47,18 +59,8 @@ class _MyClientsScreenState extends State<MyClientsScreen>
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
-      ),
-    );
-
-    // Load mock data
-    _loadClients();
+    // Start animation
+    _animationController.forward();
   }
 
   @override
@@ -67,79 +69,10 @@ class _MyClientsScreenState extends State<MyClientsScreen>
     super.dispose();
   }
 
-  Future<void> _loadClients() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate API call
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    setState(() {
-      _allClients = MockClientsData.getMockClients();
-      _filteredClients = _allClients;
-      _isLoading = false;
-    });
-
-    _animationController.forward();
-  }
-
-  void _onSearchChanged(String query) {
-    setState(() {
-      _searchQuery = query.toLowerCase();
-      _applyFilters();
-    });
-  }
-
-  void _onFilterChanged(ClientFilter filter) {
-    setState(() {
-      _selectedFilter = filter;
-      _applyFilters();
-    });
-  }
-
-  void _applyFilters() {
-    List<ClientModel> filtered = _allClients;
-
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((client) {
-        return client.clientName.toLowerCase().contains(_searchQuery) ||
-            client.clientPhone.toLowerCase().contains(_searchQuery) ||
-            (client.clientEmail?.toLowerCase().contains(_searchQuery) ?? false);
-      }).toList();
-    }
-
-    // Apply category filter
-    switch (_selectedFilter) {
-      case ClientFilter.recent:
-        filtered = filtered.where((client) => client.isRecent).toList();
-        break;
-      case ClientFilter.frequent:
-        filtered = filtered.where((client) => client.isFrequent).toList();
-        break;
-      case ClientFilter.vip:
-        filtered = filtered.where((client) => client.isVIP).toList();
-        break;
-      case ClientFilter.all:
-      default:
-        break;
-    }
-
-    // Sort by last consultation (most recent first)
-    filtered.sort((a, b) => b.lastConsultation.compareTo(a.lastConsultation));
-
-    setState(() {
-      _filteredClients = filtered;
-    });
-  }
-
-  Future<void> _onRefresh() async {
-    await _loadClients();
-  }
-
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
@@ -160,19 +93,32 @@ class _MyClientsScreenState extends State<MyClientsScreen>
               ),
             ),
             actions: [
-              // Sort/Filter button
               IconButton(
                 icon: const Icon(Icons.sort, color: Colors.white),
-                onPressed: () {
-                  _showSortOptions(themeService);
-                },
+                onPressed: () => _showSortOptions(context, themeService),
               ),
             ],
           ),
-          body: _isLoading
-              ? const ClientsSkeletonLoader()
-              : RefreshIndicator(
-                  onRefresh: _onRefresh,
+          body: BlocBuilder<ClientsBloc, ClientsState>(
+            builder: (context, state) {
+              // Show full loading only on initial load with no cache
+              if (state is ClientsLoading) {
+                return const ClientsSkeletonLoader();
+              }
+
+              // Show error state
+              if (state is ClientsError) {
+                return _buildErrorState(context, themeService, state.message);
+              }
+
+              // Show loaded state
+              if (state is ClientsLoaded) {
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    context.read<ClientsBloc>().add(const RefreshClientsEvent());
+                    // Wait for refresh to complete
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  },
                   color: themeService.primaryColor,
                   child: Column(
                     children: [
@@ -182,12 +128,11 @@ class _MyClientsScreenState extends State<MyClientsScreen>
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                           child: ClientSearchBar(
-                            onSearch: _onSearchChanged,
+                            onSearch: (query) {
+                              context.read<ClientsBloc>().add(SearchClientsEvent(query));
+                            },
                             onClear: () {
-                              setState(() {
-                                _searchQuery = '';
-                                _applyFilters();
-                              });
+                              context.read<ClientsBloc>().add(const SearchClientsEvent(''));
                             },
                           ),
                         ),
@@ -199,34 +144,50 @@ class _MyClientsScreenState extends State<MyClientsScreen>
                       FadeTransition(
                         opacity: _fadeAnimation,
                         child: ClientFilterChips(
-                          selectedFilter: _selectedFilter,
-                          onFilterChanged: _onFilterChanged,
+                          selectedFilter: _mapFilterToEnum(state.activeFilter),
+                          onFilterChanged: (filter) {
+                            context.read<ClientsBloc>().add(
+                                  FilterClientsEvent(_mapEnumToFilter(filter)),
+                                );
+                          },
                         ),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Results count
+                      // Results count with subtle refresh indicator
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
                             Text(
-                              '${_filteredClients.length} ${_filteredClients.length == 1 ? 'Client' : 'Clients'}',
+                              '${state.displayedCount} ${state.displayedCount == 1 ? 'Client' : 'Clients'}',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: themeService.textSecondary,
                               ),
                             ),
-                            if (_searchQuery.isNotEmpty ||
-                                _selectedFilter != ClientFilter.all) ...[
+                            if (state.hasFilters) ...[
                               const SizedBox(width: 8),
                               Text(
                                 '(Filtered)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: themeService.textHint,
+                                ),
+                              ),
+                            ],
+                            if (state.isRefreshing) ...[
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    themeService.primaryColor.withOpacity(0.5),
+                                  ),
                                 ),
                               ),
                             ],
@@ -238,13 +199,13 @@ class _MyClientsScreenState extends State<MyClientsScreen>
 
                       // Clients List
                       Expanded(
-                        child: _filteredClients.isEmpty
-                            ? _buildEmptyState(themeService)
+                        child: state.displayedClients.isEmpty
+                            ? _buildEmptyState(themeService, state.searchQuery)
                             : FadeTransition(
                                 opacity: _fadeAnimation,
                                 child: ListView.separated(
                                   padding: const EdgeInsets.all(16),
-                                  itemCount: _filteredClients.length,
+                                  itemCount: state.displayedClients.length,
                                   separatorBuilder: (context, index) =>
                                       const SizedBox(height: 12),
                                   itemBuilder: (context, index) {
@@ -254,12 +215,11 @@ class _MyClientsScreenState extends State<MyClientsScreen>
                                       tween: Tween(begin: 0.0, end: 1.0),
                                       builder: (context, value, child) {
                                         return Transform.translate(
-                                          offset:
-                                              Offset(0, 20 * (1 - value)),
+                                          offset: Offset(0, 20 * (1 - value)),
                                           child: Opacity(
                                             opacity: value,
                                             child: ClientCardWidget(
-                                              client: _filteredClients[index],
+                                              client: state.displayedClients[index],
                                             ),
                                           ),
                                         );
@@ -271,13 +231,19 @@ class _MyClientsScreenState extends State<MyClientsScreen>
                       ),
                     ],
                   ),
-                ),
+                );
+              }
+
+              // Initial state (shouldn't happen but handle it)
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
         );
       },
     );
   }
 
-  Widget _buildEmptyState(ThemeService themeService) {
+  Widget _buildEmptyState(ThemeService themeService, String searchQuery) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -290,16 +256,14 @@ class _MyClientsScreenState extends State<MyClientsScreen>
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _searchQuery.isNotEmpty ? Icons.search_off : Icons.people_outline,
+              searchQuery.isNotEmpty ? Icons.search_off : Icons.people_outline,
               size: 60,
               color: themeService.primaryColor.withOpacity(0.5),
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            _searchQuery.isNotEmpty
-                ? 'No clients found'
-                : 'No clients yet',
+            searchQuery.isNotEmpty ? 'No clients found' : 'No clients yet',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -310,7 +274,7 @@ class _MyClientsScreenState extends State<MyClientsScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Text(
-              _searchQuery.isNotEmpty
+              searchQuery.isNotEmpty
                   ? 'Try adjusting your search or filters'
                   : 'Your client list will appear here after consultations',
               style: TextStyle(
@@ -325,11 +289,61 @@ class _MyClientsScreenState extends State<MyClientsScreen>
     );
   }
 
-  void _showSortOptions(ThemeService themeService) {
+  Widget _buildErrorState(
+      BuildContext context, ThemeService themeService, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 80,
+            color: themeService.errorColor.withOpacity(0.5),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Failed to load clients',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: themeService.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 14,
+                color: themeService.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.read<ClientsBloc>().add(const LoadClientsEvent(forceRefresh: true));
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: themeService.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSortOptions(BuildContext context, ThemeService themeService) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (modalContext) {
         return Container(
           decoration: BoxDecoration(
             color: themeService.cardColor,
@@ -368,56 +382,40 @@ class _MyClientsScreenState extends State<MyClientsScreen>
 
               // Sort options
               _buildSortOption(
+                context: context,
+                modalContext: modalContext,
                 icon: Icons.access_time,
                 title: 'Last Consultation',
                 subtitle: 'Most recent first',
                 themeService: themeService,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _filteredClients.sort((a, b) =>
-                        b.lastConsultation.compareTo(a.lastConsultation));
-                  });
-                },
+                sortOption: ClientSortOption.lastConsultation,
               ),
               _buildSortOption(
+                context: context,
+                modalContext: modalContext,
                 icon: Icons.sort_by_alpha,
                 title: 'Name (A-Z)',
                 subtitle: 'Alphabetical order',
                 themeService: themeService,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _filteredClients.sort(
-                        (a, b) => a.clientName.compareTo(b.clientName));
-                  });
-                },
+                sortOption: ClientSortOption.nameAZ,
               ),
               _buildSortOption(
+                context: context,
+                modalContext: modalContext,
                 icon: Icons.event_note,
                 title: 'Total Consultations',
                 subtitle: 'Most consultations first',
                 themeService: themeService,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _filteredClients.sort((a, b) =>
-                        b.totalConsultations.compareTo(a.totalConsultations));
-                  });
-                },
+                sortOption: ClientSortOption.totalConsultations,
               ),
               _buildSortOption(
+                context: context,
+                modalContext: modalContext,
                 icon: Icons.attach_money,
                 title: 'Total Spent',
                 subtitle: 'Highest amount first',
                 themeService: themeService,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _filteredClients
-                        .sort((a, b) => b.totalSpent.compareTo(a.totalSpent));
-                  });
-                },
+                sortOption: ClientSortOption.totalSpent,
               ),
 
               const SizedBox(height: 16),
@@ -429,16 +427,21 @@ class _MyClientsScreenState extends State<MyClientsScreen>
   }
 
   Widget _buildSortOption({
+    required BuildContext context,
+    required BuildContext modalContext,
     required IconData icon,
     required String title,
     required String subtitle,
     required ThemeService themeService,
-    required VoidCallback onTap,
+    required ClientSortOption sortOption,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          Navigator.pop(modalContext);
+          context.read<ClientsBloc>().add(SortClientsEvent(sortOption));
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -490,5 +493,31 @@ class _MyClientsScreenState extends State<MyClientsScreen>
       ),
     );
   }
-}
 
+  // Helper methods to convert between enum and string
+  ClientFilter _mapFilterToEnum(String filter) {
+    switch (filter) {
+      case 'recent':
+        return ClientFilter.recent;
+      case 'frequent':
+        return ClientFilter.frequent;
+      case 'vip':
+        return ClientFilter.vip;
+      default:
+        return ClientFilter.all;
+    }
+  }
+
+  String _mapEnumToFilter(ClientFilter filter) {
+    switch (filter) {
+      case ClientFilter.recent:
+        return 'recent';
+      case ClientFilter.frequent:
+        return 'frequent';
+      case ClientFilter.vip:
+        return 'vip';
+      default:
+        return 'all';
+    }
+  }
+}

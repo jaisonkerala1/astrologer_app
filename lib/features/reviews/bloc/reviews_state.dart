@@ -17,6 +17,7 @@ class ReviewsLoaded extends ReviewsState {
   final int? currentFilter;
   final String currentSort;
   final bool showNeedsReplyOnly;
+  final bool isRefreshing; // Instagram/WhatsApp-style background refresh
   
   ReviewsLoaded({
     required this.reviews,
@@ -24,10 +25,29 @@ class ReviewsLoaded extends ReviewsState {
     this.currentFilter,
     this.currentSort = 'newest',
     this.showNeedsReplyOnly = false,
+    this.isRefreshing = false,
   });
   
   @override
-  List<Object?> get props => [reviews, stats, currentFilter, currentSort, showNeedsReplyOnly];
+  List<Object?> get props => [reviews, stats, currentFilter, currentSort, showNeedsReplyOnly, isRefreshing];
+
+  ReviewsLoaded copyWith({
+    List<ReviewModel>? reviews,
+    RatingStatsModel? stats,
+    int? currentFilter,
+    String? currentSort,
+    bool? showNeedsReplyOnly,
+    bool? isRefreshing,
+  }) {
+    return ReviewsLoaded(
+      reviews: reviews ?? this.reviews,
+      stats: stats ?? this.stats,
+      currentFilter: currentFilter ?? this.currentFilter,
+      currentSort: currentSort ?? this.currentSort,
+      showNeedsReplyOnly: showNeedsReplyOnly ?? this.showNeedsReplyOnly,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+    );
+  }
 }
 
 class ReviewsError extends ReviewsState {

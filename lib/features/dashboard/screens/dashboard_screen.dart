@@ -47,6 +47,7 @@ import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../profile/screens/user_profile_screen.dart';
 import '../../profile/screens/astrologer_profile_screen.dart';
 import '../../clients/screens/client_detail_screen.dart';
+import '../../clients/screens/my_clients_screen.dart';
 import '../../clients/models/client_model.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
@@ -825,13 +826,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: StatsCardWidget(
-                                title: 'Avg Duration',
-                                value: '${stats.averageSessionDuration.toStringAsFixed(0)}m',
-                                icon: Icons.timer,
-                                color: AppTheme.secondaryColor,
+                                title: 'My Clients',
+                                value: '${stats.totalSessions}', // Using total sessions as client count
+                                icon: Icons.people,
+                                color: AppTheme.infoColor,
                                 isLoading: isLoading,
                                 onTap: () {
-                                  // TODO: Add navigation for average duration
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const MyClientsScreen(),
+                                    ),
+                                  );
                                 },
                               ),
                             ),

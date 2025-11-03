@@ -22,7 +22,12 @@ class ReviewsOverviewScreen extends StatefulWidget {
   State<ReviewsOverviewScreen> createState() => _ReviewsOverviewScreenState();
 }
 
-class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen> {
+class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen>
+    with AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true; // Preserve state on tab switch
+  
   int? selectedRatingFilter;
   bool showNeedsReplyOnly = false;
   String selectedSort = 'newest';
@@ -30,12 +35,17 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ReviewsBloc>().add(LoadRatingStats());
-    context.read<ReviewsBloc>().add(LoadReviews());
+    // Only load if not already loaded (smart loading)
+    final currentState = context.read<ReviewsBloc>().state;
+    if (currentState is! ReviewsLoaded) {
+      context.read<ReviewsBloc>().add(LoadReviews());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
@@ -86,8 +96,12 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen> {
             return RefreshIndicator(
               onRefresh: () async {
                 context.read<ReviewsBloc>().add(LoadReviews());
+                // Wait for refresh to complete
+                await Future.delayed(const Duration(milliseconds: 500));
               },
-              child: CustomScrollView(
+              child: Stack(
+                children: [
+                  CustomScrollView(
                 slivers: [
                   // Rating Overview Header
                   SliverToBoxAdapter(
@@ -168,6 +182,25 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen> {
                               textAlign: TextAlign.center,
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+                  
+                  // Subtle refresh indicator at top
+                  if (state.isRefreshing)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 2,
+                        child: LinearProgressIndicator(
+                          backgroundColor: Colors.transparent,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).primaryColor,
+                          ),
                         ),
                       ),
                     ),
