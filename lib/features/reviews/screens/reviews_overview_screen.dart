@@ -51,13 +51,21 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen>
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: AppBar(
-            title: const Text('Reviews & Ratings'),
-            backgroundColor: themeService.surfaceColor,
-            foregroundColor: themeService.textPrimary,
-            elevation: 0.5,
+            title: Text(
+              'Reviews & Ratings',
+              style: TextStyle(
+                color: themeService.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+              ),
+            ),
+            backgroundColor: themeService.backgroundColor,
+            elevation: 0,
+            titleSpacing: 16,
             actions: [
               IconButton(
-                icon: const Icon(Icons.filter_list),
+                icon: Icon(Icons.filter_list, color: themeService.textPrimary),
                 onPressed: _showFilterOptions,
               ),
             ],

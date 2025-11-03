@@ -181,7 +181,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                   child: Icon(
                     _isSearching ? Icons.close_rounded : Icons.search_rounded,
                     key: ValueKey<bool>(_isSearching),
-                  color: Colors.white,
+                    color: Colors.white,
                     size: 24,
                   ),
                 ),
@@ -194,7 +194,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                     builder: (context, child) {
                       return Transform.rotate(
                         angle: _refreshAnimationController.value * 2 * 3.14159,
-                      child: const Icon(Icons.refresh, color: Colors.white),
+                        child: const Icon(Icons.refresh, color: Colors.white),
                       );
                     },
                   ),

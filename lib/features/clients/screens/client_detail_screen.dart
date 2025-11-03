@@ -145,7 +145,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
       actions: [
         IconButton(
           icon: const Icon(Icons.more_vert, color: Color(0xFF050505)),
-          onPressed: () {},
+          onPressed: _showOptionsMenu,
         ),
       ],
     );
@@ -227,7 +227,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.more_vert, color: Color(0xFF050505)),
-              onPressed: () {},
+              onPressed: _showOptionsMenu,
               padding: const EdgeInsets.all(8),
               constraints: const BoxConstraints(),
             ),
@@ -1118,6 +1118,255 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
           ],
         );
       },
+    );
+  }
+
+  void _showOptionsMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE4E6EB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Block Client option
+              ListTile(
+                leading: const Icon(Icons.block, color: Color(0xFFFFB300)),
+                title: const Text(
+                  'Block Client',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  HapticFeedback.lightImpact();
+                  _blockClient();
+                },
+              ),
+              const Divider(height: 1),
+              // Report option
+              ListTile(
+                leading: const Icon(Icons.flag_outlined, color: Color(0xFFEA4335)),
+                title: const Text(
+                  'Report Issue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFEA4335),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  HapticFeedback.lightImpact();
+                  _reportClient();
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _blockClient() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.block, color: Color(0xFFFFB300)),
+            SizedBox(width: 12),
+            Text('Block Client'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to block ${widget.client.clientName}?',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB300).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This will:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text('• Prevent future consultation requests', style: TextStyle(fontSize: 13)),
+                  Text('• Hide your profile from this client', style: TextStyle(fontSize: 13)),
+                  Text('• You can unblock them anytime', style: TextStyle(fontSize: 13)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showMessage('${widget.client.clientName} has been blocked');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB300),
+            ),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _reportClient() {
+    final TextEditingController reasonController = TextEditingController();
+    String selectedReason = 'Inappropriate behavior';
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.report_problem, color: Color(0xFFEA4335)),
+              SizedBox(width: 12),
+              Text('Report Client'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Report ${widget.client.clientName} for:',
+                  style: const TextStyle(fontSize: 15),
+                ),
+                const SizedBox(height: 16),
+                
+                // Report reasons
+                _buildReportOption(
+                  'Inappropriate behavior',
+                  selectedReason,
+                  (value) => setState(() => selectedReason = value!),
+                ),
+                _buildReportOption(
+                  'Harassment',
+                  selectedReason,
+                  (value) => setState(() => selectedReason = value!),
+                ),
+                _buildReportOption(
+                  'Payment issues',
+                  selectedReason,
+                  (value) => setState(() => selectedReason = value!),
+                ),
+                _buildReportOption(
+                  'Spam',
+                  selectedReason,
+                  (value) => setState(() => selectedReason = value!),
+                ),
+                _buildReportOption(
+                  'Other',
+                  selectedReason,
+                  (value) => setState(() => selectedReason = value!),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Additional details
+                TextField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Additional details (optional)',
+                    hintText: 'Please provide more information...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEA4335).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18, color: Color(0xFFEA4335)),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Your report will be reviewed within 24 hours',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF6B6B8D)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showMessage('Report submitted. Our team will review it shortly.');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEA4335),
+              ),
+              child: const Text('Submit Report'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportOption(String value, String groupValue, Function(String?) onChanged) {
+    return RadioListTile<String>(
+      title: Text(value, style: const TextStyle(fontSize: 14)),
+      value: value,
+      groupValue: groupValue,
+      onChanged: onChanged,
+      contentPadding: EdgeInsets.zero,
+      dense: true,
     );
   }
 
