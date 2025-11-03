@@ -270,14 +270,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: _showStickyHeader ? Colors.transparent : Colors.white,
       elevation: 0,
       floating: true,
-      leading: IconButton(
+      leading: _showStickyHeader ? const SizedBox.shrink() : IconButton(
         icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
         onPressed: () => Navigator.pop(context),
       ),
-      actions: [
+      actions: _showStickyHeader ? [] : [
         // Notification Bell Icon
         IconButton(
           icon: Icon(
@@ -493,111 +493,113 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildStickyHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.withOpacity(0.2),
-            width: 1,
+    return Material(
+      elevation: 8,
+      shadowColor: Colors.black.withOpacity(0.3),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey.withOpacity(0.2),
+              width: 1,
+            ),
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      child: SafeArea(
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
-              onPressed: () => Navigator.pop(context),
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 4),
-            Stack(
-              children: [
-                ProfileAvatarWidget(
-                  imagePath: null,
-                  radius: 16,
-                  fallbackText: 'RK',
-                  backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
-                  textColor: const Color(0xFF1877F2),
-                ),
-                // Online Status Indicator
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF44B700),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        child: SafeArea(
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
+                onPressed: () => Navigator.pop(context),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 4),
+              Stack(
                 children: [
-                  Text(
-                    _mockAstrologer['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF050505),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
+                  ProfileAvatarWidget(
+                    imagePath: null,
+                    radius: 16,
+                    fallbackText: 'RK',
+                    backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
+                    textColor: const Color(0xFF1877F2),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${_mockAstrologer['rating']}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF65676B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false,
+                  // Online Status Indicator
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF44B700),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _showBookingSheet,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1877F2),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _mockAstrologer['name'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF050505),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_mockAstrologer['rating']} • ${_mockAstrologer['totalReviews']} reviews',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF65676B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Book'),
-            ),
-          ],
+              const SizedBox(width: 4),
+              // Notification icon
+              IconButton(
+                icon: Icon(
+                  _notificationsEnabled ? Icons.notifications_active : Icons.notifications_outlined,
+                  color: _notificationsEnabled ? const Color(0xFF1877F2) : const Color(0xFF050505),
+                  size: 20,
+                ),
+                onPressed: _showNotificationPreferences,
+                padding: const EdgeInsets.all(6),
+                constraints: const BoxConstraints(),
+              ),
+              // Menu icon
+              IconButton(
+                icon: const Icon(Icons.more_vert, color: Color(0xFF050505), size: 20),
+                onPressed: _showOptionsMenu,
+                padding: const EdgeInsets.all(6),
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
         ),
       ),
     );

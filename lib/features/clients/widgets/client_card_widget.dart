@@ -182,7 +182,8 @@ class ClientCardWidget extends StatelessWidget {
   }
 
   Widget _buildAvatar(ThemeService themeService) {
-    final imageUrl = 'https://i.pravatar.cc/150?u=' + Uri.encodeComponent(client.clientName);
+    // Use same hash-based URL as detail screen for consistency
+    final imageUrl = 'https://i.pravatar.cc/150?img=${client.clientName.hashCode.abs() % 70}';
     return ProfileAvatarWidget(
       imagePath: imageUrl,
       radius: 22,
