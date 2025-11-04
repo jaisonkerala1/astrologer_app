@@ -319,32 +319,42 @@ class CalendarRepositoryImpl extends BaseRepository implements CalendarRepositor
   // ============================================================================
 
   Future<String> _getAstrologerId() async {
-    try {
-      print('🔍 [CalendarRepo] Getting astrologer ID from storage...');
-      final userData = await storageService.getUserData();
-      
-      if (userData != null) {
-        print('📦 [CalendarRepo] User data found in storage');
-        final userDataMap = jsonDecode(userData);
-        print('📦 [CalendarRepo] User data map keys: ${userDataMap.keys.toList()}');
+    // Retry up to 3 times with delay to handle race conditions
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        print('🔍 [CalendarRepo] Getting astrologer ID from storage (attempt $attempt/3)...');
+        final userData = await storageService.getUserData();
         
-        final astrologerId = userDataMap['id'] ?? userDataMap['_id'] as String?;
-        
-        if (astrologerId != null) {
-          print('✅ [CalendarRepo] Astrologer ID retrieved: $astrologerId');
-          return astrologerId;
+        if (userData != null) {
+          print('📦 [CalendarRepo] User data found in storage');
+          final userDataMap = jsonDecode(userData);
+          print('📦 [CalendarRepo] User data map keys: ${userDataMap.keys.toList()}');
+          
+          final astrologerId = userDataMap['id'] ?? userDataMap['_id'] as String?;
+          
+          if (astrologerId != null && astrologerId.isNotEmpty) {
+            print('✅ [CalendarRepo] Astrologer ID retrieved: $astrologerId');
+            return astrologerId;
+          } else {
+            print('❌ [CalendarRepo] Astrologer ID is null or empty in user data');
+            print('📦 [CalendarRepo] Full user data: $userDataMap');
+          }
         } else {
-          print('❌ [CalendarRepo] Astrologer ID is null in user data');
-          print('📦 [CalendarRepo] Full user data: $userDataMap');
+          print('❌ [CalendarRepo] No user data found in storage');
         }
-      } else {
-        print('❌ [CalendarRepo] No user data found in storage');
+      } catch (e) {
+        print('❌ [CalendarRepo] Error getting astrologer ID: $e');
+        print('❌ [CalendarRepo] Error type: ${e.runtimeType}');
       }
-    } catch (e) {
-      print('❌ [CalendarRepo] Error getting astrologer ID: $e');
-      print('❌ [CalendarRepo] Error type: ${e.runtimeType}');
+      
+      // Wait before retry (except on last attempt)
+      if (attempt < 3) {
+        print('⏳ [CalendarRepo] Retrying after 500ms...');
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
     }
-    throw Exception('Astrologer ID not found');
+    
+    throw Exception('Astrologer ID not found. Please ensure you are logged in.');
   }
 
   bool _isToday(DateTime date) {

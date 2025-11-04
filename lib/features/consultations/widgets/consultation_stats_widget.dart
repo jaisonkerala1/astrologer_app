@@ -4,6 +4,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../models/consultation_model.dart';
 import '../screens/consultation_analytics_screen.dart';
+import '../../calendar/screens/calendar_screen.dart';
 import '../screens/consultation_detail_screen.dart';
 import '../../earnings/screens/earnings_screen.dart';
 
@@ -271,13 +272,11 @@ class ConsultationStatsWidget extends StatelessWidget {
 
   void _handleCardTap(BuildContext context, String subtitle) {
     if (subtitle == 'Consultations') {
-      // Navigate to consultation analytics with weekly tab (index 0)
+      // Navigate to Calendar module instead of Analytics
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const ConsultationAnalyticsScreen(
-            initialTabIndex: 0, // Weekly analytics
-          ),
+          builder: (context) => const CalendarScreen(),
         ),
       );
     } else if (subtitle == 'Earnings') {

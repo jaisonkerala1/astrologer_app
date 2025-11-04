@@ -452,7 +452,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Calculate responsive sizes for bottom navigation
-    final double navBarHeight = 60.0; // Slightly increased for better visual balance
+    final double navBarHeight = 68.0; // Increased height for improved touch comfort
     final double selectedIconSize = screenWidth < 360 ? 27.0 : 30.0;
     final double unselectedIconSize = screenWidth < 360 ? 24.0 : 26.0;
     final double iconWidth = screenWidth < 360 ? 28.0 : screenWidth < 400 ? 30.0 : 33.0;
@@ -532,61 +532,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,
               elevation: 0,
-              selectedItemColor: themeService.primaryColor,
-          unselectedItemColor: themeService.textSecondary,
+              selectedItemColor: const Color(0xFF10B981), // Emerald green
+              unselectedItemColor: Colors.grey,
+              selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              showUnselectedLabels: true,
               selectedFontSize: selectedFontSize,
               unselectedFontSize: unselectedFontSize,
               iconSize: unselectedIconSize,
                 items: [
                   BottomNavigationBarItem(
-                    icon: SvgPicture.asset(
-                      AppAssets.dashboardIcon,
-                      width: iconWidth,
-                      height: iconWidth,
-                      color: _selectedIndex == 0
-                          ? themeService.primaryColor
-                          : themeService.textSecondary,
+                    icon: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          AppAssets.dashboardIcon,
+                          width: iconWidth,
+                          height: iconWidth,
+                          color: _selectedIndex == 0
+                              ? const Color(0xFF10B981) // emerald active
+                              : Colors.grey,
+                        ),
+                      ),
                     ),
                     label: l10n.dashboard,
                    ),
                   BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.phone_outlined,
-                      size: iconWidth,
-                      color: _selectedIndex == 1
-                          ? themeService.primaryColor
-                          : themeService.textSecondary,
+                    icon: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: Icon(
+                          Icons.phone_outlined,
+                          size: iconWidth,
+                          color: _selectedIndex == 1
+                              ? const Color(0xFF10B981)
+                              : Colors.grey,
+                        ),
+                      ),
                     ),
                     label: 'Communication',
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.spa,
-                      size: iconWidth,
-                      color: _selectedIndex == 2
-                          ? themeService.primaryColor
-                          : themeService.textSecondary,
+                    icon: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: Icon(
+                          Icons.spa,
+                          size: iconWidth,
+                          color: _selectedIndex == 2
+                              ? const Color(0xFF10B981)
+                              : Colors.grey,
+                        ),
+                      ),
                     ),
                     label: l10n.heal,
                   ),
                   BottomNavigationBarItem(
-                    icon: SvgPicture.asset(
-                      AppAssets.calendarIcon,
-                      width: iconWidth,
-                      height: iconWidth,
-                      color: _selectedIndex == 3
-                          ? themeService.primaryColor
-                          : themeService.textSecondary,
+                    icon: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          AppAssets.calendarIcon,
+                          width: iconWidth,
+                          height: iconWidth,
+                          color: _selectedIndex == 3
+                              ? const Color(0xFF10B981)
+                              : Colors.grey,
+                        ),
+                      ),
                     ),
                     label: l10n.consultations,
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.account_circle_outlined,
-                      size: iconWidth,
-                      color: _selectedIndex == 4
-                          ? themeService.primaryColor
-                          : themeService.textSecondary,
+                    icon: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: Icon(
+                          Icons.account_circle_outlined,
+                          size: iconWidth,
+                          color: _selectedIndex == 4
+                              ? const Color(0xFF10B981)
+                              : Colors.grey,
+                        ),
+                      ),
                     ),
                     label: l10n.profile,
                   ),

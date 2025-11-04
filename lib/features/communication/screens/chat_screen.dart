@@ -62,6 +62,14 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     });
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        // Keyboard opened → scroll to bottom after layout
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      }
+    });
   }
 
   @override
@@ -78,8 +86,14 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     if (_showEmojiPicker) {
       _focusNode.unfocus(); // Hide keyboard when showing emoji picker
+      // Give time for emoji picker to animate in then scroll
+      Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
     } else {
       _focusNode.requestFocus(); // Show keyboard when hiding emoji picker
+      // Scroll after keyboard focus
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     }
   }
 
