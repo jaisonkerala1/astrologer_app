@@ -17,6 +17,7 @@ import '../services/discussion_service.dart';
 import '../models/discussion_models.dart';
 import '../widgets/facebook_create_post_bottom_sheet.dart';
 import '../../auth/models/astrologer_model.dart';
+import '../../clients/widgets/client_search_bar.dart';
 
 class DiscussionScreen extends StatefulWidget {
   const DiscussionScreen({super.key});
@@ -354,68 +355,21 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   }
 
   Widget _buildSearchBar(AppLocalizations l10n, ThemeService themeService) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            spreadRadius: 0,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (value) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: ClientSearchBar(
+        hintText: 'Search discussions...',
+        minimal: true,
+        onSearch: (query) {
           setState(() {
-            _searchQuery = value;
+            _searchQuery = query;
           });
         },
-        style: const TextStyle(
-          color: Color(0xFF1A1A2E),
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-        ),
-        decoration: InputDecoration(
-          hintText: 'Search discussions...',
-          hintStyle: const TextStyle(
-            color: Color(0xFF6B6B8D),
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-          ),
-          prefixIcon: Container(
-            padding: const EdgeInsets.all(12),
-            child: const Icon(
-              Icons.search_rounded,
-              color: Color(0xFF6B6B8D),
-              size: 20,
-            ),
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? GestureDetector(
-                  onTap: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: Color(0xFF6B6B8D),
-                      size: 18,
-                    ),
-                  ),
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-        ),
+        onClear: () {
+          setState(() {
+            _searchQuery = '';
+          });
+        },
       ),
     );
   }

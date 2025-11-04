@@ -9,12 +9,14 @@ class ClientSearchBar extends StatefulWidget {
   final Function(String) onSearch;
   final VoidCallback? onClear;
   final String hintText;
+  final bool minimal; // minimal border style (gray/white, no primary highlight)
 
   const ClientSearchBar({
     super.key,
     required this.onSearch,
     this.onClear,
     this.hintText = 'Search by name or phone...',
+    this.minimal = false,
   });
 
   @override
@@ -102,26 +104,38 @@ class _ClientSearchBarState extends State<ClientSearchBar>
               color: themeService.cardColor,
               borderRadius: BorderRadius.circular(30), // More rounded
               border: Border.all(
-                color: _focusNode.hasFocus
-                    ? themeService.primaryColor.withOpacity(0.5)
-                    : themeService.borderColor,
-                width: _focusNode.hasFocus ? 2 : 1,
+                color: widget.minimal
+                    ? themeService.borderColor.withOpacity(0.5)
+                    : (_focusNode.hasFocus
+                        ? themeService.primaryColor.withOpacity(0.5)
+                        : themeService.borderColor),
+                width: widget.minimal
+                    ? 1
+                    : (_focusNode.hasFocus ? 2 : 1),
               ),
-              boxShadow: _focusNode.hasFocus
+              boxShadow: widget.minimal
                   ? [
                       BoxShadow(
-                        color: themeService.primaryColor.withOpacity(0.15),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5),
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                  : (_focusNode.hasFocus
+                      ? [
+                          BoxShadow(
+                            color: themeService.primaryColor.withOpacity(0.15),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]),
             ),
             child: Row(
               children: [
@@ -133,9 +147,11 @@ class _ClientSearchBarState extends State<ClientSearchBar>
                     child: Icon(
                       _isSearching ? Icons.search : Icons.search_outlined,
                       key: ValueKey(_isSearching),
-                      color: _focusNode.hasFocus
-                          ? themeService.primaryColor
-                          : themeService.textSecondary,
+                      color: widget.minimal
+                          ? themeService.textSecondary
+                          : (_focusNode.hasFocus
+                              ? themeService.primaryColor
+                              : themeService.textSecondary),
                       size: 20,
                     ),
                   ),
