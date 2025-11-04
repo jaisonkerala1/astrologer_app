@@ -5,6 +5,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
 import 'live_stream_viewer_screen.dart';
+import '../../clients/widgets/client_search_bar.dart';
 
 class LiveStreamsScreen extends StatefulWidget {
   const LiveStreamsScreen({super.key});
@@ -175,43 +176,21 @@ class _LiveStreamsScreenState extends State<LiveStreamsScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                          // Search Bar
-                          Container(
-          decoration: BoxDecoration(
-            color: themeService.surfaceColor,
-                              borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                                color: themeService.borderColor.withOpacity(0.5),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.03),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-          ),
-          child: TextField(
-                              style: TextStyle(color: themeService.textPrimary),
-            decoration: InputDecoration(
-                                hintText: 'Search astrologers or topics',
-              hintStyle: TextStyle(
-                                  color: themeService.textHint,
-                                  fontSize: 15,
-              ),
-                                border: InputBorder.none,
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                color: themeService.textSecondary,
-                                  size: 22,
-                                ),
-              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                              onChanged: _onSearchChanged,
-                            ),
+                          // Search Bar (replaced with My Clients rounded search bar)
+                          ClientSearchBar(
+                            hintText: 'Search astrologers or topics',
+                            onSearch: (query) {
+                              setState(() {
+                                _searchQuery = query;
+                              });
+                              _filterStreams();
+                            },
+                            onClear: () {
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                              _filterStreams();
+                            },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -351,12 +330,12 @@ class _LiveStreamsScreenState extends State<LiveStreamsScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? themeService.primaryColor
               : themeService.surfaceColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? themeService.primaryColor
@@ -377,9 +356,9 @@ class _LiveStreamsScreenState extends State<LiveStreamsScreen> {
           label,
           style: TextStyle(
             color: isSelected ? Colors.white : themeService.textPrimary,
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+            letterSpacing: 0.2,
           ),
         ),
       ),

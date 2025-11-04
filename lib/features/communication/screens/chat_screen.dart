@@ -22,6 +22,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   bool _showEmojiPicker = false;
+  bool _isComposing = false;
   final List<Map<String, dynamic>> _messages = [
     {
       'text': 'Hi! Thank you for the wonderful birth chart reading yesterday.',
@@ -49,6 +50,19 @@ class _ChatScreenState extends State<ChatScreen> {
       'time': 'Just now',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _messageController.addListener(() {
+      final hasText = _messageController.text.trim().isNotEmpty;
+      if (hasText != _isComposing) {
+        setState(() {
+          _isComposing = hasText;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -198,12 +212,18 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: themeService.cardColor,
+              color: themeService.backgroundColor,
+              border: Border(
+                top: BorderSide(
+                  color: themeService.borderColor.withOpacity(0.6),
+                  width: 1,
+                ),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, -1),
                 ),
               ],
             ),
@@ -215,10 +235,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: themeService.surfaceColor,
-                        borderRadius: BorderRadius.circular(28), // More rounded
+                        color: themeService.cardColor,
+                        borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: themeService.borderColor.withOpacity(0.5),
+                          color: themeService.borderColor.withOpacity(0.35),
                           width: 1,
                         ),
                         boxShadow: [
@@ -288,7 +308,26 @@ class _ChatScreenState extends State<ChatScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          // Attachments & Camera (inside input like WhatsApp)
+                          IconButton(
+                            icon: Icon(
+                              Icons.attach_file_rounded,
+                              color: themeService.textHint,
+                              size: 22,
+                            ),
+                            onPressed: () {},
+                            splashRadius: 22,
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.camera_alt_rounded,
+                              color: themeService.textHint,
+                              size: 22,
+                            ),
+                            onPressed: () {},
+                            splashRadius: 22,
+                          ),
+                          const SizedBox(width: 4),
                         ],
                       ),
                     ),
@@ -296,7 +335,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(width: 8),
                   // Send button (keeping it the same as requested)
                   GestureDetector(
-                    onTap: _sendMessage,
+                    onTap: _isComposing ? _sendMessage : null,
                     child: Container(
                       width: 48,
                       height: 48,
@@ -311,10 +350,10 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.send,
+                      child: Icon(
+                        _isComposing ? Icons.send_rounded : Icons.mic_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: 22,
                       ),
                     ),
                   ),
