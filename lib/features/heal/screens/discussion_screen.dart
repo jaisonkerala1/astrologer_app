@@ -389,7 +389,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.1),
             spreadRadius: 0,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -578,7 +578,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.1),
             spreadRadius: 0,
             blurRadius: 8,
             offset: const Offset(0, 2),

@@ -456,6 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final double selectedIconSize = screenWidth < 360 ? 24.0 : 26.0; // Reduced for minimal look
     final double unselectedIconSize = screenWidth < 360 ? 22.0 : 24.0; // Reduced for minimal look
     final double iconWidth = screenWidth < 360 ? 25.0 : screenWidth < 400 ? 27.0 : 29.0; // Reduced for minimal look
+    final double svgIconWidth = screenWidth < 360 ? 27.0 : screenWidth < 400 ? 29.0 : 31.0; // Slightly larger for SVG icons
     final double selectedFontSize = screenWidth < 360 ? 9.0 : 11.0;
     final double unselectedFontSize = screenWidth < 360 ? 8.5 : 10.0;
     
@@ -548,8 +549,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Center(
                         child: SvgPicture.asset(
                           AppAssets.dashboardIcon,
-                          width: iconWidth,
-                          height: iconWidth,
+                          width: svgIconWidth,
+                          height: svgIconWidth,
                           color: _selectedIndex == 0
                               ? const Color(0xFF10B981) // emerald active
                               : Colors.grey,
@@ -597,8 +598,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Center(
                         child: SvgPicture.asset(
                           AppAssets.calendarIcon,
-                          width: iconWidth,
-                          height: iconWidth,
+                          width: svgIconWidth,
+                          height: svgIconWidth,
                           color: _selectedIndex == 3
                               ? const Color(0xFF10B981)
                               : Colors.grey,
