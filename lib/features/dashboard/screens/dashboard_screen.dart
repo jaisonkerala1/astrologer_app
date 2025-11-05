@@ -453,9 +453,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     // Calculate responsive sizes for bottom navigation
     final double navBarHeight = 68.0; // Increased height for improved touch comfort
-    final double selectedIconSize = screenWidth < 360 ? 27.0 : 30.0;
-    final double unselectedIconSize = screenWidth < 360 ? 24.0 : 26.0;
-    final double iconWidth = screenWidth < 360 ? 28.0 : screenWidth < 400 ? 30.0 : 33.0;
+    final double selectedIconSize = screenWidth < 360 ? 24.0 : 26.0; // Reduced for minimal look
+    final double unselectedIconSize = screenWidth < 360 ? 22.0 : 24.0; // Reduced for minimal look
+    final double iconWidth = screenWidth < 360 ? 25.0 : screenWidth < 400 ? 27.0 : 29.0; // Reduced for minimal look
     final double selectedFontSize = screenWidth < 360 ? 9.0 : 11.0;
     final double unselectedFontSize = screenWidth < 360 ? 8.5 : 10.0;
     
@@ -543,8 +543,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 items: [
                   BottomNavigationBarItem(
                     icon: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       child: Center(
                         child: SvgPicture.asset(
                           AppAssets.dashboardIcon,
@@ -560,8 +560,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                    ),
                   BottomNavigationBarItem(
                     icon: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       child: Center(
                         child: Icon(
                           Icons.phone_outlined,
@@ -576,8 +576,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   BottomNavigationBarItem(
                     icon: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       child: Center(
                         child: Icon(
                           Icons.spa,
@@ -592,8 +592,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   BottomNavigationBarItem(
                     icon: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       child: Center(
                         child: SvgPicture.asset(
                           AppAssets.calendarIcon,
@@ -609,8 +609,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   BottomNavigationBarItem(
                     icon: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       child: Center(
                         child: Icon(
                           Icons.account_circle_outlined,
