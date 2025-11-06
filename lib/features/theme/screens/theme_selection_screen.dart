@@ -71,7 +71,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   Widget _buildThemeOption(AppTheme theme, bool isSelected, ThemeService themeService) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         themeService.setTheme(theme.type);
       },
       child: AnimatedContainer(

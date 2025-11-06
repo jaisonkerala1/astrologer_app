@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -51,7 +52,10 @@ class ConsultationFilterWidget extends StatelessWidget {
               const SizedBox(width: 8),
               if (selectedStatus != null)
                 GestureDetector(
-                  onTap: onClearFilters,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onClearFilters();
+                  },
                   child: Container(
                     height: 36, // Match other chips
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
@@ -112,7 +116,10 @@ class ConsultationFilterWidget extends StatelessWidget {
     final chipColor = color ?? themeService.primaryColor;
     
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: Container(
         height: 36, // Fixed height for consistent alignment
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),

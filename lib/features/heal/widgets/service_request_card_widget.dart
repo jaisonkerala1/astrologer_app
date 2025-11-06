@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/service_request_model.dart';
@@ -394,7 +395,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onReject,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onReject();
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -428,7 +432,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onAccept,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onAccept();
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -465,7 +472,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onStart,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onStart();
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -499,7 +509,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onReject,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onReject();
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(
@@ -537,7 +550,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: widget.onPause,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onPause!();
+                    },
                     borderRadius: BorderRadius.circular(8),
                     child: Center(
                       child: Row(
@@ -572,7 +588,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onComplete,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onComplete();
+                  },
                   borderRadius: BorderRadius.circular(8),
                   child: Center(
                     child: Row(

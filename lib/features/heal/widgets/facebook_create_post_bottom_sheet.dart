@@ -672,7 +672,7 @@ class _FacebookCreatePostBottomSheetState extends State<FacebookCreatePostBottom
   }
 
   void _handleMediaSelection(String type) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     // TODO: Implement media selection based on type
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

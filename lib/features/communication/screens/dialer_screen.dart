@@ -249,7 +249,7 @@ class _DialerScreenState extends State<DialerScreen> {
         _phoneNumber += number;
       }
     });
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
   }
 
   void _clearNumber() {
@@ -258,7 +258,7 @@ class _DialerScreenState extends State<DialerScreen> {
         _phoneNumber = _phoneNumber.substring(0, _phoneNumber.length - 1);
       }
     });
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
   }
 
   void _makeCall() {

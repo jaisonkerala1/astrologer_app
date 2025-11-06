@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -93,6 +94,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
   Future<void> _handleStart() async {
     if (widget.onStart == null) return;
     
+    HapticFeedback.selectionClick();
+    
     setState(() {
       _isStarting = true;
     });
@@ -113,6 +116,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
   Future<void> _handleComplete() async {
     if (widget.onComplete == null) return;
     
+    HapticFeedback.selectionClick();
+    
     setState(() {
       _isCompleting = true;
     });
@@ -132,6 +137,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
 
   Future<void> _handleCancel() async {
     if (widget.onCancel == null) return;
+    
+    HapticFeedback.selectionClick();
     
     setState(() {
       _isCancelling = true;
@@ -163,6 +170,7 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
           ),
           child: InkWell(
             onTap: () {
+              HapticFeedback.selectionClick();
               if (widget.onTap != null) {
                 widget.onTap!();
               } else {

@@ -115,7 +115,7 @@ class _LiveCommentInputState extends State<LiveCommentInput> {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
 
     final streamId = _liveService.currentStream?.id;
     if (streamId == null) {

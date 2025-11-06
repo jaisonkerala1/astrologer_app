@@ -69,7 +69,7 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         // Navigate to all live streams
-                        HapticFeedback.lightImpact();
+                        HapticFeedback.selectionClick();
                         Navigator.pushNamed(context, '/live-streams');
                       },
                       child: Container(
@@ -167,7 +167,7 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
   }
 
   void _handleAstrologerLongPress(BuildContext context, MockLiveAstrologer astrologer) {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     // TODO: Show profile preview modal
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

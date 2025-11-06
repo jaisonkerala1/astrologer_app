@@ -165,7 +165,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
 
   Future<void> _refreshDiscussions() async {
     // Add haptic feedback for pull-to-refresh
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     
     // Show shimmer during refresh
     setState(() => _isLoading = true);
@@ -200,7 +200,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       setState(() => _isLoading = false);
       
       // Show feedback with haptic
-      HapticFeedback.lightImpact();
+      HapticFeedback.selectionClick();
       
       if (mounted) {
         // Show success message
@@ -232,7 +232,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       }
     } catch (e) {
       // Error handling
-      HapticFeedback.heavyImpact();
+      HapticFeedback.selectionClick();
       
       // Hide shimmer on error
       setState(() => _isLoading = false);
@@ -389,7 +389,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             spreadRadius: 0,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -578,7 +578,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             spreadRadius: 0,
             blurRadius: 8,
             offset: const Offset(0, 2),

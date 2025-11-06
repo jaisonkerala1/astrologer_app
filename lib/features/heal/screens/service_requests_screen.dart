@@ -46,7 +46,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
           listener: (context, state) {
             // ❌ ONLY show error messages with retry (optimistic UI shows success visually)
             if (state is HealLoadedState && state.errorMessage != null) {
-              HapticFeedback.mediumImpact();
+              HapticFeedback.selectionClick();
               
               ScaffoldMessenger.of(context).clearSnackBars();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -438,7 +438,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     });
     
     // Subtle haptic feedback on button press (not too aggressive)
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     
     // Use BLoC to update request status (optimistic update happens in BLoC)
     context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, newStatus));

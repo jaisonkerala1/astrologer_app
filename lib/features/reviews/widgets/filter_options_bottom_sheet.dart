@@ -130,7 +130,7 @@ class _FilterOptionsBottomSheetState extends State<FilterOptionsBottomSheet> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 widget.onApply(_selectedRating, _showNeedsReplyOnly, _selectedSort);
                 Navigator.pop(context);
               },

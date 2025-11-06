@@ -388,7 +388,7 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
                 setState(() {
                   _isFollowing = !_isFollowing;
                 });
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
               },
             ),
             
@@ -398,7 +398,7 @@ class _LiveAudienceScreenState extends State<LiveAudienceScreen>
             _buildControlButton(
               icon: Icons.share,
               onTap: () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 _shareStream(stream);
               },
             ),

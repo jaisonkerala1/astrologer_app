@@ -434,7 +434,7 @@ class ConsultationAnalyticsWidget extends StatelessWidget {
   }
 
   void _handleStartConsultation(BuildContext context, String consultationId) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     // TODO: Implement start consultation logic
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -445,7 +445,7 @@ class ConsultationAnalyticsWidget extends StatelessWidget {
   }
 
   void _handleCompleteConsultation(BuildContext context, ConsultationModel consultation) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     // TODO: Implement complete consultation logic
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -456,7 +456,7 @@ class ConsultationAnalyticsWidget extends StatelessWidget {
   }
 
   void _handleCancelConsultation(BuildContext context, String consultationId) {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     // TODO: Implement cancel consultation logic
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -397,7 +397,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 setState(() {
                   _selectedType = type;
                 });
@@ -576,7 +576,7 @@ class _AddConsultationFormState extends State<AddConsultationForm> {
 
     // Validate all form fields
     if (_formKey.currentState!.validate()) {
-      HapticFeedback.lightImpact();
+      HapticFeedback.selectionClick();
       
       final scheduledDateTime = DateTime(
         _selectedDate.year,

@@ -95,7 +95,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   Widget _buildLanguageOption(Map<String, String> language, bool isSelected, ThemeService themeService) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         setState(() {
           _selectedLanguage = language['code']!;
         });
@@ -203,7 +203,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
 
   Future<void> _saveLanguage() async {
     try {
-      HapticFeedback.mediumImpact();
+      HapticFeedback.selectionClick();
       
       final languageService = Provider.of<LanguageService>(context, listen: false);
       

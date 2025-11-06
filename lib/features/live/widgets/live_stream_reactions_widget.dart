@@ -69,7 +69,7 @@ class _LiveStreamReactionsWidgetState extends State<LiveStreamReactionsWidget>
   }
 
   Future<void> _sendReaction(String emoji) async {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     
     try {
       await _liveStreamService.sendReaction(widget.liveStreamId, emoji);

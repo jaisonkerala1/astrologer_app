@@ -87,7 +87,7 @@ class _LiveStreamSearchBarState extends State<LiveStreamSearchBar> {
                     child: GestureDetector(
                       onTap: () {
                         widget.onClear();
-                        HapticFeedback.lightImpact();
+                        HapticFeedback.selectionClick();
                       },
                       child: Container(
                         padding: const EdgeInsets.all(6),

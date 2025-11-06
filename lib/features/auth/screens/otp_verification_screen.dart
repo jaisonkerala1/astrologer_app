@@ -414,7 +414,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           ),
           onChanged: (value) {
             if (value.length == AppConstants.otpLength) {
-              HapticFeedback.mediumImpact();
+              HapticFeedback.selectionClick();
               Future.delayed(const Duration(milliseconds: 300), () {
                 if (mounted) {
                   _verifyOtp();

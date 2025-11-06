@@ -1078,7 +1078,7 @@ class _TermsPrivacyScreenState extends State<TermsPrivacyScreen>
   }
 
   void _launchWebsite() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Website: www.axiomleap.com'),

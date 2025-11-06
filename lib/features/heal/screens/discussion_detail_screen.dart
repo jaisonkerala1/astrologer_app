@@ -100,7 +100,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   Future<void> _toggleNotifications() async {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     
     final newStatus = !_isNotificationSubscribed;
     setState(() {
@@ -461,7 +461,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                       // Like button
                       InkWell(
                         onTap: () {
-                          HapticFeedback.lightImpact();
+                          HapticFeedback.selectionClick();
                           _toggleLike();
                         },
                         borderRadius: BorderRadius.circular(8),
@@ -492,7 +492,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                       // Comment button
                       InkWell(
                         onTap: () {
-                          HapticFeedback.lightImpact();
+                          HapticFeedback.selectionClick();
                           _commentFocusNode.requestFocus();
                         },
                         borderRadius: BorderRadius.circular(8),
@@ -530,7 +530,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     // Bookmark button
                     InkWell(
                       onTap: () {
-                        HapticFeedback.mediumImpact();
+                        HapticFeedback.selectionClick();
                         _toggleSave();
                       },
                       borderRadius: BorderRadius.circular(8),
@@ -546,7 +546,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     // Share button
                     InkWell(
                       onTap: () {
-                        HapticFeedback.lightImpact();
+                        HapticFeedback.selectionClick();
                         _sharePost();
                       },
                       borderRadius: BorderRadius.circular(8),
@@ -658,7 +658,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                         children: [
                           InkWell(
                             onTap: () {
-                              HapticFeedback.lightImpact();
+                              HapticFeedback.selectionClick();
                               _toggleCommentLike(comment.id);
                             },
                             borderRadius: BorderRadius.circular(4),
@@ -690,7 +690,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                       // Reply button
                       InkWell(
                         onTap: () {
-                          HapticFeedback.lightImpact();
+                          HapticFeedback.selectionClick();
                           _startReply(comment);
                         },
                         borderRadius: BorderRadius.circular(4),
@@ -813,7 +813,7 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                   // Actions (only like for replies - no reply button for 1-level structure)
                   InkWell(
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                              HapticFeedback.selectionClick();
                       _toggleCommentLike(reply.id);
                     },
                     borderRadius: BorderRadius.circular(4),

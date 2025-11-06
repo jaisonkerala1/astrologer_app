@@ -79,7 +79,7 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
                   if (!_isEditing)
                 GestureDetector(
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    HapticFeedback.selectionClick();
                     setState(() {
                       _isEditing = true;
                     });
@@ -268,7 +268,7 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
   }
 
   void _cancelEdit() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     setState(() {
       _isEditing = false;
       _notesController.text = widget.consultation.notes ?? '';
@@ -276,7 +276,7 @@ class _ConsultationNotesWidgetState extends State<ConsultationNotesWidget> {
   }
 
   void _saveNotes() async {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     
     try {
       setState(() {

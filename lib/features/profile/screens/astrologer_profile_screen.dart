@@ -451,7 +451,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             child: ElevatedButton.icon(
               onPressed: () {
                 setState(() => _isFollowing = !_isFollowing);
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
               },
               icon: Icon(_isFollowing ? Icons.check : Icons.add, size: 18),
               label: Text(
@@ -1340,7 +1340,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         child: InkWell(
           onTap: () {
             // Show post detail
-            HapticFeedback.lightImpact();
+            HapticFeedback.selectionClick();
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
@@ -1442,7 +1442,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                       color: post['isLiked'] ? Colors.red : const Color(0xFF6B6B8D),
                       onTap: () {
                         // Toggle like
-                        HapticFeedback.lightImpact();
+                        HapticFeedback.selectionClick();
                       },
                     ),
                     
@@ -1542,7 +1542,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 child: ElevatedButton.icon(
                 onPressed: () {
                   // Handle call action
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                 },
                 icon: const Icon(Icons.phone, size: 18),
                 label: const Text('Call'),
@@ -1565,7 +1565,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               child: ElevatedButton.icon(
                 onPressed: () {
                   // Handle video call action
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                 },
                 icon: const Icon(Icons.videocam, size: 18),
                 label: const Text('Video'),
@@ -1635,7 +1635,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   onChanged: (value) {
                     setDialogState(() => _notificationsEnabled = value);
                     setState(() => _notificationsEnabled = value);
-                    HapticFeedback.lightImpact();
+                    HapticFeedback.selectionClick();
                   },
                   title: const Text(
                     'Enable Notifications',
@@ -1652,7 +1652,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     onChanged: (value) {
                       setDialogState(() => _notifyOnline = value ?? true);
                       setState(() => _notifyOnline = value ?? true);
-                      HapticFeedback.lightImpact();
+                      HapticFeedback.selectionClick();
                     },
                     title: const Text('Online Status'),
                     subtitle: const Text('When astrologer comes online'),
@@ -1664,7 +1664,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     onChanged: (value) {
                       setDialogState(() => _notifyLive = value ?? true);
                       setState(() => _notifyLive = value ?? true);
-                      HapticFeedback.lightImpact();
+                      HapticFeedback.selectionClick();
                     },
                     title: const Text('Live Sessions'),
                     subtitle: const Text('When going live'),
@@ -1676,7 +1676,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     onChanged: (value) {
                       setDialogState(() => _notifyDiscussion = value ?? true);
                       setState(() => _notifyDiscussion = value ?? true);
-                      HapticFeedback.lightImpact();
+                      HapticFeedback.selectionClick();
                     },
                     title: const Text('New Discussions'),
                     subtitle: const Text('When creating new posts'),
@@ -1730,7 +1730,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   // Handle share
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Share profile...')),
@@ -1751,7 +1751,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _showReportDialog();
                 },
               ),

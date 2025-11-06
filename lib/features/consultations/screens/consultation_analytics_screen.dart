@@ -112,7 +112,7 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _loadAnalyticsData();
                 },
               ),

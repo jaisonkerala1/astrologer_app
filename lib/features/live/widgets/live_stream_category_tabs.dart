@@ -53,7 +53,7 @@ class LiveStreamCategoryTabs extends StatelessWidget {
   ) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         onCategorySelected(category);
       },
       child: AnimatedContainer(

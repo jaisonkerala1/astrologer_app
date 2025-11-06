@@ -1153,7 +1153,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _blockClient();
                 },
               ),
@@ -1171,7 +1171,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen>
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _reportClient();
                 },
               ),

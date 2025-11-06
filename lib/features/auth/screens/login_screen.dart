@@ -505,7 +505,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _errorMessage = l10n.pleaseEnterPhone;
       });
-      HapticFeedback.lightImpact();
+      HapticFeedback.selectionClick();
       return;
     }
     
@@ -513,7 +513,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _errorMessage = l10n.phoneTooShort;
       });
-      HapticFeedback.lightImpact();
+      HapticFeedback.selectionClick();
       return;
     }
     
@@ -521,7 +521,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _errorMessage = l10n.phoneTooLong;
       });
-      HapticFeedback.lightImpact();
+      HapticFeedback.selectionClick();
       return;
     }
     
@@ -530,7 +530,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       _errorMessage = null;
     });
     
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     context.read<AuthBloc>().add(CheckPhoneExistsEvent(_fullPhoneNumber.trim()));
   }
 

@@ -507,7 +507,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
       _isLoading = true;
     });
 
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
 
     try {
       final success = await _liveService.startLiveStream(

@@ -252,7 +252,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Accept button (left side)
           GestureDetector(
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               _acceptCall();
             },
             child: Container(
@@ -281,7 +281,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Message button (center)
           GestureDetector(
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               _sendMessage();
             },
             child: Container(
@@ -310,7 +310,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Decline button (right side)
           GestureDetector(
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               _declineCall();
             },
             child: Container(
@@ -351,7 +351,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             icon: Icons.mic_off,
             color: themeService.surfaceColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               // TODO: Implement mute functionality
             },
           ),
@@ -361,7 +361,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             icon: Icons.volume_up,
             color: themeService.surfaceColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               // TODO: Implement speaker functionality
             },
           ),
@@ -371,7 +371,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             icon: Icons.dialpad,
             color: themeService.surfaceColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               // TODO: Implement keypad functionality
             },
           ),
@@ -381,7 +381,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             icon: Icons.call_end,
             color: themeService.errorColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               _endCall();
             },
           ),

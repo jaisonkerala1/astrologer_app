@@ -210,7 +210,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         onTap();
       },
       child: Container(
@@ -379,7 +379,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               Navigator.pop(context);
             },
             child: Text(
@@ -392,7 +392,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              HapticFeedback.mediumImpact();
+              HapticFeedback.selectionClick();
               Navigator.pop(context);
               // TODO: Implement reject functionality
               ScaffoldMessenger.of(context).showSnackBar(
@@ -441,7 +441,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               Navigator.pop(context);
             },
             child: Text(
@@ -454,7 +454,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              HapticFeedback.mediumImpact();
+              HapticFeedback.selectionClick();
               Navigator.pop(context);
               // TODO: Implement cancel functionality
               ScaffoldMessenger.of(context).showSnackBar(

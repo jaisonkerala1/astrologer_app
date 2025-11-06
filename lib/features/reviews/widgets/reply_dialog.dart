@@ -212,7 +212,7 @@ class _ReplyDialogState extends State<ReplyDialog> {
       _isSubmitting = true;
     });
 
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     
     widget.onSubmit(replyText);
     

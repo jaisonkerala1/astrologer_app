@@ -103,7 +103,7 @@ class _RatingDialogState extends State<RatingDialog> {
                   children: List.generate(5, (index) {
                     return GestureDetector(
                       onTap: () {
-                        HapticFeedback.lightImpact();
+                        HapticFeedback.selectionClick();
                         setState(() {
                           _selectedRating = index + 1;
                         });
@@ -200,7 +200,7 @@ class _RatingDialogState extends State<RatingDialog> {
                   Expanded(
                     child: GestureDetector(
                       onTap: _isSubmitting ? null : () {
-                        HapticFeedback.lightImpact();
+                        HapticFeedback.selectionClick();
                         Navigator.pop(context);
                       },
                       child: Container(

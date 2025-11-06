@@ -88,7 +88,7 @@ class _ConsultationSearchBarState extends State<ConsultationSearchBar>
     _controller.clear();
     _focusNode.unfocus();
     widget.onClearSearch();
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
   }
 
   void _onSearchSubmitted(String value) {

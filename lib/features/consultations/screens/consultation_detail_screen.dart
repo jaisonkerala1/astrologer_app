@@ -199,7 +199,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               // Back button
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   Navigator.pop(context);
                 },
                 child: Container(
@@ -245,7 +245,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
               // More actions
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _showMoreOptions(themeService);
                 },
                 child: Container(
@@ -278,7 +278,7 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen>
   Widget _buildNextConsultationButton(ConsultationModel nextConsultation, ThemeService themeService) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         Navigator.push(
           context,
           MaterialPageRoute(

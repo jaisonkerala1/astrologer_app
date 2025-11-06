@@ -61,7 +61,7 @@ class MinimalAvailabilityToggleWidget extends StatelessWidget {
                   // Minimal toggle switch
                   GestureDetector(
                     onTap: statusService.isUpdating ? null : () {
-                      HapticFeedback.lightImpact();
+                      HapticFeedback.selectionClick();
                       try {
                         statusService.setOnlineStatus(!statusService.isOnline);
                       } catch (e) {

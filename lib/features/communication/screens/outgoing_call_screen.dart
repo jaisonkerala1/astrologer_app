@@ -271,7 +271,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
             icon: Icons.mic_off,
             color: themeService.surfaceColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               // TODO: Implement mute functionality
             },
           ),
@@ -281,7 +281,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
             icon: Icons.volume_up,
             color: themeService.surfaceColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               // TODO: Implement speaker functionality
             },
           ),
@@ -291,7 +291,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
             icon: Icons.dialpad,
             color: themeService.surfaceColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               // TODO: Implement keypad functionality
             },
           ),
@@ -301,7 +301,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
             icon: Icons.call_end,
             color: themeService.errorColor,
             onTap: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               _endCall();
             },
           ),

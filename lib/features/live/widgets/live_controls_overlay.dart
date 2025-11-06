@@ -125,7 +125,7 @@ class LiveControlsOverlay extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         onTap();
       },
       child: Container(

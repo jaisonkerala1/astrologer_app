@@ -13,7 +13,7 @@ class FloatingChatButton extends StatelessWidget {
   });
 
   void _openChat(BuildContext context) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
 
     showModalBottomSheet(
       context: context,

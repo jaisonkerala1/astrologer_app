@@ -276,7 +276,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   
   // Method to navigate to Live Prep (hidden page at index 0)
   void _navigateToLivePrep() {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     _pageController.animateToPage(
       0, // Live Prep page
       duration: const Duration(milliseconds: 300),
@@ -297,7 +297,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Open notifications method
   void _openNotifications() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -512,7 +512,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               unselectedIconTheme: IconThemeData(size: unselectedIconSize),
               currentIndex: _selectedIndex,
               onTap: (navIndex) {
-                // Add soft haptic feedback
+                // Add soft haptic feedback (same for all tabs)
                 HapticFeedback.selectionClick();
                 
                 // Map bottom nav index to page index (add 1 for hidden Live Prep page)
@@ -522,11 +522,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Nav 3 → Page 4 (Consultations)
                 // Nav 4 → Page 5 (Profile)
                 final pageIndex = navIndex + 1;
-                
-                // Extra haptic for Heal tab
-                if (navIndex == 2) {
-                  HapticFeedback.mediumImpact();
-                }
                 
                 _pageController.jumpToPage(pageIndex);
               },
@@ -1471,7 +1466,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openReviewsScreen() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     Navigator.push(
       context,
       MaterialPageRoute(

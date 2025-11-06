@@ -226,7 +226,7 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen>
   }
 
   void _showFilterOptions() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -255,7 +255,7 @@ class _ReviewsOverviewScreenState extends State<ReviewsOverviewScreen>
   }
 
   void _showReplyDialog(ReviewModel review) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     showDialog(
       context: context,
       builder: (context) => ReplyDialog(

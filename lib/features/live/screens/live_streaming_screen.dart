@@ -55,6 +55,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _commentController.dispose();
     _commentsController.dispose();
     _commentSimulationTimer?.cancel();
+    // SystemUI is restored in _confirmEndStream() before navigation to prevent flickering
+    // Keeping this as a safety fallback
     _showSystemUI();
     super.dispose();
   }
@@ -122,11 +124,18 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   void _showSystemUI() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Use manual mode to show navigation bar properly (fixes bottom nav hidden bug)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom], // Show both bars
+    );
+    
+    // Restore the style to match main.dart
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.light, // Match main.dart
+        statusBarBrightness: Brightness.light, // For iOS
         systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
@@ -249,6 +258,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     
     _liveService.endLiveStream();
     print('🛑 [LIVE_STREAMING] Called _liveService.endLiveStream()');
+    
+    // ✅ Restore SystemUI BEFORE navigation to prevent flickering
+    _showSystemUI();
+    print('✅ [LIVE_STREAMING] SystemUI restored before navigation');
     
     Future.delayed(const Duration(seconds: 2), () {
       print('🛑 [LIVE_STREAMING] Delay finished (2 seconds)');
@@ -748,7 +761,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         onTap();
       },
       child: Container(
@@ -842,7 +855,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
               },
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _openExpandedComments();
                 },
                 child: Container(

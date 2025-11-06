@@ -48,7 +48,7 @@ class _AboutScreenState extends State<AboutScreen> {
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios),
               onPressed: () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 Navigator.pop(context);
               },
             ),

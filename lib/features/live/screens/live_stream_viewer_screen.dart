@@ -120,16 +120,25 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _commentsScrollController.dispose();
     _commentSimulationTimer?.cancel();
     _liveStreamService.leaveLiveStream(widget.liveStream.id);
+    // SystemUI is restored in PopScope before navigation to prevent flickering
+    // Keeping this as a safety fallback
     _restoreSystemUI();
     super.dispose();
   }
 
   void _restoreSystemUI() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Use manual mode to show navigation bar properly (fixes bottom nav hidden bug)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom], // Show both bars
+    );
+    
+    // Restore the style to match main.dart
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.light, // Match main.dart
+        statusBarBrightness: Brightness.light, // For iOS
         systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
@@ -171,7 +180,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   }
 
   void _sendHeartReaction() {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.selectionClick();
     
     // Add 3-5 hearts with random positions
     final heartCount = 3 + _random.nextInt(3);
@@ -261,8 +270,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
+              // Restore SystemUI before navigation
+              _restoreSystemUI();
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Close viewer screen
             },
             child: const Text('OK'),
           ),
@@ -273,11 +284,23 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Scaffold(
-          backgroundColor: Colors.black,
-          body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (!didPop) {
+          // Restore SystemUI BEFORE popping to prevent flickering
+          _restoreSystemUI();
+          await Future.delayed(const Duration(milliseconds: 100)); // Small delay for smooth transition
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: Stack(
             children: [
               // Main video area
               _buildVideoArea(themeService),
@@ -324,6 +347,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
           ),
         );
       },
+    ),
     );
   }
 
@@ -612,7 +636,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
               },
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _openExpandedComments();
                 },
                 child: Container(

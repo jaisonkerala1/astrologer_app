@@ -66,7 +66,22 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   void _restoreSystemUI() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Use manual mode to show navigation bar properly (fixes bottom nav hidden bug)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom], // Show both bars
+    );
+    
+    // Restore the style to match main.dart
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light, // Match main.dart
+        statusBarBrightness: Brightness.light, // For iOS
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
   }
 
   void _initializeVideoCall() {

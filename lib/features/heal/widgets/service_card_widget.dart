@@ -193,7 +193,7 @@ class ServiceCardWidget extends StatelessWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              HapticFeedback.lightImpact();
+                              HapticFeedback.selectionClick();
                               onEdit();
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -232,7 +232,7 @@ class ServiceCardWidget extends StatelessWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              HapticFeedback.lightImpact();
+                              HapticFeedback.selectionClick();
                               onToggleStatus();
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -273,7 +273,7 @@ class ServiceCardWidget extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () {
-                            HapticFeedback.mediumImpact();
+                            HapticFeedback.selectionClick();
                             onDelete();
                           },
                           borderRadius: BorderRadius.circular(8),

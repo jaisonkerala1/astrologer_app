@@ -164,7 +164,7 @@ class _LiveStreamsScreenState extends State<LiveStreamsScreen> {
       ),
         IconButton(
                                 onPressed: () {
-                                  HapticFeedback.lightImpact();
+                                  HapticFeedback.selectionClick();
                                   _loadLiveStreams();
                                 },
           icon: Icon(
@@ -368,7 +368,7 @@ class _LiveStreamsScreenState extends State<LiveStreamsScreen> {
   Widget _buildStreamTile(LiveStreamModel stream, ThemeService themeService) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         Navigator.push(
           context,
           MaterialPageRoute(

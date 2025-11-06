@@ -78,7 +78,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
   }
 
   Future<void> _showGiftConfirmation(GiftItem gift) async {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     
     final confirmed = await showDialog<bool>(
       context: context,
@@ -175,7 +175,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
   }
 
   Future<void> _sendGift(GiftItem gift) async {
-    HapticFeedback.heavyImpact();
+    HapticFeedback.selectionClick();
     
     try {
       final giftModel = LiveGiftModel(

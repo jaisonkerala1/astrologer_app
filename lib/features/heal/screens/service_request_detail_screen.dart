@@ -190,7 +190,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               // Back button
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   Navigator.pop(context);
                 },
                 child: Container(
@@ -236,7 +236,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               // More actions
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  HapticFeedback.selectionClick();
                   _showMoreOptions(themeService);
                 },
                 child: Container(
@@ -269,7 +269,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
   Widget _buildNextRequestButton(ServiceRequest nextRequest, ThemeService themeService) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticFeedback.selectionClick();
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -480,7 +480,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               title: 'Edit Request',
               onTap: () {
                 Navigator.pop(context);
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 // TODO: Navigate to edit screen
               },
               themeService: themeService,
@@ -490,7 +490,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               title: 'Duplicate',
               onTap: () {
                 Navigator.pop(context);
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 // TODO: Duplicate request
               },
               themeService: themeService,
@@ -500,7 +500,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               title: 'Share Details',
                 onTap: () {
                   Navigator.pop(context);
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 // TODO: Share request
               },
               themeService: themeService,
@@ -510,7 +510,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               title: 'Delete',
                 onTap: () {
                   Navigator.pop(context);
-                HapticFeedback.mediumImpact();
+                HapticFeedback.selectionClick();
                 _showDeleteConfirmation(themeService);
               },
               isDestructive: true,
@@ -595,7 +595,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
         actions: [
             TextButton(
             onPressed: () {
-              HapticFeedback.lightImpact();
+              HapticFeedback.selectionClick();
               Navigator.pop(context);
             },
             child: Text(
@@ -608,7 +608,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
             ),
             TextButton(
               onPressed: () {
-              HapticFeedback.mediumImpact();
+              HapticFeedback.selectionClick();
                 Navigator.pop(context);
               // TODO: Delete request using BLoC
               // context.read<HealBloc>().add(DeleteServiceRequestEvent(...));
