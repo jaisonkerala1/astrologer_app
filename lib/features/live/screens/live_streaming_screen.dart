@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
+import '../widgets/live_comments_bottom_sheet.dart';
+import '../widgets/live_gift_bottom_sheet.dart';
+import '../widgets/live_gift_animation_overlay.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
   const LiveStreamingScreen({super.key});
@@ -28,9 +31,21 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   
   bool _isEnding = false;
   bool _isControlsVisible = true;
-  bool _isFloatingCommentsVisible = true; // Floating comments visibility
-  bool _isExpandedCommentsVisible = false; // Expanded panel visibility
   bool _isSettingsVisible = false;
+  
+  // Engagement metrics
+  int _viewersCount = 0;
+  int _likesCount = 0;
+  int _heartsCount = 0;
+  int _commentsCount = 0;
+  int _giftsTotal = 0;
+  
+  // Gift animations
+  final List<Map<String, dynamic>> _giftAnimations = [];
+  Timer? _giftAnimationTimer;
+  
+  // Gift notifications for comments view
+  final List<Map<String, dynamic>> _giftNotifications = [];
   
   final ScrollController _commentsController = ScrollController();
   Timer? _commentSimulationTimer;
@@ -146,9 +161,82 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     // Simulate stream initialization
     await Future.delayed(const Duration(seconds: 1));
     print('🎥 [LIVE_STREAMING] Current stream: ${_liveService.currentStream}');
-    if (mounted) {
-      setState(() {});
-    }
+    
+    // Initialize with some starting metrics
+    setState(() {
+      _viewersCount = 5 + _random.nextInt(15);  // 5-20 initial viewers
+      _likesCount = 10 + _random.nextInt(30);
+      _heartsCount = 50 + _random.nextInt(100);
+      _commentsCount = _floatingComments.length;
+    });
+    
+    // Simulate engagement growth
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || _isEnding) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        // Viewers fluctuate
+        _viewersCount += _random.nextInt(3) - 1;  // -1, 0, or +1
+        if (_viewersCount < 1) _viewersCount = 1;
+        
+        // Hearts grow
+        _heartsCount += _random.nextInt(10);
+        
+        // Likes grow slower
+        if (_random.nextBool()) {
+          _likesCount++;
+        }
+      });
+    });
+    
+    // Simulate receiving gifts
+    Timer.periodic(const Duration(seconds: 8), (timer) {
+      if (!mounted || _isEnding) {
+        timer.cancel();
+        return;
+      }
+      _receiveGift();
+    });
+  }
+  
+  void _receiveGift() {
+    final giftNames = ['Rose', 'Heart', 'Star', 'Diamond', 'Crown', 'Gift Box'];
+    final giftEmojis = ['🌹', '💖', '⭐', '💎', '👑', '🎁'];
+    final giftValues = [10, 50, 100, 500, 1000, 2000];
+    final senderNames = ['Priya', 'Rahul', 'Anjali', 'Vikram', 'Neha', 'Amit', 'Kavita', 'Sanjay'];
+    
+    final index = _random.nextInt(giftNames.length);
+    final senderIndex = _random.nextInt(senderNames.length);
+    
+    setState(() {
+      // Add to gift notifications (for bottom sheet)
+      _giftNotifications.add({
+        'sender': senderNames[senderIndex],
+        'gift': giftNames[index],
+        'emoji': giftEmojis[index],
+        'value': giftValues[index],
+        'timestamp': DateTime.now(),
+        'id': '${DateTime.now().millisecondsSinceEpoch}',
+      });
+      
+      // Add to floating comments (for main screen)
+      if (_floatingComments.length >= 4) {
+        _floatingComments.removeAt(0);
+      }
+      _floatingComments.add({
+        'user': senderNames[senderIndex],
+        'message': '${giftEmojis[index]} sent ${giftNames[index]}',
+        'emoji': giftEmojis[index],
+        'isGift': 'true',  // Mark as gift
+        'value': '₹${giftValues[index]}',
+      });
+      
+      // Update total
+      _giftsTotal += giftValues[index];
+      _commentsCount++; // Count gift as interaction
+    });
   }
 
   void _toggleControls() {
@@ -157,31 +245,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     });
   }
 
-  void _toggleFloatingComments() {
-    setState(() {
-      _isFloatingCommentsVisible = !_isFloatingCommentsVisible;
-    });
-  }
-
-  void _openExpandedComments() {
-    setState(() {
-      _isExpandedCommentsVisible = true;
-      _isSettingsVisible = false;
-    });
-  }
-
-  void _closeExpandedComments() {
-    setState(() {
-      _isExpandedCommentsVisible = false;
-    });
-  }
-
   void _toggleSettings() {
     setState(() {
       _isSettingsVisible = !_isSettingsVisible;
-      if (_isSettingsVisible) {
-        _isExpandedCommentsVisible = false;
-      }
     });
   }
 
@@ -324,6 +390,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       // Add new random comment
       final randomComment = dummyComments[_random.nextInt(dummyComments.length)];
       _floatingComments.add(randomComment);
+      
+      // Increment total comments count
+      _commentsCount++;
     });
   }
 
@@ -373,15 +442,30 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   // Duration
                   _buildDuration(stream),
                   
-                  // Floating comments (show/hide based on toggle)
-                  if (_isFloatingCommentsVisible && !_isExpandedCommentsVisible) 
-                    _buildFloatingComments(),
+                  // Floating comments (always visible)
+                  _buildFloatingComments(),
                   
-                  // Main controls
-                  if (_isControlsVisible) _buildMainControls(themeService),
+                  // Gift animations overlay
+                  ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
+                    gift: GiftAnimation(
+                      name: gift['name'],
+                      emoji: gift['emoji'],
+                      value: gift['value'],
+                      color: gift['color'],
+                      tier: gift['tier'],
+                      senderName: gift['senderName'] ?? 'Anonymous',
+                      combo: gift['combo'] ?? 1,
+                    ),
+                    onComplete: () {
+                      setState(() {
+                        _giftAnimations.remove(gift);
+                      });
+                    },
+                    key: ValueKey(gift['id']),
+                  )),
                   
-                  // Expanded comments panel (opened by tapping a comment)
-                  if (_isExpandedCommentsVisible) _buildCommentsPanel(themeService),
+                  // Modern action buttons (right side)
+                  if (_isControlsVisible) _buildModernActionButtons(themeService),
                   
                   // Settings panel
                   if (_isSettingsVisible) _buildSettingsPanel(themeService),
@@ -709,120 +793,227 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  Widget _buildMainControls(ThemeService themeService) {
+  Widget _buildModernActionButtons(ThemeService themeService) {
     return Positioned(
+      right: 12,
       bottom: MediaQuery.of(context).padding.bottom + 20,
-      right: 16,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Comments button
-            _buildControlButton(
-              icon: Icons.chat_bubble_outline,
-              label: 'Comments',
-              onTap: _toggleFloatingComments,
-              isActive: !_isFloatingCommentsVisible,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Hearts/Likes received
+          _buildActionButton(
+            icon: Icons.favorite,
+            label: _formatCount(_heartsCount),
+            onTap: () {
+              // TODO: Show likes list
+            },
+            color: Colors.red,
+          ),
+          const SizedBox(height: 16),
+          
+          // Comments
+          _buildActionButton(
+            icon: Icons.chat_bubble_outline,
+            label: _formatCount(_commentsCount),
+            onTap: _openComments,
+            color: Colors.white,
+          ),
+          const SizedBox(height: 16),
+          
+          // Gifts received
+          _buildActionButton(
+            icon: Icons.card_giftcard,
+            label: _formatCount(_giftsTotal),
+            onTap: _openGifts,
+            color: Colors.amber,
+          ),
+          const SizedBox(height: 16),
+          
+          // Settings
+          _buildActionButton(
+            icon: Icons.settings,
+            label: '',
+            onTap: _toggleSettings,
+            color: Colors.white,
+          ),
+          const SizedBox(height: 24),
+          
+          // End stream button (prominent red)
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _endStream();
+            },
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.call_end,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
-            
-            const SizedBox(height: 12),
-            
-            // Settings button
-            _buildControlButton(
-              icon: Icons.settings,
-              label: 'Settings',
-              onTap: _toggleSettings,
-              isActive: _isSettingsVisible,
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // End stream button
-            _buildControlButton(
-              icon: Icons.stop,
-              label: 'End',
-              onTap: _endStream,
-              isActive: false,
-              isDestructive: true,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
-
-  Widget _buildControlButton({
+  
+  Widget _buildActionButton({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
-    required bool isActive,
-    bool isDestructive = false,
+    required Color color,
   }) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
         onTap();
       },
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: isDestructive 
-              ? Colors.red.withOpacity(0.9)
-              : isActive 
-                  ? Colors.white.withOpacity(0.25)
-                  : Colors.black.withOpacity(0.7),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isDestructive
-                ? Colors.red.withOpacity(0.8)
-                : isActive 
-                    ? Colors.white.withOpacity(0.4)
-                    : Colors.white.withOpacity(0.2),
-            width: isActive ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDestructive
-                  ? Colors.red.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
+            child: Icon(
               icon,
-              color: isDestructive 
-                  ? Colors.white 
-                  : isActive 
-                      ? Colors.white 
-                      : Colors.white.withOpacity(0.9),
-              size: 22,
+              color: color,
+              size: 26,
             ),
-            const SizedBox(height: 2),
+          ),
+          if (label.isNotEmpty) ...[
+            const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                color: isDestructive 
-                    ? Colors.white 
-                    : isActive 
-                        ? Colors.white 
-                        : Colors.white.withOpacity(0.9),
-                fontSize: 9,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
+  
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
+  }
+  
+  void _openComments() {
+    HapticFeedback.selectionClick();
+    
+    LiveCommentsBottomSheet.show(
+      context,
+      streamId: 'host-stream',
+      astrologerName: 'You',
+      getComments: () {
+        // Get fresh data in real-time
+        List<LiveComment> allInteractions = [];
+        
+        // Add regular comments
+        for (var comment in _floatingComments) {
+          allInteractions.add(LiveComment(
+            userName: comment['user'] ?? 'Unknown',
+            message: comment['message'] ?? '',
+            timestamp: DateTime.now().subtract(Duration(seconds: _floatingComments.indexOf(comment) * 10)),
+          ));
+        }
+        
+        // Add gift notifications as special comments
+        for (var gift in _giftNotifications) {
+          allInteractions.add(LiveComment(
+            userName: gift['sender'] ?? 'Unknown',
+            message: '${gift['emoji']} sent ${gift['gift']} (₹${gift['value']})',
+            timestamp: gift['timestamp'] ?? DateTime.now(),
+            isGift: true,
+          ));
+        }
+        
+        // Sort by timestamp (newest first)
+        allInteractions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        
+        return allInteractions;
+      },
+      onCommentSend: (text) {
+        // Handle comment from host (shouldn't happen normally)
+      },
+    );
+  }
+
+  void _openGifts() {
+    HapticFeedback.selectionClick();
+    
+    // Show only gift notifications
+    List<LiveComment> giftsList = [];
+    
+    for (var gift in _giftNotifications) {
+      giftsList.add(LiveComment(
+        userName: gift['sender'] ?? 'Unknown',
+        message: '${gift['emoji']} sent ${gift['gift']} (₹${gift['value']})',
+        timestamp: gift['timestamp'] ?? DateTime.now(),
+        isGift: true,
+      ));
+    }
+    
+    // Sort by timestamp (newest first)
+    giftsList.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    
+    // Show gifts bottom sheet
+    _showGiftsBottomSheet(giftsList);
+  }
+
+  void _showGiftsBottomSheet(List<LiveComment> gifts) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _GiftsBottomSheet(
+        getGifts: () {
+          // Get fresh gift data in real-time
+          List<LiveComment> giftsList = [];
+          for (var gift in _giftNotifications) {
+            giftsList.add(LiveComment(
+              userName: gift['sender'] ?? 'Unknown',
+              message: '${gift['emoji']} sent ${gift['gift']} (₹${gift['value']})',
+              timestamp: gift['timestamp'] ?? DateTime.now(),
+              isGift: true,
+            ));
+          }
+          giftsList.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return giftsList;
+        },
+        getTotalEarnings: () => _giftsTotal,
+      ),
+    );
+  }
+
 
   Widget _buildFloatingComments() {
     if (_floatingComments.isEmpty) return const SizedBox.shrink();
@@ -856,43 +1047,84 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
               child: GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  _openExpandedComments();
+                  _openComments();
                 },
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 280),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    // Golden gradient for gifts, black for regular comments
+                    gradient: comment['isGift'] == 'true'
+                        ? LinearGradient(
+                            colors: [
+                              Colors.amber.withOpacity(0.4),
+                              Colors.orange.withOpacity(0.3),
+                            ],
+                          )
+                        : null,
+                    color: comment['isGift'] == 'true' 
+                        ? null 
+                        : Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
+                      color: comment['isGift'] == 'true'
+                          ? Colors.amber.withOpacity(0.5)
+                          : Colors.white.withOpacity(0.1),
+                      width: comment['isGift'] == 'true' ? 1.5 : 1,
                     ),
                   ),
-                  child: RichText(
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '${comment['user']} ',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Gift icon for gift notifications
+                      if (comment['isGift'] == 'true') ...[
+                        const Icon(
+                          Icons.card_giftcard,
+                          color: Colors.amber,
+                          size: 16,
                         ),
-                        TextSpan(
-                          text: comment['message'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
+                        const SizedBox(width: 6),
                       ],
-                    ),
+                      Flexible(
+                        child: RichText(
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${comment['user']} ',
+                                style: TextStyle(
+                                  color: comment['isGift'] == 'true'
+                                      ? Colors.amber
+                                      : Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              TextSpan(
+                                text: comment['message'],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              // Show value for gifts
+                              if (comment['isGift'] == 'true' && comment['value'] != null)
+                                TextSpan(
+                                  text: ' ${comment['value']}',
+                                  style: const TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -903,273 +1135,119 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  Widget _buildCommentsPanel(ThemeService themeService) {
-    // Generate more dummy comments for the expanded view
-    final allComments = [
-      {'user': 'Priya S.', 'message': 'Namaste Guruji! 🙏', 'time': '5m'},
-      {'user': 'Rahul M.', 'message': 'Please read my horoscope next', 'time': '4m'},
-      {'user': 'Anjali K.', 'message': 'Your predictions are always accurate! ✨', 'time': '3m'},
-      {'user': 'Vikram R.', 'message': 'Thank you for the guidance 🙏', 'time': '2m'},
-      {'user': 'Neha P.', 'message': 'Can you talk about Rahu Ketu? 🔮', 'time': '2m'},
-      {'user': 'Amit J.', 'message': 'Love your energy Guruji! 💫', 'time': '1m'},
-      {'user': 'Kavita L.', 'message': 'This is so helpful! 🌟', 'time': '45s'},
-      {'user': 'Sanjay B.', 'message': 'What about Saturn transit? 🪐', 'time': '30s'},
-      {'user': 'Deepa M.', 'message': 'Amazing session today! 🌺', 'time': '15s'},
-      {'user': 'Kiran P.', 'message': 'Can you explain my birth chart? 📊', 'time': '10s'},
-      {'user': 'Meera S.', 'message': 'Your readings are life-changing 💖', 'time': '5s'},
-      {'user': 'Suresh K.', 'message': 'Please talk about career predictions 💼', 'time': 'now'},
-    ];
-    
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      left: 16,
-      right: 80,
-      height: 400,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-            children: [
-              const Icon(
-                      Icons.chat_bubble_outline,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-              const Text(
-                      'All Comments',
-                style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _closeExpandedComments,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Comments list (full history)
-              Expanded(
-                child: ListView.builder(
-                  controller: _commentsController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: allComments.length,
-                  itemBuilder: (context, index) {
-                    return _buildExpandedCommentItem(allComments[index]);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpandedCommentItem(Map<String, String> comment) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: Colors.white.withOpacity(0.2),
-            child: Text(
-              comment['user']!.substring(0, 1),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    comment['user']!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    comment['message']!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            comment['time']!,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSettingsPanel(ThemeService themeService) {
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      left: 16,
-      right: 80,
-      height: 250,
-      child: SlideTransition(
-        position: _slideAnimation,
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: _toggleSettings,
         child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
+          color: Colors.black.withOpacity(0.5),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () {}, // Prevent dismissal when tapping sheet
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.45,
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.settings,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Stream Settings',
-                        style: TextStyle(
-                        color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _toggleSettings,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Settings options
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildSettingItem(
-                        icon: Icons.visibility,
-                        title: 'Viewer Count',
-                        subtitle: 'Show viewer count',
-                        value: true,
-                        onChanged: (value) {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.comment,
-                        title: 'Comments',
-                        subtitle: 'Allow comments',
-                        value: true,
-                        onChanged: (value) {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.share,
-                        title: 'Share',
-                        subtitle: 'Allow sharing',
-                        value: true,
-                        onChanged: (value) {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.record_voice_over,
-                        title: 'Voice',
-                        subtitle: 'Enable microphone',
-                        value: true,
-                        onChanged: (value) {},
-                      ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF1A1A2E),
+                      Color(0xFF0F0F1E),
                     ],
                   ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: Column(
+                  children: [
+                    // Drag handle
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.white.withOpacity(0.08),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Settings',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: _toggleSettings,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Settings options
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        children: [
+                          _buildSettingItem(
+                            icon: Icons.visibility_outlined,
+                            title: 'Viewer Count',
+                            subtitle: 'Show viewer count',
+                            value: true,
+                            onChanged: (value) {},
+                          ),
+                          _buildSettingItem(
+                            icon: Icons.chat_bubble_outline,
+                            title: 'Comments',
+                            subtitle: 'Allow viewers to comment',
+                            value: true,
+                            onChanged: (value) {},
+                          ),
+                          _buildSettingItem(
+                            icon: Icons.share_outlined,
+                            title: 'Share',
+                            subtitle: 'Allow viewers to share',
+                            value: true,
+                            onChanged: (value) {},
+                          ),
+                          _buildSettingItem(
+                            icon: Icons.mic_outlined,
+                            title: 'Microphone',
+                            subtitle: 'Enable audio',
+                            value: true,
+                            onChanged: (value) {},
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1184,15 +1262,24 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 20,
+          // Icon with subtle background
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white.withOpacity(0.9),
+              size: 20,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1205,10 +1292,11 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(0.5),
                     fontSize: 12,
                   ),
                 ),
@@ -1221,7 +1309,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             activeColor: Colors.red,
             activeTrackColor: Colors.red.withOpacity(0.3),
             inactiveThumbColor: Colors.white.withOpacity(0.8),
-            inactiveTrackColor: Colors.white.withOpacity(0.2),
+            inactiveTrackColor: Colors.white.withOpacity(0.15),
           ),
         ],
       ),
@@ -1250,7 +1338,295 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             ),
           ],
         ),
-        ),
-      );
-    }
+      ),
+    );
   }
+}
+
+// Gifts Bottom Sheet Widget - Real-time updates
+class _GiftsBottomSheet extends StatefulWidget {
+  final List<LiveComment> Function() getGifts;
+  final int Function() getTotalEarnings;
+
+  const _GiftsBottomSheet({
+    required this.getGifts,
+    required this.getTotalEarnings,
+  });
+
+  @override
+  State<_GiftsBottomSheet> createState() => _GiftsBottomSheetState();
+}
+
+class _GiftsBottomSheetState extends State<_GiftsBottomSheet> {
+  late Timer _updateTimer;
+  List<LiveComment> _gifts = [];
+  int _totalEarnings = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshData();
+    
+    // Update every second for real-time feel
+    _updateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        _refreshData();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _updateTimer.cancel();
+    super.dispose();
+  }
+
+  void _refreshData() {
+    setState(() {
+      _gifts = widget.getGifts();
+      _totalEarnings = widget.getTotalEarnings();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF1A1A2E),
+                Color(0xFF0F0F1E),
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+              // Header with total earnings
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withOpacity(0.08),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.amber,
+                                Colors.orange,
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.card_giftcard,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Gifts Received',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_gifts.length} gifts • Total: ₹$_totalEarnings',
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: Colors.white.withOpacity(0.7),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Gifts list
+              Expanded(
+                child: _gifts.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.card_giftcard_outlined,
+                              size: 64,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No gifts received yet',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _gifts.length,
+                        itemBuilder: (context, index) {
+                          return _buildGiftItem(_gifts[index]);
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGiftItem(LiveComment gift) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.amber.withOpacity(0.15),
+              Colors.orange.withOpacity(0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.amber.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Avatar
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.amber,
+                    Colors.orange,
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  gift.userName[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Gift details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    gift.userName,
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    gift.message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    gift.timeAgo,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Gift icon
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.card_giftcard,
+                color: Colors.amber,
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

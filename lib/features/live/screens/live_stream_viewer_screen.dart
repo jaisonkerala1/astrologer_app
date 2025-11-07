@@ -5,11 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
-import '../widgets/live_stream_controls_widget.dart';
 import '../widgets/live_stream_info_widget.dart';
-import '../widgets/live_stream_comments_widget.dart';
-import '../widgets/live_stream_reactions_widget.dart';
-import '../widgets/live_stream_gift_widget.dart';
+import '../widgets/live_action_stack_widget.dart';
+import '../widgets/live_bottom_input_bar.dart';
+import '../widgets/live_quick_gift_bar.dart';
+import '../widgets/live_gift_animation_overlay.dart';
+import '../widgets/live_gift_leaderboard.dart';
+import '../widgets/live_gift_bottom_sheet.dart';
+import '../widgets/live_comments_bottom_sheet.dart';
 import '../services/live_stream_service.dart';
 
 class LiveStreamViewerScreen extends StatefulWidget {
@@ -32,17 +35,32 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   late Animation<Offset> _slideAnimation;
   
   bool _isControlsVisible = true;
-  bool _isFloatingCommentsVisible = true; // Floating comments visibility
-  bool _isExpandedCommentsVisible = false; // Expanded panel visibility
-  bool _isGiftsVisible = false;
+  bool _isQuickGiftVisible = false;
+  bool _isLeaderboardVisible = false;
   bool _isStreamActive = true;
+  bool _isLiked = false;
+  
+  // Engagement metrics
+  int _likesCount = 1234;      // Unique users who liked
+  int _heartsCount = 5432;     // Total heart reactions (can spam)
+  int _commentsCount = 567;
+  int _giftsTotal = 4850;
+  
+  // Gift combo system
+  int _giftComboCount = 0;
+  Timer? _comboResetTimer;
+  String? _lastGiftName;
+  bool _isGiftPulsing = false;
   
   final LiveStreamService _liveStreamService = LiveStreamService();
   final ScrollController _commentsScrollController = ScrollController();
+  final TextEditingController _commentController = TextEditingController();
   Timer? _commentSimulationTimer;
   final List<Map<String, String>> _floatingComments = [];
   final Random _random = Random();
   final List<FloatingHeart> _floatingHearts = [];
+  final List<GiftAnimation> _giftAnimations = [];
+  final List<LeaderboardEntry> _leaderboardEntries = [];
 
   @override
   void initState() {
@@ -51,6 +69,48 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _setupSystemUI();
     _joinLiveStream();
     _startCommentSimulation();
+    _initializeLeaderboard();
+  }
+  
+  void _initializeLeaderboard() {
+    // Mock leaderboard data
+    _leaderboardEntries.addAll([
+      LeaderboardEntry(
+        userId: '1',
+        userName: 'Amit Kumar',
+        totalAmount: 5000,
+        giftCount: 25,
+        topGiftEmoji: '👑',
+      ),
+      LeaderboardEntry(
+        userId: '2',
+        userName: 'Priya Sharma',
+        totalAmount: 3200,
+        giftCount: 18,
+        topGiftEmoji: '💎',
+      ),
+      LeaderboardEntry(
+        userId: '3',
+        userName: 'Rahul Singh',
+        totalAmount: 1800,
+        giftCount: 12,
+        topGiftEmoji: '🚀',
+      ),
+      LeaderboardEntry(
+        userId: '4',
+        userName: 'Sneha Patel',
+        totalAmount: 950,
+        giftCount: 8,
+        topGiftEmoji: '⭐',
+      ),
+      LeaderboardEntry(
+        userId: '5',
+        userName: 'Vikram Reddy',
+        totalAmount: 600,
+        giftCount: 6,
+        topGiftEmoji: '🌹',
+      ),
+    ]);
   }
 
   void _setupAnimations() {
@@ -118,7 +178,9 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _fadeController.dispose();
     _slideController.dispose();
     _commentsScrollController.dispose();
+    _commentController.dispose();
     _commentSimulationTimer?.cancel();
+    _comboResetTimer?.cancel();
     _liveStreamService.leaveLiveStream(widget.liveStream.id);
     // SystemUI is restored in PopScope before navigation to prevent flickering
     // Keeping this as a safety fallback
@@ -151,32 +213,219 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     });
   }
 
-  void _toggleFloatingComments() {
-    setState(() {
-      _isFloatingCommentsVisible = !_isFloatingCommentsVisible;
-    });
-  }
-
   void _openExpandedComments() {
-    setState(() {
-      _isExpandedCommentsVisible = true;
-      _isGiftsVisible = false;
-    });
-  }
-
-  void _closeExpandedComments() {
-    setState(() {
-      _isExpandedCommentsVisible = false;
-    });
+    HapticFeedback.selectionClick();
+    
+    LiveCommentsBottomSheet.show(
+      context,
+      streamId: widget.liveStream.id,
+      astrologerName: widget.liveStream.astrologerName,
+      getComments: () {
+        // Get fresh data in real-time
+        return _floatingComments.map((comment) {
+          return LiveComment(
+            userName: comment['user'] ?? 'Unknown',
+            message: comment['message'] ?? '',
+            timestamp: DateTime.now().subtract(Duration(seconds: _floatingComments.indexOf(comment) * 10)),
+          );
+        }).toList();
+      },
+      onCommentSend: (text) {
+        _handleSendComment();
+      },
+    );
   }
 
   void _toggleGifts() {
+    HapticFeedback.selectionClick();
+    LiveGiftBottomSheet.show(
+      context,
+      streamId: widget.liveStream.id,
+      astrologerName: widget.liveStream.astrologerName,
+      onGiftSend: (gift) {
+        _sendGiftWithAnimation(
+          name: gift.name,
+          emoji: gift.emoji,
+          value: gift.value,
+          color: gift.color,
+        );
+      },
+    );
+  }
+  
+  void _showQuickGifts() {
+    HapticFeedback.selectionClick();
     setState(() {
-      _isGiftsVisible = !_isGiftsVisible;
-      if (_isGiftsVisible) {
-        _isExpandedCommentsVisible = false;
+      _isQuickGiftVisible = true;
+      _isLeaderboardVisible = false;
+    });
+  }
+  
+  void _hideQuickGifts() {
+    setState(() {
+      _isQuickGiftVisible = false;
+    });
+  }
+  
+  void _showLeaderboard() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isLeaderboardVisible = true;
+      _isQuickGiftVisible = false;
+    });
+  }
+  
+  void _hideLeaderboard() {
+    setState(() {
+      _isLeaderboardVisible = false;
+    });
+  }
+  
+  void _handleLike() {
+    HapticFeedback.selectionClick();
+    
+    // ALWAYS send hearts for visual engagement (Instagram/TikTok style)
+    _sendHeartReaction();
+    
+    setState(() {
+      // Increment hearts count EVERY tap (unlimited engagement)
+      _heartsCount++;
+      
+      // Toggle like status ONCE per user (first tap only)
+      if (!_isLiked) {
+        _isLiked = true;
+        _likesCount++; // Count this user's like only ONCE
+        
+        // TODO: Send to server - user liked this stream
+        // _liveService.likeStream(widget.liveStream.id);
+      }
+      
+      // TODO: Send to server - heart reaction (every tap)
+      // _liveService.sendHeartReaction(widget.liveStream.id);
+    });
+  }
+  
+  void _handleSendComment() {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+    
+    HapticFeedback.selectionClick();
+    
+    // Add to floating comments
+    setState(() {
+      if (_floatingComments.length >= 4) {
+        _floatingComments.removeAt(0);
+      }
+      _floatingComments.add({
+        'user': 'You',
+        'message': text,
+        'emoji': '💬',
+      });
+      _commentsCount++;
+    });
+    
+    _commentController.clear();
+    
+    // Send to backend
+    try {
+      _liveStreamService.sendComment(widget.liveStream.id, text);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+  
+  void _handleQuickGiftSend(QuickGift gift) {
+    _hideQuickGifts();
+    _sendGiftWithAnimation(
+      name: gift.name,
+      emoji: gift.emoji,
+      value: gift.value,
+      color: gift.color,
+    );
+  }
+  
+  void _sendGiftWithAnimation({
+    required String name,
+    required String emoji,
+    required int value,
+    required Color color,
+  }) {
+    // Handle combo system
+    if (_lastGiftName == name) {
+      _giftComboCount++;
+    } else {
+      _giftComboCount = 1;
+      _lastGiftName = name;
+    }
+    
+    // Reset combo after 5 seconds
+    _comboResetTimer?.cancel();
+    _comboResetTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _giftComboCount = 0;
+          _lastGiftName = null;
+          _isGiftPulsing = false;
+        });
       }
     });
+    
+    // Pulse gift button
+    setState(() {
+      _isGiftPulsing = true;
+      _giftsTotal += value;
+    });
+    
+    // Create gift animation
+    final animation = GiftAnimation(
+      name: name,
+      emoji: emoji,
+      value: value,
+      color: color,
+      tier: GiftAnimation.getTierFromValue(value),
+      senderName: 'You',
+      combo: _giftComboCount,
+    );
+    
+    setState(() {
+      _giftAnimations.add(animation);
+    });
+    
+    // Remove animation after completion
+    Future.delayed(Duration(milliseconds: animation.getDuration()), () {
+      if (mounted) {
+        setState(() {
+          _giftAnimations.remove(animation);
+        });
+      }
+    });
+    
+    // Send to backend
+    try {
+      // TODO: Implement actual gift sending
+    } catch (e) {
+      // Silently fail
+    }
+  }
+  
+  String _formatGiftTotal(int total) {
+    if (total >= 10000) {
+      return '₹${(total / 1000).toStringAsFixed(1)}K';
+    } else if (total >= 1000) {
+      return '₹${(total / 1000).toStringAsFixed(1)}K';
+    } else {
+      return '₹$total';
+    }
+  }
+  
+  List<QuickGift> _getQuickGifts() {
+    return [
+      QuickGift(name: 'Rose', emoji: '🌹', value: 10, color: Colors.red),
+      QuickGift(name: 'Star', emoji: '⭐', value: 25, color: Colors.amber),
+      QuickGift(name: 'Heart', emoji: '💖', value: 50, color: Colors.pink),
+      QuickGift(name: 'Crown', emoji: '👑', value: 100, color: Colors.purple),
+      QuickGift(name: 'Diamond', emoji: '💎', value: 200, color: Colors.blue),
+    ];
   }
 
   void _sendHeartReaction() {
@@ -301,53 +550,104 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
           return Scaffold(
             backgroundColor: Colors.black,
             body: Stack(
-            children: [
-              // Main video area
-              _buildVideoArea(themeService),
-              
-              // Top gradient overlay
-              _buildTopGradient(),
-              
-              // Bottom gradient overlay
-              _buildBottomGradient(),
-              
-              // Tap to toggle controls (must be before buttons so buttons are on top)
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: _toggleControls,
-                  child: Container(color: Colors.transparent),
+              children: [
+                // Main video area
+                _buildVideoArea(themeService),
+                
+                // Top gradient overlay
+                _buildTopGradient(),
+                
+                // Bottom gradient overlay
+                _buildBottomGradient(),
+                
+                // Tap to toggle controls
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _toggleControls,
+                    child: Container(color: Colors.transparent),
+                  ),
                 ),
-              ),
-              
-              // Live indicator
-              _buildLiveIndicator(),
-              
-              // Stream info
-              _buildStreamInfo(themeService),
-              
-              // Viewer count
-              _buildViewerCount(),
-              
-              // Floating comments (always visible unless toggled off)
-              if (_isFloatingCommentsVisible && !_isExpandedCommentsVisible)
+                
+                // Live indicator
+                _buildLiveIndicator(),
+                
+                // Viewer count
+                _buildViewerCount(),
+                
+                // Close button (top-right)
+                _buildCloseButton(),
+                
+                // Floating comments (left side) - Always visible for engagement
                 _buildFloatingComments(),
-              
-              // Floating hearts animation
-              ..._floatingHearts.map((heart) => _buildFloatingHeart(heart)),
-              
-              // Main controls
-              if (_isControlsVisible) _buildMainControls(),
-              
-              // Expanded comments panel
-              if (_isExpandedCommentsVisible) _buildCommentsPanel(themeService),
-              
-              // Gifts panel
-              if (_isGiftsVisible) _buildGiftsPanel(themeService),
-            ],
-          ),
-        );
-      },
-    ),
+                
+                // Floating hearts animation
+                ..._floatingHearts.map((heart) => _buildFloatingHeart(heart)),
+                
+                // Gift animations overlay (full screen)
+                ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
+                  gift: gift,
+                  onComplete: () {
+                    setState(() {
+                      _giftAnimations.remove(gift);
+                    });
+                  },
+                )),
+                
+                // Right-side action stack (TikTok style)
+                if (_isControlsVisible)
+                  Positioned(
+                    right: 12,
+                    bottom: MediaQuery.of(context).padding.bottom + 80,
+                    child: LiveActionStackWidget(
+                      liveStream: widget.liveStream,
+                      heartsCount: _heartsCount,  // Shows total heart reactions (Instagram/TikTok style)
+                      commentsCount: _commentsCount,
+                      onProfileTap: () {
+                        // TODO: Navigate to astrologer profile
+                      },
+                      onLikeTap: _handleLike,
+                      onCommentsTap: _openExpandedComments,
+                      onShareTap: () {
+                        // TODO: Implement share
+                      },
+                      isLiked: _isLiked,
+                    ),
+                  ),
+                
+                // Bottom input bar
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: LiveBottomInputBar(
+                    commentController: _commentController,
+                    onSendComment: _handleSendComment,
+                    onGiftTap: _toggleGifts,
+                    onGiftLongPress: _showQuickGifts,
+                    showGiftButton: true,
+                  ),
+                ),
+                
+                // Quick gift bar overlay
+                if (_isQuickGiftVisible)
+                  LiveQuickGiftBar(
+                    gifts: _getQuickGifts(),
+                    onGiftTap: _handleQuickGiftSend,
+                    onDismiss: _hideQuickGifts,
+                  ),
+                
+                // Leaderboard overlay
+                if (_isLeaderboardVisible)
+                  LiveGiftLeaderboard(
+                    entries: _leaderboardEntries,
+                    onClose: _hideLeaderboard,
+                    streamTitle: widget.liveStream.title,
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -531,17 +831,32 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     );
   }
 
-  Widget _buildStreamInfo(ThemeService themeService) {
+  Widget _buildCloseButton() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 16,
       right: 16,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: LiveStreamInfoWidget(
-          liveStream: widget.liveStream,
-          onProfileTap: () {
-            // TODO: Navigate to astrologer profile
-          },
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _restoreSystemUI();
+          Navigator.pop(context);
+        },
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: const Icon(
+            Icons.close,
+            color: Colors.white,
+            size: 24,
+          ),
         ),
       ),
     );
@@ -583,33 +898,12 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     );
   }
 
-  Widget _buildMainControls() {
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      right: 16,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: LiveStreamControlsWidget(
-          onCommentsTap: _toggleFloatingComments,
-          isCommentsHidden: !_isFloatingCommentsVisible,
-          onGiftsTap: _toggleGifts,
-          onReactionsTap: _sendHeartReaction,
-          onShareTap: () {
-            // TODO: Implement share functionality
-          },
-          onReportTap: () {
-            // TODO: Implement report functionality
-          },
-        ),
-      ),
-    );
-  }
 
   Widget _buildFloatingComments() {
     if (_floatingComments.isEmpty) return const SizedBox.shrink();
     
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
+      bottom: MediaQuery.of(context).padding.bottom + 100,
       left: 16,
       right: 80,
       child: Column(
@@ -680,185 +974,6 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
             ),
           );
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildCommentsPanel(ThemeService themeService) {
-    // Generate more dummy comments for the expanded view
-    final allComments = [
-      {'user': 'Arjun K.', 'message': 'Great insights Guruji! 🙏', 'time': '5m'},
-      {'user': 'Sneha R.', 'message': 'Can you do my reading next? ⭐', 'time': '4m'},
-      {'user': 'Vikram M.', 'message': 'This is so accurate! ✨', 'time': '3m'},
-      {'user': 'Divya S.', 'message': 'Thank you for sharing! 🌟', 'time': '2m'},
-      {'user': 'Rohan P.', 'message': 'Amazing predictions! 🔮', 'time': '2m'},
-      {'user': 'Anjali L.', 'message': 'Very helpful session 💫', 'time': '1m'},
-      {'user': 'Karthik J.', 'message': 'Love your energy! 💖', 'time': '45s'},
-      {'user': 'Meera T.', 'message': 'Please explain more about Mercury 🪐', 'time': '30s'},
-      {'user': 'Sanjay N.', 'message': 'Watching from Mumbai! 🌺', 'time': '15s'},
-      {'user': 'Kavya M.', 'message': 'Can you talk about career? 💼', 'time': '10s'},
-      {'user': 'Aditya B.', 'message': 'Following you since last year! 🎉', 'time': '5s'},
-      {'user': 'Pooja K.', 'message': 'Beautiful reading! 🌸', 'time': 'now'},
-    ];
-    
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      left: 16,
-      right: 80,
-      height: 400,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.chat_bubble_outline,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'All Comments',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _closeExpandedComments,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Comments list (full history)
-              Expanded(
-                child: ListView.builder(
-                  controller: _commentsScrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: allComments.length,
-                  itemBuilder: (context, index) {
-                    return _buildExpandedCommentItem(allComments[index]);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpandedCommentItem(Map<String, String> comment) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: Colors.white.withOpacity(0.2),
-            child: Text(
-              comment['user']!.substring(0, 1),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    comment['user']!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    comment['message']!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            comment['time']!,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGiftsPanel(ThemeService themeService) {
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 20,
-      left: 16,
-      right: 80,
-      height: 450,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: LiveStreamGiftWidget(
-          liveStreamId: widget.liveStream.id,
-          astrologerName: widget.liveStream.astrologerName,
-          onClose: _toggleGifts,
-        ),
       ),
     );
   }
