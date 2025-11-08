@@ -8,6 +8,7 @@ import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
 import '../services/consultations_service.dart';
 import 'rating_dialog.dart';
+import 'complete_consultation_bottom_sheet.dart';
 
 class ConsultationActionsWidget extends StatelessWidget {
   final ConsultationModel consultation;
@@ -256,16 +257,22 @@ class ConsultationActionsWidget extends StatelessWidget {
     );
   }
 
-  void _completeConsultation(BuildContext context) {
-    context.read<ConsultationsBloc>().add(
-      CompleteConsultationEvent(consultationId: consultation.id),
+  void _completeConsultation(BuildContext context) async {
+    final result = await CompleteConsultationBottomSheet.show(
+      context: context,
+      clientName: consultation.clientName,
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Consultation completed successfully'),
-        backgroundColor: Color(0xFF10B981),
-      ),
-    );
+    
+    if (result != null && context.mounted) {
+      context.read<ConsultationsBloc>().add(
+        CompleteConsultationEvent(
+          consultationId: consultation.id,
+          notes: result['notes'] as String?,
+          review: result['review'] as String?,
+          rating: result['rating'] as int?,
+        ),
+      );
+    }
   }
 
   void _pauseConsultation(BuildContext context) {

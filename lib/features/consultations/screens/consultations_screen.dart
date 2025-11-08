@@ -9,6 +9,7 @@ import '../models/consultation_model.dart';
 import '../widgets/consultation_card_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
+import '../widgets/complete_consultation_bottom_sheet.dart';
 // Removed inline search bar in favor of AppBar-integrated search
 import '../widgets/consultation_list_skeleton.dart';
 import '../../../shared/widgets/empty_states/empty_state_widget.dart';
@@ -564,53 +565,22 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
     );
   }
 
-  void _completeConsultation(BuildContext context, ConsultationModel consultation) {
-    showDialog(
+  void _completeConsultation(BuildContext context, ConsultationModel consultation) async {
+    final result = await CompleteConsultationBottomSheet.show(
       context: context,
-      builder: (context) => _buildCompleteConsultationDialog(consultation),
+      clientName: consultation.clientName,
     );
-  }
-
-  Widget _buildCompleteConsultationDialog(ConsultationModel consultation) {
-    final notesController = TextEditingController();
     
-    return AlertDialog(
-      title: const Text('Complete Consultation'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Complete consultation with ${consultation.clientName}?'),
-          const SizedBox(height: 16),
-          TextField(
-            controller: notesController,
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+    if (result != null && mounted) {
+      context.read<ConsultationsBloc>().add(
+        CompleteConsultationEvent(
+          consultationId: consultation.id,
+          notes: result['notes'] as String?,
+          review: result['review'] as String?,
+          rating: result['rating'] as int?,
         ),
-        ElevatedButton(
-          onPressed: () {
-            context.read<ConsultationsBloc>().add(
-              CompleteConsultationEvent(
-                consultationId: consultation.id,
-                notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
-              ),
-            );
-            Navigator.pop(context);
-          },
-          child: const Text('Complete'),
-        ),
-      ],
-    );
+      );
+    }
   }
 
   void _cancelConsultation(BuildContext context, String consultationId) {

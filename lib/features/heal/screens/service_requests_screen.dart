@@ -14,6 +14,7 @@ import '../bloc/heal_event.dart';
 import '../bloc/heal_state.dart';
 import '../../../shared/widgets/empty_states/empty_state_widget.dart';
 import '../../../shared/widgets/empty_states/illustrations/healing_empty_illustration.dart';
+import '../widgets/complete_service_bottom_sheet.dart';
 
 class ServiceRequestsScreen extends StatefulWidget {
   final String searchQuery;
@@ -328,7 +329,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
               request: request,
               onAccept: () => _updateRequestStatus(request, RequestStatus.confirmed),
               onReject: () => _updateRequestStatus(request, RequestStatus.cancelled),
-              onComplete: () => _updateRequestStatus(request, RequestStatus.completed),
+              onComplete: () => _completeService(context, request),
               onStart: () => _updateRequestStatus(request, RequestStatus.inProgress),
               onPause: () => _updateRequestStatus(request, RequestStatus.confirmed), // Pause = back to confirmed state
             );
@@ -459,6 +460,20 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     
     // Use BLoC to update request status (optimistic update happens in BLoC)
     context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, newStatus));
+  }
+
+  Future<void> _completeService(BuildContext context, ServiceRequest request) async {
+    final result = await CompleteServiceBottomSheet.show(
+      context: context,
+      customerName: request.customerName,
+      serviceName: request.serviceName,
+    );
+    
+    if (result != null && mounted) {
+      // TODO: Store notes, review, and rating along with status update
+      // For now, just update the status
+      _updateRequestStatus(request, RequestStatus.completed);
+    }
   }
 }
 

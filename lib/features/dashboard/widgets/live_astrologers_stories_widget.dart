@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import 'live_astrologer_circle_widget.dart';
-import '../../live/screens/live_stream_viewer_screen.dart';
+import '../../live/screens/live_feed_screen.dart';
+import '../../live/bloc/live_feed_bloc.dart';
+import '../../live/data/repositories/mock_live_feed_repository.dart';
+import '../../live/bloc/live_feed_event.dart';
+import '../../live/screens/view_all_live_screen.dart';
 import '../../live/models/live_stream_model.dart';
 import '../../live/services/live_stream_service.dart';
 
@@ -67,10 +72,25 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
                     ),
                     const Spacer(),
                     GestureDetector(
-                      onTap: () {
-                        // Navigate to all live streams
+                      onTap: () async {
+                        // Navigate to all live streams (grid) with a fresh LiveFeedBloc
                         HapticFeedback.selectionClick();
-                        Navigator.pushNamed(context, '/live-streams');
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BlocProvider(
+                              create: (context) => LiveFeedBloc(
+                                repository: MockLiveFeedRepository(),
+                              )..add(const LoadLiveFeedEvent()),
+                              child: const ViewAllLiveScreen(),
+                            ),
+                          ),
+                        );
+                        // Restore System UI after returning
+                        SystemChrome.setEnabledSystemUIMode(
+                          SystemUiMode.manual,
+                          overlays: SystemUiOverlay.values,
+                        );
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -145,13 +165,33 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
         isVerified: astrologer.viewerCount > 200,
       );
       
-      // Navigate to live stream viewer
-      Navigator.push(
+      // Navigate to live feed (vertical scrolling)
+      await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => LiveStreamViewerScreen(
-            liveStream: liveStream,
+          builder: (context) => BlocProvider(
+            create: (context) => LiveFeedBloc(
+              repository: MockLiveFeedRepository(),
+            ),
+            child: LiveFeedScreen(
+              initialStreamId: liveStream.id,
+            ),
           ),
+        ),
+      );
+
+      // Restore System UI AFTER returning (prevents flicker)
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: Colors.black,
+          systemNavigationBarIconBrightness: Brightness.light,
         ),
       );
     } catch (e) {

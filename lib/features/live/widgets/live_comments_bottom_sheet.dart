@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../utils/gift_helper.dart';
 
 /// Sheet height modes
 enum CommentSheetHeight {
@@ -316,45 +317,29 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
   }
 
   Widget _buildCommentItem(LiveComment comment, ThemeService themeService) {
-    // Gift notification - special design
+    // Gift notification - special design with gift-specific colors (minimal and flat)
     if (comment.isGift) {
+      final giftName = GiftHelper.extractGiftName(comment.message) ?? 'Star';
+      final giftColor = GiftHelper.getGiftColor(giftName);
+      
       return Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.amber.withOpacity(0.15),
-                Colors.orange.withOpacity(0.1),
-              ],
-            ),
+            color: giftColor.withOpacity(0.12),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.amber.withOpacity(0.3),
+              color: giftColor.withOpacity(0.35),
               width: 1,
             ),
           ),
           child: Row(
             children: [
-              // Gift icon
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.amber,
-                      Colors.orange,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.card_giftcard,
-                  color: Colors.white,
-                  size: 18,
-                ),
+              // Gift emoji (extracted from message)
+              Text(
+                _extractEmoji(comment.message),
+                style: const TextStyle(fontSize: 24),
               ),
               const SizedBox(width: 10),
               
@@ -367,31 +352,26 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
                       children: [
                         Text(
                           comment.userName,
-                          style: const TextStyle(
-                            color: Colors.amber,
+                          style: TextStyle(
+                            color: giftColor,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          comment.timeAgo,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 12,
+                        Expanded(
+                          child: Text(
+                            comment.message,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      comment.message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 1.3,
-                      ),
                     ),
                   ],
                 ),
@@ -567,6 +547,33 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
         ],
       ),
     );
+  }
+  
+  /// Extract emoji from gift message (e.g., "🌹 sent Rose" -> "🌹")
+  String _extractEmoji(String message) {
+    final emojiMap = {
+      'rose': '🌹',
+      'star': '⭐',
+      'heart': '💖',
+      'diamond': '💎',
+      'rainbow': '🌈',
+      'crown': '👑',
+    };
+    
+    for (final entry in emojiMap.entries) {
+      if (message.toLowerCase().contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    
+    // If emoji is already in the message, extract it
+    final emojiRegex = RegExp(r'[\u{1F300}-\u{1F9FF}]', unicode: true);
+    final match = emojiRegex.firstMatch(message);
+    if (match != null) {
+      return match.group(0) ?? '🎁';
+    }
+    
+    return '🎁'; // Default gift emoji
   }
 }
 

@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Full-screen gift animation overlay
 /// Shows flying emojis, particles, and effects when gifts are sent
@@ -32,7 +31,6 @@ class _LiveGiftAnimationOverlayState extends State<LiveGiftAnimationOverlay>
   @override
   void initState() {
     super.initState();
-    HapticFeedback.mediumImpact();
     
     _mainController = AnimationController(
       duration: Duration(milliseconds: widget.gift.getDuration()),

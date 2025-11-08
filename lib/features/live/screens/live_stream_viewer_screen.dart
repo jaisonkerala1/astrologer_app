@@ -17,10 +17,14 @@ import '../services/live_stream_service.dart';
 
 class LiveStreamViewerScreen extends StatefulWidget {
   final LiveStreamModel liveStream;
+  final bool isActive; // Whether this stream is currently visible in feed
+  final VoidCallback? onExit; // Custom exit handler for feed
 
   const LiveStreamViewerScreen({
     super.key,
     required this.liveStream,
+    this.isActive = true,
+    this.onExit,
   });
 
   @override
@@ -543,24 +547,15 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, dynamic result) async {
-        if (!didPop) {
-          // Restore SystemUI BEFORE popping to prevent flickering
-          _restoreSystemUI();
-          await Future.delayed(const Duration(milliseconds: 100)); // Small delay for smooth transition
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        }
-      },
-      child: Consumer<ThemeService>(
-        builder: (context, themeService, child) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: Stack(
-              children: [
+    // Disable PopScope when in feed mode (let feed handle navigation)
+    final isInFeed = widget.onExit != null;
+    
+    final content = Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
                 // Main video area
                 _buildVideoArea(themeService),
                 
@@ -657,8 +652,27 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
             ),
           );
         },
-      ),
-    );
+      );
+    
+    // Wrap with PopScope only when NOT in feed mode
+    if (isInFeed) {
+      return content; // No PopScope in feed mode - let feed handle navigation
+    } else {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) async {
+          if (!didPop) {
+            // Restore SystemUI BEFORE popping to prevent flickering
+            _restoreSystemUI();
+            await Future.delayed(const Duration(milliseconds: 100));
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+          }
+        },
+        child: content,
+      );
+    }
   }
 
   Widget _buildVideoArea(ThemeService themeService) {
@@ -848,8 +862,12 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
-          _restoreSystemUI();
-          Navigator.pop(context);
+          if (widget.onExit != null) {
+            widget.onExit!(); // Use custom exit handler for feed
+          } else {
+            _restoreSystemUI();
+            Navigator.pop(context); // Default behavior
+          }
         },
         child: Container(
           width: 40,

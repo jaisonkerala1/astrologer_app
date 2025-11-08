@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/utils/gift_haptics.dart';
 
 /// Modern bottom sheet for sending gifts in live streams
 /// Inspired by YouTube, TikTok, and Instagram Live
@@ -92,10 +93,12 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
     });
   }
 
-  void _handleSend() {
+  void _handleSend() async {
     if (_selectedGift == null) return;
     
-    HapticFeedback.mediumImpact();
+    // Play gift-specific haptic feedback
+    await GiftHaptics.playGiftHaptic(_selectedGift!.name);
+    
     widget.onGiftSend(_selectedGift!);
     Navigator.pop(context);
   }

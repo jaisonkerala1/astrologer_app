@@ -71,14 +71,18 @@ class StartConsultationEvent extends ConsultationsEvent {
 class CompleteConsultationEvent extends ConsultationsEvent {
   final String consultationId;
   final String? notes;
+  final String? review;
+  final int? rating;
 
   const CompleteConsultationEvent({
     required this.consultationId,
     this.notes,
+    this.review,
+    this.rating,
   });
 
   @override
-  List<Object?> get props => [consultationId, notes];
+  List<Object?> get props => [consultationId, notes, review, rating];
 }
 
 class FilterConsultationsEvent extends ConsultationsEvent {

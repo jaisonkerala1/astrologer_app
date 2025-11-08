@@ -9,6 +9,7 @@ import '../services/live_stream_service.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_gift_animation_overlay.dart';
+import '../utils/gift_helper.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
   const LiveStreamingScreen({super.key});
@@ -1053,22 +1054,18 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   constraints: const BoxConstraints(maxWidth: 280),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    // Golden gradient for gifts, black for regular comments
-                    gradient: comment['isGift'] == 'true'
-                        ? LinearGradient(
-                            colors: [
-                              Colors.amber.withOpacity(0.4),
-                              Colors.orange.withOpacity(0.3),
-                            ],
-                          )
-                        : null,
-                    color: comment['isGift'] == 'true' 
-                        ? null 
+                    // Gift-specific color based on gift type (minimal and flat)
+                    color: comment['isGift'] == 'true'
+                        ? GiftHelper.getGiftColor(
+                            GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                          ).withOpacity(0.15)
                         : Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: comment['isGift'] == 'true'
-                          ? Colors.amber.withOpacity(0.5)
+                          ? GiftHelper.getGiftColor(
+                              GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                            ).withOpacity(0.4)
                           : Colors.white.withOpacity(0.1),
                       width: comment['isGift'] == 'true' ? 1.5 : 1,
                     ),
@@ -1076,12 +1073,11 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Gift icon for gift notifications
-                      if (comment['isGift'] == 'true') ...[
-                        const Icon(
-                          Icons.card_giftcard,
-                          color: Colors.amber,
-                          size: 16,
+                      // Gift emoji for gift notifications
+                      if (comment['isGift'] == 'true' && comment['emoji'] != null) ...[
+                        Text(
+                          comment['emoji']!,
+                          style: const TextStyle(fontSize: 16),
                         ),
                         const SizedBox(width: 6),
                       ],
@@ -1095,7 +1091,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                                 text: '${comment['user']} ',
                                 style: TextStyle(
                                   color: comment['isGift'] == 'true'
-                                      ? Colors.amber
+                                      ? GiftHelper.getGiftColor(
+                                          GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                                        )
                                       : Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -1114,8 +1112,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                               if (comment['isGift'] == 'true' && comment['value'] != null)
                                 TextSpan(
                                   text: ' ${comment['value']}',
-                                  style: const TextStyle(
-                                    color: Colors.amber,
+                                  style: TextStyle(
+                                    color: GiftHelper.getGiftColor(
+                                      GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                                    ),
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1532,48 +1532,27 @@ class _GiftsBottomSheetState extends State<_GiftsBottomSheet> {
   }
 
   Widget _buildGiftItem(LiveComment gift) {
+    final giftName = GiftHelper.extractGiftName(gift.message) ?? 'Star';
+    final giftColor = GiftHelper.getGiftColor(giftName);
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.amber.withOpacity(0.15),
-              Colors.orange.withOpacity(0.1),
-            ],
-          ),
+          color: giftColor.withOpacity(0.12),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.amber.withOpacity(0.3),
+            color: giftColor.withOpacity(0.35),
             width: 1,
           ),
         ),
         child: Row(
           children: [
-            // Avatar
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.amber,
-                    Colors.orange,
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  gift.userName[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            // Gift emoji
+            Text(
+              _extractGiftEmoji(gift.message),
+              style: const TextStyle(fontSize: 36),
             ),
             const SizedBox(width: 12),
             
@@ -1584,8 +1563,8 @@ class _GiftsBottomSheetState extends State<_GiftsBottomSheet> {
                 children: [
                   Text(
                     gift.userName,
-                    style: const TextStyle(
-                      color: Colors.amber,
+                    style: TextStyle(
+                      color: giftColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1610,23 +1589,36 @@ class _GiftsBottomSheetState extends State<_GiftsBottomSheet> {
                 ],
               ),
             ),
-            
-            // Gift icon
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.card_giftcard,
-                color: Colors.amber,
-                size: 20,
-              ),
-            ),
           ],
         ),
       ),
     );
+  }
+  
+  /// Extract emoji from gift message
+  String _extractGiftEmoji(String message) {
+    final emojiMap = {
+      'rose': '🌹',
+      'star': '⭐',
+      'heart': '💖',
+      'diamond': '💎',
+      'rainbow': '🌈',
+      'crown': '👑',
+    };
+    
+    for (final entry in emojiMap.entries) {
+      if (message.toLowerCase().contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    
+    // If emoji is already in the message, extract it
+    final emojiRegex = RegExp(r'[\u{1F300}-\u{1F9FF}]', unicode: true);
+    final match = emojiRegex.firstMatch(message);
+    if (match != null) {
+      return match.group(0) ?? '🎁';
+    }
+    
+    return '🎁'; // Default gift emoji
   }
 }

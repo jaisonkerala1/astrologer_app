@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/service_request_model.dart';
+import 'complete_service_bottom_sheet.dart';
 
 class ServiceRequestActionsWidget extends StatelessWidget {
   final ServiceRequest request;
@@ -293,14 +294,22 @@ class ServiceRequestActionsWidget extends StatelessWidget {
     );
   }
 
-  void _completeService(BuildContext context) {
-    // TODO: Implement complete service functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Service completed successfully'),
-        backgroundColor: Color(0xFF10B981),
-      ),
+  void _completeService(BuildContext context) async {
+    final result = await CompleteServiceBottomSheet.show(
+      context: context,
+      customerName: request.customerName,
+      serviceName: request.serviceName,
     );
+    
+    if (result != null && context.mounted) {
+      // TODO: Store notes, review, and rating along with status update
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Service completed successfully'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+    }
   }
 
   void _pauseService(BuildContext context) {
