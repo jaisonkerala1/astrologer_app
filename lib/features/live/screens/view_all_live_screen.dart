@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../clients/widgets/client_search_bar.dart';
 import '../bloc/live_feed_bloc.dart';
 import '../bloc/live_feed_event.dart';
 import '../bloc/live_feed_state.dart';
@@ -22,6 +24,7 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _selectedCategory;
   bool _isLoadingMore = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -283,37 +286,48 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
   }
 
   Widget _buildContent(ThemeService themeService, LiveFeedLoaded state) {
+    // Filter streams by search query
+    final filteredStreams = _searchQuery.isEmpty
+        ? state.streams
+        : state.streams.where((stream) {
+            return stream.astrologerName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                   stream.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                   stream.astrologerSpecialty.toLowerCase().contains(_searchQuery.toLowerCase());
+          }).toList();
+
     return Column(
       children: [
         _buildHeader(themeService),
+        _buildSearchBar(themeService),
         _buildCategories(themeService, state.streams),
-        _buildStats(themeService, state),
         Expanded(
-          child: GridView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: state.streams.length + (_isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == state.streams.length) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(themeService.primaryColor),
+          child: filteredStreams.isEmpty
+              ? _buildNoResults(themeService)
+              : GridView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.75,
                   ),
-                );
-              }
-              return _LiveStreamCard(
-                stream: state.streams[index],
-                themeService: themeService,
-                onTap: () => _openFeed(state.streams[index].id),
-              );
-            },
-          ),
+                  itemCount: filteredStreams.length + (_isLoadingMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == filteredStreams.length) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(themeService.primaryColor),
+                        ),
+                      );
+                    }
+                    return _LiveStreamCard(
+                      stream: filteredStreams[index],
+                      themeService: themeService,
+                      onTap: () => _openFeed(filteredStreams[index].id),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -396,18 +410,39 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
     );
   }
 
+  Widget _buildSearchBar(ThemeService themeService) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: ClientSearchBar(
+        hintText: 'Search live streams...',
+        minimal: true,
+        onSearch: (query) {
+          setState(() {
+            _searchQuery = query;
+          });
+        },
+        onClear: () {
+          setState(() {
+            _searchQuery = '';
+          });
+        },
+      ),
+    );
+  }
+
   Widget _buildCategories(ThemeService themeService, List<LiveStreamModel> streams) {
     final categories = [
-      {'name': 'All', 'icon': Icons.grid_view_rounded, 'value': null},
-      {'name': 'Astrology', 'icon': Icons.star_rounded, 'value': 'Astrology'},
-      {'name': 'Tarot', 'icon': Icons.style_rounded, 'value': 'Tarot'},
-      {'name': 'Numerology', 'icon': Icons.calculate_rounded, 'value': 'Numerology'},
-      {'name': 'Palmistry', 'icon': Icons.back_hand_rounded, 'value': 'Palmistry'},
-      {'name': 'Spiritual', 'icon': Icons.self_improvement_rounded, 'value': 'Spiritual'},
+      {'name': 'All', 'value': null},
+      {'name': 'Astrology', 'value': 'Astrology'},
+      {'name': 'Tarot', 'value': 'Tarot'},
+      {'name': 'Numerology', 'value': 'Numerology'},
+      {'name': 'Palmistry', 'value': 'Palmistry'},
+      {'name': 'Spiritual', 'value': 'Spiritual'},
     ];
 
-    return SizedBox(
-      height: 64,
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -415,29 +450,25 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
         itemBuilder: (context, index) {
           final cat = categories[index];
           final isSelected = _selectedCategory == cat['value'];
+          
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () => _onCategoryTap(cat['value'] as String?),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? LinearGradient(
-                          colors: [
-                            themeService.primaryColor,
-                            themeService.primaryColor.withOpacity(0.8),
-                          ],
-                        )
-                      : null,
-                  color: isSelected ? null : themeService.surfaceColor,
-                  borderRadius: BorderRadius.circular(16),
+                  color: isSelected 
+                      ? themeService.primaryColor 
+                      : themeService.cardColor,
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected
-                        ? themeService.primaryColor
+                    color: isSelected 
+                        ? themeService.primaryColor 
                         : themeService.borderColor,
-                    width: 1,
+                    width: 1.5,
                   ),
                   boxShadow: isSelected
                       ? [
@@ -449,28 +480,16 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
                         ]
                       : null,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      cat['icon'] as IconData,
-                      size: 18,
-                      color: isSelected
-                          ? Colors.white
-                          : themeService.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      cat['name'] as String,
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : themeService.textPrimary,
-                        fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  cat['name'] as String,
+                  style: TextStyle(
+                    color: isSelected 
+                        ? Colors.white 
+                        : themeService.textPrimary,
+                    fontSize: 15,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: 0.2,
+                  ),
                 ),
               ),
             ),
@@ -480,81 +499,38 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
     );
   }
 
-  Widget _buildStats(ThemeService themeService, LiveFeedLoaded state) {
-    final totalViewers = state.streams.fold<int>(
-      0,
-      (sum, stream) => sum + stream.viewerCount,
-    );
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: themeService.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: themeService.borderColor),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _StatItem(
-            icon: Icons.live_tv_rounded,
-            label: '${state.streams.length} Live',
-            color: Colors.red,
-            themeService: themeService,
-          ),
-          Container(
-            width: 1,
-            height: 24,
-            color: themeService.borderColor,
-          ),
-          _StatItem(
-            icon: Icons.visibility_rounded,
-            label: '$totalViewers Watching',
-            color: themeService.primaryColor,
-            themeService: themeService,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final ThemeService themeService;
-
-  const _StatItem({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.themeService,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 16, color: color),
+  Widget _buildNoResults(ThemeService themeService) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: themeService.textSecondary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No streams found',
+              style: TextStyle(
+                color: themeService.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try a different search or category',
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: themeService.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -594,17 +570,79 @@ class _LiveStreamCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Stack(
             children: [
-              // Background gradient
+              // Full profile picture background (no blur)
               Positioned.fill(
+                child: stream.astrologerProfilePicture != null
+                    ? Image.network(
+                        stream.astrologerProfilePicture!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  themeService.primaryColor.withOpacity(0.3),
+                                  themeService.primaryColor.withOpacity(0.6),
+                                  themeService.primaryColor.withOpacity(0.8),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              themeService.primaryColor.withOpacity(0.3),
+                              themeService.primaryColor.withOpacity(0.6),
+                              themeService.primaryColor.withOpacity(0.8),
+                            ],
+                          ),
+                        ),
+                      ),
+              ),
+              
+              // Dark gradient overlay - Top to transparent
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 80,
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        themeService.primaryColor.withOpacity(0.3),
-                        themeService.primaryColor.withOpacity(0.6),
-                        themeService.primaryColor.withOpacity(0.8),
+                        Colors.black.withOpacity(0.6),
+                        Colors.black.withOpacity(0.3),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Dark gradient overlay - Bottom (stronger for text)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 150,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.5),
+                        Colors.black.withOpacity(0.85),
                       ],
                     ),
                   ),
