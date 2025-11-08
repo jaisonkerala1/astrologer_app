@@ -56,7 +56,8 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   final ScrollController _commentsScrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
   Timer? _commentSimulationTimer;
-  final List<Map<String, String>> _floatingComments = [];
+  final List<Map<String, String>> _floatingComments = []; // Only last 4 for floating display
+  final List<Map<String, String>> _allComments = []; // All comments for bottom sheet
   final Random _random = Random();
   final List<FloatingHeart> _floatingHearts = [];
   final List<GiftAnimation> _giftAnimations = [];
@@ -221,12 +222,12 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       streamId: widget.liveStream.id,
       astrologerName: widget.liveStream.astrologerName,
       getComments: () {
-        // Get fresh data in real-time
-        return _floatingComments.map((comment) {
+        // Get ALL comments in real-time (not just the last 4 floating ones)
+        return _allComments.map((comment) {
           return LiveComment(
             userName: comment['user'] ?? 'Unknown',
             message: comment['message'] ?? '',
-            timestamp: DateTime.now().subtract(Duration(seconds: _floatingComments.indexOf(comment) * 10)),
+            timestamp: DateTime.now().subtract(Duration(seconds: _allComments.indexOf(comment) * 10)),
           );
         }).toList();
       },
@@ -311,16 +312,21 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     
     HapticFeedback.selectionClick();
     
-    // Add to floating comments
+    final newComment = {
+      'user': 'You',
+      'message': text,
+      'emoji': '💬',
+    };
+    
+    // Add to floating comments (only last 4 for display)
     setState(() {
       if (_floatingComments.length >= 4) {
         _floatingComments.removeAt(0);
       }
-      _floatingComments.add({
-        'user': 'You',
-        'message': text,
-        'emoji': '💬',
-      });
+      _floatingComments.add(newComment);
+      
+      // Add to all comments list (for bottom sheet)
+      _allComments.add(newComment);
       _commentsCount++;
     });
     
@@ -498,15 +504,19 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       {'user': 'Pooja K.', 'message': 'Beautiful reading! 🌸', 'emoji': '🌸'},
     ];
 
+    final randomComment = dummyComments[_random.nextInt(dummyComments.length)];
+    
     setState(() {
-      // Keep only last 4 comments
+      // Keep only last 4 comments for floating display
       if (_floatingComments.length >= 4) {
         _floatingComments.removeAt(0);
       }
       
-      // Add new random comment
-      final randomComment = dummyComments[_random.nextInt(dummyComments.length)];
+      // Add new random comment to floating display
       _floatingComments.add(randomComment);
+      
+      // Add to all comments list (for bottom sheet) - no limit
+      _allComments.add(randomComment);
     });
   }
 

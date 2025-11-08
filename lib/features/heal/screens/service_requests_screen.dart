@@ -156,6 +156,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isSelected = _selectedFilter == filter['key'];
+          final filterColor = _getFilterColor(filter['key'] as String, themeService);
           
           return Container(
             margin: const EdgeInsets.only(right: 8),
@@ -171,19 +172,19 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? themeService.primaryColor
-                      : themeService.cardColor,
+                      ? filterColor
+                      : themeService.surfaceColor,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? themeService.primaryColor
+                        ? filterColor
                         : themeService.borderColor,
-                    width: 1.5,
+                    width: isSelected ? 1.5 : 1,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: themeService.primaryColor.withOpacity(0.3),
+                            color: filterColor.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -211,7 +212,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Colors.white.withOpacity(0.25)
-                              : themeService.primaryColor.withOpacity(0.1),
+                              : filterColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -221,7 +222,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
                             fontWeight: FontWeight.w700,
                             color: isSelected
                                 ? Colors.white
-                                : themeService.primaryColor,
+                                : filterColor,
                           ),
                         ),
                       ),
@@ -234,6 +235,22 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
         },
       ),
     );
+  }
+
+  Color _getFilterColor(String key, ThemeService themeService) {
+    switch (key) {
+      case 'pending':
+        return const Color(0xFFF59E0B); // Amber
+      case 'confirmed':
+        return const Color(0xFF3B82F6); // Blue
+      case 'in_progress':
+        return const Color(0xFF8B5CF6); // Purple
+      case 'completed':
+        return const Color(0xFF10B981); // Green
+      case 'all':
+      default:
+        return themeService.primaryColor;
+    }
   }
 
   Widget _buildRequestsList(HealState state, AppLocalizations l10n, ThemeService themeService) {

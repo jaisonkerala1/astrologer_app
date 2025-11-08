@@ -250,4 +250,3 @@ class _LiveBottomInputBarState extends State<LiveBottomInputBar> {
     );
   }
 }
-

@@ -7,7 +7,6 @@ import '../bloc/consultations_event.dart';
 import '../bloc/consultations_state.dart';
 import '../models/consultation_model.dart';
 import '../widgets/consultation_card_widget.dart';
-import '../widgets/consultation_stats_widget.dart';
 import '../widgets/consultation_filter_widget.dart';
 import '../widgets/add_consultation_form.dart';
 // Removed inline search bar in favor of AppBar-integrated search
@@ -283,30 +282,22 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                   children: [
                     // Removed inline search bar; using AppBar-integrated search
                     
-                    // Stats section (only show when not searching) - shows loading state
-                    if (loadedState == null || !loadedState.isSearching) ...[
-                      ConsultationStatsWidget(
-                        todayCount: loadedState?.todayCount ?? 0,
-                        todayEarnings: loadedState?.todayEarnings ?? 0.0,
-                        nextConsultation: loadedState?.nextConsultation,
-                        isLoading: isLoading,
-                      ),
-                  
-                  // Filter section - always visible
-                  ConsultationFilterWidget(
-                    selectedStatus: loadedState?.activeFilter,
-                    onStatusChanged: (status) {
-                      context.read<ConsultationsBloc>().add(
-                        FilterConsultationsEvent(statusFilter: status),
-                      );
-                    },
-                    onClearFilters: () {
-                      context.read<ConsultationsBloc>().add(
-                        const FilterConsultationsEvent(),
-                      );
-                    },
-                  ),
-                ],
+                    // Filter section - always visible
+                    ConsultationFilterWidget(
+                      selectedStatus: loadedState?.activeFilter,
+                      onStatusChanged: (status) {
+                        context.read<ConsultationsBloc>().add(
+                          FilterConsultationsEvent(statusFilter: status),
+                        );
+                      },
+                      onClearFilters: () {
+                        context.read<ConsultationsBloc>().add(
+                          const FilterConsultationsEvent(),
+                        );
+                      },
+                      statusCounts: _buildStatusCounts(loadedState?.allConsultations),
+                      totalCount: loadedState?.allConsultations.length ?? 0,
+                    ),
                 
                 // Consultations list - shows skeleton when loading
                 Expanded(
@@ -317,7 +308,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
                               ? _buildSearchEmptyState(context, loadedState!.searchQuery)
                               : _buildEmptyState(context))
                           : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                               itemCount: loadedState!.consultations.length,
                               itemBuilder: (context, index) {
                                 final consultation = loadedState.consultations[index];
@@ -444,6 +435,22 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
       _refreshAnimationController.stop();
       _refreshAnimationController.reset();
     }
+  }
+
+  Map<ConsultationStatus, int> _buildStatusCounts(List<ConsultationModel>? consultations) {
+    final counts = {
+      for (final status in ConsultationStatus.values) status: 0,
+    };
+
+    if (consultations == null) {
+      return counts;
+    }
+
+    for (final consultation in consultations) {
+      counts.update(consultation.status, (value) => value + 1);
+    }
+
+    return counts;
   }
 
   Widget _buildEmptyState(BuildContext context) {

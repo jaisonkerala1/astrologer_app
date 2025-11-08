@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/consultation_model.dart';
 
@@ -9,12 +8,16 @@ class ConsultationFilterWidget extends StatelessWidget {
   final ConsultationStatus? selectedStatus;
   final Function(ConsultationStatus?) onStatusChanged;
   final VoidCallback onClearFilters;
+  final Map<ConsultationStatus, int> statusCounts;
+  final int totalCount;
 
   const ConsultationFilterWidget({
     super.key,
     this.selectedStatus,
     required this.onStatusChanged,
     required onClearFilters,
+    required this.statusCounts,
+    required this.totalCount,
   }) : onClearFilters = onClearFilters;
 
   @override
@@ -22,11 +25,16 @@ class ConsultationFilterWidget extends StatelessWidget {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Container(
-          height: 50, // Reduced height for better proportions
-          padding: const EdgeInsets.symmetric(vertical: 7),
+          height: 60, // Match heal tab height
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Match heal tab padding
+          decoration: BoxDecoration(
+            color: themeService.surfaceColor,
+            border: Border(
+              bottom: BorderSide(color: themeService.borderColor),
+            ),
+          ),
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
               _buildFilterChip(
                 context,
@@ -34,47 +42,37 @@ class ConsultationFilterWidget extends StatelessWidget {
                 selectedStatus == null,
                 () => onStatusChanged(null),
                 themeService,
+                count: totalCount,
               ),
-              const SizedBox(width: 8),
               ...ConsultationStatus.values.map(
-                (status) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: _buildFilterChip(
-                    context,
-                    status.displayName,
-                    selectedStatus == status,
-                    () => onStatusChanged(status),
-                    themeService,
-                    color: Color(int.parse(status.colorCode.substring(1), radix: 16) + 0xFF000000),
-                  ),
+                (status) => _buildFilterChip(
+                  context,
+                  status.displayName,
+                  selectedStatus == status,
+                  () => onStatusChanged(status),
+                  themeService,
+                  color: Color(int.parse(status.colorCode.substring(1), radix: 16) + 0xFF000000),
+                  count: statusCounts[status] ?? 0,
                 ),
               ),
-              const SizedBox(width: 8),
               if (selectedStatus != null)
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onClearFilters();
-                  },
-                  child: Container(
-                    height: 36, // Match other chips
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                    decoration: BoxDecoration(
-                      color: themeService.errorColor.withOpacity(0.1),
-                      borderRadius: themeService.borderRadius,
-                      border: Border.all(
-                        color: themeService.errorColor.withOpacity(0.3),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeService.errorColor.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onClearFilters();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Match heal tab padding
+                      decoration: BoxDecoration(
+                        color: themeService.errorColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20), // Match heal tab radius
+                        border: Border.all(
+                          color: themeService.errorColor.withOpacity(0.3),
+                          width: 1,
                         ),
-                      ],
-                    ),
-                    child: Center( // Center the content
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -89,8 +87,8 @@ class ConsultationFilterWidget extends StatelessWidget {
                             style: TextStyle(
                               color: themeService.errorColor,
                               fontWeight: FontWeight.w500,
-                              fontSize: 13, // Match other chips
-                              height: 1.2,
+                              fontSize: 15, // Match heal tab font size
+                              letterSpacing: 0.2, // Match heal tab
                             ),
                           ),
                         ],
@@ -112,50 +110,72 @@ class ConsultationFilterWidget extends StatelessWidget {
     VoidCallback onTap,
     ThemeService themeService, {
     Color? color,
+    int count = 0,
   }) {
     final chipColor = color ?? themeService.primaryColor;
     
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        height: 36, // Fixed height for consistent alignment
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        decoration: BoxDecoration(
-          color: isSelected ? chipColor : themeService.cardColor,
-          borderRadius: themeService.borderRadius,
-          border: Border.all(
-            color: isSelected ? chipColor : themeService.borderColor,
-            width: 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: chipColor.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: themeService.cardShadow.color,
-                    blurRadius: themeService.cardShadow.blurRadius,
-                    offset: themeService.cardShadow.offset,
-                  ),
-                ],
-        ),
-        child: Center( // Center the text vertically and horizontally
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : themeService.textPrimary,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 13, // Slightly larger for better readability
-              height: 1.2, // Better line height
+    return Container(
+      margin: const EdgeInsets.only(right: 8), // Match heal tab margin
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer( // Match heal tab animation
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Match heal tab padding
+          decoration: BoxDecoration(
+            color: isSelected ? chipColor : themeService.surfaceColor,
+            borderRadius: BorderRadius.circular(20), // Match heal tab radius
+            border: Border.all(
+              color: isSelected ? chipColor : themeService.borderColor,
+              width: isSelected ? 1.5 : 1,
             ),
-            textAlign: TextAlign.center,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: chipColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15, // Match heal tab font size
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  letterSpacing: 0.2, // Match heal tab
+                  color: isSelected
+                      ? Colors.white
+                      : themeService.textPrimary,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withOpacity(0.25)
+                        : chipColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : chipColor,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

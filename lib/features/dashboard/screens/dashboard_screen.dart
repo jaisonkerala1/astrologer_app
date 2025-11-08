@@ -47,8 +47,8 @@ import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../profile/screens/user_profile_screen.dart';
 import '../../profile/screens/astrologer_profile_screen.dart';
 import '../../clients/screens/client_detail_screen.dart';
-import '../../clients/screens/my_clients_screen.dart';
 import '../../clients/models/client_model.dart';
+import '../../consultations/screens/consultation_analytics_screen.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../notifications/screens/notifications_screen.dart';
@@ -855,16 +855,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: StatsCardWidget(
-                                title: 'My Clients',
-                                value: '${stats.totalSessions}', // Using total sessions as client count
-                                icon: Icons.people,
+                                title: 'Analytics',
+                                value: '${stats.totalSessions}',
+                                icon: Icons.analytics,
                                 color: AppTheme.infoColor,
                                 isLoading: isLoading,
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const MyClientsScreen(),
+                                      builder: (context) => const ConsultationAnalyticsScreen(),
                                     ),
                                   );
                                 },

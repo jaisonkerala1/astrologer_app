@@ -162,7 +162,7 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          margin: const EdgeInsets.only(bottom: 16),
           elevation: 2,
           color: themeService.cardColor,
           shape: RoundedRectangleBorder(

@@ -45,7 +45,6 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
     with TickerProviderStateMixin {
   late TabController _tabController;
   GiftData? _selectedGift;
-  int _selectedQuantity = 1;
   
   final int _walletBalance = 5000; // Mock balance
 
@@ -57,17 +56,15 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
         GiftData(name: 'Rose', emoji: '🌹', value: 10, color: Color(0xFFFF4458)),
         GiftData(name: 'Star', emoji: '⭐', value: 25, color: Color(0xFFFFC107)),
         GiftData(name: 'Heart', emoji: '💖', value: 50, color: Color(0xFFE91E63)),
-        GiftData(name: 'Crown', emoji: '👑', value: 100, color: Color(0xFF9C27B0)),
       ],
     ),
     GiftCategory(
       name: 'Premium',
       icon: Icons.diamond,
       gifts: [
-        GiftData(name: 'Diamond', emoji: '💎', value: 200, color: Color(0xFF2196F3)),
-        GiftData(name: 'Rocket', emoji: '🚀', value: 500, color: Color(0xFFFF5722)),
-        GiftData(name: 'Rainbow', emoji: '🌈', value: 1000, color: Color(0xFF4CAF50)),
-        GiftData(name: 'Trophy', emoji: '🏆', value: 2000, color: Color(0xFFFFD700)),
+        GiftData(name: 'Diamond', emoji: '💎', value: 150, color: Color(0xFF2196F3)),
+        GiftData(name: 'Rainbow', emoji: '🌈', value: 300, color: Color(0xFF4CAF50)),
+        GiftData(name: 'Crown', emoji: '👑', value: 500, color: Color(0xFF9C27B0)),
       ],
     ),
   ];
@@ -89,10 +86,8 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
     setState(() {
       if (_selectedGift == gift) {
         _selectedGift = null;
-        _selectedQuantity = 1;
       } else {
         _selectedGift = gift;
-        _selectedQuantity = 1;
       }
     });
   }
@@ -129,7 +124,7 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
               _buildWalletInfo(),
               _buildCategoryTabs(themeService),
               Expanded(child: _buildGiftGrid(themeService)),
-              if (_selectedGift != null) _buildSendButton(themeService),
+              _buildSendButton(themeService),
             ],
           ),
         );
@@ -150,71 +145,38 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
   }
 
   Widget _buildHeader(ThemeService themeService) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.white.withOpacity(0.08),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFFFFD700).withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.card_giftcard,
+          const Text(
+            'Send Gift',
+            style: TextStyle(
               color: Colors.white,
-              size: 28,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Send a Gift',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Support ${widget.astrologerName}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const Spacer(),
           GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
               Navigator.pop(context);
             },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 24,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                Icons.close_rounded,
+                color: Colors.white.withOpacity(0.7),
+                size: 20,
               ),
             ),
           ),
@@ -348,12 +310,12 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
       controller: _tabController,
       children: _categories.map((category) {
         return GridView.builder(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.85,
+            crossAxisCount: 3,
+            crossAxisSpacing: 18,
+            mainAxisSpacing: 18,
+            childAspectRatio: 0.78,
           ),
           itemCount: category.gifts.length,
           itemBuilder: (context, index) {
@@ -373,84 +335,80 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    gift.color.withOpacity(0.4),
-                    gift.color.withOpacity(0.2),
-                  ],
-                )
-              : LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.08),
-                    Colors.white.withOpacity(0.05),
-                  ],
-                ),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected
+              ? gift.color.withOpacity(0.14)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
-                ? gift.color.withOpacity(0.8)
-                : Colors.white.withOpacity(0.1),
-            width: isSelected ? 2.5 : 1.5,
+                ? gift.color.withOpacity(0.7)
+                : Colors.white.withOpacity(0.08),
+            width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: gift.color.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: gift.color.withOpacity(0.35),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ]
               : null,
         ),
         child: Stack(
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 250),
-                  tween: Tween(begin: 1.0, end: isSelected ? 1.15 : 1.0),
-                  builder: (context, scale, child) {
-                    return Transform.scale(
-                      scale: scale,
-                      child: Text(
-                        gift.emoji,
-                        style: const TextStyle(fontSize: 48),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  gift.name,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            // Center all content
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 250),
+                    tween: Tween(begin: 1.0, end: isSelected ? 1.15 : 1.0),
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: Text(
+                          gift.emoji,
+                        style: const TextStyle(fontSize: 44),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? gift.color
-                        : Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '₹${gift.value}',
+                  const SizedBox(height: 8),
+                  Text(
+                    gift.name,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                        ? gift.color
+                        : Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '₹${gift.value}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             if (isSelected)
               Positioned(
@@ -476,10 +434,9 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
   }
 
   Widget _buildSendButton(ThemeService themeService) {
-    if (_selectedGift == null) return const SizedBox.shrink();
-    
-    final totalCost = _selectedGift!.value * _selectedQuantity;
-    final canAfford = totalCost <= _walletBalance;
+    final hasSelection = _selectedGift != null;
+    final totalCost = hasSelection ? _selectedGift!.value : 0;
+    final canAfford = hasSelection && totalCost <= _walletBalance;
 
     return Container(
       padding: EdgeInsets.only(
@@ -502,67 +459,15 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Quantity selector
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Quantity',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 14,
-                  ),
-                ),
-                Row(
-                  children: [
-                    _buildQuantityButton(
-                      icon: Icons.remove,
-                      onTap: () {
-                        if (_selectedQuantity > 1) {
-                          setState(() => _selectedQuantity--);
-                        }
-                      },
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        '$_selectedQuantity',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    _buildQuantityButton(
-                      icon: Icons.add,
-                      onTap: () {
-                        if (_selectedQuantity < 99) {
-                          setState(() => _selectedQuantity++);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          // Send button
+          // Send button - always visible
           GestureDetector(
-            onTap: canAfford ? _handleSend : null,
-            child: Container(
+            onTap: hasSelection && canAfford ? _handleSend : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
-                gradient: canAfford
+                gradient: hasSelection && canAfford
                     ? LinearGradient(
                         colors: [
                           _selectedGift!.color,
@@ -571,12 +476,18 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
                       )
                     : LinearGradient(
                         colors: [
-                          Colors.grey.withOpacity(0.5),
-                          Colors.grey.withOpacity(0.3),
+                          Colors.white.withOpacity(0.1),
+                          Colors.white.withOpacity(0.05),
                         ],
                       ),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: canAfford
+                border: Border.all(
+                  color: hasSelection
+                      ? Colors.transparent
+                      : Colors.white.withOpacity(0.15),
+                  width: 1.5,
+                ),
+                boxShadow: hasSelection && canAfford
                     ? [
                         BoxShadow(
                           color: _selectedGift!.color.withOpacity(0.5),
@@ -589,33 +500,50 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _selectedGift!.emoji,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Send ${_selectedGift!.name}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  if (hasSelection) ...[
+                    Text(
+                      _selectedGift!.emoji,
+                      style: const TextStyle(fontSize: 24),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '• ₹$totalCost',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(width: 12),
+                    Text(
+                      'Send ${_selectedGift!.name}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '• ₹$totalCost',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ] else ...[
+                    Icon(
+                      Icons.card_giftcard,
+                      color: Colors.white.withOpacity(0.3),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Select a gift to send',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
-          if (!canAfford)
+          if (hasSelection && !canAfford)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
@@ -627,27 +555,6 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQuantityButton({required IconData icon, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 20,
-        ),
       ),
     );
   }
