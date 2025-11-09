@@ -30,10 +30,16 @@ class RatingStatsModel {
   }
 
   Map<String, dynamic> toJson() {
+    // Convert Map<int, int> to Map<String, dynamic> for JSON encoding
+    final Map<String, dynamic> ratingBreakdownJson = {};
+    ratingBreakdown.forEach((key, value) {
+      ratingBreakdownJson[key.toString()] = value;
+    });
+    
     return {
       'averageRating': averageRating,
       'totalReviews': totalReviews,
-      'ratingBreakdown': ratingBreakdown,
+      'ratingBreakdown': ratingBreakdownJson,
       'unrespondedCount': unrespondedCount,
     };
   }

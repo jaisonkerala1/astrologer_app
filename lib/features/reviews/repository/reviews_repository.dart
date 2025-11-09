@@ -23,47 +23,73 @@ class ReviewsRepository {
   // ============================================================================
 
   Map<String, dynamic> getInstantData() {
+    print('🔍 [ReviewsRepo] getInstantData() called');
+    
+    // Track if we found cache data (even if empty)
+    bool hasCachedData = false;
+    
     // 1. Check in-memory cache first (fastest)
     if (_cachedReviews.isNotEmpty || _cachedStats != null) {
       print('⚡ [ReviewsRepo] Returning ${_cachedReviews.length} reviews from memory cache');
       return {
         'reviews': List<ReviewModel>.from(_cachedReviews),
         'stats': _cachedStats,
+        'hasCachedData': true,
       };
     }
+
+    print('🔍 [ReviewsRepo] In-memory cache empty, checking persistent storage...');
 
     // 2. Try to load from persistent storage (still fast, survives restart)
     try {
       final cachedReviewsData = _storageService.getStringSync('reviews_cache');
       final cachedStatsData = _storageService.getStringSync('reviews_stats_cache');
 
+      print('🔍 [ReviewsRepo] Persistent cache check:');
+      print('   - reviews_cache: ${cachedReviewsData != null ? "Found (${cachedReviewsData.length} chars)" : "NULL"}');
+      print('   - reviews_stats_cache: ${cachedStatsData != null ? "Found" : "NULL"}');
+
+      // If we found ANY cache data, mark it
+      if (cachedReviewsData != null || cachedStatsData != null) {
+        hasCachedData = true;
+      }
+
       if (cachedReviewsData != null) {
         final List<dynamic> jsonList = jsonDecode(cachedReviewsData);
         _cachedReviews = jsonList.map((json) => ReviewModel.fromJson(json)).toList();
-        print('⚡ [ReviewsRepo] Loaded ${_cachedReviews.length} reviews from persistent cache');
+        print('✅ [ReviewsRepo] Loaded ${_cachedReviews.length} reviews from persistent cache');
+      } else {
+        print('⚠️ [ReviewsRepo] No reviews in persistent cache');
       }
 
       if (cachedStatsData != null) {
         final json = jsonDecode(cachedStatsData);
         _cachedStats = RatingStatsModel.fromJson(json);
-        print('⚡ [ReviewsRepo] Loaded stats from persistent cache');
+        print('✅ [ReviewsRepo] Loaded stats from persistent cache');
+      } else {
+        print('⚠️ [ReviewsRepo] No stats in persistent cache');
       }
 
-      if (_cachedReviews.isNotEmpty || _cachedStats != null) {
-        print('⚡ [ReviewsRepo] Data loaded from persistent cache (survived restart!)');
+      // Return data if we found any cache (even if reviews list is empty!)
+      if (hasCachedData) {
+        print('✅ [ReviewsRepo] Returning data from persistent cache (survived restart!)');
+        print('   Reviews count: ${_cachedReviews.length}, Has stats: ${_cachedStats != null}');
         return {
           'reviews': List<ReviewModel>.from(_cachedReviews),
           'stats': _cachedStats,
+          'hasCachedData': true,
         };
       }
     } catch (e) {
-      print('⚠️ [ReviewsRepo] Error loading from persistent cache: $e');
+      print('❌ [ReviewsRepo] Error loading from persistent cache: $e');
+      print('   Stack trace: ${StackTrace.current}');
     }
 
-    print('ℹ️ [ReviewsRepo] No cached reviews available');
+    print('⚠️ [ReviewsRepo] No cached reviews available - will show loading state');
     return {
       'reviews': <ReviewModel>[],
       'stats': null,
+      'hasCachedData': false,
     };
   }
 
@@ -175,20 +201,46 @@ class ReviewsRepository {
 
   Future<void> _cacheReviews(List<ReviewModel> reviews) async {
     try {
+      print('💾 [ReviewsRepo] _cacheReviews() called with ${reviews.length} reviews');
       final jsonList = reviews.map((r) => r.toJson()).toList();
-      await _storageService.setString('reviews_cache', jsonEncode(jsonList));
-      print('💾 [ReviewsRepo] Cached ${reviews.length} reviews to persistent storage');
+      final jsonString = jsonEncode(jsonList);
+      print('💾 [ReviewsRepo] Encoded to JSON string (${jsonString.length} chars)');
+      
+      final result = await _storageService.setString('reviews_cache', jsonString);
+      print('💾 [ReviewsRepo] setString result: $result');
+      
+      // Verify it was saved
+      final verify = await _storageService.getString('reviews_cache');
+      if (verify != null) {
+        print('✅ [ReviewsRepo] Verified: ${reviews.length} reviews cached to persistent storage');
+      } else {
+        print('❌ [ReviewsRepo] Verification failed: Cache not saved!');
+      }
     } catch (e) {
-      print('⚠️ [ReviewsRepo] Error caching reviews: $e');
+      print('❌ [ReviewsRepo] Error caching reviews: $e');
+      print('   Stack trace: ${StackTrace.current}');
     }
   }
 
   Future<void> _cacheStats(RatingStatsModel stats) async {
     try {
-      await _storageService.setString('reviews_stats_cache', jsonEncode(stats.toJson()));
-      print('💾 [ReviewsRepo] Cached stats to persistent storage');
+      print('💾 [ReviewsRepo] _cacheStats() called');
+      final jsonString = jsonEncode(stats.toJson());
+      print('💾 [ReviewsRepo] Encoded stats to JSON');
+      
+      final result = await _storageService.setString('reviews_stats_cache', jsonString);
+      print('💾 [ReviewsRepo] setString result: $result');
+      
+      // Verify it was saved
+      final verify = await _storageService.getString('reviews_stats_cache');
+      if (verify != null) {
+        print('✅ [ReviewsRepo] Verified: Stats cached to persistent storage');
+      } else {
+        print('❌ [ReviewsRepo] Verification failed: Stats not saved!');
+      }
     } catch (e) {
-      print('⚠️ [ReviewsRepo] Error caching stats: $e');
+      print('❌ [ReviewsRepo] Error caching stats: $e');
+      print('   Stack trace: ${StackTrace.current}');
     }
   }
 

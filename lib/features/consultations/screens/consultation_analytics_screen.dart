@@ -35,6 +35,7 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
   List<ConsultationModel> _allTimeConsultations = [];
   
   bool _isLoading = true;
+  bool _isRefreshing = false; // For background refresh indicator
 
   @override
   void initState() {
@@ -55,11 +56,58 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
   }
 
   Future<void> _loadAnalyticsData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    print('🔄 [AnalyticsScreen] Loading analytics data (two-phase pattern)...');
+    
+    // 🚀 PHASE 1: INSTANT LOAD - Show cached data immediately (no spinner!)
     try {
+      final cachedData = _consultationsService.getInstantAnalyticsData();
+      
+      if (cachedData.isNotEmpty) {
+        setState(() {
+          // Load whatever is available from cache
+          if (cachedData.containsKey('weeklyStats')) {
+            _weeklyStats = cachedData['weeklyStats'] as Map<String, dynamic>;
+          }
+          if (cachedData.containsKey('monthlyStats')) {
+            _monthlyStats = cachedData['monthlyStats'] as Map<String, dynamic>;
+          }
+          if (cachedData.containsKey('allTimeStats')) {
+            _allTimeStats = cachedData['allTimeStats'] as Map<String, dynamic>;
+          }
+          if (cachedData.containsKey('weeklyConsultations')) {
+            _weeklyConsultations = cachedData['weeklyConsultations'] as List<ConsultationModel>;
+          }
+          if (cachedData.containsKey('monthlyConsultations')) {
+            _monthlyConsultations = cachedData['monthlyConsultations'] as List<ConsultationModel>;
+          }
+          if (cachedData.containsKey('allTimeConsultations')) {
+            _allTimeConsultations = cachedData['allTimeConsultations'] as List<ConsultationModel>;
+          }
+          
+          _isLoading = false;
+          _isRefreshing = true; // Show subtle refresh indicator
+        });
+        print('⚡ [AnalyticsScreen] Phase 1: Displayed cached data instantly');
+      } else {
+        // No cache available, show loading spinner
+        setState(() {
+          _isLoading = true;
+          _isRefreshing = false;
+        });
+        print('⚠️ [AnalyticsScreen] No cached data, showing loading spinner');
+      }
+    } catch (e) {
+      print('⚠️ [AnalyticsScreen] Error in Phase 1: $e, showing loading spinner');
+      setState(() {
+        _isLoading = true;
+        _isRefreshing = false;
+      });
+    }
+
+    // 🔄 PHASE 2: BACKGROUND REFRESH - Silently fetch fresh data
+    try {
+      print('🌐 [AnalyticsScreen] Phase 2: Fetching fresh data from API...');
+      
       // Load all analytics data and consultations in parallel
       final results = await Future.wait([
         _consultationsService.getWeeklyConsultationStats(),
@@ -78,18 +126,24 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
         _monthlyConsultations = results[4] as List<ConsultationModel>;
         _allTimeConsultations = results[5] as List<ConsultationModel>;
         _isLoading = false;
+        _isRefreshing = false; // Hide refresh indicator
       });
+      print('✅ [AnalyticsScreen] Phase 2: Fresh data loaded and displayed');
     } catch (e) {
-      print('Error loading analytics data: $e');
+      print('❌ [AnalyticsScreen] Error in Phase 2: $e');
+      
+      // If we already showed cached data, just hide refresh indicator
       setState(() {
         _isLoading = false;
+        _isRefreshing = false;
       });
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load analytics data: $e'),
-            backgroundColor: Colors.red,
+            content: Text('Failed to load fresh analytics data: $e'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -109,9 +163,23 @@ class _ConsultationAnalyticsScreenState extends State<ConsultationAnalyticsScree
             elevation: 0,
             centerTitle: true,
             actions: [
+              if (_isRefreshing)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                      ),
+                    ),
+                  ),
+                ),
               IconButton(
                 icon: const Icon(Icons.refresh),
-                onPressed: () {
+                onPressed: _isRefreshing ? null : () {
                   HapticFeedback.selectionClick();
                   _loadAnalyticsData();
                 },

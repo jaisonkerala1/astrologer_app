@@ -9,6 +9,14 @@ class ConsultationsService {
   final StorageService _storageService = StorageService();
   static List<ConsultationModel> _consultations = [];
   
+  // In-memory cache for analytics data
+  static Map<String, dynamic>? _weeklyStatsCache;
+  static Map<String, dynamic>? _monthlyStatsCache;
+  static Map<String, dynamic>? _allTimeStatsCache;
+  static List<ConsultationModel>? _weeklyConsultationsCache;
+  static List<ConsultationModel>? _monthlyConsultationsCache;
+  static List<ConsultationModel>? _allTimeConsultationsCache;
+  
   // Get astrologer ID from stored user data or JWT token
   Future<String> _getAstrologerId() async {
     try {
@@ -368,7 +376,12 @@ class ConsultationsService {
       final response = await _apiService.get('/api/consultation/stats/$astrologerId/weekly');
 
       if (response.data['success'] == true) {
-        return response.data['data'];
+        final data = response.data['data'] as Map<String, dynamic>;
+        // Cache the data
+        _weeklyStatsCache = data;
+        await _storageService.setString('analytics_weekly_stats', jsonEncode(data));
+        print('💾 [ConsultationsService] Cached weekly stats');
+        return data;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch weekly consultation stats');
       }
@@ -390,7 +403,12 @@ class ConsultationsService {
       final response = await _apiService.get('/api/consultation/stats/$astrologerId/monthly');
 
       if (response.data['success'] == true) {
-        return response.data['data'];
+        final data = response.data['data'] as Map<String, dynamic>;
+        // Cache the data
+        _monthlyStatsCache = data;
+        await _storageService.setString('analytics_monthly_stats', jsonEncode(data));
+        print('💾 [ConsultationsService] Cached monthly stats');
+        return data;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch monthly consultation stats');
       }
@@ -412,7 +430,12 @@ class ConsultationsService {
       final response = await _apiService.get('/api/consultation/stats/$astrologerId/all-time');
 
       if (response.data['success'] == true) {
-        return response.data['data'];
+        final data = response.data['data'] as Map<String, dynamic>;
+        // Cache the data
+        _allTimeStatsCache = data;
+        await _storageService.setString('analytics_alltime_stats', jsonEncode(data));
+        print('💾 [ConsultationsService] Cached all-time stats');
+        return data;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch all-time consultation stats');
       }
@@ -435,9 +458,15 @@ class ConsultationsService {
 
       if (response.data['success'] == true) {
         final consultationsData = response.data['data'] as List;
-        return consultationsData
+        final consultations = consultationsData
             .map((json) => ConsultationModel.fromJson(json))
             .toList();
+        // Cache the data
+        _weeklyConsultationsCache = consultations;
+        await _storageService.setString('analytics_weekly_consultations', 
+            jsonEncode(consultations.map((c) => c.toJson()).toList()));
+        print('💾 [ConsultationsService] Cached ${consultations.length} weekly consultations');
+        return consultations;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch weekly consultations');
       }
@@ -455,9 +484,15 @@ class ConsultationsService {
 
       if (response.data['success'] == true) {
         final consultationsData = response.data['data'] as List;
-        return consultationsData
+        final consultations = consultationsData
             .map((json) => ConsultationModel.fromJson(json))
             .toList();
+        // Cache the data
+        _monthlyConsultationsCache = consultations;
+        await _storageService.setString('analytics_monthly_consultations', 
+            jsonEncode(consultations.map((c) => c.toJson()).toList()));
+        print('💾 [ConsultationsService] Cached ${consultations.length} monthly consultations');
+        return consultations;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch monthly consultations');
       }
@@ -475,9 +510,15 @@ class ConsultationsService {
 
       if (response.data['success'] == true) {
         final consultationsData = response.data['data'] as List;
-        return consultationsData
+        final consultations = consultationsData
             .map((json) => ConsultationModel.fromJson(json))
             .toList();
+        // Cache the data
+        _allTimeConsultationsCache = consultations;
+        await _storageService.setString('analytics_alltime_consultations', 
+            jsonEncode(consultations.map((c) => c.toJson()).toList()));
+        print('💾 [ConsultationsService] Cached ${consultations.length} all-time consultations');
+        return consultations;
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch all-time consultations');
       }
@@ -760,5 +801,130 @@ class ConsultationsService {
       print('Error updating consultation: $e');
       rethrow;
     }
+  }
+
+  // ============================================================================
+  // INSTANT ANALYTICS DATA (Cache-first for WhatsApp/Instagram-style loading)
+  // ============================================================================
+  
+  /// Get analytics data instantly from cache (synchronous)
+  /// Returns all analytics data in one call for two-phase loading pattern
+  Map<String, dynamic> getInstantAnalyticsData() {
+    print('⚡ [ConsultationsService] getInstantAnalyticsData() called');
+    
+    final result = <String, dynamic>{};
+    
+    // 1. Try in-memory cache first (fastest)
+    if (_weeklyStatsCache != null) {
+      result['weeklyStats'] = _weeklyStatsCache;
+      print('✅ [ConsultationsService] Weekly stats from memory cache');
+    }
+    if (_monthlyStatsCache != null) {
+      result['monthlyStats'] = _monthlyStatsCache;
+      print('✅ [ConsultationsService] Monthly stats from memory cache');
+    }
+    if (_allTimeStatsCache != null) {
+      result['allTimeStats'] = _allTimeStatsCache;
+      print('✅ [ConsultationsService] All-time stats from memory cache');
+    }
+    if (_weeklyConsultationsCache != null) {
+      result['weeklyConsultations'] = _weeklyConsultationsCache;
+      print('✅ [ConsultationsService] Weekly consultations from memory cache');
+    }
+    if (_monthlyConsultationsCache != null) {
+      result['monthlyConsultations'] = _monthlyConsultationsCache;
+      print('✅ [ConsultationsService] Monthly consultations from memory cache');
+    }
+    if (_allTimeConsultationsCache != null) {
+      result['allTimeConsultations'] = _allTimeConsultationsCache;
+      print('✅ [ConsultationsService] All-time consultations from memory cache');
+    }
+    
+    // 2. If in-memory cache is incomplete, try persistent storage (still fast)
+    if (result.isEmpty || result.length < 6) {
+      try {
+        // Load weekly stats
+        if (!result.containsKey('weeklyStats')) {
+          final cached = _storageService.getStringSync('analytics_weekly_stats');
+          if (cached != null) {
+            result['weeklyStats'] = jsonDecode(cached) as Map<String, dynamic>;
+            _weeklyStatsCache = result['weeklyStats'] as Map<String, dynamic>;
+            print('✅ [ConsultationsService] Weekly stats from persistent cache');
+          }
+        }
+        
+        // Load monthly stats
+        if (!result.containsKey('monthlyStats')) {
+          final cached = _storageService.getStringSync('analytics_monthly_stats');
+          if (cached != null) {
+            result['monthlyStats'] = jsonDecode(cached) as Map<String, dynamic>;
+            _monthlyStatsCache = result['monthlyStats'] as Map<String, dynamic>;
+            print('✅ [ConsultationsService] Monthly stats from persistent cache');
+          }
+        }
+        
+        // Load all-time stats
+        if (!result.containsKey('allTimeStats')) {
+          final cached = _storageService.getStringSync('analytics_alltime_stats');
+          if (cached != null) {
+            result['allTimeStats'] = jsonDecode(cached) as Map<String, dynamic>;
+            _allTimeStatsCache = result['allTimeStats'] as Map<String, dynamic>;
+            print('✅ [ConsultationsService] All-time stats from persistent cache');
+          }
+        }
+        
+        // Load weekly consultations
+        if (!result.containsKey('weeklyConsultations')) {
+          final cached = _storageService.getStringSync('analytics_weekly_consultations');
+          if (cached != null) {
+            final List<dynamic> jsonList = jsonDecode(cached);
+            final consultations = jsonList
+                .map((json) => ConsultationModel.fromJson(json))
+                .toList();
+            result['weeklyConsultations'] = consultations;
+            _weeklyConsultationsCache = consultations;
+            print('✅ [ConsultationsService] Weekly consultations from persistent cache');
+          }
+        }
+        
+        // Load monthly consultations
+        if (!result.containsKey('monthlyConsultations')) {
+          final cached = _storageService.getStringSync('analytics_monthly_consultations');
+          if (cached != null) {
+            final List<dynamic> jsonList = jsonDecode(cached);
+            final consultations = jsonList
+                .map((json) => ConsultationModel.fromJson(json))
+                .toList();
+            result['monthlyConsultations'] = consultations;
+            _monthlyConsultationsCache = consultations;
+            print('✅ [ConsultationsService] Monthly consultations from persistent cache');
+          }
+        }
+        
+        // Load all-time consultations
+        if (!result.containsKey('allTimeConsultations')) {
+          final cached = _storageService.getStringSync('analytics_alltime_consultations');
+          if (cached != null) {
+            final List<dynamic> jsonList = jsonDecode(cached);
+            final consultations = jsonList
+                .map((json) => ConsultationModel.fromJson(json))
+                .toList();
+            result['allTimeConsultations'] = consultations;
+            _allTimeConsultationsCache = consultations;
+            print('✅ [ConsultationsService] All-time consultations from persistent cache');
+          }
+        }
+      } catch (e) {
+        print('⚠️ [ConsultationsService] Error loading from persistent cache: $e');
+      }
+    }
+    
+    if (result.isEmpty) {
+      print('⚠️ [ConsultationsService] No cached analytics data available');
+    } else {
+      print('✅ [ConsultationsService] Returning ${result.length}/6 cached analytics data items');
+    }
+    
+    return result;
   }
 }

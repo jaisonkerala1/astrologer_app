@@ -35,12 +35,23 @@ class ReviewsBloc extends Bloc<ReviewsEvent, ReviewsState> {
         final instantData = _reviewsRepository.getInstantData();
         final cachedReviews = instantData['reviews'] as List<ReviewModel>;
         final cachedStats = instantData['stats'] as RatingStatsModel?;
+        final hasCachedData = instantData['hasCachedData'] as bool? ?? false;
 
-        if (cachedReviews.isNotEmpty && cachedStats != null) {
+        // Show cached data if we found any cache (even if empty!)
+        if (hasCachedData) {
           print('⚡ [ReviewsBloc] Phase 1: Emitting ${cachedReviews.length} reviews from cache (isRefreshing: true)');
+          
+          // If stats is null, create a default empty stats object
+          final statsToUse = cachedStats ?? RatingStatsModel(
+            averageRating: 0.0,
+            totalReviews: 0,
+            ratingBreakdown: {},
+            unrespondedCount: 0,
+          );
+          
           emit(ReviewsLoaded(
             reviews: cachedReviews,
-            stats: cachedStats,
+            stats: statsToUse,
             currentFilter: event.filterRating,
             currentSort: event.sortBy ?? 'newest',
             showNeedsReplyOnly: event.needsReply ?? false,
