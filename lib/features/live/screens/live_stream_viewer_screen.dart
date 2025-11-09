@@ -14,6 +14,7 @@ import '../widgets/live_gift_leaderboard.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
 import '../services/live_stream_service.dart';
+import '../utils/gift_helper.dart';
 
 class LiveStreamViewerScreen extends StatefulWidget {
   final LiveStreamModel liveStream;
@@ -60,6 +61,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   final ScrollController _commentsScrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
   Timer? _commentSimulationTimer;
+  Timer? _giftSimulationTimer;
   final List<Map<String, String>> _floatingComments = []; // Only last 4 for floating display
   final List<Map<String, String>> _allComments = []; // All comments for bottom sheet
   final Random _random = Random();
@@ -74,6 +76,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _setupSystemUI();
     _joinLiveStream();
     _startCommentSimulation();
+    _startGiftSimulation();
     _initializeLeaderboard();
   }
   
@@ -185,6 +188,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _commentsScrollController.dispose();
     _commentController.dispose();
     _commentSimulationTimer?.cancel();
+    _giftSimulationTimer?.cancel();
     _comboResetTimer?.cancel();
     _liveStreamService.leaveLiveStream(widget.liveStream.id);
     // SystemUI is restored in PopScope before navigation to prevent flickering
@@ -232,6 +236,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
             userName: comment['user'] ?? 'Unknown',
             message: comment['message'] ?? '',
             timestamp: DateTime.now().subtract(Duration(seconds: _allComments.indexOf(comment) * 10)),
+            isGift: comment['isGift'] == 'true',
           );
         }).toList();
       },
@@ -521,6 +526,104 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       
       // Add to all comments list (for bottom sheet) - no limit
       _allComments.add(randomComment);
+    });
+  }
+
+  void _startGiftSimulation() {
+    // Add initial gift after a short delay
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) _addSimulatedGift();
+    });
+    
+    // Add new gift every 8-15 seconds (less frequent than comments)
+    _giftSimulationTimer = Timer.periodic(
+      Duration(seconds: 8 + _random.nextInt(8)),
+      (timer) {
+        if (mounted) {
+          _addSimulatedGift();
+        } else {
+          timer.cancel();
+        }
+      },
+    );
+  }
+
+  void _addSimulatedGift() {
+    final dummyGifts = [
+      {'name': 'Rose', 'emoji': '🌹', 'value': '10', 'color': '0xFFFF4458', 'tier': 'basic'},
+      {'name': 'Star', 'emoji': '⭐', 'value': '50', 'color': '0xFFFFD700', 'tier': 'premium'},
+      {'name': 'Heart', 'emoji': '❤️', 'value': '100', 'color': '0xFFFF1493', 'tier': 'premium'},
+      {'name': 'Diamond', 'emoji': '💎', 'value': '500', 'color': '0xFF00BFFF', 'tier': 'luxury'},
+      {'name': 'Rainbow', 'emoji': '🌈', 'value': '1000', 'color': '0xFF9D4EDD', 'tier': 'luxury'},
+      {'name': 'Crown', 'emoji': '👑', 'value': '5000', 'color': '0xFFFFC107', 'tier': 'legendary'},
+    ];
+
+    final dummyUsers = [
+      'Arjun K.', 'Sneha R.', 'Vikram M.', 'Divya S.', 'Rohan P.', 
+      'Anjali L.', 'Karthik J.', 'Meera T.', 'Sanjay N.', 'Kavya M.',
+    ];
+
+    // Weighted random: more basic gifts, fewer legendary
+    final weights = [40, 25, 15, 10, 7, 3]; // Percentages
+    final randomValue = _random.nextInt(100);
+    int giftIndex = 0;
+    int cumulative = 0;
+    
+    for (int i = 0; i < weights.length; i++) {
+      cumulative += weights[i];
+      if (randomValue < cumulative) {
+        giftIndex = i;
+        break;
+      }
+    }
+
+    final gift = dummyGifts[giftIndex];
+    final sender = dummyUsers[_random.nextInt(dummyUsers.length)];
+    
+    // Create gift animation
+    final animation = GiftAnimation(
+      name: gift['name']!,
+      emoji: gift['emoji']!,
+      value: int.parse(gift['value']!),
+      color: Color(int.parse(gift['color']!)),
+      tier: GiftAnimation.getTierFromValue(int.parse(gift['value']!)),
+      senderName: sender,
+      combo: 1,
+    );
+    
+    setState(() {
+      // Add gift animation
+      _giftAnimations.add(animation);
+      
+      // Add gift as a special comment to floating comments
+      if (_floatingComments.length >= 4) {
+        _floatingComments.removeAt(0);
+      }
+      _floatingComments.add({
+        'user': sender,
+        'message': 'sent ${gift['name']}',
+        'emoji': gift['emoji']!,
+        'value': '₹${gift['value']}',
+        'isGift': 'true',
+      });
+      
+      // Add to all comments as well
+      _allComments.add({
+        'user': sender,
+        'message': 'sent ${gift['name']}',
+        'emoji': gift['emoji']!,
+        'value': '₹${gift['value']}',
+        'isGift': 'true',
+      });
+    });
+    
+    // Remove animation after completion
+    Future.delayed(Duration(milliseconds: animation.getDuration()), () {
+      if (mounted) {
+        setState(() {
+          _giftAnimations.remove(animation);
+        });
+      }
     });
   }
 
@@ -965,37 +1068,77 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                   constraints: const BoxConstraints(maxWidth: 280),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    // Gift-specific color based on gift type (minimal and flat)
+                    color: comment['isGift'] == 'true'
+                        ? GiftHelper.getGiftColor(
+                            GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                          ).withOpacity(0.15)
+                        : Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
+                      color: comment['isGift'] == 'true'
+                          ? GiftHelper.getGiftColor(
+                              GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                            ).withOpacity(0.4)
+                          : Colors.white.withOpacity(0.1),
+                      width: comment['isGift'] == 'true' ? 1.5 : 1,
                     ),
                   ),
-                  child: RichText(
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '${comment['user']} ',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Gift emoji for gift notifications
+                      if (comment['isGift'] == 'true' && comment['emoji'] != null) ...[
+                        Text(
+                          comment['emoji']!,
+                          style: const TextStyle(fontSize: 16),
                         ),
-                        TextSpan(
-                          text: comment['message'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
+                        const SizedBox(width: 6),
                       ],
-                    ),
+                      Flexible(
+                        child: RichText(
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${comment['user']} ',
+                                style: TextStyle(
+                                  color: comment['isGift'] == 'true'
+                                      ? GiftHelper.getGiftColor(
+                                          GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                                        )
+                                      : Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              TextSpan(
+                                text: comment['message'],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              // Show value for gifts
+                              if (comment['isGift'] == 'true' && comment['value'] != null)
+                                TextSpan(
+                                  text: ' ${comment['value']}',
+                                  style: TextStyle(
+                                    color: GiftHelper.getGiftColor(
+                                      GiftHelper.extractGiftName(comment['message'] ?? '') ?? 'Star'
+                                    ),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1097,6 +1240,7 @@ class FloatingHeart {
     required this.startX,
   });
 }
+
 
 
 
