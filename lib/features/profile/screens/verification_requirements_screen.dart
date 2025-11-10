@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/verification_badge.dart';
 import '../../auth/models/astrologer_model.dart';
-import 'verification_document_upload_screen.dart';
+import 'verification_upload_flow_screen.dart';
 
 class VerificationRequirementsScreen extends StatelessWidget {
   final AstrologerModel astrologer;
@@ -391,7 +391,7 @@ class VerificationRequirementsScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => VerificationDocumentUploadScreen(
+                builder: (context) => VerificationUploadFlowScreen(
                   astrologer: astrologer,
                 ),
               ),
@@ -428,7 +428,7 @@ class VerificationRequirementsScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => VerificationDocumentUploadScreen(
+                builder: (context) => VerificationUploadFlowScreen(
                   astrologer: astrologer,
                   isResubmission: true,
                 ),
