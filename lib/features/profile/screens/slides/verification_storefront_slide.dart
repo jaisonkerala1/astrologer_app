@@ -133,22 +133,22 @@ class VerificationStorefrontSlide extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 10 : 12),
                       _buildExampleItem(
-                        '📸 Shop or office photo',
+                        '• Shop or office photo',
                         themeService,
                         isSmallScreen,
                       ),
                       _buildExampleItem(
-                        '📸 Consultation space setup',
+                        '• Consultation space setup',
                         themeService,
                         isSmallScreen,
                       ),
                       _buildExampleItem(
-                        '📸 Spiritual or puja setup',
+                        '• Spiritual or puja setup',
                         themeService,
                         isSmallScreen,
                       ),
                       _buildExampleItem(
-                        '📸 Your professional workspace',
+                        '• Your professional workspace',
                         themeService,
                         isSmallScreen,
                         isLast: true,

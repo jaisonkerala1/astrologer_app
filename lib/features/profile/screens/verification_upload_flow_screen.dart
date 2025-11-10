@@ -7,8 +7,8 @@ import 'slides/verification_welcome_slide.dart';
 import 'slides/verification_id_proof_slide.dart';
 import 'slides/verification_certificate_slide.dart';
 import 'slides/verification_storefront_slide.dart';
+import 'slides/verification_final_slide.dart';
 import '../widgets/verification_navigation.dart';
-import 'verification_submitted_celebration_screen.dart';
 
 /// Main verification upload flow screen with page-by-page onboarding experience
 /// Manages navigation between slides and document uploads
@@ -39,8 +39,8 @@ class _VerificationUploadFlowScreenState
 
   bool _isSubmitting = false;
 
-  // Total pages: Welcome + 3 upload pages
-  static const int _totalPages = 4;
+  // Total pages: Welcome + 3 upload pages + final celebration
+  static const int _totalPages = 5;
 
   @override
   void dispose() {
@@ -110,12 +110,11 @@ class _VerificationUploadFlowScreenState
         _isSubmitting = false;
       });
 
-      // Navigate to celebration screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const VerificationSubmittedCelebrationScreen(),
-        ),
+      // Go to final celebration page
+      _pageController.animateToPage(
+        _totalPages - 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
       );
     }
   }
@@ -128,6 +127,7 @@ class _VerificationUploadFlowScreenState
         return _idProofImage != null;
       case 2: // Certificate - optional, always can proceed
       case 3: // Storefront - optional, always can proceed
+      case 4: // Final celebration - always can proceed
         return true;
       default:
         return false;
@@ -136,15 +136,20 @@ class _VerificationUploadFlowScreenState
 
   String get _nextButtonText {
     if (_currentPage == 0) return 'Start';
-    if (_currentPage == _totalPages - 1) {
+    if (_currentPage == 3) {
+      // Storefront page
       return _storefrontImage != null ? 'Submit for Review' : 'Skip & Submit';
+    }
+    if (_currentPage == 4) {
+      // Final celebration page
+      return 'Done';
     }
     return 'Next';
   }
 
   bool get _showSkipButton {
-    // Show skip on optional pages (Certificate and Storefront)
-    return _currentPage == 2 || _currentPage == 3;
+    // Show skip only on Certificate page (not on Storefront which has Skip & Submit)
+    return _currentPage == 2;
   }
 
   @override
@@ -206,25 +211,76 @@ class _VerificationUploadFlowScreenState
                       setState(() => _storefrontImage = null);
                     },
                   ),
+
+                  // Page 5: Final Celebration
+                  const VerificationFinalSlide(),
                 ],
               ),
 
-              // Fixed navigation at bottom
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: VerificationNavigation(
-                  currentPage: _currentPage,
-                  totalPages: _totalPages,
-                  onBack: _currentPage > 0 ? _goToPreviousPage : null,
-                  onNext: _isSubmitting ? null : _goToNextPage,
-                  onSkip: _showSkipButton ? _skipToNext : null,
-                  nextButtonText: _nextButtonText,
-                  nextEnabled: _canProceedFromCurrentPage && !_isSubmitting,
-                  isLoading: _isSubmitting,
+              // Fixed navigation at bottom (hide on final celebration page)
+              if (_currentPage < _totalPages - 1)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: VerificationNavigation(
+                    currentPage: _currentPage,
+                    totalPages: _totalPages,
+                    onBack: _currentPage > 0 ? _goToPreviousPage : null,
+                    onNext: _isSubmitting ? null : _goToNextPage,
+                    onSkip: _showSkipButton ? _skipToNext : null,
+                    nextButtonText: _nextButtonText,
+                    nextEnabled: _canProceedFromCurrentPage && !_isSubmitting,
+                    isLoading: _isSubmitting,
+                  ),
                 ),
-              ),
+
+              // Done button for final celebration page
+              if (_currentPage == _totalPages - 1)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(0.0),
+                          Colors.white.withOpacity(0.95),
+                          Colors.white,
+                        ],
+                      ),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Navigate back to profile
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );

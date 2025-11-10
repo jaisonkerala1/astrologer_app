@@ -135,22 +135,22 @@ class VerificationCertificateSlide extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 10 : 12),
                       _buildBenefitItem(
-                        '📈 Higher credibility with clients',
+                        '• Higher credibility with clients',
                         themeService,
                         isSmallScreen,
                       ),
                       _buildBenefitItem(
-                        '🌟 Stand out from other astrologers',
+                        '• Stand out from other astrologers',
                         themeService,
                         isSmallScreen,
                       ),
                       _buildBenefitItem(
-                        '💼 Professional edge in listings',
+                        '• Professional edge in listings',
                         themeService,
                         isSmallScreen,
                       ),
                       _buildBenefitItem(
-                        '🎯 Client trust increases by 40%',
+                        '• Client trust increases by 40%',
                         themeService,
                         isSmallScreen,
                         isLast: true,

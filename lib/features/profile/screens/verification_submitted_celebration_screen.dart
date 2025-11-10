@@ -125,9 +125,8 @@ class VerificationSubmittedCelebrationScreen extends StatelessWidget {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Navigate back to profile (pop 3 times: celebration -> upload -> requirements)
+                          // Navigate back to profile (pop 2 times)
                           Navigator.of(context)
-                            ..pop()
                             ..pop()
                             ..pop();
                         },
@@ -155,7 +154,6 @@ class VerificationSubmittedCelebrationScreen extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.of(context)
-                          ..pop()
                           ..pop()
                           ..pop();
                       },
