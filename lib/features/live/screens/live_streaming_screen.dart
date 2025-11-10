@@ -32,7 +32,12 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   
   bool _isEnding = false;
   bool _isControlsVisible = true;
-  bool _isSettingsVisible = false;
+  
+  // Settings state
+  bool _showViewerCount = true;
+  bool _allowComments = true;
+  bool _allowShare = true;
+  bool _microphoneEnabled = true;
   
   // Engagement metrics
   int _viewersCount = 0;
@@ -247,9 +252,14 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   void _toggleSettings() {
-    setState(() {
-      _isSettingsVisible = !_isSettingsVisible;
-    });
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => _buildSettingsBottomSheet(),
+    );
   }
 
   void _endStream() {
@@ -467,9 +477,6 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   
                   // Modern action buttons (right side)
                   if (_isControlsVisible) _buildModernActionButtons(themeService),
-                  
-                  // Settings panel
-                  if (_isSettingsVisible) _buildSettingsPanel(themeService),
                   
                   // Ending overlay
               if (_isEnding) _buildEndingOverlay(),
@@ -1135,121 +1142,123 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  Widget _buildSettingsPanel(ThemeService themeService) {
-    return Positioned.fill(
-      child: GestureDetector(
-        onTap: _toggleSettings,
-        child: Container(
-          color: Colors.black.withOpacity(0.5),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: GestureDetector(
-              onTap: () {}, // Prevent dismissal when tapping sheet
-              child: Container(
-                height: MediaQuery.of(context).size.height * 0.45,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF1A1A2E),
-                      Color(0xFF0F0F1E),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                ),
-                child: Column(
-                  children: [
-                    // Drag handle
-                    Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.white.withOpacity(0.08),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Settings',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: _toggleSettings,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Icon(
-                                Icons.close_rounded,
-                                color: Colors.white.withOpacity(0.7),
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Settings options
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        children: [
-                          _buildSettingItem(
-                            icon: Icons.visibility_outlined,
-                            title: 'Viewer Count',
-                            subtitle: 'Show viewer count',
-                            value: true,
-                            onChanged: (value) {},
-                          ),
-                          _buildSettingItem(
-                            icon: Icons.chat_bubble_outline,
-                            title: 'Comments',
-                            subtitle: 'Allow viewers to comment',
-                            value: true,
-                            onChanged: (value) {},
-                          ),
-                          _buildSettingItem(
-                            icon: Icons.share_outlined,
-                            title: 'Share',
-                            subtitle: 'Allow viewers to share',
-                            value: true,
-                            onChanged: (value) {},
-                          ),
-                          _buildSettingItem(
-                            icon: Icons.mic_outlined,
-                            title: 'Microphone',
-                            subtitle: 'Enable audio',
-                            value: true,
-                            onChanged: (value) {},
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+  Widget _buildSettingsBottomSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.5,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF1A1A2E),
+            Color(0xFF0F0F1E),
+          ],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white.withOpacity(0.08),
+                  width: 1,
                 ),
               ),
             ),
+            child: Row(
+              children: [
+                const Text(
+                  'Settings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          
+          // Settings options
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                _buildSettingItem(
+                  icon: Icons.visibility_outlined,
+                  title: 'Viewer Count',
+                  subtitle: 'Show viewer count',
+                  value: _showViewerCount,
+                  onChanged: (value) {
+                    setState(() {
+                      _showViewerCount = value;
+                    });
+                  },
+                ),
+                _buildSettingItem(
+                  icon: Icons.chat_bubble_outline,
+                  title: 'Comments',
+                  subtitle: 'Allow viewers to comment',
+                  value: _allowComments,
+                  onChanged: (value) {
+                    setState(() {
+                      _allowComments = value;
+                    });
+                  },
+                ),
+                _buildSettingItem(
+                  icon: Icons.share_outlined,
+                  title: 'Share',
+                  subtitle: 'Allow viewers to share',
+                  value: _allowShare,
+                  onChanged: (value) {
+                    setState(() {
+                      _allowShare = value;
+                    });
+                  },
+                ),
+                _buildSettingItem(
+                  icon: Icons.mic_outlined,
+                  title: 'Microphone',
+                  subtitle: 'Enable audio',
+                  value: _microphoneEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _microphoneEnabled = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -21,6 +21,8 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     on<ArchiveMultipleEvent>(_onArchiveMultiple);
     on<FilterNotificationsEvent>(_onFilterNotifications);
     on<RefreshNotificationsEvent>(_onRefresh);
+    on<SearchNotificationsEvent>(_onSearchNotifications);
+    on<ClearSearchEvent>(_onClearSearch);
   }
 
   Future<void> _onLoadNotifications(LoadNotificationsEvent event, Emitter<NotificationsState> emit) async {
@@ -327,6 +329,20 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
 
   Future<void> _onRefresh(RefreshNotificationsEvent event, Emitter<NotificationsState> emit) async {
     add(const LoadNotificationsEvent());
+  }
+
+  void _onSearchNotifications(SearchNotificationsEvent event, Emitter<NotificationsState> emit) {
+    if (state is NotificationsLoadedState) {
+      final currentState = state as NotificationsLoadedState;
+      emit(currentState.copyWith(searchQuery: event.query));
+    }
+  }
+
+  void _onClearSearch(ClearSearchEvent event, Emitter<NotificationsState> emit) {
+    if (state is NotificationsLoadedState) {
+      final currentState = state as NotificationsLoadedState;
+      emit(currentState.copyWith(searchQuery: ''));
+    }
   }
 }
 

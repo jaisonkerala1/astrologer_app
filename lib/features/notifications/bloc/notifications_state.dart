@@ -25,6 +25,7 @@ class NotificationsLoadedState extends NotificationsState {
   final NotificationModel? selectedNotification;
   final String? successMessage;
   final NotificationStatus? currentFilter;
+  final String searchQuery;
 
   const NotificationsLoadedState({
     required this.notifications,
@@ -32,6 +33,7 @@ class NotificationsLoadedState extends NotificationsState {
     this.selectedNotification,
     this.successMessage,
     this.currentFilter,
+    this.searchQuery = '',
   });
 
   @override
@@ -41,6 +43,7 @@ class NotificationsLoadedState extends NotificationsState {
     selectedNotification,
     successMessage,
     currentFilter,
+    searchQuery,
   ];
 
   NotificationsLoadedState copyWith({
@@ -49,6 +52,7 @@ class NotificationsLoadedState extends NotificationsState {
     NotificationModel? selectedNotification,
     String? successMessage,
     NotificationStatus? currentFilter,
+    String? searchQuery,
     bool clearSelectedNotification = false,
   }) {
     return NotificationsLoadedState(
@@ -59,6 +63,7 @@ class NotificationsLoadedState extends NotificationsState {
           : (selectedNotification ?? this.selectedNotification),
       successMessage: successMessage,
       currentFilter: currentFilter ?? this.currentFilter,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 

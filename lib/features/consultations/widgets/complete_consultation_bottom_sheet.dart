@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import 'consultation_celebration_animation.dart';
 
@@ -58,25 +59,39 @@ class _CompleteConsultationBottomSheetState
     super.dispose();
   }
 
-  void _handleComplete() async {
+  void _handleComplete() {
     HapticFeedback.mediumImpact();
     
     // Show celebration animation
     setState(() {
       _showingCelebration = true;
     });
+  }
 
-    // Wait for celebration animation (3 seconds)
-    await Future.delayed(const Duration(milliseconds: 3000));
-
+  void _handleDone() {
     // Close bottom sheet and return data
-    if (mounted) {
-      Navigator.pop(context, {
-        'notes': _notesController.text.trim(),
-        'review': _reviewController.text.trim(),
-        'rating': _rating,
-      });
-    }
+    Navigator.pop(context, {
+      'notes': _notesController.text.trim(),
+      'review': _reviewController.text.trim(),
+      'rating': _rating,
+    });
+  }
+
+  void _handleShare() {
+    HapticFeedback.lightImpact();
+    
+    // Share consultation details
+    final shareText = '''
+✨ Consultation Completed ✨
+
+Client: ${widget.clientName}
+Duration: ${widget.duration} minutes
+Amount: ₹${widget.amount.toStringAsFixed(0)}
+
+#AstrologerApp #ConsultationSuccess
+''';
+    
+    Share.share(shareText);
   }
 
   @override
@@ -95,6 +110,8 @@ class _CompleteConsultationBottomSheetState
                     clientName: widget.clientName,
                     duration: widget.duration,
                     amount: widget.amount,
+                    onDone: _handleDone,
+                    onShare: _handleShare,
                   )
                 : Container(
                     key: const ValueKey('form'),

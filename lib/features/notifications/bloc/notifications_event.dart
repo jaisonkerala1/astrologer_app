@@ -100,4 +100,17 @@ class RefreshNotificationsEvent extends NotificationsEvent {
   const RefreshNotificationsEvent();
 }
 
+class SearchNotificationsEvent extends NotificationsEvent {
+  final String query;
+  
+  const SearchNotificationsEvent(this.query);
+  
+  @override
+  List<Object?> get props => [query];
+}
+
+class ClearSearchEvent extends NotificationsEvent {
+  const ClearSearchEvent();
+}
+
 

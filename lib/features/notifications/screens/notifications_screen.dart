@@ -25,13 +25,27 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  String _searchQuery = '';
   NotificationType? _selectedType;
+  
+  // Search animation state
+  late AnimationController _searchAnimationController;
+  late Animation<double> _searchAnimation;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _searchAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _searchAnimation = CurvedAnimation(
+      parent: _searchAnimationController,
+      curve: Curves.easeInOut,
+    );
     // Load notifications using BLoC
     context.read<NotificationsBloc>().add(const LoadNotificationsEvent());
   }
@@ -39,7 +53,25 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchAnimationController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (_isSearching) {
+        _searchAnimationController.forward();
+        _searchFocusNode.requestFocus();
+      } else {
+        _searchAnimationController.reverse();
+        _searchController.clear();
+        _searchFocusNode.unfocus();
+        context.read<NotificationsBloc>().add(const ClearSearchEvent());
+      }
+    });
   }
 
   @override
@@ -94,60 +126,129 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   PreferredSizeWidget _buildAppBar(AppLocalizations l10n, ThemeService themeService) {
     return AppBar(
-        title: Text(
-          'Notifications',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: themeService.textPrimary,
-          ),
-        ),
-      backgroundColor: themeService.cardColor,
+      backgroundColor: themeService.primaryColor,
       elevation: 0,
-      foregroundColor: themeService.textPrimary,
+      titleSpacing: 16,
+      title: AnimatedBuilder(
+        animation: _searchAnimation,
+        builder: (context, child) {
+          return Row(
+            children: [
+              if (!_isSearching)
+                Opacity(
+                  opacity: 1.0 - _searchAnimation.value,
+                  child: Text(
+                    'Notifications',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+              if (_isSearching)
+                Expanded(
+                  child: FadeTransition(
+                    opacity: _searchAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Search notifications...',
+                              hintStyle: TextStyle(
+                                color: Colors.black45,
+                                fontSize: 16,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              prefixIcon: Padding(
+                                padding: const EdgeInsets.only(left: 8, right: 6),
+                                child: Icon(Icons.search, color: Colors.black45, size: 20),
+                              ),
+                              prefixIconConstraints: BoxConstraints(minWidth: 36),
+                            ),
+                            onChanged: (value) {
+                              context.read<NotificationsBloc>().add(
+                                SearchNotificationsEvent(value),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
       actions: [
-        // Search Button
+        // Search Button/Close
         IconButton(
-          onPressed: _showSearchDialog,
-          icon: const Icon(Icons.search),
-          tooltip: 'Search',
+          onPressed: _toggleSearch,
+          icon: Icon(_isSearching ? Icons.close : Icons.search),
+          color: Colors.white,
+          tooltip: _isSearching ? 'Close search' : 'Search',
         ),
         // More Options
-        PopupMenuButton<String>(
-          onSelected: _handleMenuAction,
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'mark_all_read',
-              child: Row(
-                children: [
-                  Icon(Icons.done_all, color: themeService.primaryColor),
-                  const SizedBox(width: 12),
-                  const Text('Mark All as Read'),
-                ],
+        if (!_isSearching)
+          PopupMenuButton<String>(
+            onSelected: _handleMenuAction,
+            icon: Icon(Icons.more_vert, color: Colors.white),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'mark_all_read',
+                child: Row(
+                  children: [
+                    Icon(Icons.done_all, color: themeService.primaryColor),
+                    const SizedBox(width: 12),
+                    const Text('Mark All as Read'),
+                  ],
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: 'clear_all',
-              child: Row(
-                children: [
-                  Icon(Icons.clear_all, color: themeService.errorColor),
-                  const SizedBox(width: 12),
-                  const Text('Clear All'),
-                ],
+              PopupMenuItem(
+                value: 'clear_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.clear_all, color: themeService.errorColor),
+                    const SizedBox(width: 12),
+                    const Text('Clear All'),
+                  ],
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: 'settings',
-              child: Row(
-                children: [
-                  Icon(Icons.settings, color: themeService.textPrimary),
-                  const SizedBox(width: 12),
-                  const Text('Settings'),
-                ],
+              PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: themeService.textPrimary),
+                    const SizedBox(width: 12),
+                    const Text('Settings'),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
@@ -170,6 +271,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           final filteredNotifications = _getFilteredNotifications(
             state.notifications,
             filter,
+            state.searchQuery,
           );
 
           if (filteredNotifications.isEmpty) {
@@ -291,12 +393,13 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   List<NotificationModel> _getFilteredNotifications(
     List<NotificationModel> notifications,
     NotificationFilter filter,
+    String searchQuery,
   ) {
     List<NotificationModel> filtered = notifications;
 
     // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
+    if (searchQuery.isNotEmpty) {
+      final query = searchQuery.toLowerCase();
       filtered = filtered.where((n) =>
         n.title.toLowerCase().contains(query) ||
         n.body.toLowerCase().contains(query)
@@ -331,42 +434,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return filtered;
-  }
-
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Search Notifications'),
-        content: TextField(
-          decoration: const InputDecoration(
-            hintText: 'Search in notifications...',
-            prefixIcon: Icon(Icons.search),
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _searchQuery = '';
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('Clear'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _handleMenuAction(String action) {

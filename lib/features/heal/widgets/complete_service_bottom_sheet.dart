@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import 'service_celebration_animation.dart';
 
@@ -55,25 +56,39 @@ class _CompleteServiceBottomSheetState
     super.dispose();
   }
 
-  void _handleComplete() async {
+  void _handleComplete() {
     HapticFeedback.mediumImpact();
     
     // Show celebration animation
     setState(() {
       _showingCelebration = true;
     });
+  }
 
-    // Wait for celebration animation (2 seconds)
-    await Future.delayed(const Duration(milliseconds: 2000));
-
+  void _handleDone() {
     // Close bottom sheet and return data
-    if (mounted) {
-      Navigator.pop(context, {
-        'notes': _notesController.text.trim(),
-        'review': _reviewController.text.trim(),
-        'rating': _rating,
-      });
-    }
+    Navigator.pop(context, {
+      'notes': _notesController.text.trim(),
+      'review': _reviewController.text.trim(),
+      'rating': _rating,
+    });
+  }
+
+  void _handleShare() {
+    HapticFeedback.lightImpact();
+    
+    // Share service details
+    final shareText = '''
+✨ Service Completed ✨
+
+Service: ${widget.serviceName}
+Customer: ${widget.customerName}
+Amount: ₹${widget.amount.toStringAsFixed(0)}
+
+#AstrologerApp #ServiceSuccess
+''';
+    
+    Share.share(shareText);
   }
 
   @override
@@ -92,6 +107,8 @@ class _CompleteServiceBottomSheetState
                     customerName: widget.customerName,
                     serviceName: widget.serviceName,
                     amount: widget.amount,
+                    onDone: _handleDone,
+                    onShare: _handleShare,
                   )
                 : Container(
                     key: const ValueKey('form'),

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Minimal celebration animation for service completion
 class ServiceCelebrationAnimation extends StatefulWidget {
   final String customerName;
   final String serviceName;
   final double amount;
+  final VoidCallback onDone;
+  final VoidCallback onShare;
 
   const ServiceCelebrationAnimation({
     super.key,
     required this.customerName,
     required this.serviceName,
     required this.amount,
+    required this.onDone,
+    required this.onShare,
   });
 
   @override
@@ -73,89 +78,168 @@ class _ServiceCelebrationAnimationState
           topRight: Radius.circular(20),
         ),
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Checkmark Animation
-            ScaleTransition(
-              scale: CurvedAnimation(
-                parent: _checkmarkController,
-                curve: Curves.elasticOut,
-              ),
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF10B981).withOpacity(0.3),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 70,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Success Message
-            FadeTransition(
-              opacity: _contentController,
+      child: Column(
+        children: [
+          // Content - Centered in available space
+          Expanded(
+            child: Center(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Service Completed!',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
+                  // Checkmark Animation
+                  ScaleTransition(
+                    scale: CurvedAnimation(
+                      parent: _checkmarkController,
+                      curve: Curves.elasticOut,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Service Details - Minimal
-                  Text(
-                    widget.serviceName,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF6B7280),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.customerName,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
-                      fontWeight: FontWeight.w500,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withOpacity(0.3),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 70,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '₹${widget.amount.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF10B981),
-                      fontWeight: FontWeight.w600,
+
+                  const SizedBox(height: 32),
+
+                  // Success Message
+                  FadeTransition(
+                    opacity: _contentController,
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Service Completed!',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1F2937),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Service Details - Minimal
+                        Text(
+                          widget.serviceName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.customerName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '₹${widget.amount.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          
+          // Action Buttons - Fixed at bottom
+          FadeTransition(
+            opacity: _contentController,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: Row(
+                children: [
+                  // Share Button
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: TextButton(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          widget.onShare();
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xFFF3F4F6),
+                          foregroundColor: const Color(0xFF374151),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.share_rounded, size: 18),
+                            SizedBox(width: 6),
+                            Text(
+                              'Share',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Done Button
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: TextButton(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          widget.onDone();
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
