@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../auth/models/astrologer_model.dart';
-import '../screens/verification_requirements_screen.dart';
+import '../screens/verification_upload_flow_screen.dart';
 
 /// Verification status card shown in profile
 class VerificationStatusCard extends StatelessWidget {
@@ -108,7 +108,7 @@ class VerificationStatusCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VerificationRequirementsScreen(
+            builder: (context) => VerificationUploadFlowScreen(
               astrologer: astrologer,
             ),
           ),
@@ -248,8 +248,9 @@ class VerificationStatusCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VerificationRequirementsScreen(
+            builder: (context) => VerificationUploadFlowScreen(
               astrologer: astrologer,
+              isResubmission: true,
             ),
           ),
         );
