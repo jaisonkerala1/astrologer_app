@@ -261,6 +261,8 @@ class ConsultationActionsWidget extends StatelessWidget {
     final result = await CompleteConsultationBottomSheet.show(
       context: context,
       clientName: consultation.clientName,
+      duration: consultation.duration,
+      amount: consultation.amount,
     );
     
     if (result != null && context.mounted) {

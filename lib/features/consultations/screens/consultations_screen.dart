@@ -569,6 +569,8 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
     final result = await CompleteConsultationBottomSheet.show(
       context: context,
       clientName: consultation.clientName,
+      duration: consultation.duration,
+      amount: consultation.amount,
     );
     
     if (result != null && mounted) {

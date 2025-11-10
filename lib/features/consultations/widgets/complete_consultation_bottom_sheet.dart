@@ -2,27 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import 'consultation_celebration_animation.dart';
 
 class CompleteConsultationBottomSheet extends StatefulWidget {
   final String clientName;
+  final int duration;
+  final double amount;
   final VoidCallback onComplete;
 
   const CompleteConsultationBottomSheet({
     super.key,
     required this.clientName,
+    required this.duration,
+    required this.amount,
     required this.onComplete,
   });
 
   static Future<Map<String, dynamic>?> show({
     required BuildContext context,
     required String clientName,
+    required int duration,
+    required double amount,
   }) {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: false, // Prevent dismissing during celebration
+      enableDrag: false, // Prevent dragging during celebration
       builder: (context) => CompleteConsultationBottomSheet(
         clientName: clientName,
+        duration: duration,
+        amount: amount,
         onComplete: () {},
       ),
     );
@@ -38,6 +49,7 @@ class _CompleteConsultationBottomSheetState
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _reviewController = TextEditingController();
   int _rating = 0;
+  bool _showingCelebration = false;
 
   @override
   void dispose() {
@@ -46,25 +58,56 @@ class _CompleteConsultationBottomSheetState
     super.dispose();
   }
 
+  void _handleComplete() async {
+    HapticFeedback.mediumImpact();
+    
+    // Show celebration animation
+    setState(() {
+      _showingCelebration = true;
+    });
+
+    // Wait for celebration animation (3 seconds)
+    await Future.delayed(const Duration(milliseconds: 3000));
+
+    // Close bottom sheet and return data
+    if (mounted) {
+      Navigator.pop(context, {
+        'notes': _notesController.text.trim(),
+        'review': _reviewController.text.trim(),
+        'rating': _rating,
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: _showingCelebration ? 0 : MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: themeService.cardColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _showingCelebration
+                ? ConsultationCelebrationAnimation(
+                    key: const ValueKey('celebration'),
+                    clientName: widget.clientName,
+                    duration: widget.duration,
+                    amount: widget.amount,
+                  )
+                : Container(
+                    key: const ValueKey('form'),
+                    decoration: BoxDecoration(
+                      color: themeService.cardColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                 // Drag Handle
                 Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -252,14 +295,7 @@ class _CompleteConsultationBottomSheetState
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              Navigator.pop(context, {
-                                'notes': _notesController.text.trim(),
-                                'review': _reviewController.text.trim(),
-                                'rating': _rating,
-                              });
-                            },
+                            onPressed: _handleComplete,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF10B981),
                               foregroundColor: Colors.white,
@@ -291,6 +327,7 @@ class _CompleteConsultationBottomSheetState
               ],
             ),
           ),
+                  ),
         );
       },
     );

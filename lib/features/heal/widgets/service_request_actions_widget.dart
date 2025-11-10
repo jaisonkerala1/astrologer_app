@@ -299,6 +299,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
       context: context,
       customerName: request.customerName,
       serviceName: request.serviceName,
+      amount: request.price,
     );
     
     if (result != null && context.mounted) {

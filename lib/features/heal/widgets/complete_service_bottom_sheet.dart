@@ -2,29 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import 'service_celebration_animation.dart';
 
 class CompleteServiceBottomSheet extends StatefulWidget {
   final String customerName;
   final String serviceName;
+  final double amount;
 
   const CompleteServiceBottomSheet({
     super.key,
     required this.customerName,
     required this.serviceName,
+    required this.amount,
   });
 
   static Future<Map<String, dynamic>?> show({
     required BuildContext context,
     required String customerName,
     required String serviceName,
+    required double amount,
   }) {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: false, // Prevent dismissing during celebration
+      enableDrag: false, // Prevent dragging during celebration
       builder: (context) => CompleteServiceBottomSheet(
         customerName: customerName,
         serviceName: serviceName,
+        amount: amount,
       ),
     );
   }
@@ -39,6 +46,7 @@ class _CompleteServiceBottomSheetState
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _reviewController = TextEditingController();
   int _rating = 0;
+  bool _showingCelebration = false;
 
   @override
   void dispose() {
@@ -47,25 +55,56 @@ class _CompleteServiceBottomSheetState
     super.dispose();
   }
 
+  void _handleComplete() async {
+    HapticFeedback.mediumImpact();
+    
+    // Show celebration animation
+    setState(() {
+      _showingCelebration = true;
+    });
+
+    // Wait for celebration animation (2 seconds)
+    await Future.delayed(const Duration(milliseconds: 2000));
+
+    // Close bottom sheet and return data
+    if (mounted) {
+      Navigator.pop(context, {
+        'notes': _notesController.text.trim(),
+        'review': _reviewController.text.trim(),
+        'rating': _rating,
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: _showingCelebration ? 0 : MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: themeService.cardColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _showingCelebration
+                ? ServiceCelebrationAnimation(
+                    key: const ValueKey('celebration'),
+                    customerName: widget.customerName,
+                    serviceName: widget.serviceName,
+                    amount: widget.amount,
+                  )
+                : Container(
+                    key: const ValueKey('form'),
+                    decoration: BoxDecoration(
+                      color: themeService.cardColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                 // Drag Handle
                 Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -253,14 +292,7 @@ class _CompleteServiceBottomSheetState
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              Navigator.pop(context, {
-                                'notes': _notesController.text.trim(),
-                                'review': _reviewController.text.trim(),
-                                'rating': _rating,
-                              });
-                            },
+                            onPressed: _handleComplete,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF10B981),
                               foregroundColor: Colors.white,
@@ -292,6 +324,7 @@ class _CompleteServiceBottomSheetState
               ],
             ),
           ),
+                  ),
         );
       },
     );
