@@ -105,47 +105,30 @@ class VerificationIdProofSlide extends StatelessWidget {
 
                 SizedBox(height: isSmallScreen ? 20 : 24),
 
-                // Accepted documents card
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
-                  decoration: BoxDecoration(
-                    color: themeService.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: themeService.borderColor),
-                  ),
+                // Accepted documents - minimal flat design
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Accepted Documents',
                         style: TextStyle(
-                          fontSize: isSmallScreen ? 15 : 16,
-                          fontWeight: FontWeight.bold,
-                          color: themeService.textPrimary,
+                          fontSize: isSmallScreen ? 13 : 14,
+                          fontWeight: FontWeight.w500,
+                          color: themeService.textSecondary,
                         ),
                       ),
-                      SizedBox(height: isSmallScreen ? 10 : 12),
-                      _buildDocumentItem(
-                        '✓ Aadhaar Card',
-                        themeService,
-                        isSmallScreen,
-                      ),
-                      _buildDocumentItem(
-                        '✓ PAN Card',
-                        themeService,
-                        isSmallScreen,
-                      ),
-                      _buildDocumentItem(
-                        '✓ Passport',
-                        themeService,
-                        isSmallScreen,
-                      ),
-                      _buildDocumentItem(
-                        '✓ Driver\'s License',
-                        themeService,
-                        isSmallScreen,
-                        isLast: true,
+                      SizedBox(height: isSmallScreen ? 8 : 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildDocumentChip('Aadhaar', themeService),
+                          _buildDocumentChip('PAN', themeService),
+                          _buildDocumentChip('Passport', themeService),
+                          _buildDocumentChip('Driver\'s License', themeService),
+                        ],
                       ),
                     ],
                   ),
@@ -219,18 +202,18 @@ class VerificationIdProofSlide extends StatelessWidget {
     );
   }
 
-  Widget _buildDocumentItem(
-    String text,
-    ThemeService themeService,
-    bool isSmallScreen, {
-    bool isLast = false,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : (isSmallScreen ? 6 : 8)),
+  Widget _buildDocumentChip(String text, ThemeService themeService) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: themeService.primaryColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: isSmallScreen ? 13 : 14,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
           color: themeService.textPrimary,
         ),
       ),

@@ -118,33 +118,14 @@ class VerificationUploadCard extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenHeight < 700;
     final horizontalPadding = screenWidth > 600 ? 48.0 : 24.0;
-    final cardHeight = isSmallScreen ? 180.0 : 220.0;
+    final cardHeight = isSmallScreen ? 200.0 : 240.0;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Container(
         height: cardHeight,
-        decoration: BoxDecoration(
-          color: themeService.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: image != null
-                ? Colors.green.withOpacity(0.5)
-                : themeService.borderColor,
-            width: 2,
-          ),
-          boxShadow: image != null
-              ? [
-                  BoxShadow(
-                    color: Colors.green.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           child: image == null
               ? _buildUploadArea(context)
               : _buildImagePreview(context),
@@ -157,27 +138,43 @@ class VerificationUploadCard extends StatelessWidget {
     return InkWell(
       onTap: () => _showImageSourceDialog(context),
       child: Container(
-        color: themeService.primaryColor.withOpacity(0.05),
+        decoration: BoxDecoration(
+          color: themeService.cardColor,
+          border: Border.all(
+            color: themeService.borderColor,
+            width: 1.5,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.cloud_upload_outlined,
-              size: 48,
-              color: themeService.primaryColor,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Tap to upload',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            // Minimal upload icon
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: themeService.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.file_upload_outlined,
+                size: 32,
                 color: themeService.primaryColor,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 16),
             Text(
-              'Camera or Gallery',
+              'Upload Document',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tap to select photo',
               style: TextStyle(
                 fontSize: 13,
                 color: themeService.textSecondary,
@@ -190,88 +187,108 @@ class VerificationUploadCard extends StatelessWidget {
   }
 
   Widget _buildImagePreview(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Image
-        Image.file(
-          image!,
-          fit: BoxFit.cover,
+    return Container(
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        border: Border.all(
+          color: Colors.green.withOpacity(0.5),
+          width: 2,
         ),
-
-        // Gradient overlay for better button visibility
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.4),
-                  Colors.transparent,
-                ],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image with padding
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                image!,
+                fit: BoxFit.cover,
               ),
             ),
           ),
-        ),
 
-        // Action buttons
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Row(
-            children: [
-              _buildActionButton(
-                Icons.edit,
-                () => _showImageSourceDialog(context),
-                themeService.primaryColor,
-              ),
-              const SizedBox(width: 8),
-              _buildActionButton(
-                Icons.delete,
-                onImageRemoved,
-                Colors.red,
-              ),
-            ],
-          ),
-        ),
-
-        // Success checkmark
-        Positioned(
-          bottom: 12,
-          left: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 16,
+          // Gradient overlay for better button visibility
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
-                SizedBox(width: 6),
-                Text(
-                  'Uploaded',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Action buttons
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Row(
+              children: [
+                _buildActionButton(
+                  Icons.edit_outlined,
+                  () => _showImageSourceDialog(context),
+                  themeService.primaryColor,
+                ),
+                const SizedBox(width: 8),
+                _buildActionButton(
+                  Icons.delete_outline,
+                  onImageRemoved,
+                  Colors.red,
                 ),
               ],
             ),
           ),
-        ),
-      ],
+
+          // Success checkmark
+          Positioned(
+            bottom: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Uploaded',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -279,14 +296,14 @@ class VerificationUploadCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: color,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.4),
-              blurRadius: 8,
+              color: color.withOpacity(0.3),
+              blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],

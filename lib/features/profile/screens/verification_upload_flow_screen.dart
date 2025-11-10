@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../auth/models/astrologer_model.dart';
-import 'slides/verification_welcome_slide.dart';
 import 'slides/verification_id_proof_slide.dart';
 import 'slides/verification_certificate_slide.dart';
 import 'slides/verification_storefront_slide.dart';
@@ -39,8 +38,8 @@ class _VerificationUploadFlowScreenState
 
   bool _isSubmitting = false;
 
-  // Total pages: Welcome + 3 upload pages
-  static const int _totalPages = 4;
+  // Total pages: 3 upload pages (removed welcome page)
+  static const int _totalPages = 3;
 
   @override
   void dispose() {
@@ -122,12 +121,10 @@ class _VerificationUploadFlowScreenState
 
   bool get _canProceedFromCurrentPage {
     switch (_currentPage) {
-      case 0: // Welcome page - always can proceed
-        return true;
-      case 1: // ID Proof - must have image
+      case 0: // ID Proof - must have image
         return _idProofImage != null;
-      case 2: // Certificate - optional, always can proceed
-      case 3: // Storefront - optional, always can proceed
+      case 1: // Certificate - optional, always can proceed
+      case 2: // Storefront - optional, always can proceed
         return true;
       default:
         return false;
@@ -135,7 +132,6 @@ class _VerificationUploadFlowScreenState
   }
 
   String get _nextButtonText {
-    if (_currentPage == 0) return 'Start';
     if (_currentPage == _totalPages - 1) {
       return _storefrontImage != null ? 'Submit for Review' : 'Skip & Submit';
     }
@@ -144,7 +140,7 @@ class _VerificationUploadFlowScreenState
 
   bool get _showSkipButton {
     // Show skip on optional pages (Certificate and Storefront)
-    return _currentPage == 2 || _currentPage == 3;
+    return _currentPage == 1 || _currentPage == 2;
   }
 
   @override
@@ -165,13 +161,7 @@ class _VerificationUploadFlowScreenState
                 },
                 physics: const NeverScrollableScrollPhysics(), // Only navigate via buttons
                 children: [
-                  // Page 1: Welcome & Benefits
-                  VerificationWelcomeSlide(
-                    astrologer: widget.astrologer,
-                    isResubmission: widget.isResubmission,
-                  ),
-
-                  // Page 2: ID Proof Upload (Mandatory)
+                  // Page 1: ID Proof Upload (Mandatory)
                   VerificationIdProofSlide(
                     image: _idProofImage,
                     onImagePicked: (file) {
@@ -185,7 +175,7 @@ class _VerificationUploadFlowScreenState
                         widget.astrologer.verificationRejectionReason,
                   ),
 
-                  // Page 3: Certificate Upload (Optional)
+                  // Page 2: Certificate Upload (Optional)
                   VerificationCertificateSlide(
                     image: _certificateImage,
                     onImagePicked: (file) {
@@ -196,7 +186,7 @@ class _VerificationUploadFlowScreenState
                     },
                   ),
 
-                  // Page 4: Storefront Upload (Optional)
+                  // Page 3: Storefront Upload (Optional)
                   VerificationStorefrontSlide(
                     image: _storefrontImage,
                     onImagePicked: (file) {
