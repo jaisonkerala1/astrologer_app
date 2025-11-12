@@ -6,7 +6,7 @@ import '../widgets/astroguru_chat_mockup.dart';
 /// Second onboarding slide - AstroGuru healing platform introduction
 /// Shows a device mockup with chat interface and detailed feature description
 /// Content only - navigation handled by parent
-class OnboardingSlide2 extends StatelessWidget {
+class OnboardingSlide2 extends StatefulWidget {
   final double bottomPadding;
 
   const OnboardingSlide2({
@@ -15,18 +15,114 @@ class OnboardingSlide2 extends StatelessWidget {
   });
 
   @override
+  State<OnboardingSlide2> createState() => _OnboardingSlide2State();
+}
+
+class _OnboardingSlide2State extends State<OnboardingSlide2>
+    with SingleTickerProviderStateMixin {
+  late ScrollController _scrollController;
+  late AnimationController _autoScrollController;
+  late Animation<double> _scrollAnimation;
+  bool _hasAutoScrolled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _autoScrollController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    // Start auto-scroll after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startAutoScroll();
+    });
+  }
+
+  Future<void> _startAutoScroll() async {
+    // Wait for user to see top content
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted || _hasAutoScrolled || !_scrollController.hasClients) return;
+
+    // Check if content is scrollable
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    if (maxScroll <= 50) return; // Not enough content to scroll
+
+    // Calculate scroll distance (30% of content or max 200px)
+    final targetScroll = (maxScroll * 0.3).clamp(100.0, 200.0);
+
+    // Create scroll animation
+    _scrollAnimation = Tween<double>(
+      begin: 0.0,
+      end: targetScroll,
+    ).animate(CurvedAnimation(
+      parent: _autoScrollController,
+      curve: Curves.easeInOutCubic,
+    ));
+
+    _scrollAnimation.addListener(_scrollListener);
+
+    // Animate down
+    await _autoScrollController.forward();
+
+    // Small pause
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    // Animate back up
+    if (mounted) {
+      await _autoScrollController.reverse();
+    }
+
+    _hasAutoScrolled = true;
+  }
+
+  void _scrollListener() {
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(_scrollAnimation.value);
+    }
+  }
+
+  void _onUserScroll() {
+    // Stop auto-scroll if user manually scrolls
+    if (_autoScrollController.isAnimating) {
+      _autoScrollController.stop();
+      _scrollAnimation.removeListener(_scrollListener);
+      _hasAutoScrolled = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _autoScrollController.dispose();
+    _scrollAnimation.removeListener(_scrollListener);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 32,
-            bottom: bottomPadding + 16,
-          ),
-          child: Column(
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is UserScrollNotification) {
+              _onUserScroll();
+            }
+            return false;
+          },
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 32,
+              bottom: widget.bottomPadding + 16,
+            ),
+            child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 64), // Spacing to maintain mockup position
@@ -129,6 +225,7 @@ class OnboardingSlide2 extends StatelessWidget {
                 ),
               ),
             ),
+          ),
     );
   }
 
