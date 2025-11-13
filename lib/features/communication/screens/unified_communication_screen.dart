@@ -16,13 +16,14 @@ import '../../../shared/widgets/empty_states/empty_state_widget.dart';
 import '../../../shared/widgets/empty_states/illustrations/communication_empty_illustration.dart';
 import '../../../shared/widgets/empty_states/illustrations/calls_empty_illustration.dart';
 import '../../../shared/widgets/empty_states/illustrations/video_call_empty_illustration.dart';
+import '../../clients/widgets/client_search_bar.dart';
 
-/// World-class unified communication screen (Instagram-inspired)
+/// World-class unified communication screen (WhatsApp-inspired)
 /// 
 /// ✨ FEATURES:
 /// - BLoC architecture for state management
 /// - Pull-to-refresh
-/// - Real-time search
+/// - Minimal search bar (like WhatsApp/Discussion module)
 /// - Filter chips (All, Calls, Messages, Video)
 /// - Graceful fallback to dummy data
 /// - Professional loading states
@@ -34,21 +35,18 @@ class UnifiedCommunicationScreen extends StatefulWidget {
 }
 
 class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen> 
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _fabAnimationController;
   late Animation<double> _fabScaleAnimation;
-  late AnimationController _searchAnimationController;
-  late Animation<double> _searchAnimation;
   
-  bool _isSearching = false;
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+  final ScrollController _scrollController = ScrollController();
   
   @override
   void initState() {
     super.initState();
     
-    // Initialize animations
+    // Initialize FAB animation
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -60,15 +58,6 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       ),
     );
     
-    _searchAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    _searchAnimation = CurvedAnimation(
-      parent: _searchAnimationController,
-      curve: Curves.easeInOut,
-    );
-    
     // Load communications via BLoC
     context.read<CommunicationBloc>().add(const LoadCommunicationsEvent());
   }
@@ -76,24 +65,8 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
   @override
   void dispose() {
     _fabAnimationController.dispose();
-    _searchAnimationController.dispose();
-    _searchController.dispose();
-    _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
-  }
-  
-  void _toggleSearch() {
-    setState(() {
-      _isSearching = !_isSearching;
-      if (_isSearching) {
-        _searchAnimationController.forward();
-        _searchFocusNode.requestFocus();
-      } else {
-        _searchAnimationController.reverse();
-        _searchController.clear();
-        _searchFocusNode.unfocus();
-      }
-    });
   }
 
   @override
@@ -126,30 +99,41 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
         return Scaffold(
           backgroundColor: themeService.backgroundColor,
           appBar: _buildAppBar(themeService, state),
-          body: Column(
-            children: [
-              // Filter chips row
-              _buildFilterChips(themeService, state),
+          body: CustomScrollView(
+            controller: _scrollController,
+            physics: const ClampingScrollPhysics(),
+            slivers: [
+              // Search bar - always visible
+              SliverToBoxAdapter(
+                child: _buildSearchBar(themeService),
+              ),
               
-              // Divider
-              Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      themeService.borderColor.withOpacity(0.5),
-                      Colors.transparent,
-                    ],
-                  ),
+              // Filter chips - always visible
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    _buildFilterChips(themeService, state),
+                    // Divider
+                    Container(
+                      height: 1,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            themeService.borderColor.withOpacity(0.5),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               
               // Main content
-              Expanded(
-                child: _buildContent(themeService, state),
-              ),
+              _buildSliverContent(themeService, state),
             ],
           ),
           floatingActionButton: _buildFAB(themeService, state),
@@ -162,118 +146,109 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     return AppBar(
       backgroundColor: themeService.backgroundColor,
       elevation: 0,
-      titleSpacing: 16, // WhatsApp-style left spacing
-      title: AnimatedBuilder(
-        animation: _searchAnimation,
-        builder: (context, child) {
-          return Row(
-            children: [
-              // Title (fades out when searching)
-              if (!_isSearching)
-                Opacity(
-                  opacity: 1.0 - _searchAnimation.value,
-                  child: Text(
-                    'Communication',
-                    style: TextStyle(
-                      color: themeService.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-              
-              // Search bar (expands when searching)
-              if (_isSearching)
-                Expanded(
-                  child: FadeTransition(
-                    opacity: _searchAnimation,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: themeService.surfaceColor,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: themeService.borderColor.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            focusNode: _searchFocusNode,
-                            style: TextStyle(
-                              color: themeService.textPrimary,
-                              fontSize: 16,
-                            ),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: 'Search conversations...',
-                              hintStyle: TextStyle(
-                                color: themeService.textHint,
-                                fontSize: 16,
-                              ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              prefixIcon: Padding(
-                                padding: const EdgeInsets.only(left: 8, right: 6),
-                                child: Icon(
-                                  Icons.search_rounded,
-                                  color: themeService.textHint,
-                                  size: 20,
-                                ),
-                              ),
-                              prefixIconConstraints: const BoxConstraints(
-                                minWidth: 0,
-                                minHeight: 0,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
+      centerTitle: false, // Left-align title (WhatsApp style)
+      titleSpacing: 16,
+      title: Text(
+        'Communication',
+        style: TextStyle(
+          color: themeService.textPrimary,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+        ),
       ),
       actions: [
-        // Search button (becomes close when searching)
         IconButton(
-          icon: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
-              _isSearching ? Icons.close_rounded : Icons.search_rounded,
-              key: ValueKey<bool>(_isSearching),
-              color: themeService.textPrimary,
-              size: 24,
-            ),
+          icon: Icon(
+            Icons.more_vert_rounded,
+            color: themeService.textPrimary,
+            size: 24,
           ),
-          onPressed: _toggleSearch,
+          onPressed: () {
+            // Show options menu
+            _showOptionsMenu(themeService);
+          },
         ),
       ],
     );
   }
 
+  Widget _buildSearchBar(ThemeService themeService) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: ClientSearchBar(
+        hintText: 'Search conversations...',
+        minimal: true,
+        onSearch: (query) {
+          setState(() {
+            _searchQuery = query;
+          });
+        },
+        onClear: () {
+          setState(() {
+            _searchQuery = '';
+          });
+        },
+      ),
+    );
+  }
+
+  void _showOptionsMenu(ThemeService themeService) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: themeService.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: themeService.textHint.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Communication Options',
+              style: TextStyle(
+                color: themeService.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: Icon(Icons.refresh, color: themeService.primaryColor),
+              title: Text(
+                'Refresh',
+                style: TextStyle(color: themeService.textPrimary),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterChips(ThemeService themeService, CommunicationState state) {
     if (state is! CommunicationLoadedState) {
-      return const SizedBox(height: 60);
+      return const SizedBox(height: 52);
     }
     
     return Container(
-      height: 60,
+      height: 52,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -315,74 +290,78 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     );
   }
 
-  Widget _buildContent(ThemeService themeService, CommunicationState state) {
+  Widget _buildSliverContent(ThemeService themeService, CommunicationState state) {
     // Loading state
     if (state is CommunicationLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(themeService.primaryColor),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading communications...',
-              style: TextStyle(
-                color: themeService.textSecondary,
-                fontSize: 14,
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(themeService.primaryColor),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Loading communications...',
+                style: TextStyle(
+                  color: themeService.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     // Error state
     if (state is CommunicationErrorState) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: themeService.textHint,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load communications',
-              style: TextStyle(
-                color: themeService.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 64,
+                color: themeService.textHint,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.message,
-              style: TextStyle(
-                color: themeService.textSecondary,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
-              },
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeService.primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load communications',
+                style: TextStyle(
+                  color: themeService.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                state.message,
+                style: TextStyle(
+                  color: themeService.textSecondary,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeService.primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -391,9 +370,9 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     if (state is CommunicationLoadedState) {
       var communications = state.filteredCommunications;
       
-      // Apply search filter if searching
-      if (_isSearching && _searchController.text.isNotEmpty) {
-        final query = _searchController.text.toLowerCase();
+      // Apply search filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
         communications = communications.where((item) {
           return item.contactName.toLowerCase().contains(query) ||
                  item.preview.toLowerCase().contains(query);
@@ -401,57 +380,31 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       }
 
       if (communications.isEmpty) {
-        return _buildEmptyState(themeService, state);
+        return SliverFillRemaining(
+          child: _buildEmptyState(themeService, state),
+        );
       }
 
-      return Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: () async {
-              context.read<CommunicationBloc>().add(const RefreshCommunicationsEvent());
-              await Future.delayed(const Duration(milliseconds: 500));
+      return SliverPadding(
+        padding: const EdgeInsets.all(16),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final item = communications[index];
+              return CommunicationItemCard(
+                item: item,
+                themeService: themeService,
+                onTap: () => _onItemTap(item),
+              );
             },
-            color: themeService.primaryColor,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: ListView.builder(
-                key: ValueKey('${state.activeFilter}_${_searchController.text}'),
-                padding: const EdgeInsets.all(16),
-                itemCount: communications.length,
-                itemBuilder: (context, index) {
-                  final item = communications[index];
-                  return CommunicationItemCard(
-                    item: item,
-                    themeService: themeService,
-                    onTap: () => _onItemTap(item),
-                  );
-                },
-              ),
-            ),
+            childCount: communications.length,
           ),
-          
-          // Subtle refresh indicator at top (Instagram/WhatsApp-style)
-          if (state.isRefreshing)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 3,
-                child: LinearProgressIndicator(
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    themeService.primaryColor.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       );
     }
 
     // Default state
-    return const SizedBox.shrink();
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 
   Widget _buildEmptyState(ThemeService themeService, CommunicationLoadedState state) {
@@ -460,7 +413,7 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     Widget illustration;
     
     // Check if empty due to search
-    if (_isSearching && _searchController.text.isNotEmpty) {
+    if (_searchQuery.isNotEmpty) {
       title = 'No Results Found';
       message = 'Try a different search term or filter.';
       illustration = CommunicationEmptyIllustration(themeService: themeService);

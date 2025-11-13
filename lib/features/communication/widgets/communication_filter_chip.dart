@@ -26,27 +26,33 @@ class CommunicationFilterChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
           color: isActive 
               ? themeService.primaryColor 
               : themeService.cardColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: isActive 
                 ? themeService.primaryColor 
-                : themeService.borderColor,
-            width: 1.5,
+                : themeService.borderColor.withOpacity(0.3),
+            width: 1,
           ),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: themeService.primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: themeService.primaryColor.withOpacity(0.1),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
                   ),
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -57,9 +63,9 @@ class CommunicationFilterChip extends StatelessWidget {
                 color: isActive 
                     ? Colors.white 
                     : themeService.textPrimary,
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                letterSpacing: 0.2,
+                letterSpacing: 0,
               ),
             ),
             if (count > 0) ...[
@@ -78,7 +84,7 @@ class CommunicationFilterChip extends StatelessWidget {
                     color: isActive 
                         ? Colors.white 
                         : themeService.primaryColor,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
