@@ -57,6 +57,8 @@ import '../widgets/live_astrologers_stories_widget.dart';
 import '../widgets/minimal_availability_toggle_widget.dart';
 import '../../live/screens/live_preparation_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
+import '../../discovery/screens/discovery_screen.dart';
+import '../../discovery/bloc/discovery_bloc.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -930,6 +932,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             text: 'View Astrologer Profile (User View)',
                             icon: Icons.auto_awesome,
                             backgroundColor: const Color(0xFF1877F2),
+                            foregroundColor: Colors.white,
+                            width: double.infinity,
+                            height: 56,
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Test Button for Astrologer Discovery
+                          AnimatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BlocProvider(
+                                    create: (context) => DiscoveryBloc(),
+                                    child: const DiscoveryScreen(),
+                                  ),
+                                ),
+                              );
+                            },
+                            text: 'Astrologer Discovery Page',
+                            icon: Icons.explore_rounded,
+                            backgroundColor: const Color(0xFF8B5CF6),
                             foregroundColor: Colors.white,
                             width: double.infinity,
                             height: 56,
