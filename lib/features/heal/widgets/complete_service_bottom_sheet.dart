@@ -315,7 +315,7 @@ Amount: ₹${widget.amount.toStringAsFixed(0)}
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                             child: const Row(

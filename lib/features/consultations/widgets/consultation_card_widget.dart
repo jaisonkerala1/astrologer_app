@@ -493,16 +493,16 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
         if (canStart) ...[
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981), // Match heal tab Accept button green
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _isStarting ? null : _handleStart,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: _isStarting
                         ? const SizedBox(
@@ -538,16 +538,16 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
         if (canComplete) ...[
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981), // Match heal tab Accept button green
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _isCompleting ? null : _handleComplete,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: _isCompleting
                         ? const SizedBox(
@@ -583,16 +583,16 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
         if (canCancel) ...[
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFFEF4444), // Red solid like service request reject
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _isCancelling ? null : _handleCancel,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: _isCancelling
                         ? const SizedBox(

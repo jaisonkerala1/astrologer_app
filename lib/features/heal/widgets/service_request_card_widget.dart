@@ -387,10 +387,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
         return [
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFFEF4444), // Red solid
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -399,7 +399,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     HapticFeedback.selectionClick();
                     widget.onReject();
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -424,10 +424,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           const SizedBox(width: 8),
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981), // Green solid
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -436,7 +436,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     HapticFeedback.selectionClick();
                     widget.onAccept();
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -464,10 +464,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
         return [
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981), // Match Accept button green
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -476,7 +476,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     HapticFeedback.selectionClick();
                     widget.onStart();
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -501,10 +501,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           const SizedBox(width: 8),
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: Colors.grey.shade400, // Grey solid
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -513,7 +513,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     HapticFeedback.selectionClick();
                     widget.onReject();
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -542,10 +542,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           if (widget.onPause != null) ...[
             Expanded(
               child: Container(
-                height: 36,
+                height: 40,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF59E0B), // Orange for pause
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Material(
                   color: Colors.transparent,
@@ -554,7 +554,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                       HapticFeedback.selectionClick();
                       widget.onPause!();
                     },
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(100),
                     child: Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -580,10 +580,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           ],
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981), // Match Accept button green
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -592,7 +592,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     HapticFeedback.selectionClick();
                     widget.onComplete();
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -621,10 +621,10 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
         return [
           Expanded(
             child: Container(
-              height: 36,
+              height: 40,
               decoration: BoxDecoration(
                 color: AppTheme.textColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
