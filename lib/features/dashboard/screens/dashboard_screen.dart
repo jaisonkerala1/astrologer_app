@@ -58,9 +58,6 @@ import '../widgets/minimal_availability_toggle_widget.dart';
 import '../../live/screens/live_preparation_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../discovery/screens/discovery_screen.dart';
-import '../../discovery/screens/discovery_screen_v2.dart';
-import '../../discovery/screens/discovery_screen_v4.dart';
-import '../../discovery/screens/discovery_screen_v5.dart';
 import '../../discovery/bloc/discovery_bloc.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -940,9 +937,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             height: 56,
                           ),
                           
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           
-                          // Test Button for Astrologer Discovery (Variation 1)
+                          // Test Button for Astrologer Discovery
                           AnimatedButton(
                             onPressed: () {
                               Navigator.push(
@@ -955,78 +952,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               );
                             },
-                            text: 'Astrologer Discovery Page',
+                            text: 'Astrologer Discovery',
                             icon: Icons.explore_rounded,
                             backgroundColor: const Color(0xFF8B5CF6),
-                            foregroundColor: Colors.white,
-                            width: double.infinity,
-                            height: 56,
-                          ),
-                          
-                          const SizedBox(height: 12),
-                          
-                          // Test Button for Astrologer Discovery (Variation 2)
-                          AnimatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BlocProvider(
-                                    create: (context) => DiscoveryBloc(),
-                                    child: const DiscoveryScreenV2(),
-                                  ),
-                                ),
-                              );
-                            },
-                            text: 'Astrologer Discovery Page (V2)',
-                            icon: Icons.auto_awesome_motion,
-                            backgroundColor: const Color(0xFFEC4899),
-                            foregroundColor: Colors.white,
-                            width: double.infinity,
-                            height: 56,
-                          ),
-                          
-                          const SizedBox(height: 12),
-                          
-                          // Test Button for Astrologer Discovery (Variation 4 - Signature Experience)
-                          AnimatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BlocProvider(
-                                    create: (context) => DiscoveryBloc(),
-                                    child: const DiscoveryScreenV4(),
-                                  ),
-                                ),
-                              );
-                            },
-                            text: 'Astrologer Discovery Page (V4)',
-                            icon: Icons.workspace_premium,
-                            backgroundColor: const Color(0xFF0EA5E9),
-                            foregroundColor: Colors.white,
-                            width: double.infinity,
-                            height: 56,
-                          ),
-                          
-                          const SizedBox(height: 12),
-                          
-                          // Test Button for Astrologer Discovery (Variation 5 - Copy of V4)
-                          AnimatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BlocProvider(
-                                    create: (context) => DiscoveryBloc(),
-                                    child: const DiscoveryScreenV5(),
-                                  ),
-                                ),
-                              );
-                            },
-                            text: 'Astrologer Discovery Page (V5)',
-                            icon: Icons.auto_stories_rounded,
-                            backgroundColor: const Color(0xFFF59E0B),
                             foregroundColor: Colors.white,
                             width: double.infinity,
                             height: 56,
