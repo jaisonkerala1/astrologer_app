@@ -11,6 +11,7 @@ import '../models/discovery_astrologer.dart';
 import '../../clients/widgets/client_search_bar.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../widgets/filter_bottom_sheet.dart';
+import 'top_astrologers_screen.dart';
 
 /// Variation 5 - Copy of V4 for separate customization.
 /// Features:
@@ -226,14 +227,59 @@ class _DiscoveryScreenV5State extends State<DiscoveryScreenV5> with SingleTicker
                         // Top Astrologers heading
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                          child: Text(
-                            'Top Astrologers',
-                            style: TextStyle(
-                              color: themeService.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Top Astrologers',
+                                style: TextStyle(
+                                  color: themeService.textPrimary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => BlocProvider(
+                                          create: (context) => DiscoveryBloc()..add(const LoadAstrologersEvent(sortBy: 'rating')),
+                                          child: const TopAstrologersScreen(),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'See All',
+                                          style: TextStyle(
+                                            color: themeService.primaryColor,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          Icons.arrow_forward_rounded,
+                                          color: themeService.primaryColor,
+                                          size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         // Carousel
@@ -733,6 +779,36 @@ class _DiscoveryScreenV5State extends State<DiscoveryScreenV5> with SingleTicker
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        // View Profile button - top right corner
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.4),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
