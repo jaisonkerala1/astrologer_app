@@ -11,31 +11,31 @@ import '../models/discovery_astrologer.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../clients/widgets/client_search_bar.dart';
 
-/// World-class Top Astrologers screen with premium design
-class TopAstrologersScreen extends StatefulWidget {
-  const TopAstrologersScreen({super.key});
+/// All Astrologers screen with premium design
+class AllAstrologersScreen extends StatefulWidget {
+  const AllAstrologersScreen({super.key});
 
   @override
-  State<TopAstrologersScreen> createState() => _TopAstrologersScreenState();
+  State<AllAstrologersScreen> createState() => _AllAstrologersScreenState();
 }
 
-class _TopAstrologersScreenState extends State<TopAstrologersScreen> with SingleTickerProviderStateMixin {
+class _AllAstrologersScreenState extends State<AllAstrologersScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedSort = 'rating';
+  String _selectedSort = 'online';
   String _searchQuery = '';
 
   final List<Map<String, dynamic>> _sortOptions = [
+    {'label': 'Online Now', 'value': 'online', 'icon': Icons.circle},
     {'label': 'Top Rated', 'value': 'rating', 'icon': Icons.star_rounded},
     {'label': 'Most Experienced', 'value': 'experience', 'icon': Icons.workspace_premium_rounded},
-    {'label': 'Most Popular', 'value': 'popularity', 'icon': Icons.trending_up_rounded},
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _sortOptions.length, vsync: this);
+    _tabController = TabController(length: _sortOptions.length, vsync: this, initialIndex: 0);
     _tabController.addListener(_onTabChanged);
-    context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(sortBy: 'rating'));
+    context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(onlineOnly: true));
   }
 
   void _onTabChanged() {
@@ -50,7 +50,11 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
 
   void _applySort() {
     final bloc = context.read<DiscoveryBloc>();
-    bloc.add(LoadAstrologersEvent(sortBy: _selectedSort));
+    if (_selectedSort == 'online') {
+      bloc.add(const LoadAstrologersEvent(onlineOnly: true));
+    } else {
+      bloc.add(LoadAstrologersEvent(sortBy: _selectedSort));
+    }
   }
 
   void _onSearch(String query) {
@@ -156,13 +160,13 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                 Row(
                   children: [
                     Icon(
-                      Icons.emoji_events_rounded,
+                      Icons.people_rounded,
                       color: themeService.primaryColor,
                       size: 24,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Top Astrologers',
+                      'All Astrologers',
                       style: TextStyle(
                         color: themeService.textPrimary,
                         fontSize: 22,
@@ -174,7 +178,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Elite experts ranked by excellence',
+                  'Find your perfect astrology expert',
                   style: TextStyle(
                     color: themeService.textSecondary,
                     fontSize: 12,
@@ -214,7 +218,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _sortOptions.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8), // Reduced from 10
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final option = _sortOptions[index];
           final isSelected = _tabController.index == index;
@@ -223,12 +227,12 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
             behavior: HitTestBehavior.opaque,
             onTap: () {
               HapticFeedback.selectionClick();
-              _tabController.animateTo(index, duration: Duration.zero); // Instant like V1
+              _tabController.animateTo(index, duration: Duration.zero);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 100), // Faster like V1
+              duration: const Duration(milliseconds: 100),
               curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), // Reduced padding
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? themeService.primaryColor
@@ -261,7 +265,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                 children: [
                   Icon(
                     option['icon'],
-                    size: 15, // Slightly smaller
+                    size: 15,
                     color: isSelected
                         ? Colors.white
                         : themeService.textSecondary,
@@ -299,11 +303,9 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
         itemCount: astrologers.length,
         itemBuilder: (context, index) {
           final astrologer = astrologers[index];
-          final rank = index + 1;
           
           return _PremiumRowCard(
             astrologer: astrologer,
-            rank: rank,
             themeService: themeService,
             onTap: () {
               HapticFeedback.selectionClick();
@@ -335,13 +337,13 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.stars_rounded,
+              Icons.person_search_rounded,
               size: 80,
               color: themeService.textSecondary.withOpacity(0.4),
             ),
             const SizedBox(height: 16),
             Text(
-              'No top astrologers yet',
+              'No astrologers found',
               style: TextStyle(
                 color: themeService.textPrimary,
                 fontSize: 20,
@@ -350,7 +352,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
             ),
             const SizedBox(height: 8),
             Text(
-              'Check back later for elite experts',
+              'Try adjusting your filters',
               style: TextStyle(
                 color: themeService.textSecondary,
                 fontSize: 14,
@@ -430,7 +432,6 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
 /// Minimal astrologer card - exact V1 style
 class _PremiumRowCard extends StatelessWidget {
   final DiscoveryAstrologer astrologer;
-  final int rank;
   final ThemeService themeService;
   final VoidCallback onTap;
   final VoidCallback onChatTap;
@@ -438,7 +439,6 @@ class _PremiumRowCard extends StatelessWidget {
 
   const _PremiumRowCard({
     required this.astrologer,
-    required this.rank,
     required this.themeService,
     required this.onTap,
     required this.onChatTap,

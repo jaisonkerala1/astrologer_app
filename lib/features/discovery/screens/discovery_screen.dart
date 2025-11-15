@@ -12,6 +12,7 @@ import '../../clients/widgets/client_search_bar.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'top_astrologers_screen.dart';
+import 'all_astrologers_screen.dart';
 
 /// World-class Astrologer Discovery Screen
 /// Features:
@@ -301,12 +302,44 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                                 letterSpacing: -0.3,
                               ),
                             ),
-                            Text(
-                              '${state.astrologers.length} experts',
-                              style: TextStyle(
-                                color: themeService.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BlocProvider(
+                                        create: (context) => DiscoveryBloc()..add(const LoadAstrologersEvent(onlineOnly: true)),
+                                        child: const AllAstrologersScreen(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'See All',
+                                        style: TextStyle(
+                                          color: themeService.primaryColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: themeService.primaryColor,
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ],

@@ -86,34 +86,34 @@ class ThemeDefinitions {
     type: AppThemeType.vedic,
     name: 'Vedic Mode',
     description: 'Sacred saffron and spiritual colors',
-    primaryColor: Color(0xFFD97706), // Saffron
-    secondaryColor: Color(0xFFB45309), // Dark saffron
-    accentColor: Color(0xFFF59E0B), // Golden
-    backgroundColor: Color(0xFFFFF7ED), // Cream
-    surfaceColor: Color(0xFFFFFBF5), // Light cream
+    primaryColor: Color(0xFFE67E22), // Warm orange - balanced and professional
+    secondaryColor: Color(0xFFD35400), // Deep orange
+    accentColor: Color(0xFFF39C12), // Golden accent
+    backgroundColor: Color(0xFFFFFFFF), // Pure white like Swiggy
+    surfaceColor: Color(0xFFFAFAFA), // Very light gray for depth
     cardColor: Color(0xFFFFFFFF), // White
-    textPrimary: Color(0xFF451A03), // Dark brown
-    textSecondary: Color(0xFF92400E), // Brown
-    textHint: Color(0xFFA16207), // Light brown
-    borderColor: Color(0xFFFED7AA), // Light saffron
+    textPrimary: Color(0xFF1F2937), // Dark gray (better contrast on white)
+    textSecondary: Color(0xFF6B7280), // Medium gray
+    textHint: Color(0xFF9CA3AF), // Light gray
+    borderColor: Color(0xFFE5E7EB), // Neutral gray border
     errorColor: Color(0xFFDC2626), // Red
     successColor: Color(0xFF059669), // Green
     warningColor: Color(0xFFD97706), // Saffron
     infoColor: Color(0xFF2563EB), // Blue
     primaryGradient: LinearGradient(
-      colors: [Color(0xFFD97706), Color(0xFFB45309), Color(0xFF92400E)],
+      colors: [Color(0xFFE67E22), Color(0xFFD35400)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     backgroundGradient: LinearGradient(
-      colors: [Color(0xFFFFF7ED), Color(0xFFFFFBF5), Color(0xFFFFFFFF)],
+      colors: [Color(0xFFFFFFFF), Color(0xFFFAFAFA)],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     ),
     cardShadow: BoxShadow(
-      color: Color(0x1AD97706),
-      blurRadius: 12,
-      offset: Offset(0, 3),
+      color: Color(0x0D000000), // Subtle shadow like modern apps
+      blurRadius: 10,
+      offset: Offset(0, 2),
     ),
     borderRadius: BorderRadius.all(Radius.circular(16)),
     icon: Icons.temple_hindu,
