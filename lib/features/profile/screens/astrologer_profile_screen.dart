@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../services/services_exports.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 
 /// Astrologer Profile Screen (End-User Perspective)
@@ -953,105 +955,131 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildServiceCard(Map<String, dynamic> service, ThemeService themeService) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      color: themeService.cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: themeService.borderRadius,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: () => _showBookingSheet(preselectedService: service),
+        borderRadius: themeService.borderRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: themeService.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  service['icon'],
-                  color: themeService.primaryColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service['name'],
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: themeService.textPrimary,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: themeService.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    child: Icon(
+                      service['icon'],
+                      color: themeService.primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: themeService.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
                         Text(
-                          '${service['duration']} mins',
+                          service['name'],
                           style: TextStyle(
-                            fontSize: 13,
-                            color: themeService.textSecondary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: themeService.textPrimary,
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: themeService.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${service['duration']} mins',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: themeService.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            service['description'],
-            style: TextStyle(
-              fontSize: 14,
-              color: themeService.textSecondary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
+              const SizedBox(height: 12),
               Text(
-                '₹${service['price']}',
+                service['description'],
                 style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: themeService.primaryColor,
+                  fontSize: 14,
+                  color: themeService.textSecondary,
+                  height: 1.4,
                 ),
               ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: () => _showBookingSheet(preselectedService: service),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: themeService.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 10,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    '₹${service['price']}',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: themeService.textPrimary,
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: themeService.primaryColor,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: themeService.primaryColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Book Now',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.arrow_forward,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: const Text('Book Now'),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1805,82 +1833,156 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   void _showBookingSheet({Map<String, dynamic>? preselectedService}) {
-    final themeService = Provider.of<ThemeService>(context, listen: false);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    HapticFeedback.mediumImpact();
+    
+    // Convert mock service to ServiceModel
+    final service = _convertToServiceModel(preselectedService ?? _services[0]);
+    
+    // Create repository and add the service
+    final repository = ServiceRepositoryImpl();
+    repository.addService(service);
+    
+    // Navigate to service detail screen with BLoC providers
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => ServiceBloc(
+                repository: repository,
+              ),
+            ),
+            BlocProvider(
+              create: (context) => BookingBloc(
+                repository: repository,
+              ),
+            ),
+            BlocProvider(
+              create: (context) => OrderBloc(
+                repository: repository,
+              ),
+            ),
+          ],
+          child: ServiceDetailScreen(
+            serviceId: service.id,
+            heroTag: 'service_${service.id}',
           ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: themeService.borderColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Book Consultation',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: themeService.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Choose consultation type:',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: themeService.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildBookingOption(Icons.phone, 'Voice Call', '₹500', '30 min', themeService),
-              _buildBookingOption(Icons.videocam, 'Video Call', '₹800', '30 min', themeService),
-              _buildBookingOption(Icons.chat_bubble_outline, 'Chat', '₹300', 'per session', themeService),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeService.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'Continue to Payment',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
+        ),
+      ),
     );
+  }
+  
+  // Convert mock service data to ServiceModel
+  ServiceModel _convertToServiceModel(Map<String, dynamic> mockService) {
+    // Map icon to string name
+    String iconName = 'auto_awesome';
+    if (mockService['icon'] == Icons.auto_awesome) {
+      iconName = 'auto_awesome';
+    } else if (mockService['icon'] == Icons.work_outline) {
+      iconName = 'work_outline';
+    } else if (mockService['icon'] == Icons.favorite_border) {
+      iconName = 'favorite_border';
+    } else if (mockService['icon'] == Icons.diamond_outlined) {
+      iconName = 'diamond_outlined';
+    }
+    
+    // Determine delivery methods based on service type
+    List<DeliveryMethod> deliveryMethods = [
+      DeliveryMethod.videoCall,
+      DeliveryMethod.audioCall,
+      DeliveryMethod.chat,
+    ];
+    
+    // For report-based services
+    if (mockService['name'] == 'Marriage Matching') {
+      deliveryMethods = [
+        DeliveryMethod.report,
+        DeliveryMethod.videoCall,
+      ];
+    }
+    
+    return ServiceModel(
+      id: 'srv_${mockService['name'].toString().replaceAll(' ', '_').toLowerCase()}',
+      name: mockService['name'],
+      description: mockService['description'],
+      price: (mockService['price'] as int).toDouble(),
+      durationInMinutes: mockService['duration'],
+      serviceType: deliveryMethods.contains(DeliveryMethod.report) 
+          ? ServiceType.report 
+          : ServiceType.live,
+      availableDeliveryMethods: deliveryMethods,
+      iconName: iconName,
+      astrologerId: 'astrologer_123', // Mock astrologer ID
+      isPopular: mockService['popular'] ?? false,
+      whatsIncluded: _getWhatsIncluded(mockService['name']),
+      howItWorks: _getHowItWorks(mockService['name']),
+      totalBookings: 150,
+      averageRating: 4.8,
+      reviewCount: 120,
+    );
+  }
+  
+  List<String> _getWhatsIncluded(String serviceName) {
+    switch (serviceName) {
+      case 'Kundali Analysis':
+        return [
+          'Complete birth chart analysis',
+          'Planetary positions and their effects',
+          'Dasha and transit predictions',
+          'Life predictions for next 5 years',
+          'Personalized remedies and suggestions',
+          'Follow-up consultation (15 mins)',
+        ];
+      case 'Career Guidance':
+        return [
+          'Career horoscope analysis',
+          'Best career path recommendations',
+          'Job change timing prediction',
+          'Business opportunity analysis',
+          'Remedies for career growth',
+        ];
+      case 'Marriage Matching':
+        return [
+          'Guna Milan (36 points matching)',
+          'Manglik Dosha analysis',
+          'Compatibility report',
+          'Marriage timing prediction',
+          'Remedies for happy married life',
+          'Detailed PDF report',
+        ];
+      case 'Gemstone Consultation':
+        return [
+          'Birth chart gemstone analysis',
+          'Recommended gemstone(s)',
+          'Wearing instructions',
+          'Purity and authenticity tips',
+          'Alternative gemstones',
+        ];
+      default:
+        return [
+          'Detailed consultation',
+          'Personalized analysis',
+          'Expert recommendations',
+        ];
+    }
+  }
+  
+  List<String> _getHowItWorks(String serviceName) {
+    if (serviceName == 'Marriage Matching') {
+      return [
+        'Share both partners birth details',
+        'Analysis completed within 24 hours',
+        'Receive comprehensive PDF report',
+        'Optional video consultation for queries',
+      ];
+    }
+    return [
+      'Share your birth details (date, time, place)',
+      'Schedule a consultation at your preferred time',
+      'Join via video/audio call or chat',
+      'Get personalized analysis and remedies',
+    ];
   }
 
   Widget _buildBookingOption(IconData icon, String title, String price, String duration, ThemeService themeService) {
