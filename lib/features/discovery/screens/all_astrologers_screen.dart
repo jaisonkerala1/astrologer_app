@@ -10,6 +10,7 @@ import '../bloc/discovery_state.dart';
 import '../models/discovery_astrologer.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../clients/widgets/client_search_bar.dart';
+import '../widgets/filter_bottom_sheet.dart';
 
 /// All Astrologers screen with premium design
 class AllAstrologersScreen extends StatefulWidget {
@@ -23,8 +24,10 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
   late TabController _tabController;
   String _selectedSort = 'online';
   String _searchQuery = '';
+  Map<String, dynamic> _activeFilters = {};
 
   final List<Map<String, dynamic>> _sortOptions = [
+    {'label': 'Filter', 'value': 'filter', 'icon': Icons.tune_rounded},
     {'label': 'Online Now', 'value': 'online', 'icon': Icons.circle},
     {'label': 'Top Rated', 'value': 'rating', 'icon': Icons.star_rounded},
     {'label': 'Most Experienced', 'value': 'experience', 'icon': Icons.workspace_premium_rounded},
@@ -33,7 +36,7 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _sortOptions.length, vsync: this, initialIndex: 0);
+    _tabController = TabController(length: _sortOptions.length, vsync: this, initialIndex: 1); // Start at Online Now
     _tabController.addListener(_onTabChanged);
     context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(onlineOnly: true));
   }
@@ -41,11 +44,78 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
   void _onTabChanged() {
     if (!_tabController.indexIsChanging) {
       final value = _sortOptions[_tabController.index]['value'];
-      setState(() {
-        _selectedSort = value;
-      });
-      _applySort();
+      
+      if (value == 'filter') {
+        // Open filter bottom sheet
+        _showFilterBottomSheet();
+        // Reset tab to previous position
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final targetIndex = _selectedSort == 'online' ? 1 : 
+                               _selectedSort == 'rating' ? 2 : 
+                               _selectedSort == 'experience' ? 3 : 1;
+            _tabController.animateTo(targetIndex, duration: Duration.zero);
+          }
+        });
+      } else if (value != _selectedSort) {
+        setState(() {
+          _selectedSort = value;
+        });
+        _applySort();
+      }
     }
+  }
+
+  Future<void> _showFilterBottomSheet() async {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => FilterBottomSheet(
+        themeService: themeService,
+        currentFilters: _activeFilters,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _activeFilters = result;
+      });
+      _applyAdvancedFilters(result);
+    }
+  }
+
+  void _applyAdvancedFilters(Map<String, dynamic> filters) {
+    final count = _getFilterCount(filters);
+    if (count > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$count filter${count > 1 ? 's' : ''} applied'),
+          backgroundColor: Theme.of(context).primaryColor,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  int _getFilterCount(Map<String, dynamic> filters) {
+    int count = 0;
+    if (filters['sortBy'] != null) count++;
+    if ((filters['skills'] as List?)?.isNotEmpty ?? false) {
+      count += (filters['skills'] as List).length;
+    }
+    if ((filters['languages'] as List?)?.isNotEmpty ?? false) {
+      count += (filters['languages'] as List).length;
+    }
+    if (filters['gender'] != null) count++;
+    if (filters['country'] != null) count++;
+    if (filters['offers'] != null) count++;
+    return count;
   }
 
   void _applySort() {
@@ -211,6 +281,8 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
   }
 
   Widget _buildSortTabs(ThemeService themeService) {
+    final filterCount = _getFilterCount(_activeFilters);
+    
     return Container(
       height: 44,
       margin: const EdgeInsets.only(bottom: 8),
@@ -221,7 +293,8 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final option = _sortOptions[index];
-          final isSelected = _tabController.index == index;
+          final isFilter = option['value'] == 'filter';
+          final isSelected = !isFilter && _tabController.index == index;
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -230,45 +303,73 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
               _tabController.animateTo(index, duration: Duration.zero);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 100),
+              duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? themeService.primaryColor
-                    : themeService.cardColor,
+                    : themeService.surfaceColor,
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? themeService.primaryColor
-                      : themeService.borderColor.withOpacity(0.2),
-                  width: 1.5,
+                      : themeService.borderColor.withOpacity(0.15),
+                  width: isSelected ? 1.5 : 1,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: themeService.primaryColor.withOpacity(0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                boxShadow: [
+                  // Elevated shadow for selected chips
+                  if (isSelected)
+                    BoxShadow(
+                      color: themeService.primaryColor.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  // Subtle depth shadow for unselected chips
+                  if (!isSelected) ...[
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (isFilter && filterCount > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: themeService.primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$filterCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   Icon(
                     option['icon'],
                     size: 15,
                     color: isSelected
                         ? Colors.white
-                        : themeService.textSecondary,
+                        : themeService.textPrimary,
                   ),
                   const SizedBox(width: 6),
                   Text(

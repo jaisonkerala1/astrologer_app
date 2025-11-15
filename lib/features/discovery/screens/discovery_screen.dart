@@ -104,14 +104,11 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => FilterBottomSheet(
-          themeService: themeService,
-          currentFilters: _activeFilters,
-        ),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => FilterBottomSheet(
+        themeService: themeService,
+        currentFilters: _activeFilters,
       ),
     );
 

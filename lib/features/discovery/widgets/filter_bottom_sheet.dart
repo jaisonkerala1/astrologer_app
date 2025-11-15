@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../shared/theme/services/theme_service.dart';
 
+/// Sheet height modes
+enum FilterSheetHeight {
+  minimized, // 50% - Shows essential filters only
+  full,      // 90% - All filters
+}
+
 class FilterBottomSheet extends StatefulWidget {
   final ThemeService themeService;
   final Map<String, dynamic> currentFilters;
@@ -18,6 +24,7 @@ class FilterBottomSheet extends StatefulWidget {
 
 class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late Map<String, dynamic> _filters;
+  late FilterSheetHeight _currentHeight;
 
   // Filter options
   final List<String> _sortOptions = [
@@ -59,146 +66,234 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   final List<String> _countries = ['India', 'Outside India'];
   final List<String> _offers = ['Active', 'Inactive'];
 
+  // Top priority items for minimized view
+  final List<String> _topSkills = ['Vedic', 'Tarot', 'Numerology', 'Palmistry', 'Vastu'];
+  final List<String> _topLanguages = ['English', 'Hindi', 'Bengali', 'Tamil', 'Telugu'];
+
   @override
   void initState() {
     super.initState();
     _filters = Map<String, dynamic>.from(widget.currentFilters);
+    _currentHeight = FilterSheetHeight.minimized; // Start minimized
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  double get _sheetHeight {
+    final screenHeight = MediaQuery.of(context).size.height;
+    switch (_currentHeight) {
+      case FilterSheetHeight.minimized:
+        return screenHeight * 0.50;
+      case FilterSheetHeight.full:
+        return screenHeight * 0.90;
+    }
+  }
+
+  bool get _isMinimized => _currentHeight == FilterSheetHeight.minimized;
+
+  void _toggleHeight() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentHeight = _isMinimized
+          ? FilterSheetHeight.full
+          : FilterSheetHeight.minimized;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: widget.themeService.backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _sheetHeight,
+        decoration: BoxDecoration(
+          color: widget.themeService.backgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            _buildDragHandle(),
+            _buildHeader(),
+            Expanded(child: _buildContent()),
+            _buildApplyButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDragHandle() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: widget.themeService.borderColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 4, 16, 16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: widget.themeService.borderColor.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
         children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: widget.themeService.borderColor.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2),
+          Text(
+            'Filter & Sort',
+            style: TextStyle(
+              color: widget.themeService.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
             ),
           ),
+          const Spacer(),
+          // Height toggle button
+          GestureDetector(
+            onTap: _toggleHeight,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                _isMinimized
+                    ? Icons.unfold_more_rounded
+                    : Icons.unfold_less_rounded,
+                color: widget.themeService.primaryColor,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Clear button
+          GestureDetector(
+            onTap: _clearFilters,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(
+                'Clear',
+                style: TextStyle(
+                  color: widget.themeService.primaryColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Close button
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.pop(context);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                Icons.close_rounded,
+                color: widget.themeService.textSecondary,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+  Widget _buildContent() {
+    final sections = <Widget>[
+      _buildSectionWrapper(_buildSortBySection()),
+      _buildSectionWrapper(_buildSkillsSection()),
+      _buildSectionWrapper(_buildLanguagesSection()),
+    ];
+
+    if (!_isMinimized) {
+      sections.addAll([
+        _buildSectionWrapper(_buildGenderSection()),
+        _buildSectionWrapper(_buildCountrySection()),
+        _buildSectionWrapper(_buildOffersSection()),
+      ]);
+    }
+
+    return ListView.builder(
+      key: ValueKey(_currentHeight), // Force rebuild when height changes
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+      itemCount: sections.length + 1,
+      itemBuilder: (context, index) {
+        if (index == sections.length) {
+          return const SizedBox(height: 20);
+        }
+        return sections[index];
+      },
+    );
+  }
+
+  Widget _buildSectionWrapper(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: child,
+    );
+  }
+
+  Widget _buildApplyButton() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: widget.themeService.backgroundColor,
+        border: Border(
+          top: BorderSide(
+            color: widget.themeService.borderColor.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _applyFilters,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.themeService.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Icon(Icons.check_circle_outline, size: 20),
+                const SizedBox(width: 8),
                 Text(
-                  'Filter & Sort',
-                  style: TextStyle(
-                    color: widget.themeService.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: _clearFilters,
-                  style: TextButton.styleFrom(
-                    foregroundColor: widget.themeService.primaryColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  child: const Text(
-                    'Clear All',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: widget.themeService.textSecondary,
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: widget.themeService.borderColor.withOpacity(0.1),
+                  'Apply Filters ${_getActiveFilterCount() > 0 ? '(${_getActiveFilterCount()})' : ''}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSortBySection(),
-                  const SizedBox(height: 24),
-                  _buildSkillsSection(),
-                  const SizedBox(height: 24),
-                  _buildLanguagesSection(),
-                  const SizedBox(height: 24),
-                  _buildGenderSection(),
-                  const SizedBox(height: 24),
-                  _buildCountrySection(),
-                  const SizedBox(height: 24),
-                  _buildOffersSection(),
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
-          ),
-
-          // Apply button
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: widget.themeService.backgroundColor,
-              border: Border(
-                top: BorderSide(
-                  color: widget.themeService.borderColor.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _applyFilters,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.themeService.primaryColor,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check_circle_outline, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Apply Filters ${_getActiveFilterCount() > 0 ? '(${_getActiveFilterCount()})' : ''}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -230,23 +325,44 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildSkillsSection() {
+    final selectedSkills = (_filters['skills'] as List?) ?? [];
+    final displaySkills = _isMinimized ? _topSkills : _skills;
+    final hiddenCount = _skills.length - _topSkills.length;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Skills'),
+        Row(
+          children: [
+            _buildSectionTitle('Skills'),
+            if (_isMinimized && hiddenCount > 0) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _toggleHeight,
+                child: Text(
+                  '+$hiddenCount more',
+                  style: TextStyle(
+                    color: widget.themeService.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _skills.map((skill) {
-            final selectedSkills = (_filters['skills'] as List?) ?? [];
+          children: displaySkills.map((skill) {
             final isSelected = selectedSkills.contains(skill);
             return _buildPillChip(
               label: skill,
               isSelected: isSelected,
               onTap: () {
                 setState(() {
-                  final skills = List<String>.from((_filters['skills'] as List?) ?? []);
+                  final skills = List<String>.from(selectedSkills);
                   if (isSelected) {
                     skills.remove(skill);
                   } else {
@@ -263,23 +379,44 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildLanguagesSection() {
+    final selectedLanguages = (_filters['languages'] as List?) ?? [];
+    final displayLanguages = _isMinimized ? _topLanguages : _languages;
+    final hiddenCount = _languages.length - _topLanguages.length;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Languages'),
+        Row(
+          children: [
+            _buildSectionTitle('Languages'),
+            if (_isMinimized && hiddenCount > 0) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _toggleHeight,
+                child: Text(
+                  '+$hiddenCount more',
+                  style: TextStyle(
+                    color: widget.themeService.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _languages.map((language) {
-            final selectedLanguages = (_filters['languages'] as List?) ?? [];
+          children: displayLanguages.map((language) {
             final isSelected = selectedLanguages.contains(language);
             return _buildPillChip(
               label: language,
               isSelected: isSelected,
               onTap: () {
                 setState(() {
-                  final languages = List<String>.from((_filters['languages'] as List?) ?? []);
+                  final languages = List<String>.from(selectedLanguages);
                   if (isSelected) {
                     languages.remove(language);
                   } else {
@@ -404,23 +541,40 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         decoration: BoxDecoration(
           color: isSelected
               ? widget.themeService.primaryColor
-              : widget.themeService.cardColor,
+              : widget.themeService.surfaceColor, // Use surfaceColor instead of cardColor for subtle contrast
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: isSelected
                 ? widget.themeService.primaryColor
-                : widget.themeService.borderColor.withOpacity(0.2),
-            width: 1.5,
+                : widget.themeService.borderColor.withOpacity(0.15), // Lighter border for unselected
+            width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: widget.themeService.primaryColor.withOpacity(0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : [],
+          boxShadow: [
+            // Elevated shadow for selected chips
+            if (isSelected)
+              BoxShadow(
+                color: widget.themeService.primaryColor.withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            // Subtle depth shadow for unselected chips
+            if (!isSelected) ...[
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+              // Soft ambient shadow for extra depth
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+                spreadRadius: 0,
+              ),
+            ],
+          ],
         ),
         child: Text(
           label,

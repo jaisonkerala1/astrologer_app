@@ -193,20 +193,20 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5),
+          backgroundColor: themeService.backgroundColor,
           body: Stack(
             children: [
               NestedScrollView(
                 controller: _scrollController,
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
-                    _buildAppBar(),
+                    _buildAppBar(themeService),
                     SliverToBoxAdapter(
                       child: Column(
                         children: [
-                          _buildHeader(),
-                          _buildQuickStats(),
-                          _buildActionButtons(),
+                          _buildHeader(themeService),
+                          _buildQuickStats(themeService),
+                          _buildActionButtons(themeService),
                         ],
                       ),
                     ),
@@ -214,11 +214,11 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                       pinned: true,
                       delegate: _SliverTabBarDelegate(
                         TabBar(
-                          controller: _tabController,
-                          labelColor: const Color(0xFF1877F2),
-                          unselectedLabelColor: const Color(0xFF65676B),
-                          indicatorColor: const Color(0xFF1877F2),
-                          indicatorWeight: 3,
+                        controller: _tabController,
+                        labelColor: themeService.primaryColor,
+                        unselectedLabelColor: themeService.textSecondary,
+                        indicatorColor: themeService.primaryColor,
+                        indicatorWeight: 3,
                           labelStyle: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -237,10 +237,10 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 body: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildAboutTab(),
-                    _buildServicesTab(),
-                    _buildReviewsTab(),
-                    _buildPostsTab(),
+                    _buildAboutTab(themeService),
+                    _buildServicesTab(themeService),
+                    _buildReviewsTab(themeService),
+                    _buildPostsTab(themeService),
                   ],
                 ),
               ),
@@ -251,7 +251,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: _buildStickyHeader(),
+                  child: _buildStickyHeader(themeService),
                 ),
               
               // Sticky booking button
@@ -259,7 +259,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _buildBookingButton(),
+                child: _buildBookingButton(themeService),
               ),
             ],
           ),
@@ -268,13 +268,13 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(ThemeService themeService) {
     return SliverAppBar(
       backgroundColor: _showStickyHeader ? Colors.transparent : Colors.white,
       elevation: 0,
       floating: true,
       leading: _showStickyHeader ? const SizedBox.shrink() : IconButton(
-        icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
+        icon: Icon(Icons.arrow_back, color: themeService.textPrimary),
         onPressed: () => Navigator.pop(context),
       ),
       actions: _showStickyHeader ? [] : [
@@ -282,20 +282,20 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         IconButton(
           icon: Icon(
             _notificationsEnabled ? Icons.notifications_active : Icons.notifications_outlined,
-            color: _notificationsEnabled ? const Color(0xFF1877F2) : const Color(0xFF050505),
+            color: _notificationsEnabled ? themeService.primaryColor : themeService.textPrimary,
           ),
           onPressed: _showNotificationPreferences,
         ),
         // 3-dot menu
         IconButton(
-          icon: const Icon(Icons.more_vert, color: Color(0xFF050505)),
+          icon: Icon(Icons.more_vert, color: themeService.textPrimary),
           onPressed: _showOptionsMenu,
         ),
       ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeService themeService) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -309,8 +309,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 imagePath: null,
                 radius: 36,
                 fallbackText: 'RK',
-                backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
-                textColor: const Color(0xFF1877F2),
+                backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                textColor: themeService.primaryColor,
               ),
               // Online Status Indicator (bottom-right)
               Positioned(
@@ -341,10 +341,10 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     Flexible(
                       child: Text(
                         _mockAstrologer['name'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF050505),
+                          color: themeService.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -353,9 +353,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     ),
                     if (_mockAstrologer['verified']) ...[
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.verified,
-                        color: Color(0xFF1877F2),
+                        color: themeService.primaryColor,
                         size: 18,
                       ),
                     ],
@@ -364,9 +364,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 const SizedBox(height: 2),
                 Text(
                   _mockAstrologer['title'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF65676B),
+                    color: themeService.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -381,10 +381,10 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     Flexible(
                       child: Text(
                         '${_mockAstrologer['rating']} (${_mockAstrologer['totalReviews']}) • ${_mockAstrologer['experience']}y exp',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF050505),
+                          color: themeService.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -401,47 +401,47 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(ThemeService themeService) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('${_mockAstrologer['followers']}', 'Followers'),
-          Container(width: 1, height: 30, color: const Color(0xFFE4E6EB)),
-          _buildStatItem('${_mockAstrologer['responseTime']}', 'Response'),
-          Container(width: 1, height: 30, color: const Color(0xFFE4E6EB)),
-          _buildStatItem('${_mockAstrologer['repeatClients']}%', 'Repeat'),
+          _buildStatItem('${_mockAstrologer['followers']}', 'Followers', themeService),
+          Container(width: 1, height: 30, color: themeService.borderColor),
+          _buildStatItem('${_mockAstrologer['responseTime']}', 'Response', themeService),
+          Container(width: 1, height: 30, color: themeService.borderColor),
+          _buildStatItem('${_mockAstrologer['repeatClients']}%', 'Repeat', themeService),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(String value, String label, ThemeService themeService) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF050505),
+            color: themeService.textPrimary,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: Color(0xFF65676B),
+            color: themeService.textSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(ThemeService themeService) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -458,8 +458,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 _isFollowing ? 'Following' : 'Follow',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isFollowing ? const Color(0xFFE4E6EB) : const Color(0xFF1877F2),
-                foregroundColor: _isFollowing ? const Color(0xFF050505) : Colors.white,
+                backgroundColor: _isFollowing ? themeService.borderColor : themeService.primaryColor,
+                foregroundColor: _isFollowing ? themeService.textPrimary : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -477,8 +477,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 'Message',
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF050505),
-                side: const BorderSide(color: Color(0xFFCED0D4)),
+                foregroundColor: themeService.textPrimary,
+                side: BorderSide(color: themeService.borderColor),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -492,7 +492,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildStickyHeader() {
+  Widget _buildStickyHeader(ThemeService themeService) {
     return Material(
       elevation: 8,
       shadowColor: Colors.black.withOpacity(0.3),
@@ -511,7 +511,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF050505)),
+                icon: Icon(Icons.arrow_back, color: themeService.textPrimary),
                 onPressed: () => Navigator.pop(context),
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
@@ -523,8 +523,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     imagePath: null,
                     radius: 16,
                     fallbackText: 'RK',
-                    backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
-                    textColor: const Color(0xFF1877F2),
+                    backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                    textColor: themeService.primaryColor,
                   ),
                   // Online Status Indicator
                   Positioned(
@@ -550,10 +550,10 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   children: [
                     Text(
                       _mockAstrologer['name'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF050505),
+                        color: themeService.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -566,9 +566,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                         const SizedBox(width: 4),
                         Text(
                           '${_mockAstrologer['rating']} • ${_mockAstrologer['totalReviews']} reviews',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF65676B),
+                            color: themeService.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -584,7 +584,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               IconButton(
                 icon: Icon(
                   _notificationsEnabled ? Icons.notifications_active : Icons.notifications_outlined,
-                  color: _notificationsEnabled ? const Color(0xFF1877F2) : const Color(0xFF050505),
+                  color: _notificationsEnabled ? themeService.primaryColor : themeService.textPrimary,
                   size: 20,
                 ),
                 onPressed: _showNotificationPreferences,
@@ -593,7 +593,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               ),
               // Menu icon
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Color(0xFF050505), size: 20),
+                icon: Icon(Icons.more_vert, color: themeService.textPrimary, size: 20),
                 onPressed: _showOptionsMenu,
                 padding: const EdgeInsets.all(6),
                 constraints: const BoxConstraints(),
@@ -606,27 +606,27 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   // Tab Views - Will continue in next part...
-  Widget _buildAboutTab() {
+  Widget _buildAboutTab(ThemeService themeService) {
     return ListView(
       padding: const EdgeInsets.only(bottom: 80),
       children: [
         const SizedBox(height: 12),
-        _buildAboutBio(),
+        _buildAboutBio(themeService),
         const SizedBox(height: 12),
-        _buildExpertiseAreas(),
+        _buildExpertiseAreas(themeService),
         const SizedBox(height: 12),
-        _buildQualifications(),
+        _buildQualifications(themeService),
         const SizedBox(height: 12),
-        _buildAchievements(),
+        _buildAchievements(themeService),
         const SizedBox(height: 12),
-        _buildLanguages(),
+        _buildLanguages(themeService),
         const SizedBox(height: 12),
-        _buildConsultationRates(),
+        _buildConsultationRates(themeService),
       ],
     );
   }
 
-  Widget _buildAboutBio() {
+  Widget _buildAboutBio(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -637,16 +637,16 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.info_outline, color: Color(0xFF1877F2), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.info_outline, color: themeService.primaryColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'About',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
@@ -654,9 +654,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           const SizedBox(height: 12),
           Text(
             _mockAstrologer['bio'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
-              color: Color(0xFF050505),
+              color: themeService.textPrimary,
               height: 1.5,
             ),
           ),
@@ -665,7 +665,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildExpertiseAreas() {
+  Widget _buildExpertiseAreas(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -676,16 +676,16 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.workspace_premium, color: Color(0xFF1877F2), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.workspace_premium, color: themeService.primaryColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Expertise Areas',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
@@ -698,18 +698,18 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1877F2).withOpacity(0.1),
+                  color: themeService.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFF1877F2).withOpacity(0.3),
+                    color: themeService.primaryColor.withOpacity(0.3),
                   ),
                 ),
                 child: Text(
                   expertise,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1877F2),
+                    color: themeService.primaryColor,
                   ),
                 ),
               );
@@ -720,7 +720,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildQualifications() {
+  Widget _buildQualifications(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -731,16 +731,16 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.school, color: Color(0xFF1877F2), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.school, color: themeService.primaryColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Qualifications',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
@@ -761,9 +761,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   Expanded(
                     child: Text(
                       qual,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: Color(0xFF050505),
+                        color: themeService.textPrimary,
                       ),
                     ),
                   ),
@@ -776,7 +776,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildAchievements() {
+  Widget _buildAchievements(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -787,16 +787,16 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.emoji_events, color: Color(0xFFFFC107), size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.emoji_events, color: Color(0xFFFFC107), size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Achievements & Awards',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
@@ -817,9 +817,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   Expanded(
                     child: Text(
                       achievement,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: Color(0xFF050505),
+                        color: themeService.textPrimary,
                       ),
                     ),
                   ),
@@ -832,7 +832,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildLanguages() {
+  Widget _buildLanguages(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -843,16 +843,16 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.language, color: Color(0xFF1877F2), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.language, color: themeService.primaryColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Languages',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
@@ -860,9 +860,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           const SizedBox(height: 12),
           Text(
             (_mockAstrologer['languages'] as List).join(', '),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
-              color: Color(0xFF050505),
+              color: themeService.textPrimary,
             ),
           ),
         ],
@@ -870,7 +870,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildConsultationRates() {
+  Widget _buildConsultationRates(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -881,30 +881,30 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.currency_rupee, color: Color(0xFF1877F2), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.currency_rupee, color: themeService.primaryColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Consultation Rates',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildRateItem(Icons.phone, 'Voice Call', '₹500', '30 min'),
-          _buildRateItem(Icons.videocam, 'Video Call', '₹800', '30 min'),
-          _buildRateItem(Icons.chat_bubble_outline, 'Chat', '₹300', 'per session'),
+          _buildRateItem(Icons.phone, 'Voice Call', '₹500', '30 min', themeService),
+          _buildRateItem(Icons.videocam, 'Video Call', '₹800', '30 min', themeService),
+          _buildRateItem(Icons.chat_bubble_outline, 'Chat', '₹300', 'per session', themeService),
         ],
       ),
     );
   }
 
-  Widget _buildRateItem(IconData icon, String type, String price, String duration) {
+  Widget _buildRateItem(IconData icon, String type, String price, String duration, ThemeService themeService) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -912,28 +912,28 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1877F2).withOpacity(0.1),
+              color: themeService.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: const Color(0xFF1877F2), size: 20),
+            child: Icon(icon, color: themeService.primaryColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               type,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF050505),
+                color: themeService.textPrimary,
               ),
             ),
           ),
           Text(
             '$price/$duration',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1877F2),
+              color: themeService.primaryColor,
             ),
           ),
         ],
@@ -941,18 +941,18 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildServicesTab() {
+  Widget _buildServicesTab(ThemeService themeService) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _services.length,
       itemBuilder: (context, index) {
         final service = _services[index];
-        return _buildServiceCard(service);
+        return _buildServiceCard(service, themeService);
       },
     );
   }
 
-  Widget _buildServiceCard(Map<String, dynamic> service) {
+  Widget _buildServiceCard(Map<String, dynamic> service, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
@@ -968,12 +968,12 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1877F2).withOpacity(0.1),
+                  color: themeService.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   service['icon'],
-                  color: const Color(0xFF1877F2),
+                  color: themeService.primaryColor,
                   size: 24,
                 ),
               ),
@@ -984,26 +984,26 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   children: [
                     Text(
                       service['name'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF050505),
+                        color: themeService.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           size: 14,
-                          color: Color(0xFF65676B),
+                          color: themeService.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${service['duration']} mins',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF65676B),
+                            color: themeService.textSecondary,
                           ),
                         ),
                       ],
@@ -1016,9 +1016,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           const SizedBox(height: 12),
           Text(
             service['description'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Color(0xFF65676B),
+              color: themeService.textSecondary,
               height: 1.4,
             ),
           ),
@@ -1027,17 +1027,17 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             children: [
               Text(
                 '₹${service['price']}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1877F2),
+                  color: themeService.primaryColor,
                 ),
               ),
               const Spacer(),
               ElevatedButton(
                 onPressed: () => _showBookingSheet(preselectedService: service),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1877F2),
+                  backgroundColor: themeService.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -1057,21 +1057,21 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   // Continuing with Reviews and Posts tabs...
-  Widget _buildReviewsTab() {
+  Widget _buildReviewsTab(ThemeService themeService) {
     return ListView(
       padding: const EdgeInsets.only(bottom: 80),
       children: [
         const SizedBox(height: 12),
-        _buildRatingBreakdown(),
+        _buildRatingBreakdown(themeService),
         const SizedBox(height: 12),
-        _buildMostMentioned(),
+        _buildMostMentioned(themeService),
         const SizedBox(height: 12),
-        ..._reviews.map((review) => _buildReviewCard(review)).toList(),
+        ..._reviews.map((review) => _buildReviewCard(review, themeService)).toList(),
       ],
     );
   }
 
-  Widget _buildRatingBreakdown() {
+  Widget _buildRatingBreakdown(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -1082,26 +1082,26 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Rating Breakdown',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF050505),
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
-          _buildRatingBar(5, 180, 230),
-          _buildRatingBar(4, 35, 230),
-          _buildRatingBar(3, 10, 230),
-          _buildRatingBar(2, 3, 230),
-          _buildRatingBar(1, 2, 230),
+          _buildRatingBar(5, 180, 230, themeService),
+          _buildRatingBar(4, 35, 230, themeService),
+          _buildRatingBar(3, 10, 230, themeService),
+          _buildRatingBar(2, 3, 230, themeService),
+          _buildRatingBar(1, 2, 230, themeService),
         ],
       ),
     );
   }
 
-  Widget _buildRatingBar(int stars, int count, int total) {
+  Widget _buildRatingBar(int stars, int count, int total, ThemeService themeService) {
     final percentage = (count / total * 100).round();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1109,9 +1109,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         children: [
           Text(
             '$stars',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Color(0xFF050505),
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(width: 4),
@@ -1122,7 +1122,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: percentage / 100,
-                backgroundColor: const Color(0xFFE4E6EB),
+                backgroundColor: themeService.borderColor,
                 valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFC107)),
                 minHeight: 8,
               ),
@@ -1133,9 +1133,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             width: 40,
             child: Text(
               '$count',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF65676B),
+                color: themeService.textSecondary,
               ),
               textAlign: TextAlign.right,
             ),
@@ -1145,7 +1145,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildMostMentioned() {
+  Widget _buildMostMentioned(ThemeService themeService) {
     final tags = ['Accurate', 'Patient', 'Helpful', 'Expert', 'Detailed'];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1157,12 +1157,12 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Most Mentioned',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF050505),
+              color: themeService.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -1192,7 +1192,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildReviewCard(Map<String, dynamic> review) {
+  Widget _buildReviewCard(Map<String, dynamic> review, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       padding: const EdgeInsets.all(20),
@@ -1209,8 +1209,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 imagePath: null,
                 radius: 20,
                 fallbackText: review['name'][0],
-                backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
-                textColor: const Color(0xFF1877F2),
+                backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                textColor: themeService.primaryColor,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1221,26 +1221,26 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                       children: [
                         Text(
                           review['name'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF050505),
+                            color: themeService.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 4),
                         if (review['verified'])
-                          const Icon(
+                          Icon(
                             Icons.verified,
-                            color: Color(0xFF1877F2),
+                            color: themeService.primaryColor,
                             size: 14,
                           ),
                       ],
                     ),
                     Text(
                       review['date'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF65676B),
+                        color: themeService.textSecondary,
                       ),
                     ),
                   ],
@@ -1261,23 +1261,23 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFE4E6EB),
+              color: themeService.borderColor,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               review['service'],
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF65676B),
+                color: themeService.textSecondary,
               ),
             ),
           ),
           const SizedBox(height: 12),
           Text(
             review['comment'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
-              color: Color(0xFF050505),
+              color: themeService.textPrimary,
               height: 1.4,
             ),
           ),
@@ -1289,7 +1289,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 icon: const Icon(Icons.thumb_up_outlined, size: 16),
                 label: Text('Helpful (${review['helpful']})'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF65676B),
+                  foregroundColor: themeService.textSecondary,
                   padding: EdgeInsets.zero,
                 ),
               ),
@@ -1300,20 +1300,20 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildPostsTab() {
+  Widget _buildPostsTab(ThemeService themeService) {
     return Container(
-      color: const Color(0xFFF5F5F5),
+      color: themeService.surfaceColor,
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
         itemCount: _posts.length,
         itemBuilder: (context, index) {
-          return _buildPostCard(_posts[index]);
+          return _buildPostCard(_posts[index], themeService);
         },
       ),
     );
   }
 
-  Widget _buildPostCard(Map<String, dynamic> post) {
+  Widget _buildPostCard(Map<String, dynamic> post, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1356,8 +1356,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                       imagePath: null,
                       radius: 20,
                       fallbackText: post['authorInitial'],
-                      backgroundColor: const Color(0xFF1877F2).withOpacity(0.1),
-                      textColor: const Color(0xFF1877F2),
+                      backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                      textColor: themeService.primaryColor,
                     ),
                     const SizedBox(width: 12),
                     
@@ -1509,7 +1509,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildBookingButton() {
+  Widget _buildBookingButton(ThemeService themeService) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1590,7 +1590,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 icon: const Icon(Icons.calendar_today, size: 18),
                 label: const Text('Book'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1877F2),
+                  backgroundColor: themeService.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -1608,6 +1608,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   void _showNotificationPreferences() {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1616,7 +1617,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           children: [
             Icon(
               _notificationsEnabled ? Icons.notifications_active : Icons.notifications_outlined,
-              color: const Color(0xFF1877F2),
+              color: themeService.primaryColor,
             ),
             const SizedBox(width: 12),
             const Text(
@@ -1642,7 +1643,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: const Text('Get notified about this astrologer'),
-                  activeColor: const Color(0xFF1877F2),
+                  activeColor: themeService.primaryColor,
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(),
@@ -1656,7 +1657,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     },
                     title: const Text('Online Status'),
                     subtitle: const Text('When astrologer comes online'),
-                    activeColor: const Color(0xFF1877F2),
+                    activeColor: themeService.primaryColor,
                     contentPadding: EdgeInsets.zero,
                   ),
                   CheckboxListTile(
@@ -1668,7 +1669,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     },
                     title: const Text('Live Sessions'),
                     subtitle: const Text('When going live'),
-                    activeColor: const Color(0xFF1877F2),
+                    activeColor: themeService.primaryColor,
                     contentPadding: EdgeInsets.zero,
                   ),
                   CheckboxListTile(
@@ -1680,7 +1681,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     },
                     title: const Text('New Discussions'),
                     subtitle: const Text('When creating new posts'),
-                    activeColor: const Color(0xFF1877F2),
+                    activeColor: themeService.primaryColor,
                     contentPadding: EdgeInsets.zero,
                   ),
                 ],
@@ -1699,6 +1700,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   void _showOptionsMenu() {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1717,13 +1719,13 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE4E6EB),
+                  color: themeService.borderColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               // Share option
               ListTile(
-                leading: const Icon(Icons.share_outlined, color: Color(0xFF050505)),
+                leading: Icon(Icons.share_outlined, color: themeService.textPrimary),
                 title: const Text(
                   'Share Profile',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
@@ -1803,6 +1805,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   void _showBookingSheet({Map<String, dynamic>? preselectedService}) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1823,40 +1826,40 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE4E6EB),
+                    color: themeService.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Book Consultation',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Choose consultation type:',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF050505),
+                  color: themeService.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
-              _buildBookingOption(Icons.phone, 'Voice Call', '₹500', '30 min'),
-              _buildBookingOption(Icons.videocam, 'Video Call', '₹800', '30 min'),
-              _buildBookingOption(Icons.chat_bubble_outline, 'Chat', '₹300', 'per session'),
+              _buildBookingOption(Icons.phone, 'Voice Call', '₹500', '30 min', themeService),
+              _buildBookingOption(Icons.videocam, 'Video Call', '₹800', '30 min', themeService),
+              _buildBookingOption(Icons.chat_bubble_outline, 'Chat', '₹300', 'per session', themeService),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1877F2),
+                    backgroundColor: themeService.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -1880,34 +1883,34 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     );
   }
 
-  Widget _buildBookingOption(IconData icon, String title, String price, String duration) {
+  Widget _buildBookingOption(IconData icon, String title, String price, String duration, ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE4E6EB)),
+        border: Border.all(color: themeService.borderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF1877F2)),
+          Icon(icon, color: themeService.primaryColor),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF050505),
+                color: themeService.textPrimary,
               ),
             ),
           ),
           Text(
             '$price/$duration',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1877F2),
+              color: themeService.primaryColor,
             ),
           ),
         ],
