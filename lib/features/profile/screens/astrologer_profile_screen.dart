@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../services/services_exports.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
+import '../widgets/service_card_variants.dart';
 
 /// Astrologer Profile Screen (End-User Perspective)
 /// Facebook/Meta-level UI/UX Design
@@ -949,135 +950,47 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       itemCount: _services.length,
       itemBuilder: (context, index) {
         final service = _services[index];
-        return _buildServiceCard(service, themeService);
+        return ServiceCardV2SwiggyStyle(
+          service: service,
+          themeService: themeService,
+          onTap: () => _showBookingSheet(preselectedService: service), // Card tap -> Details
+          onBookNow: () => _directToBooking(service), // BOOK button -> Direct to booking
+        );
       },
     );
   }
 
-  Widget _buildServiceCard(Map<String, dynamic> service, ThemeService themeService) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      color: themeService.cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: themeService.borderRadius,
-      ),
-      child: InkWell(
-        onTap: () => _showBookingSheet(preselectedService: service),
-        borderRadius: themeService.borderRadius,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: themeService.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      service['icon'],
-                      color: themeService.primaryColor,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          service['name'],
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: themeService.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time,
-                              size: 14,
-                              color: themeService.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${service['duration']} mins',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: themeService.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                service['description'],
-                style: TextStyle(
-                  fontSize: 14,
-                  color: themeService.textSecondary,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(
-                    '₹${service['price']}',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: themeService.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: themeService.primaryColor,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeService.primaryColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Book Now',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+  // Direct navigation to booking screen (skipping details)
+  void _directToBooking(Map<String, dynamic> serviceData) {
+    HapticFeedback.mediumImpact();
+    
+    // Convert mock service to ServiceModel
+    final service = _convertToServiceModel(serviceData);
+    
+    // Create repository and add the service
+    final repository = ServiceRepositoryImpl();
+    repository.addService(service);
+    
+    // Navigate directly to booking screen with BLoC providers
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider<ServiceBloc>(
+              create: (_) => ServiceBloc(repository: repository),
+            ),
+            BlocProvider<BookingBloc>(
+              create: (_) => BookingBloc(repository: repository),
+            ),
+            BlocProvider<OrderBloc>(
+              create: (_) => OrderBloc(repository: repository),
+            ),
+          ],
+          child: ServiceBookingScreen(
+            service: service,
+            astrologerId: service.astrologerId,
+            userId: 'user_123', // TODO: Get from auth service
           ),
         ),
       ),

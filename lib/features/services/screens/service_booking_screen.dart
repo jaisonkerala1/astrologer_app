@@ -27,11 +27,13 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
   TimeSlotModel? _selectedSlot;
   final List<AddOnModel> _availableAddOns = [];
   final Set<String> _selectedAddOnIds = {};
+  bool _addOnsLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize booking
+    
+    // Initialize booking first
     context.read<BookingBloc>().add(
           InitializeBookingEvent(
             serviceId: widget.service.id,
@@ -41,11 +43,13 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
           ),
         );
 
-    // Load slots for default date
-    _loadSlots();
-
     // Load add-ons
     context.read<ServiceBloc>().add(LoadServiceAddOnsEvent(widget.service.id));
+    
+    // Load slots for default date - use addPostFrameCallback to ensure BLoC is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSlots();
+    });
   }
 
   void _loadSlots() {
@@ -105,6 +109,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
         listener: (context, state) {
           if (state is ServiceAddOnsLoaded) {
             setState(() {
+              _addOnsLoaded = true;
               _availableAddOns.clear();
               _availableAddOns.addAll(state.addOns);
             });
@@ -121,10 +126,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
               const SizedBox(height: 24),
               _buildTimeSlots(themeService),
               const SizedBox(height: 24),
-              if (_availableAddOns.isNotEmpty) ...[
-                _buildAddOns(themeService),
-                const SizedBox(height: 24),
-              ],
+              _buildAddOnsSection(themeService),
+              const SizedBox(height: 24),
               _buildPriceSummary(themeService),
               const SizedBox(height: 100), // Space for button
             ],
@@ -137,68 +140,212 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
 
   Widget _buildServiceInfo(ThemeService themeService) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 0),
       decoration: BoxDecoration(
-        color: themeService.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        color: themeService.cardColor,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: themeService.borderColor,
+          color: themeService.borderColor.withOpacity(0.08),
           width: 1,
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  themeService.primaryColor.withOpacity(0.1),
-                  themeService.primaryColor.withOpacity(0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: themeService.primaryColor.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              widget.service.icon,
-              size: 28,
-              color: themeService.primaryColor,
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.service.name,
-                  style: TextStyle(
-                    color: themeService.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            // Get the current repository from BookingBloc
+            final bookingBloc = context.read<BookingBloc>();
+            final repository = bookingBloc.repository;
+
+            // Navigate to service detail screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider<ServiceBloc>(
+                      create: (_) => ServiceBloc(repository: repository),
+                    ),
+                    BlocProvider<BookingBloc>(
+                      create: (_) => BookingBloc(repository: repository),
+                    ),
+                    BlocProvider<OrderBloc>(
+                      create: (_) => OrderBloc(repository: repository),
+                    ),
+                  ],
+                  child: ServiceDetailScreen(
+                    serviceId: widget.service.id,
+                    heroTag: 'service_booking_${widget.service.id}',
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${widget.service.formattedPrice} • ${widget.service.durationDisplay}',
-                  style: TextStyle(
-                    color: themeService.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Icon - flat minimal design
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: themeService.primaryColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    widget.service.icon,
+                    size: 26,
+                    color: themeService.primaryColor,
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.service.name,
+                              style: TextStyle(
+                                color: themeService.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.4,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // "View" chip indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: themeService.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: themeService.primaryColor,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 10,
+                                  color: themeService.primaryColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Price and duration
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: themeService.surfaceColor,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: themeService.borderColor.withOpacity(0.2),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.currency_rupee,
+                                  size: 12,
+                                  color: themeService.textPrimary,
+                                ),
+                                Text(
+                                  widget.service.price.toStringAsFixed(0),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: themeService.textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: themeService.surfaceColor,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: themeService.borderColor.withOpacity(0.2),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 11,
+                                  color: themeService.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  widget.service.durationDisplay,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: themeService.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -315,14 +462,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
         BlocBuilder<ServiceBloc, ServiceState>(
           builder: (context, state) {
             if (state is ServiceLoading) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: CircularProgressIndicator(
-                    color: themeService.primaryColor,
-                  ),
-                ),
-              );
+              return _buildTimeSlotsSkeleton(themeService);
             }
 
             if (state is ServiceSlotsLoaded) {
@@ -362,10 +502,70 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
               );
             }
 
-            return const SizedBox.shrink();
+            // Initial or unknown state - show skeleton to keep layout stable
+            return _buildTimeSlotsSkeleton(themeService);
           },
         ),
       ],
+    );
+  }
+
+  /// Premium minimal skeleton loader for time slots
+  Widget _buildTimeSlotsSkeleton(ThemeService themeService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < 3; i++) ...[
+          // Group label skeleton (matches \"Morning / Afternoon / Evening\" height)
+          Container(
+            width: 80,
+            height: 14,
+            decoration: BoxDecoration(
+              color: themeService.surfaceColor.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Row of slot pills skeleton
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(3, (_) => _buildSkeletonSlot(themeService)),
+          ),
+          if (i < 2) const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSkeletonSlot(ThemeService themeService) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.35, end: 1.0),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Container(
+            width: 90,
+            height: 38,
+            decoration: BoxDecoration(
+              color: themeService.surfaceColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: themeService.borderColor.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        // Restart animation for a soft shimmer-like effect
+        if (mounted) {
+          setState(() {});
+        }
+      },
     );
   }
 
@@ -415,21 +615,21 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
                   color: !isAvailable
                       ? themeService.surfaceColor.withOpacity(0.5)
                       : isSelected
-                          ? themeService.primaryColor
+                          ? const Color(0xFF1ca672) // Green color
                           : themeService.surfaceColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: !isAvailable
                         ? themeService.borderColor.withOpacity(0.5)
                         : isSelected
-                            ? themeService.primaryColor
+                            ? const Color(0xFF1ca672) // Green color
                             : themeService.borderColor,
                     width: isSelected ? 2 : 1,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: themeService.primaryColor.withOpacity(0.3),
+                            color: const Color(0xFF1ca672).withOpacity(0.3), // Green shadow
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -456,6 +656,75 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
         ),
       ],
     );
+  }
+
+  /// Wrapper that keeps the Add-ons section in a stable vertical position
+  /// while data is loading, loaded, or when there are no add-ons.
+  Widget _buildAddOnsSection(ThemeService themeService) {
+    // Still loading add-ons -> show skeleton cards in place
+    if (!_addOnsLoaded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add-ons (Optional)',
+            style: TextStyle(
+              color: themeService.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Column(
+            children: List.generate(2, (_) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                height: 64,
+                decoration: BoxDecoration(
+                  color: themeService.surfaceColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: themeService.borderColor.withOpacity(0.4),
+                    width: 1,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      );
+    }
+
+    // Loaded but no add-ons -> keep section, show subtle message
+    if (_availableAddOns.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add-ons (Optional)',
+            style: TextStyle(
+              color: themeService.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No add-ons available for this service',
+            style: TextStyle(
+              color: themeService.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Normal case: show real add-ons
+    return _buildAddOns(themeService);
   }
 
   Widget _buildAddOns(ThemeService themeService) {
@@ -756,22 +1025,21 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen> {
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [
-                        themeService.primaryColor,
-                        themeService.secondaryColor,
+                        Color(0xFF1ca672), // Primary green
+                        Color(0xFF1fb67d), // Minimal gradient - slightly lighter
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(28), // Pill shape
                     boxShadow: isValid
                         ? [
                             BoxShadow(
-                              color:
-                                  themeService.primaryColor.withOpacity(0.4),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
+                              color: const Color(0xFF1ca672).withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
                             ),
                           ]
                         : [],

@@ -314,6 +314,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
       return const SizedBox.shrink();
     }
 
+    const greenColor = Color(0xFF1ca672); // Match Book Now button
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
@@ -330,8 +332,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
           ),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 10,
-            runSpacing: 12, // Increased from 8 to 12 for better vertical spacing
+            spacing: 8,
+            runSpacing: 8,
             children: [
               // Add all available delivery methods
               ...service.availableDeliveryMethods.map((method) {
@@ -346,42 +348,39 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: 16,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? themeService.primaryColor
+                          ? greenColor
                           : themeService.surfaceColor,
-                      borderRadius: BorderRadius.circular(24), // Pill shape
+                      borderRadius: BorderRadius.circular(22),
                       border: Border.all(
                         color: isSelected
-                            ? themeService.primaryColor
-                            : themeService.borderColor.withOpacity(0.5), // Increased opacity from 0.3 to 0.5
+                            ? greenColor
+                            : themeService.borderColor.withOpacity(0.3),
                         width: 1,
                       ),
-                      // Add subtle shadow for depth
-                      boxShadow: [
+                      boxShadow: isSelected ? [
                         BoxShadow(
-                          color: isSelected
-                              ? themeService.primaryColor.withOpacity(0.15)
-                              : Colors.black.withOpacity(0.03),
-                          blurRadius: isSelected ? 8 : 4,
-                          offset: Offset(0, isSelected ? 2 : 1),
+                          color: greenColor.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                      ],
+                      ] : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           _getDeliveryMethodIcon(method),
-                          size: 18,
+                          size: 17,
                           color: isSelected
                               ? Colors.white
-                              : themeService.textPrimary,
+                              : themeService.textSecondary,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 7),
                         Text(
                           _getDeliveryMethodLabel(method),
                           style: TextStyle(
@@ -389,7 +388,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                 ? Colors.white
                                 : themeService.textPrimary,
                             fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           ),
                         ),
                       ],
@@ -409,41 +408,39 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: 16,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
                       color: _selectedDeliveryMethod == DeliveryMethod.report
-                          ? themeService.primaryColor
+                          ? greenColor
                           : themeService.surfaceColor,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(22),
                       border: Border.all(
                         color: _selectedDeliveryMethod == DeliveryMethod.report
-                            ? themeService.primaryColor
-                            : themeService.borderColor.withOpacity(0.5),
+                            ? greenColor
+                            : themeService.borderColor.withOpacity(0.3),
                         width: 1,
                       ),
-                      boxShadow: [
+                      boxShadow: _selectedDeliveryMethod == DeliveryMethod.report ? [
                         BoxShadow(
-                          color: _selectedDeliveryMethod == DeliveryMethod.report
-                              ? themeService.primaryColor.withOpacity(0.15)
-                              : Colors.black.withOpacity(0.03),
-                          blurRadius: _selectedDeliveryMethod == DeliveryMethod.report ? 8 : 4,
-                          offset: Offset(0, _selectedDeliveryMethod == DeliveryMethod.report ? 2 : 1),
+                          color: greenColor.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                      ],
+                      ] : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.description_rounded,
-                          size: 18,
+                          size: 17,
                           color: _selectedDeliveryMethod == DeliveryMethod.report
                               ? Colors.white
-                              : themeService.textPrimary,
+                              : themeService.textSecondary,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 7),
                         Text(
                           'Report',
                           style: TextStyle(
@@ -451,7 +448,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                 ? Colors.white
                                 : themeService.textPrimary,
                             fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: _selectedDeliveryMethod == DeliveryMethod.report ? FontWeight.w600 : FontWeight.w500,
                           ),
                         ),
                       ],
