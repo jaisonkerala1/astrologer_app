@@ -13,6 +13,7 @@ import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'top_astrologers_screen.dart';
 import 'all_astrologers_screen.dart';
+import '../../profile/screens/astrologer_profile_screen.dart';
 
 /// World-class Astrologer Discovery Screen
 /// Features:
@@ -359,9 +360,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                             return _CompactGridCardV5(
                               astrologer: astrologer,
                               themeService: themeService,
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                              },
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _openAstrologerProfile(astrologer);
+                },
                               onChatTap: () {
                                 HapticFeedback.mediumImpact();
                                 _showChatSnackbar(themeService, astrologer.name);
@@ -605,7 +607,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
               return Transform.scale(
                 scale: transformValue,
                 child: GestureDetector(
-                  onTap: () => HapticFeedback.selectionClick(),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _openAstrologerProfile(astrologer);
+                  },
                   child: Container(
                     margin: EdgeInsets.only(
                       left: index == 0 ? 20 : 6,
@@ -822,6 +827,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                             child: InkWell(
                               onTap: () {
                                 HapticFeedback.mediumImpact();
+                                _openAstrologerProfile(astrologer);
                               },
                               borderRadius: BorderRadius.circular(20),
                               child: Container(
@@ -987,6 +993,15 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openAstrologerProfile(DiscoveryAstrologer astrologer) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AstrologerProfileScreen(astrologer: astrologer),
       ),
     );
   }

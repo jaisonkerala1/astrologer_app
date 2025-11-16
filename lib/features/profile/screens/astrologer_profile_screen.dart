@@ -5,13 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../services/services_exports.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
+import '../../discovery/models/discovery_astrologer.dart';
 import '../widgets/service_card_variants.dart';
 
 /// Astrologer Profile Screen (End-User Perspective)
 /// Facebook/Meta-level UI/UX Design
 /// What users/seekers see when browsing astrologers
 class AstrologerProfileScreen extends StatefulWidget {
-  const AstrologerProfileScreen({super.key});
+  final DiscoveryAstrologer? astrologer;
+
+  const AstrologerProfileScreen({super.key, this.astrologer});
 
   @override
   State<AstrologerProfileScreen> createState() => _AstrologerProfileScreenState();
@@ -37,7 +40,6 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     'totalReviews': 230,
     'experience': 12,
     'totalConsultations': 1200,
-    'responseTime': 'Within 2 hours',
     'languages': ['English', 'Hindi', 'Marathi'],
     'followers': 2450,
     'bio': 'Expert in Vedic Astrology with 12 years of experience. Specialized in career guidance, marriage compatibility, and gemstone recommendations. My approach combines ancient wisdom with modern life challenges.',
@@ -56,6 +58,40 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     'repeatClients': 78,
     'verified': true,
   };
+
+  Map<String, dynamic>? _customAstrologerData;
+
+  Map<String, dynamic> get _astrologerData {
+    if (widget.astrologer == null) {
+      return _mockAstrologer;
+    }
+    return _customAstrologerData ??= _buildAstrologerData(widget.astrologer!);
+  }
+
+  Map<String, dynamic> _buildAstrologerData(DiscoveryAstrologer astrologer) {
+    return {
+      'name': astrologer.name,
+      'title': astrologer.title,
+      'rating': astrologer.rating,
+      'totalReviews': astrologer.totalReviews,
+      'experience': astrologer.experience,
+      'followers': astrologer.followers,
+      'responseTime': astrologer.responseTime,
+      'repeatClients': astrologer.repeatClients,
+      'bio': astrologer.bio.isNotEmpty ? astrologer.bio : _mockAstrologer['bio'],
+      'expertise': astrologer.specializations.isNotEmpty
+          ? astrologer.specializations
+          : _mockAstrologer['expertise'],
+      'qualifications': _mockAstrologer['qualifications'],
+      'achievements': astrologer.achievements.isNotEmpty
+          ? astrologer.achievements
+          : _mockAstrologer['achievements'],
+      'languages': astrologer.languages.isNotEmpty
+          ? astrologer.languages
+          : _mockAstrologer['languages'],
+      'verified': astrologer.isVerified,
+    };
+  }
 
   final List<Map<String, dynamic>> _services = [
     {
@@ -174,6 +210,9 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _scrollController.addListener(_scrollListener);
+    if (widget.astrologer != null) {
+      _customAstrologerData = _buildAstrologerData(widget.astrologer!);
+    }
   }
 
   void _scrollListener() {
@@ -189,6 +228,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     _tabController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant AstrologerProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.astrologer != oldWidget.astrologer && widget.astrologer != null) {
+      _customAstrologerData = _buildAstrologerData(widget.astrologer!);
+    }
   }
 
   @override
@@ -299,6 +346,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildHeader(ThemeService themeService) {
+    final profileData = _astrologerData;
+    final name = profileData['name']?.toString() ?? 'Astrologer';
+    final trimmedName = name.trim();
+    final fallbackInitial =
+        trimmedName.isNotEmpty ? trimmedName.substring(0, 1).toUpperCase() : 'A';
+    final isOnline = widget.astrologer?.isOnline ?? true;
+    final isVerified = profileData['verified'] == true;
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -309,26 +364,27 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           Stack(
             children: [
               ProfileAvatarWidget(
-                imagePath: null,
+                imagePath: widget.astrologer?.profilePicture,
                 radius: 36,
-                fallbackText: 'RK',
+                fallbackText: fallbackInitial,
                 backgroundColor: themeService.primaryColor.withOpacity(0.1),
                 textColor: themeService.primaryColor,
               ),
               // Online Status Indicator (bottom-right)
-              Positioned(
-                bottom: 2,
-                right: 2,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF44B700),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+              if (isOnline)
+                Positioned(
+                  bottom: 2,
+                  right: 2,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF44B700),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(width: 12),
@@ -343,7 +399,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   children: [
                     Flexible(
                       child: Text(
-                        _mockAstrologer['name'],
+                        name,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -354,7 +410,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                         softWrap: false,
                       ),
                     ),
-                    if (_mockAstrologer['verified']) ...[
+                    if (isVerified) ...[
                       const SizedBox(width: 4),
                       Icon(
                         Icons.verified,
@@ -366,7 +422,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _mockAstrologer['title'],
+                  profileData['title'] ?? '',
                   style: TextStyle(
                     fontSize: 13,
                     color: themeService.textSecondary,
@@ -383,7 +439,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        '${_mockAstrologer['rating']} (${_mockAstrologer['totalReviews']}) • ${_mockAstrologer['experience']}y exp',
+                        '${profileData['rating']} (${profileData['totalReviews']}) • ${profileData['experience']}y exp',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -405,17 +461,18 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildQuickStats(ThemeService themeService) {
+    final profileData = _astrologerData;
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('${_mockAstrologer['followers']}', 'Followers', themeService),
+          _buildStatItem('${profileData['followers']}', 'Followers', themeService),
           Container(width: 1, height: 30, color: themeService.borderColor),
-          _buildStatItem('${_mockAstrologer['responseTime']}', 'Response', themeService),
+          _buildStatItem('${profileData['responseTime']}', 'Response', themeService),
           Container(width: 1, height: 30, color: themeService.borderColor),
-          _buildStatItem('${_mockAstrologer['repeatClients']}%', 'Repeat', themeService),
+          _buildStatItem('${profileData['repeatClients']}%', 'Repeat', themeService),
         ],
       ),
     );
@@ -496,6 +553,13 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildStickyHeader(ThemeService themeService) {
+    final profileData = _astrologerData;
+    final name = profileData['name']?.toString() ?? 'Astrologer';
+    final trimmedName = name.trim();
+    final fallbackInitial =
+        trimmedName.isNotEmpty ? trimmedName.substring(0, 1).toUpperCase() : 'A';
+    final isOnline = widget.astrologer?.isOnline ?? true;
+
     return Material(
       elevation: 8,
       shadowColor: Colors.black.withOpacity(0.3),
@@ -523,26 +587,27 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
               Stack(
                 children: [
                   ProfileAvatarWidget(
-                    imagePath: null,
+                    imagePath: widget.astrologer?.profilePicture,
                     radius: 16,
-                    fallbackText: 'RK',
+                    fallbackText: fallbackInitial,
                     backgroundColor: themeService.primaryColor.withOpacity(0.1),
                     textColor: themeService.primaryColor,
                   ),
                   // Online Status Indicator
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF44B700),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                  if (isOnline)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF44B700),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(width: 8),
@@ -552,7 +617,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _mockAstrologer['name'],
+                      name,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -568,7 +633,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                         const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          '${_mockAstrologer['rating']} • ${_mockAstrologer['totalReviews']} reviews',
+                          '${profileData['rating']} • ${profileData['totalReviews']} reviews',
                           style: TextStyle(
                             fontSize: 12,
                             color: themeService.textSecondary,
@@ -630,6 +695,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildAboutBio(ThemeService themeService) {
+    final profileData = _astrologerData;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -656,7 +722,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           ),
           const SizedBox(height: 12),
           Text(
-            _mockAstrologer['bio'],
+            profileData['bio'],
             style: TextStyle(
               fontSize: 15,
               color: themeService.textPrimary,
@@ -669,6 +735,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildExpertiseAreas(ThemeService themeService) {
+    final profileData = _astrologerData;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -697,7 +764,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: (_mockAstrologer['expertise'] as List).map((expertise) {
+            children: (profileData['expertise'] as List).map((expertise) {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -724,6 +791,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildQualifications(ThemeService themeService) {
+    final profileData = _astrologerData;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -749,7 +817,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             ],
           ),
           const SizedBox(height: 16),
-          ...(_mockAstrologer['qualifications'] as List).map((qual) {
+          ...(profileData['qualifications'] as List).map((qual) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Row(
@@ -773,13 +841,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
   Widget _buildAchievements(ThemeService themeService) {
+    final profileData = _astrologerData;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -805,7 +874,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             ],
           ),
           const SizedBox(height: 16),
-          ...(_mockAstrologer['achievements'] as List).map((achievement) {
+          ...(profileData['achievements'] as List).map((achievement) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Row(
@@ -829,13 +898,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
   Widget _buildLanguages(ThemeService themeService) {
+    final profileData = _astrologerData;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -862,7 +932,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           ),
           const SizedBox(height: 12),
           Text(
-            (_mockAstrologer['languages'] as List).join(', '),
+            (profileData['languages'] as List).join(', '),
             style: TextStyle(
               fontSize: 15,
               color: themeService.textPrimary,
@@ -1007,7 +1077,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         const SizedBox(height: 12),
         _buildMostMentioned(themeService),
         const SizedBox(height: 12),
-        ..._reviews.map((review) => _buildReviewCard(review, themeService)).toList(),
+        ..._reviews.map((review) => _buildReviewCard(review, themeService)),
       ],
     );
   }
