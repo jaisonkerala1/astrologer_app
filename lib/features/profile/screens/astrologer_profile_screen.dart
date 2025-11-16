@@ -323,10 +323,34 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       backgroundColor: _showStickyHeader ? Colors.transparent : Colors.white,
       elevation: 0,
       floating: true,
-      leading: _showStickyHeader ? const SizedBox.shrink() : IconButton(
-        icon: Icon(Icons.arrow_back, color: themeService.textPrimary),
-        onPressed: () => Navigator.pop(context),
-      ),
+      leadingWidth: _showStickyHeader ? 0 : 72,
+      leading: _showStickyHeader
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: themeService.cardColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: themeService.borderColor.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: themeService.textPrimary,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
       actions: _showStickyHeader ? [] : [
         // Notification Bell Icon
         IconButton(

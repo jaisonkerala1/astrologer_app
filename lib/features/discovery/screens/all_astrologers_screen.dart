@@ -393,32 +393,161 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
   }
 
   Widget _buildAstrologersList(ThemeService themeService, List<DiscoveryAstrologer> astrologers) {
+    // Split astrologers into sections
+    final first6 = astrologers.take(6).toList();
+    final trending = astrologers.skip(6).take(6).toList();
+    final remaining = astrologers.skip(12).toList();
+
     return RefreshIndicator(
       color: themeService.primaryColor,
       onRefresh: () async {
         context.read<DiscoveryBloc>().add(const RefreshAstrologersEvent());
       },
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: astrologers.length,
-        itemBuilder: (context, index) {
-          final astrologer = astrologers[index];
-          
-          return _PremiumRowCard(
-            astrologer: astrologer,
-            themeService: themeService,
-            onTap: () {
-              HapticFeedback.selectionClick();
-            },
-            onChatTap: () {
-              HapticFeedback.mediumImpact();
-              _showChatSnackbar(themeService, astrologer.name);
-            },
-            formatNumber: _formatNumber,
-          );
-        },
+        slivers: [
+          // First 6 cards (full-width list cards)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final astrologer = first6[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _PremiumRowCard(
+                      astrologer: astrologer,
+                      themeService: themeService,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                      },
+                      onChatTap: () {
+                        HapticFeedback.mediumImpact();
+                        _showChatSnackbar(themeService, astrologer.name);
+                      },
+                      formatNumber: _formatNumber,
+                    ),
+                  );
+                },
+                childCount: first6.length,
+              ),
+            ),
+          ),
+
+          // Trending section (horizontal scrollable)
+          if (trending.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _buildTrendingSection(themeService, trending),
+            ),
+
+          // Remaining cards (full-width list cards) - only if there are more than 12
+          if (remaining.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final astrologer = remaining[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _PremiumRowCard(
+                        astrologer: astrologer,
+                        themeService: themeService,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                        },
+                        onChatTap: () {
+                          HapticFeedback.mediumImpact();
+                          _showChatSnackbar(themeService, astrologer.name);
+                        },
+                        formatNumber: _formatNumber,
+                      ),
+                    );
+                  },
+                  childCount: remaining.length,
+                ),
+              ),
+            ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildTrendingSection(ThemeService themeService, List<DiscoveryAstrologer> trending) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        // Section header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      themeService.primaryColor,
+                      themeService.primaryColor.withOpacity(0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Trending',
+                style: TextStyle(
+                  color: themeService.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: themeService.textSecondary,
+                size: 14,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Horizontal scrollable cards
+        SizedBox(
+          height: 270,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: trending.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final astrologer = trending[index];
+              return _CompactGridCard(
+                astrologer: astrologer,
+                themeService: themeService,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  // Navigate to profile
+                },
+                onChatTap: () {
+                  HapticFeedback.mediumImpact();
+                  _showChatSnackbar(themeService, astrologer.name);
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
@@ -524,6 +653,283 @@ class _AllAstrologersScreenState extends State<AllAstrologersScreen> with Single
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact grid card for horizontal scrolling - EXACT copy from Discovery page
+class _CompactGridCard extends StatelessWidget {
+  final DiscoveryAstrologer astrologer;
+  final ThemeService themeService;
+  final VoidCallback onTap;
+  final VoidCallback onChatTap;
+
+  const _CompactGridCard({
+    required this.astrologer,
+    required this.themeService,
+    required this.onTap,
+    required this.onChatTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160, // Slightly wider for horizontal scroll
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: themeService.borderColor.withOpacity(0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 16),
+              
+              // Avatar with online indicator
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ProfileAvatarWidget(
+                    imagePath: astrologer.profilePicture,
+                    radius: 32,
+                    fallbackText: astrologer.name.substring(0, 1).toUpperCase(),
+                    backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                    textColor: themeService.primaryColor,
+                  ),
+                  if (astrologer.isOnline)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: themeService.cardColor,
+                            width: 2.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (astrologer.isVerified)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: themeService.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.verified,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Name
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  astrologer.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: themeService.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Rating
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 13,
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      astrologer.rating.toStringAsFixed(1),
+                      style: TextStyle(
+                        color: themeService.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      ' (${astrologer.totalReviews})',
+                      style: TextStyle(
+                        color: themeService.textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 10),
+              
+              // Experience and price
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 14,
+                      color: themeService.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${astrologer.experience}y',
+                      style: TextStyle(
+                        color: themeService.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 1,
+                      height: 12,
+                      color: themeService.borderColor.withOpacity(0.3),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                      style: TextStyle(
+                        color: themeService.primaryColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 10),
+              
+              // Specializations (max 2)
+              if (astrologer.specializations.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: astrologer.specializations.take(2).map((spec) {
+                      return Container(
+                        constraints: const BoxConstraints(maxWidth: 70),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: themeService.primaryColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          spec,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: themeService.primaryColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              
+              const SizedBox(height: 12),
+              
+              // Chat button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 36,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      onChatTap();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      backgroundColor: themeService.primaryColor,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Chat',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
