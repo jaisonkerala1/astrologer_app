@@ -13,6 +13,7 @@ import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'top_astrologers_screen.dart';
 import 'all_astrologers_screen.dart';
+import 'favorite_astrologers_screen.dart';
 import '../../profile/screens/astrologer_profile_screen.dart';
 
 /// World-class Astrologer Discovery Screen
@@ -197,33 +198,28 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     return Scaffold(
       backgroundColor: themeService.backgroundColor,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: _buildHeader(themeService),
-            ),
-            SliverToBoxAdapter(
-              child: _buildSearchBar(themeService),
-            ),
-            SliverToBoxAdapter(
-              child: _buildQuickFilters(themeService),
-            ),
-            BlocBuilder<DiscoveryBloc, DiscoveryState>(
+        child: Column(
+          children: [
+            // Fixed header, search, and filters
+            _buildHeader(themeService),
+            _buildSearchBar(themeService),
+            _buildQuickFilters(themeService),
+            
+            // Scrollable content
+            Expanded(
+              child: BlocBuilder<DiscoveryBloc, DiscoveryState>(
               builder: (context, state) {
                 if (state is DiscoveryLoading) {
-                  return SliverFillRemaining(
-                    child: _buildLoadingState(themeService),
-                  );
+                    return _buildLoadingState(themeService);
                 } else if (state is DiscoveryLoaded) {
                   if (state.astrologers.isEmpty) {
-                    return SliverFillRemaining(
-                      child: _buildEmptyState(themeService, state.searchQuery ?? _searchQuery),
-                    );
+                      return _buildEmptyState(themeService, state.searchQuery ?? _searchQuery);
                   }
                   final featured = state.astrologers.take(4).toList();
-                  return SliverList(
-                    delegate: SliverChildListDelegate([
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
                       if (featured.isNotEmpty) ...[
                         // Top Astrologers heading
                         Padding(
@@ -360,10 +356,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                             return _CompactGridCardV5(
                               astrologer: astrologer,
                               themeService: themeService,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _openAstrologerProfile(astrologer);
-                },
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                    _openAstrologerProfile(astrologer);
+                              },
                               onChatTap: () {
                                 HapticFeedback.mediumImpact();
                                 _showChatSnackbar(themeService, astrologer.name);
@@ -372,15 +368,15 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                           },
                         ),
                       ),
-                    ]),
+                        ],
+                      ),
                   );
                 } else if (state is DiscoveryError) {
-                  return SliverFillRemaining(
-                    child: _buildErrorState(themeService, state.message),
-                  );
+                    return _buildErrorState(themeService, state.message);
                 }
-                return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  return const SizedBox.shrink();
               },
+              ),
             ),
           ],
         ),
@@ -444,7 +440,18 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
               border: Border.all(color: themeService.borderColor.withOpacity(0.1)),
             ),
             child: IconButton(
-              onPressed: () {},
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider(
+                      create: (context) => DiscoveryBloc()..add(const LoadAstrologersEvent(onlineOnly: true)),
+                      child: const FavoriteAstrologersScreen(),
+                    ),
+                  ),
+                );
+              },
               icon: Icon(
                 Icons.favorite_border_rounded,
                 color: themeService.textPrimary,
@@ -903,9 +910,257 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
   }
 
   Widget _buildLoadingState(ThemeService themeService) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: themeService.primaryColor,
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          // Top Astrologers heading skeleton
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildShimmerBox(width: 140, height: 20, radius: 6),
+                _buildShimmerBox(width: 65, height: 20, radius: 6),
+              ],
+            ),
+          ),
+          
+          // Carousel skeleton
+          _buildCarouselSkeleton(themeService),
+          
+          const SizedBox(height: 6),
+          
+          // Carousel indicators skeleton
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(4, (index) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: index == 0 ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: themeService.borderColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              );
+            }),
+          ),
+          
+          // Astrologers for you heading skeleton
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildShimmerBox(width: 160, height: 20, radius: 6),
+                _buildShimmerBox(width: 65, height: 20, radius: 6),
+              ],
+            ),
+          ),
+          
+          // Grid skeleton
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 6,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.65,
+              ),
+              itemBuilder: (context, index) {
+                return _buildGridCardSkeleton(themeService);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCarouselSkeleton(ThemeService themeService) {
+    return SizedBox(
+      height: 180,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          return Container(
+            width: MediaQuery.of(context).size.width * 0.80,
+            margin: EdgeInsets.only(
+              left: index == 0 ? 20 : 6,
+              right: 6,
+              top: 8,
+              bottom: 8,
+            ),
+            decoration: BoxDecoration(
+              color: themeService.cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: themeService.borderColor.withOpacity(0.08),
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Avatar skeleton
+                  _buildShimmerCircle(radius: 28),
+                  const SizedBox(width: 14),
+                  
+                  // Info skeleton
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildShimmerBox(width: double.infinity, height: 17, radius: 6),
+                        const SizedBox(height: 6),
+                        _buildShimmerBox(width: 120, height: 11, radius: 4),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _buildShimmerBox(width: 60, height: 20, radius: 12),
+                            const SizedBox(width: 5),
+                            _buildShimmerBox(width: 60, height: 20, radius: 12),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildShimmerBox(width: 45, height: 18, radius: 6),
+                            const SizedBox(width: 6),
+                            _buildShimmerBox(width: 45, height: 18, radius: 6),
+                            const SizedBox(width: 6),
+                            _buildShimmerBox(width: 60, height: 18, radius: 6),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+  
+  Widget _buildGridCardSkeleton(ThemeService themeService) {
+    return Container(
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: themeService.borderColor.withOpacity(0.08),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 16),
+          
+          // Avatar skeleton
+          _buildShimmerCircle(radius: 32),
+          
+          const SizedBox(height: 12),
+          
+          // Name skeleton
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _buildShimmerBox(width: 100, height: 15, radius: 6),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Rating skeleton
+          _buildShimmerBox(width: 80, height: 22, radius: 8),
+          
+          const SizedBox(height: 10),
+          
+          // Experience and price skeleton
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildShimmerBox(width: 30, height: 12, radius: 4),
+              const SizedBox(width: 10),
+              Container(
+                width: 1,
+                height: 12,
+                color: themeService.borderColor.withOpacity(0.3),
+              ),
+              const SizedBox(width: 10),
+              _buildShimmerBox(width: 50, height: 12, radius: 4),
+            ],
+          ),
+          
+          const SizedBox(height: 10),
+          
+          // Specializations skeleton
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildShimmerBox(width: 60, height: 18, radius: 6),
+                const SizedBox(width: 4),
+                _buildShimmerBox(width: 60, height: 18, radius: 6),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Chat button skeleton
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+            child: _buildShimmerBox(
+              width: double.infinity,
+              height: 36,
+              radius: 100,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildShimmerBox({
+    required double width,
+    required double height,
+    required double radius,
+  }) {
+    return _ShimmerWidget(
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.grey[200]!,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildShimmerCircle({required double radius}) {
+    return _ShimmerWidget(
+      child: Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          color: Colors.grey[200]!,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
@@ -1016,6 +1271,59 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+    );
+  }
+}
+
+class _ShimmerWidget extends StatefulWidget {
+  final Widget child;
+  
+  const _ShimmerWidget({required this.child});
+  
+  @override
+  State<_ShimmerWidget> createState() => _ShimmerWidgetState();
+}
+
+class _ShimmerWidgetState extends State<_ShimmerWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment(-1.0 + (_controller.value * 2), 0),
+              end: Alignment(1.0 + (_controller.value * 2), 0),
+              colors: [
+                Colors.grey[200]!,
+                Colors.grey[50]!,
+                Colors.grey[200]!,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ).createShader(bounds);
+          },
+          child: widget.child,
+        );
+      },
     );
   }
 }

@@ -483,22 +483,10 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      themeService.primaryColor,
-                      themeService.primaryColor.withOpacity(0.7),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.emoji_events_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
+              const Icon(
+                Icons.emoji_events_rounded,
+                color: Colors.amber,
+                size: 22,
               ),
               const SizedBox(width: 10),
               Text(
@@ -552,9 +540,186 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
   }
 
   Widget _buildLoadingState(ThemeService themeService) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: themeService.primaryColor,
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // First 6 list card skeletons with rank badges
+          ...List.generate(6, (index) => _buildListCardSkeleton(themeService)),
+          
+          const SizedBox(height: 16),
+          
+          // Elite Experts section skeleton
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Elite Experts header skeleton
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _buildShimmerCircle(radius: 11, themeService: themeService),
+                    const SizedBox(width: 10),
+                    _buildShimmerBox(width: 120, height: 20, radius: 6, themeService: themeService),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Horizontal card skeletons
+              SizedBox(
+                height: 270,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 6,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return _buildCompactCardSkeleton(themeService);
+                  },
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Remaining list card skeletons
+          ...List.generate(3, (index) => _buildListCardSkeleton(themeService)),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildListCardSkeleton(ThemeService themeService) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: themeService.borderColor.withOpacity(0.08),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Rank badge skeleton
+          _buildShimmerBox(width: 32, height: 32, radius: 8, themeService: themeService),
+          const SizedBox(width: 12),
+          
+          // Avatar skeleton
+          _buildShimmerCircle(radius: 32, themeService: themeService),
+          const SizedBox(width: 14),
+          
+          // Info skeleton
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildShimmerBox(width: 150, height: 16, radius: 6, themeService: themeService),
+                const SizedBox(height: 6),
+                _buildShimmerBox(width: 180, height: 12, radius: 4, themeService: themeService),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildShimmerBox(width: 60, height: 20, radius: 6, themeService: themeService),
+                    const SizedBox(width: 4),
+                    _buildShimmerBox(width: 60, height: 20, radius: 6, themeService: themeService),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Button skeleton
+          _buildShimmerBox(width: 90, height: 38, radius: 100, themeService: themeService),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCompactCardSkeleton(ThemeService themeService) {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: themeService.borderColor.withOpacity(0.08),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          _buildShimmerCircle(radius: 32, themeService: themeService),
+          const SizedBox(height: 12),
+          _buildShimmerBox(width: 100, height: 15, radius: 6, themeService: themeService),
+          const SizedBox(height: 8),
+          _buildShimmerBox(width: 80, height: 22, radius: 8, themeService: themeService),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildShimmerBox(width: 30, height: 12, radius: 4, themeService: themeService),
+              const SizedBox(width: 10),
+              _buildShimmerBox(width: 50, height: 12, radius: 4, themeService: themeService),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildShimmerBox(width: 60, height: 18, radius: 6, themeService: themeService),
+              const SizedBox(width: 4),
+              _buildShimmerBox(width: 60, height: 18, radius: 6, themeService: themeService),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+            child: _buildShimmerBox(width: double.infinity, height: 36, radius: 100, themeService: themeService),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildShimmerBox({
+    required double width,
+    required double height,
+    required double radius,
+    required ThemeService themeService,
+  }) {
+    return _ShimmerWidget(
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.grey[200]!,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildShimmerCircle({
+    required double radius,
+    required ThemeService themeService,
+  }) {
+    return _ShimmerWidget(
+      child: Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          color: Colors.grey[200]!,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
@@ -686,9 +851,9 @@ class _CompactGridCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -851,37 +1016,40 @@ class _CompactGridCard extends StatelessWidget {
               
               const SizedBox(height: 10),
               
-              // Specializations (max 2)
-              if (astrologer.specializations.isNotEmpty)
-                Padding(
+              // Specializations (fixed height to prevent card size variation)
+              SizedBox(
+                height: 22, // Fixed height for consistent card sizing
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: astrologer.specializations.take(2).map((spec) {
-                      return Container(
-                        constraints: const BoxConstraints(maxWidth: 70),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: themeService.primaryColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          spec,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: themeService.primaryColor,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                  child: astrologer.specializations.isNotEmpty
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: astrologer.specializations.take(2).map((spec) {
+                            return Container(
+                              constraints: const BoxConstraints(maxWidth: 70),
+                              margin: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: themeService.primaryColor.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                spec,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: themeService.primaryColor,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        )
+                      : const SizedBox.shrink(),
                 ),
+              ),
               
               const SizedBox(height: 12),
               
@@ -965,6 +1133,13 @@ class _PremiumRowCard extends StatelessWidget {
           color: themeService.borderColor.withOpacity(0.08),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1149,3 +1324,55 @@ class _PremiumRowCard extends StatelessWidget {
   }
 }
 
+class _ShimmerWidget extends StatefulWidget {
+  final Widget child;
+  
+  const _ShimmerWidget({required this.child});
+  
+  @override
+  State<_ShimmerWidget> createState() => _ShimmerWidgetState();
+}
+
+class _ShimmerWidgetState extends State<_ShimmerWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment(-1.0 + (_controller.value * 2), 0),
+              end: Alignment(1.0 + (_controller.value * 2), 0),
+              colors: [
+                Colors.grey[200]!,
+                Colors.grey[50]!,
+                Colors.grey[200]!,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ).createShader(bounds);
+          },
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
