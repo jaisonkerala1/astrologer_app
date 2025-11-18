@@ -1863,104 +1863,92 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       builder: (context) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: themeService.borderColor,
-                    borderRadius: BorderRadius.circular(2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: themeService.borderColor.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                child: Text(
+                  'Book Consultation',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: themeService.textPrimary,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Book Consultation',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: themeService.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Choose how you want to consult',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: themeService.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Consultation options
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      _buildConsultationOption(
-                        icon: Icons.phone,
-                        title: 'Voice Call',
-                        subtitle: '30 min consultation',
-                        price: '₹500',
-                        color: const Color(0xFF34A853),
-                        themeService: themeService,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _proceedWithConsultation('voice_call');
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildConsultationOption(
-                        icon: Icons.videocam,
-                        title: 'Video Call',
-                        subtitle: '30 min consultation',
-                        price: '₹800',
-                        color: const Color(0xFFEA4335),
-                        themeService: themeService,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _proceedWithConsultation('video_call');
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildConsultationOption(
-                        icon: Icons.chat_bubble,
-                        title: 'Chat',
-                        subtitle: 'Per session (20 min)',
-                        price: '₹300',
-                        color: themeService.primaryColor,
-                        themeService: themeService,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _proceedWithConsultation('chat');
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+              
+              // Consultation options
+              _buildConsultationOption(
+                icon: Icons.phone_rounded,
+                title: 'Voice Call',
+                duration: '30 min',
+                price: '₹500',
+                themeService: themeService,
+                onTap: () {
+                  Navigator.pop(context);
+                  _proceedWithConsultation('voice_call');
+                },
+              ),
+              _buildDivider(themeService),
+              _buildConsultationOption(
+                icon: Icons.videocam_rounded,
+                title: 'Video Call',
+                duration: '30 min',
+                price: '₹800',
+                themeService: themeService,
+                onTap: () {
+                  Navigator.pop(context);
+                  _proceedWithConsultation('video_call');
+                },
+              ),
+              _buildDivider(themeService),
+              _buildConsultationOption(
+                icon: Icons.chat_bubble_rounded,
+                title: 'Chat',
+                duration: '20 min',
+                price: '₹300',
+                themeService: themeService,
+                onTap: () {
+                  Navigator.pop(context);
+                  _proceedWithConsultation('chat');
+                },
+              ),
+              
+              const SizedBox(height: 24),
+            ],
           ),
         ),
+      ),
+    );
+  }
+  
+  Widget _buildDivider(ThemeService themeService) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: themeService.borderColor.withOpacity(0.1),
       ),
     );
   }
@@ -1968,9 +1956,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   Widget _buildConsultationOption({
     required IconData icon,
     required String title,
-    required String subtitle,
+    required String duration,
     required String price,
-    required Color color,
     required ThemeService themeService,
     required VoidCallback onTap,
   }) {
@@ -1981,31 +1968,14 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
           HapticFeedback.selectionClick();
           onTap();
         },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: color.withOpacity(0.2),
-              width: 1.5,
-            ),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 28,
-                ),
+              Icon(
+                icon,
+                color: themeService.textPrimary,
+                size: 26,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -2015,14 +1985,15 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                         color: themeService.textPrimary,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      subtitle,
+                      duration,
                       style: TextStyle(
                         fontSize: 13,
                         color: themeService.textSecondary,
@@ -2031,24 +2002,19 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    price,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: color,
-                    size: 20,
-                  ),
-                ],
+              Text(
+                price,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: themeService.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: themeService.textSecondary.withOpacity(0.4),
+                size: 16,
               ),
             ],
           ),
