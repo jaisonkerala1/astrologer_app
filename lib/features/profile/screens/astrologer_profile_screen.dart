@@ -323,11 +323,11 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
       backgroundColor: _showStickyHeader ? Colors.transparent : Colors.white,
       elevation: 0,
       floating: true,
-      leadingWidth: _showStickyHeader ? 0 : 72,
+      leadingWidth: _showStickyHeader ? 0 : 76,
       leading: _showStickyHeader
           ? const SizedBox.shrink()
           : Padding(
-              padding: const EdgeInsets.only(left: 16),
+              padding: const EdgeInsets.only(left: 20),
               child: GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
@@ -378,9 +378,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
     final isOnline = widget.astrologer?.isOnline ?? true;
     final isVerified = profileData['verified'] == true;
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -486,9 +485,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
 
   Widget _buildQuickStats(ThemeService themeService) {
     final profileData = _astrologerData;
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -526,9 +524,8 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   }
 
   Widget _buildActionButtons(ThemeService themeService) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
       child: Row(
         children: [
           Expanded(
@@ -597,17 +594,33 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             ),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: SafeArea(
           child: Row(
             children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back, color: themeService.textPrimary),
-                onPressed: () => Navigator.pop(context),
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: themeService.cardColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: themeService.borderColor.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: themeService.textPrimary,
+                    size: 18,
+                  ),
+                ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 12),
               Stack(
                 children: [
                   ProfileAvatarWidget(
@@ -1621,7 +1634,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: _showBookingSheet,
+                onPressed: _showConsultationBooking,
                 icon: const Icon(Icons.calendar_today, size: 18),
                 label: const Text('Book'),
                 style: ElevatedButton.styleFrom(
@@ -1837,6 +1850,348 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         ],
       ),
     );
+  }
+
+  void _showConsultationBooking() {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    HapticFeedback.mediumImpact();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: themeService.borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Book Consultation',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: themeService.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Choose how you want to consult',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: themeService.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Consultation options
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      _buildConsultationOption(
+                        icon: Icons.phone,
+                        title: 'Voice Call',
+                        subtitle: '30 min consultation',
+                        price: '₹500',
+                        color: const Color(0xFF34A853),
+                        themeService: themeService,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _proceedWithConsultation('voice_call');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildConsultationOption(
+                        icon: Icons.videocam,
+                        title: 'Video Call',
+                        subtitle: '30 min consultation',
+                        price: '₹800',
+                        color: const Color(0xFFEA4335),
+                        themeService: themeService,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _proceedWithConsultation('video_call');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildConsultationOption(
+                        icon: Icons.chat_bubble,
+                        title: 'Chat',
+                        subtitle: 'Per session (20 min)',
+                        price: '₹300',
+                        color: themeService.primaryColor,
+                        themeService: themeService,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _proceedWithConsultation('chat');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildConsultationOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String price,
+    required Color color,
+    required ThemeService themeService,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: themeService.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: themeService.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    price,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: color,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _proceedWithConsultation(String consultationType) {
+    HapticFeedback.mediumImpact();
+    
+    // Create a ServiceModel for the consultation
+    final service = _createConsultationService(consultationType);
+    
+    // Create repository and add the service
+    final repository = ServiceRepositoryImpl();
+    repository.addService(service);
+    
+    // Navigate to time slot booking screen with BLoC providers
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider<ServiceBloc>(
+              create: (_) => ServiceBloc(repository: repository),
+            ),
+            BlocProvider<BookingBloc>(
+              create: (_) => BookingBloc(repository: repository),
+            ),
+            BlocProvider<OrderBloc>(
+              create: (_) => OrderBloc(repository: repository),
+            ),
+          ],
+          child: ServiceBookingScreen(
+            service: service,
+            astrologerId: widget.astrologer?.name.replaceAll(' ', '_').toLowerCase() ?? 'astrologer_123',
+            userId: 'user_123', // TODO: Get from auth service
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Create a ServiceModel for consultation types
+  ServiceModel _createConsultationService(String consultationType) {
+    final profileData = _astrologerData;
+    
+    switch (consultationType) {
+      case 'voice_call':
+        return ServiceModel(
+          id: 'consultation_voice_call',
+          name: 'Voice Call Consultation',
+          description: 'Connect with ${profileData['name']} via voice call for personalized astrological guidance and solutions.',
+          price: 500.0,
+          durationInMinutes: 30,
+          serviceType: ServiceType.live,
+          availableDeliveryMethods: [DeliveryMethod.audioCall],
+          iconName: 'phone',
+          astrologerId: widget.astrologer?.name.replaceAll(' ', '_').toLowerCase() ?? 'astrologer_123',
+          isPopular: false,
+          whatsIncluded: [
+            '30 minutes voice call consultation',
+            'Personalized astrological guidance',
+            'Birth chart analysis',
+            'Question & Answer session',
+            'Remedies and suggestions',
+          ],
+          howItWorks: [
+            'Select your preferred time slot',
+            'Complete the booking',
+            'Receive call at scheduled time',
+            'Get personalized guidance',
+          ],
+          totalBookings: 0,
+          averageRating: profileData['rating']?.toDouble() ?? 4.8,
+          reviewCount: profileData['totalReviews'] ?? 0,
+        );
+        
+      case 'video_call':
+        return ServiceModel(
+          id: 'consultation_video_call',
+          name: 'Video Call Consultation',
+          description: 'Face-to-face consultation with ${profileData['name']} via video call for in-depth astrological analysis.',
+          price: 800.0,
+          durationInMinutes: 30,
+          serviceType: ServiceType.live,
+          availableDeliveryMethods: [DeliveryMethod.videoCall],
+          iconName: 'videocam',
+          astrologerId: widget.astrologer?.name.replaceAll(' ', '_').toLowerCase() ?? 'astrologer_123',
+          isPopular: true,
+          whatsIncluded: [
+            '30 minutes video call consultation',
+            'Face-to-face interaction',
+            'Complete birth chart review',
+            'Visual demonstrations',
+            'Detailed remedies explanation',
+            'Follow-up support',
+          ],
+          howItWorks: [
+            'Select your preferred time slot',
+            'Complete the booking',
+            'Join video call at scheduled time',
+            'Get face-to-face guidance',
+          ],
+          totalBookings: 0,
+          averageRating: profileData['rating']?.toDouble() ?? 4.8,
+          reviewCount: profileData['totalReviews'] ?? 0,
+        );
+        
+      case 'chat':
+        return ServiceModel(
+          id: 'consultation_chat',
+          name: 'Chat Consultation',
+          description: 'Text-based consultation with ${profileData['name']} for quick astrological queries and guidance.',
+          price: 300.0,
+          durationInMinutes: 20,
+          serviceType: ServiceType.live,
+          availableDeliveryMethods: [DeliveryMethod.chat],
+          iconName: 'chat_bubble',
+          astrologerId: widget.astrologer?.name.replaceAll(' ', '_').toLowerCase() ?? 'astrologer_123',
+          isPopular: false,
+          whatsIncluded: [
+            '20 minutes chat session',
+            'Text-based consultation',
+            'Quick question resolution',
+            'Remedies and tips',
+            'Chat transcript',
+          ],
+          howItWorks: [
+            'Select your preferred time slot',
+            'Complete the booking',
+            'Start chat at scheduled time',
+            'Get your queries resolved',
+          ],
+          totalBookings: 0,
+          averageRating: profileData['rating']?.toDouble() ?? 4.8,
+          reviewCount: profileData['totalReviews'] ?? 0,
+        );
+        
+      default:
+        return _createConsultationService('voice_call');
+    }
   }
 
   void _showBookingSheet({Map<String, dynamic>? preselectedService}) {
