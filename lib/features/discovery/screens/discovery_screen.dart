@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,13 +31,21 @@ class DiscoveryScreen extends StatefulWidget {
   State<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProviderStateMixin {
+class _DiscoveryScreenState extends State<DiscoveryScreen> with TickerProviderStateMixin {
   late final PageController _heroController;
   late TabController _tabController;
+  late ScrollController _scrollController;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
   double _currentHeroPage = 0;
   String? _selectedFilter;
   Map<String, dynamic> _activeFilters = {};
   String _searchQuery = '';
+  Timer? _autoPlayTimer;
+  Timer? _resumeAutoPlayTimer;
+  bool _userInteracting = false;
+  int _carouselItemCount = 4;
+  bool _showHeaderElevation = false;
 
   final List<Map<String, dynamic>> _filterTabs = [
     {'label': 'Filter', 'value': 'filter', 'icon': Icons.tune_rounded},
@@ -51,6 +60,20 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     _heroController = PageController(viewportFraction: 0.80);
     _heroController.addListener(_onHeroScroll);
     
+    // Initialize scroll controller for header elevation
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+    
+    // Initialize pulse animation for "Available Now" indicator
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    
     // Initialize with "Online Now" tab (index 1)
     _tabController = TabController(length: _filterTabs.length, vsync: this, initialIndex: 1);
     _tabController.addListener(_onTabChanged);
@@ -58,6 +81,13 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     
     // Load astrologers with "Online Now" filter on init
     context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(onlineOnly: true));
+    
+    // Start auto-play after a short delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _startAutoPlay();
+      }
+    });
   }
   
   void _onTabChanged() {
@@ -160,13 +190,82 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     });
   }
 
+  void _onScroll() {
+    // Show header elevation when scrolled down more than 10px
+    if (_scrollController.hasClients) {
+      final shouldShowElevation = _scrollController.offset > 10;
+      if (shouldShowElevation != _showHeaderElevation) {
+        setState(() {
+          _showHeaderElevation = shouldShowElevation;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _stopAutoPlay();
+    _resumeAutoPlayTimer?.cancel();
+    _pulseController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _tabController.dispose();
     _heroController
       ..removeListener(_onHeroScroll)
       ..dispose();
     super.dispose();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!_userInteracting && mounted && _heroController.hasClients) {
+        final currentPage = _heroController.page?.round() ?? 0;
+        final nextPage = (currentPage + 1) % _carouselItemCount;
+        
+        _heroController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _stopAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = null;
+  }
+
+  void _pauseAutoPlay() {
+    _userInteracting = true;
+    _stopAutoPlay();
+    
+    // Resume auto-play after 3 seconds of no interaction
+    _resumeAutoPlayTimer?.cancel();
+    _resumeAutoPlayTimer = Timer(const Duration(seconds: 3), () {
+      _userInteracting = false;
+      _startAutoPlay();
+    });
+  }
+
+  Future<void> _onRefresh() async {
+    // Add haptic feedback
+    HapticFeedback.mediumImpact();
+    
+    // Reload astrologers based on current filter
+    if (_selectedFilter == 'online') {
+      context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(onlineOnly: true));
+    } else if (_selectedFilter == 'rating') {
+      context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(sortBy: 'rating'));
+    } else if (_selectedFilter == 'experience') {
+      context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(sortBy: 'experience'));
+    } else {
+      context.read<DiscoveryBloc>().add(const LoadAstrologersEvent());
+    }
+    
+    // Wait for the bloc to finish loading
+    await Future.delayed(const Duration(milliseconds: 800));
   }
 
   void _onSearch(String query) {
@@ -216,8 +315,14 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                       return _buildEmptyState(themeService, state.searchQuery ?? _searchQuery);
                   }
                   final featured = state.astrologers.take(4).toList();
-                    return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                  _carouselItemCount = featured.length;
+                    return RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      color: themeService.primaryColor,
+                      backgroundColor: themeService.surfaceColor,
+                      child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                       child: Column(
                         children: [
                       if (featured.isNotEmpty) ...[
@@ -356,6 +461,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                             return _CompactGridCardV5(
                               astrologer: astrologer,
                               themeService: themeService,
+                              pulseAnimation: _pulseAnimation,
                               onTap: () {
                                 HapticFeedback.selectionClick();
                     _openAstrologerProfile(astrologer);
@@ -369,6 +475,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                         ),
                       ),
                         ],
+                      ),
                       ),
                   );
                 } else if (state is DiscoveryError) {
@@ -385,12 +492,34 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
   }
 
   Widget _buildHeader(ThemeService themeService) {
-    return Padding(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: themeService.backgroundColor,
+        boxShadow: _showHeaderElevation
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+            borderRadius: BorderRadius.circular(20),
+            splashColor: themeService.primaryColor.withOpacity(0.1),
+            highlightColor: themeService.primaryColor.withOpacity(0.05),
             child: Container(
               width: 40,
               height: 40,
@@ -406,6 +535,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                 color: themeService.textPrimary,
                 size: 18,
               ),
+            ),
             ),
           ),
           const SizedBox(width: 16),
@@ -439,8 +569,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
               shape: BoxShape.circle,
               border: Border.all(color: themeService.borderColor.withOpacity(0.1)),
             ),
-            child: IconButton(
-              onPressed: () {
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+              onTap: () {
                 HapticFeedback.selectionClick();
                 Navigator.push(
                   context,
@@ -452,13 +584,23 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                   ),
                 );
               },
-              icon: Icon(
+              borderRadius: BorderRadius.circular(24),
+              splashColor: themeService.primaryColor.withOpacity(0.1),
+              highlightColor: themeService.primaryColor.withOpacity(0.05),
+              child: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                child: Icon(
                 Icons.favorite_border_rounded,
                 color: themeService.textPrimary,
+              ),
+              ),
               ),
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -484,7 +626,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
     final filterCount = _getFilterCount(_activeFilters);
     
     return Container(
-      height: 44,
+      height: 38,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ListView.separated(
@@ -505,7 +647,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 100),
               curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: isSelected 
                     ? themeService.primaryColor 
@@ -518,8 +660,8 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                       ? themeService.primaryColor
                       : (isFilter && filterCount > 0)
                           ? themeService.primaryColor
-                          : themeService.borderColor.withOpacity(0.2),
-                  width: 1.5,
+                          : themeService.borderColor.withOpacity(0.3),
+                  width: 1,
                 ),
                 boxShadow: isSelected
                     ? [
@@ -532,8 +674,8 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                     : [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
                         ),
                       ],
               ),
@@ -544,7 +686,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                   if (filter['icon'] != null) ...[
                     Icon(
                       filter['icon'],
-                      size: filter['value'] == 'online' ? 9 : 15,
+                      size: filter['value'] == 'online' ? 8 : 14,
                       color: isSelected 
                           ? Colors.white 
                           : (isFilter && filterCount > 0)
@@ -562,7 +704,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                           : (isFilter && filterCount > 0)
                               ? themeService.primaryColor
                               : themeService.textPrimary,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: (isSelected || (isFilter && filterCount > 0))
                           ? FontWeight.w600 
                           : FontWeight.w500,
@@ -602,7 +744,9 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
       children: [
         SizedBox(
           height: 180,
-          child: PageView.builder(
+          child: Listener(
+            onPointerDown: (_) => _pauseAutoPlay(),
+            child: PageView.builder(
             controller: _heroController,
             itemCount: featured.length,
             padEnds: false,
@@ -862,6 +1006,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with SingleTickerProv
                 ),
               );
             },
+            ),
           ),
         ),
         const SizedBox(height: 6),
@@ -1333,12 +1478,14 @@ class _CompactGridCardV5 extends StatelessWidget {
   final ThemeService themeService;
   final VoidCallback onTap;
   final VoidCallback onChatTap;
+  final Animation<double> pulseAnimation;
 
   const _CompactGridCardV5({
     required this.astrologer,
     required this.themeService,
     required this.onTap,
     required this.onChatTap,
+    required this.pulseAnimation,
   });
 
   @override
@@ -1385,16 +1532,48 @@ class _CompactGridCardV5 extends StatelessWidget {
                     Positioned(
                       right: 0,
                       bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: themeService.cardColor,
-                            width: 2.5,
-                          ),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: AnimatedBuilder(
+                        animation: pulseAnimation,
+                        builder: (context, child) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Outer pulse ring - using Transform.scale
+                              Transform.scale(
+                                scale: pulseAnimation.value,
+                                child: Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFF10B981).withOpacity(
+                                      0.3 * (2.0 - pulseAnimation.value),
+                                    ),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                ),
+                              ),
+                              // Inner solid circle (fixed size, no animation)
+                              Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: themeService.cardColor,
+                                    width: 2.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                         ),
                       ),
                     ),

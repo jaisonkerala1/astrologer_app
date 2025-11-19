@@ -280,7 +280,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
     final filterCount = _getFilterCount(_activeFilters);
     
     return Container(
-      height: 44,
+      height: 38,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ListView.separated(
@@ -301,7 +301,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: isSelected
                     ? themeService.primaryColor
@@ -310,8 +310,8 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                 border: Border.all(
                   color: isSelected
                       ? themeService.primaryColor
-                      : themeService.borderColor.withOpacity(0.15),
-                  width: isSelected ? 1.5 : 1,
+                      : themeService.borderColor.withOpacity(0.3),
+                  width: 1,
                 ),
                 boxShadow: [
                   // Elevated shadow for selected chips
@@ -319,24 +319,17 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                     BoxShadow(
                       color: themeService.primaryColor.withOpacity(0.25),
                       blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      offset: const Offset(0, 3),
                       spreadRadius: 0,
                     ),
                   // Subtle depth shadow for unselected chips
-                  if (!isSelected) ...[
+                  if (!isSelected)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
                       spreadRadius: 0,
                     ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                      spreadRadius: 0,
-                    ),
-                  ],
                 ],
               ),
               child: Row(
@@ -362,7 +355,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                   ],
                   Icon(
                     option['icon'],
-                    size: 15,
+                    size: 14,
                     color: isSelected
                         ? Colors.white
                         : themeService.textPrimary,
@@ -374,7 +367,7 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
                       color: isSelected
                           ? Colors.white
                           : themeService.textPrimary,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       letterSpacing: -0.2,
                     ),
