@@ -6,6 +6,9 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../services/services_exports.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../discovery/models/discovery_astrologer.dart';
+import '../../discovery/bloc/discovery_bloc.dart';
+import '../../discovery/bloc/discovery_event.dart';
+import '../../discovery/bloc/discovery_state.dart';
 import '../widgets/service_card_variants.dart';
 
 /// Astrologer Profile Screen (End-User Perspective)
@@ -25,6 +28,7 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
   bool _isFollowing = false;
   final ScrollController _scrollController = ScrollController();
   bool _showStickyHeader = false;
+  bool _isBioExpanded = false;
   
   // Notification preferences
   bool _notificationsEnabled = false;
@@ -727,12 +731,18 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
         _buildLanguages(themeService),
         const SizedBox(height: 12),
         _buildConsultationRates(themeService),
+        const SizedBox(height: 20),
+        _buildSimilarAstrologers(themeService),
+        const SizedBox(height: 12),
       ],
     );
   }
 
   Widget _buildAboutBio(ThemeService themeService) {
     final profileData = _astrologerData;
+    final bioText = profileData['bio'] as String;
+    final shouldShowReadMore = bioText.length > 150;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -758,13 +768,93 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            profileData['bio'],
-            style: TextStyle(
-              fontSize: 15,
-              color: themeService.textPrimary,
-              height: 1.5,
+          AnimatedCrossFade(
+            firstChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  bioText,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: themeService.textPrimary,
+                    height: 1.5,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (shouldShowReadMore) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() => _isBioExpanded = true);
+                      HapticFeedback.selectionClick();
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          'Read More',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: themeService.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: themeService.primaryColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  bioText,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: themeService.textPrimary,
+                    height: 1.5,
+                  ),
+                ),
+                if (shouldShowReadMore) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() => _isBioExpanded = false);
+                      HapticFeedback.selectionClick();
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          'Show Less',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: themeService.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          size: 18,
+                          color: themeService.primaryColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            crossFadeState: _isBioExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
         ],
       ),
@@ -2344,6 +2434,440 @@ class _AstrologerProfileScreenState extends State<AstrologerProfileScreen> with 
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Similar Astrologers Section (BLoC-based)
+  Widget _buildSimilarAstrologers(ThemeService themeService) {
+    // Get current astrologer's ID and specializations
+    final currentId = widget.astrologer?.id ?? 'default';
+    final currentSpecializations = widget.astrologer?.specializations ?? 
+        (_astrologerData['expertise'] as List).cast<String>();
+
+    return BlocProvider(
+      create: (context) => DiscoveryBloc()
+        ..add(LoadSimilarAstrologersEvent(
+          currentAstrologerId: currentId,
+          specializations: currentSpecializations,
+        )),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  color: themeService.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'People Also Viewed',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: themeService.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // BLoC Builder for similar astrologers
+          BlocBuilder<DiscoveryBloc, DiscoveryState>(
+            builder: (context, state) {
+              if (state is SimilarAstrologersLoading) {
+                return _buildLoadingShimmer(themeService);
+              } else if (state is SimilarAstrologersLoaded) {
+                return _buildSimilarAstrologersList(
+                  state.similarAstrologers,
+                  themeService,
+                );
+              } else if (state is DiscoveryError) {
+                return _buildErrorState(themeService);
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimilarAstrologersList(
+    List<DiscoveryAstrologer> astrologers,
+    ThemeService themeService,
+  ) {
+    if (astrologers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      height: 220,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: astrologers.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: _CompactAstrologerCard(
+              astrologer: astrologers[index],
+              themeService: themeService,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AstrologerProfileScreen(
+                      astrologer: astrologers[index],
+                    ),
+                  ),
+                );
+              },
+              onChatTap: () {
+                HapticFeedback.selectionClick();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Starting chat with ${astrologers[index].name}...'),
+                    backgroundColor: themeService.primaryColor,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLoadingShimmer(ThemeService themeService) {
+    return SizedBox(
+      height: 220,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Container(
+              width: 160,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 100,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 60,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeService themeService) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: Text(
+          'Unable to load similar astrologers',
+          style: TextStyle(
+            color: themeService.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact Astrologer Card for Horizontal Scroll
+/// Minimal premium design matching All Astrologers trending section
+class _CompactAstrologerCard extends StatelessWidget {
+  final DiscoveryAstrologer astrologer;
+  final ThemeService themeService;
+  final VoidCallback onTap;
+  final VoidCallback onChatTap;
+
+  const _CompactAstrologerCard({
+    required this.astrologer,
+    required this.themeService,
+    required this.onTap,
+    required this.onChatTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160,
+      height: 220,
+      decoration: BoxDecoration(
+        color: themeService.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: themeService.borderColor.withOpacity(0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Avatar with online indicator
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ProfileAvatarWidget(
+                      imagePath: astrologer.profilePicture,
+                      radius: 28,
+                      fallbackText: astrologer.name.substring(0, 1).toUpperCase(),
+                      backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                      textColor: themeService.primaryColor,
+                    ),
+                    if (astrologer.isOnline)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: themeService.cardColor,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (astrologer.isVerified)
+                      Positioned(
+                        right: -3,
+                        top: -3,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: themeService.primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.verified,
+                            color: Colors.white,
+                            size: 10,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                
+                const SizedBox(height: 10),
+                
+                // Name
+                Text(
+                  astrologer.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: themeService.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                
+                const SizedBox(height: 4),
+                
+                // Rating
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 12,
+                        color: Colors.amber,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        astrologer.rating.toStringAsFixed(1),
+                        style: TextStyle(
+                          color: themeService.textPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        ' (${astrologer.totalReviews})',
+                        style: TextStyle(
+                          color: themeService.textSecondary,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Experience and price
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 12,
+                      color: themeService.textSecondary,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${astrologer.experience}y',
+                      style: TextStyle(
+                        color: themeService.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 1,
+                      height: 10,
+                      color: themeService.borderColor.withOpacity(0.3),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                      style: TextStyle(
+                        color: themeService.primaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 6),
+                
+                // Specializations (fixed height for consistency)
+                SizedBox(
+                  height: 16,
+                  child: Text(
+                    astrologer.specializations.take(2).join(' • '),
+                    style: TextStyle(
+                      color: themeService.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                
+                const Spacer(),
+                
+                // Chat button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onChatTap,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      decoration: BoxDecoration(
+                        color: themeService.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: themeService.primaryColor.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            size: 14,
+                            color: themeService.primaryColor,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Chat',
+                            style: TextStyle(
+                              color: themeService.primaryColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

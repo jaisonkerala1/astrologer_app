@@ -47,3 +47,17 @@ class ClearFiltersEvent extends DiscoveryEvent {
   const ClearFiltersEvent();
 }
 
+/// Load similar astrologers based on current astrologer's profile
+class LoadSimilarAstrologersEvent extends DiscoveryEvent {
+  final String currentAstrologerId;
+  final List<String> specializations;
+  
+  const LoadSimilarAstrologersEvent({
+    required this.currentAstrologerId,
+    required this.specializations,
+  });
+  
+  @override
+  List<Object?> get props => [currentAstrologerId, specializations];
+}
+

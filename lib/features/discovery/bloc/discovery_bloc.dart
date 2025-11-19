@@ -9,6 +9,7 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
     on<RefreshAstrologersEvent>(_onRefreshAstrologers);
     on<SearchAstrologersEvent>(_onSearchAstrologers);
     on<ClearFiltersEvent>(_onClearFilters);
+    on<LoadSimilarAstrologersEvent>(_onLoadSimilarAstrologers);
   }
 
   // Mock data for now - would be API call in production
@@ -420,6 +421,54 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
     Emitter<DiscoveryState> emit,
   ) async {
     add(const LoadAstrologersEvent());
+  }
+
+  Future<void> _onLoadSimilarAstrologers(
+    LoadSimilarAstrologersEvent event,
+    Emitter<DiscoveryState> emit,
+  ) async {
+    emit(const SimilarAstrologersLoading());
+    
+    try {
+      // Simulate API delay
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      List<DiscoveryAstrologer> allAstrologers = _getMockAstrologers();
+      
+      // Filter logic:
+      // 1. Exclude current astrologer
+      // 2. Prefer astrologers with matching specializations
+      // 3. Mix verified and high-rated astrologers
+      // 4. Limit to 6 results
+      
+      List<DiscoveryAstrologer> similarAstrologers = allAstrologers
+          .where((a) => a.id != event.currentAstrologerId)
+          .toList();
+      
+      // Score astrologers based on matching specializations
+      similarAstrologers.sort((a, b) {
+        int aScore = a.specializations
+            .where((s) => event.specializations.contains(s))
+            .length;
+        int bScore = b.specializations
+            .where((s) => event.specializations.contains(s))
+            .length;
+        
+        // If same specialization match, sort by rating
+        if (aScore == bScore) {
+          return b.rating.compareTo(a.rating);
+        }
+        return bScore.compareTo(aScore);
+      });
+      
+      // Take top 6 similar astrologers
+      final List<DiscoveryAstrologer> topSimilar = 
+          similarAstrologers.take(6).toList();
+      
+      emit(SimilarAstrologersLoaded(similarAstrologers: topSimilar));
+    } catch (e) {
+      emit(DiscoveryError('Failed to load similar astrologers: ${e.toString()}'));
+    }
   }
 }
 

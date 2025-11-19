@@ -11,6 +11,7 @@ import '../models/discovery_astrologer.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../clients/widgets/client_search_bar.dart';
 import '../widgets/filter_bottom_sheet.dart';
+import 'trending_astrologers_screen.dart';
 
 /// World-class Top Astrologers screen with premium design
 class TopAstrologersScreen extends StatefulWidget {
@@ -471,33 +472,71 @@ class _TopAstrologersScreenState extends State<TopAstrologersScreen> with Single
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        // Section header
+        // Section header (tappable)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.emoji_events_rounded,
-                color: Colors.amber,
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Elite Experts',
-                style: TextStyle(
-                  color: themeService.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider(
+                      create: (context) => DiscoveryBloc()
+                        ..add(const LoadAstrologersEvent(sortBy: 'popular')),
+                      child: const TrendingAstrologersScreen(initialFilter: 'popular'),
+                    ),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.trending_up_rounded,
+                      color: Colors.deepPurple,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Most Popular',
+                      style: TextStyle(
+                        color: themeService.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${astrologers.length}',
+                        style: const TextStyle(
+                          color: Colors.deepPurple,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: themeService.textSecondary,
+                      size: 14,
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: themeService.textSecondary,
-                size: 14,
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 12),

@@ -56,3 +56,20 @@ class DiscoveryError extends DiscoveryState {
   List<Object?> get props => [message];
 }
 
+/// Similar astrologers loaded state
+class SimilarAstrologersLoaded extends DiscoveryState {
+  final List<DiscoveryAstrologer> similarAstrologers;
+  
+  const SimilarAstrologersLoaded({
+    required this.similarAstrologers,
+  });
+  
+  @override
+  List<Object?> get props => [similarAstrologers];
+}
+
+/// Similar astrologers loading state
+class SimilarAstrologersLoading extends DiscoveryState {
+  const SimilarAstrologersLoading();
+}
+
