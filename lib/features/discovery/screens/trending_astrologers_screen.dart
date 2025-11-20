@@ -142,31 +142,14 @@ class _TrendingAstrologersScreenState extends State<TrendingAstrologersScreen> w
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: themeService.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Featured Experts',
-                      style: TextStyle(
-                        color: themeService.textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Featured Experts',
+                  style: TextStyle(
+                    color: themeService.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -296,12 +279,10 @@ class _TrendingAstrologersScreenState extends State<TrendingAstrologersScreen> w
         itemCount: astrologers.length,
         itemBuilder: (context, index) {
           final astrologer = astrologers[index];
-          final rank = index + 1;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _PremiumRowCard(
               astrologer: astrologer,
-              rank: rank,
               themeService: themeService,
               onTap: () {
                 HapticFeedback.selectionClick();
@@ -342,12 +323,6 @@ class _TrendingAstrologersScreenState extends State<TrendingAstrologersScreen> w
       ),
       child: Row(
         children: [
-          // Rank badge skeleton
-          _ShimmerWidget(
-            child: _buildShimmerBox(width: 32, height: 32, radius: 8, themeService: themeService),
-          ),
-          const SizedBox(width: 12),
-          
           // Avatar skeleton
           _ShimmerWidget(
             child: _buildShimmerCircle(radius: 32, themeService: themeService),
@@ -533,10 +508,9 @@ class _TrendingAstrologersScreenState extends State<TrendingAstrologersScreen> w
   }
 }
 
-/// Premium row card with rank badge - matching Top Astrologers
+/// Premium row card - matching All Astrologers design
 class _PremiumRowCard extends StatelessWidget {
   final DiscoveryAstrologer astrologer;
-  final int rank;
   final ThemeService themeService;
   final VoidCallback onTap;
   final VoidCallback onChatTap;
@@ -544,7 +518,6 @@ class _PremiumRowCard extends StatelessWidget {
 
   const _PremiumRowCard({
     required this.astrologer,
-    required this.rank,
     required this.themeService,
     required this.onTap,
     required this.onChatTap,
@@ -578,10 +551,6 @@ class _PremiumRowCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                // Rank badge
-                _buildRankBadge(),
-                const SizedBox(width: 12),
-                
                 // Avatar with online indicator
                 Stack(
                   children: [
@@ -727,9 +696,19 @@ class _PremiumRowCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.chat_bubble_outline_rounded,
+                              Icons.chat_bubble_outline,
                               color: Colors.white,
                               size: 18,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Message',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.2,
+                              ),
                             ),
                           ],
                         ),
@@ -742,49 +721,6 @@ class _PremiumRowCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildRankBadge() {
-    Color badgeColor;
-    Widget badgeChild;
-    
-    if (rank == 1) {
-      badgeColor = const Color(0xFFFFD700); // Gold
-      badgeChild = const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 18);
-    } else if (rank == 2) {
-      badgeColor = const Color(0xFFC0C0C0); // Silver
-      badgeChild = const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 18);
-    } else if (rank == 3) {
-      badgeColor = const Color(0xFFCD7F32); // Bronze
-      badgeChild = const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 18);
-    } else {
-      badgeColor = themeService.primaryColor.withOpacity(0.1);
-      badgeChild = Text(
-        '$rank',
-        style: TextStyle(
-          color: themeService.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
-      );
-    }
-
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: badgeColor,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: rank <= 3 ? [
-          BoxShadow(
-            color: badgeColor.withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ] : null,
-      ),
-      child: Center(child: badgeChild),
     );
   }
 }
