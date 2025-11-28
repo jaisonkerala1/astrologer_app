@@ -519,8 +519,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 svgAsset: AppAssets.dashboardIcon,
               ),
               const NavItem(
-                label: 'Calls',
-                icon: Icons.phone_outlined,
+                label: 'Inbox',
+                icon: Icons.mail_outline_rounded,
               ),
               const NavItem(
                 label: 'Heal',

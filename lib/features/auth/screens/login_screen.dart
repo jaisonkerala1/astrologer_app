@@ -94,12 +94,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   opacity: _fadeAnimation,
                   child: SlideTransition(
                     position: _slideAnimation,
-                    child: Padding(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Spacer(flex: 2),
+                          const SizedBox(height: 60),
                           
                           // Cosmic Icon/Animation
                           _buildCosmicHeader(themeService),
@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           // Continue Button
                           _buildContinueButton(themeService),
                           
-                          const Spacer(flex: 3),
+                          const SizedBox(height: 80),
                           
                           // Sign Up Link
                           _buildSignupLink(themeService),

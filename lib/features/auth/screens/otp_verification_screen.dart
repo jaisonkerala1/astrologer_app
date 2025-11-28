@@ -232,7 +232,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                   opacity: _fadeAnimation,
                   child: SlideTransition(
                     position: _slideAnimation,
-                    child: Padding(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +249,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                             ),
                           ),
                           
-                          const Spacer(flex: 1),
+                          const SizedBox(height: 40),
                           
                           // Cosmic Icon/Animation
                           _buildCosmicHeader(themeService),
@@ -274,9 +274,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                           // Resend Section
                           _buildResendSection(themeService),
                           
-                          const Spacer(flex: 2),
-                          
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 60),
                         ],
                       ),
                     ),
