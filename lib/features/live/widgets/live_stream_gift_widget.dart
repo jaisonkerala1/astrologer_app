@@ -89,10 +89,17 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
         ),
         title: Column(
           children: [
-            Text(
-              gift.emoji,
-              style: const TextStyle(fontSize: 64),
-            ),
+            gift.name.toLowerCase() == 'rose'
+                ? Image.asset(
+                    'rose.png',
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.contain,
+                  )
+                : Text(
+                    gift.emoji,
+                    style: const TextStyle(fontSize: 64),
+                  ),
             const SizedBox(height: 12),
             Text(
               'Send ${gift.name}?',
@@ -157,12 +164,28 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Text(
-              'Send ${gift.emoji}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Send ',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                gift.name.toLowerCase() == 'rose'
+                    ? Image.asset(
+                        'rose.png',
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
+                      )
+                    : Text(
+                        gift.emoji,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+              ],
             ),
           ),
         ],
@@ -202,10 +225,17 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
           SnackBar(
             content: Row(
               children: [
-                Text(
-                  gift.emoji,
-                  style: const TextStyle(fontSize: 24),
-                ),
+                gift.name.toLowerCase() == 'rose'
+                    ? Image.asset(
+                        'rose.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.contain,
+                      )
+                    : Text(
+                        gift.emoji,
+                        style: const TextStyle(fontSize: 24),
+                      ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -428,10 +458,17 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      gift.giftEmoji,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
+                                    gift.giftName.toLowerCase() == 'rose'
+                                        ? Image.asset(
+                                            'rose.png',
+                                            width: 16,
+                                            height: 16,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : Text(
+                                            gift.giftEmoji,
+                                            style: const TextStyle(fontSize: 16),
+                                          ),
                                     const SizedBox(width: 6),
                                     Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -505,10 +542,17 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    gift.emoji,
-                    style: const TextStyle(fontSize: 42),
-                  ),
+                  gift.name.toLowerCase() == 'rose'
+                      ? Image.asset(
+                          'rose.png',
+                          width: 42,
+                          height: 42,
+                          fit: BoxFit.contain,
+                        )
+                      : Text(
+                          gift.emoji,
+                          style: const TextStyle(fontSize: 42),
+                        ),
                   const SizedBox(height: 6),
                   Text(
                     gift.name,

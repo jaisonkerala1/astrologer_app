@@ -186,13 +186,20 @@ class _LiveGiftAnimationOverlayState extends State<LiveGiftAnimationOverlay>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Main emoji
-                      Text(
-                        widget.gift.emoji,
-                        style: TextStyle(
-                          fontSize: widget.gift.tier == GiftTier.premium ? 120 : 80,
-                        ),
-                      ),
+                      // Main emoji or image
+                      widget.gift.name.toLowerCase() == 'rose'
+                          ? Image.asset(
+                              'rose.png',
+                              width: widget.gift.tier == GiftTier.premium ? 120 : 80,
+                              height: widget.gift.tier == GiftTier.premium ? 120 : 80,
+                              fit: BoxFit.contain,
+                            )
+                          : Text(
+                              widget.gift.emoji,
+                              style: TextStyle(
+                                fontSize: widget.gift.tier == GiftTier.premium ? 120 : 80,
+                              ),
+                            ),
                       
                       // Gift name and sender (for premium gifts)
                       if (widget.gift.tier != GiftTier.low &&

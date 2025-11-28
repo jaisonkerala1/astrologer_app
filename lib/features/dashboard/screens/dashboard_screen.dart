@@ -59,6 +59,7 @@ import '../../live/screens/live_preparation_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../discovery/screens/discovery_screen.dart';
 import '../../discovery/bloc/discovery_bloc.dart';
+import '../widgets/animated_bottom_nav_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -494,135 +495,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           ],
           ),
-          bottomNavigationBar: Container(
-            height: navBarHeight,
-            decoration: BoxDecoration(
-              color: themeService.currentTheme.type == AppThemeType.dark 
-                  ? themeService.surfaceColor 
-                  : Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: themeService.currentTheme.type == AppThemeType.dark
-                      ? themeService.borderColor
-                      : Colors.grey.shade200,
-                  width: 0.5,
-                ),
+          bottomNavigationBar: AnimatedBottomNavBar(
+            selectedIndex: _selectedIndex,
+            onTap: (navIndex) {
+              // Map bottom nav index to page index (add 1 for hidden Live Prep page)
+              final pageIndex = navIndex + 1;
+              _pageController.jumpToPage(pageIndex);
+            },
+            backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
+                ? themeService.surfaceColor 
+                : Colors.white,
+            pillColor: themeService.primaryColor, // Matches communication filter pills
+            selectedIconColor: Colors.white,
+            unselectedIconColor: themeService.currentTheme.type == AppThemeType.dark
+                ? Colors.grey.shade400
+                : const Color(0xFF9CA3AF),
+            borderColor: themeService.currentTheme.type == AppThemeType.dark
+                ? themeService.borderColor
+                : Colors.grey.shade200,
+            items: [
+              NavItem(
+                label: l10n.dashboard,
+                svgAsset: AppAssets.dashboardIcon,
               ),
-            ),
-            child: BottomNavigationBar(
-              selectedIconTheme: IconThemeData(size: selectedIconSize),
-              unselectedIconTheme: IconThemeData(size: unselectedIconSize),
-              currentIndex: _selectedIndex,
-              onTap: (navIndex) {
-                // Add soft haptic feedback (same for all tabs)
-                HapticFeedback.selectionClick();
-                
-                // Map bottom nav index to page index (add 1 for hidden Live Prep page)
-                // Nav 0 → Page 1 (Dashboard)
-                // Nav 1 → Page 2 (Communication)
-                // Nav 2 → Page 3 (Heal)
-                // Nav 3 → Page 4 (Consultations)
-                // Nav 4 → Page 5 (Profile)
-                final pageIndex = navIndex + 1;
-                
-                _pageController.jumpToPage(pageIndex);
-              },
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              selectedItemColor: const Color(0xFF10B981), // Emerald green
-              unselectedItemColor: Colors.grey,
-              selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              showUnselectedLabels: true,
-              selectedFontSize: selectedFontSize,
-              unselectedFontSize: unselectedFontSize,
-              iconSize: unselectedIconSize,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Center(
-                        child: SvgPicture.asset(
-                          AppAssets.dashboardIcon,
-                          width: svgIconWidth,
-                          height: svgIconWidth,
-                          color: _selectedIndex == 0
-                              ? const Color(0xFF10B981) // emerald active
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    label: l10n.dashboard,
-                   ),
-                  BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Center(
-                        child: Icon(
-                          Icons.phone_outlined,
-                          size: iconWidth,
-                          color: _selectedIndex == 1
-                              ? const Color(0xFF10B981)
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    label: 'Communication',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Center(
-                        child: Icon(
-                          Icons.spa,
-                          size: iconWidth,
-                          color: _selectedIndex == 2
-                              ? const Color(0xFF10B981)
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    label: l10n.heal,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Center(
-                        child: SvgPicture.asset(
-                          AppAssets.calendarIcon,
-                          width: svgIconWidth,
-                          height: svgIconWidth,
-                          color: _selectedIndex == 3
-                              ? const Color(0xFF10B981)
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    label: l10n.consultations,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Center(
-                        child: Icon(
-                          Icons.account_circle_outlined,
-                          size: iconWidth,
-                          color: _selectedIndex == 4
-                              ? const Color(0xFF10B981)
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                    label: l10n.profile,
-                  ),
-                ],
-            ),
+              const NavItem(
+                label: 'Calls',
+                icon: Icons.phone_outlined,
+              ),
+              const NavItem(
+                label: 'Heal',
+                icon: Icons.spa_outlined,
+              ),
+              NavItem(
+                label: l10n.consultations,
+                svgAsset: AppAssets.calendarIcon,
+              ),
+              const NavItem(
+                label: 'Profile',
+                icon: Icons.person_outline_rounded,
+              ),
+            ],
           ),
         );
       },
@@ -1536,9 +1448,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: isVedic 
-                        ? const Color(0xFFF59E0B)
-                        : themeService.primaryColor,
+                    color: themeService.primaryColor,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

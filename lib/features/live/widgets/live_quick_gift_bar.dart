@@ -198,10 +198,17 @@ class _LiveQuickGiftBarState extends State<LiveQuickGiftBar>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              gift.emoji,
-              style: const TextStyle(fontSize: 32),
-            ),
+            gift.name.toLowerCase() == 'rose'
+                ? Image.asset(
+                    'rose.png',
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.contain,
+                  )
+                : Text(
+                    gift.emoji,
+                    style: const TextStyle(fontSize: 32),
+                  ),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

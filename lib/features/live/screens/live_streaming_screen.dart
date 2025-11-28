@@ -1082,10 +1082,17 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     children: [
                       // Gift emoji for gift notifications
                       if (comment['isGift'] == 'true' && comment['emoji'] != null) ...[
-                        Text(
-                          comment['emoji']!,
-                          style: const TextStyle(fontSize: 16),
-                        ),
+                        (comment['message'] != null && comment['message'].toString().toLowerCase().contains('rose'))
+                            ? Image.asset(
+                                'rose.png',
+                                width: 16,
+                                height: 16,
+                                fit: BoxFit.contain,
+                              )
+                            : Text(
+                                comment['emoji']!,
+                                style: const TextStyle(fontSize: 16),
+                              ),
                         const SizedBox(width: 6),
                       ],
                       Flexible(
@@ -1559,10 +1566,17 @@ class _GiftsBottomSheetState extends State<_GiftsBottomSheet> {
         child: Row(
           children: [
             // Gift emoji
-            Text(
-              _extractGiftEmoji(gift.message),
-              style: const TextStyle(fontSize: 36),
-            ),
+            gift.message.toLowerCase().contains('rose')
+                ? Image.asset(
+                    'rose.png',
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.contain,
+                  )
+                : Text(
+                    _extractGiftEmoji(gift.message),
+                    style: const TextStyle(fontSize: 36),
+                  ),
             const SizedBox(width: 12),
             
             // Gift details

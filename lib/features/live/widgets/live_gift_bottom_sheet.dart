@@ -373,11 +373,18 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
                     builder: (context, scale, child) {
                       return Transform.scale(
                         scale: scale,
-                        child: Text(
-                          gift.emoji,
-                        style: const TextStyle(fontSize: 44),
-                          textAlign: TextAlign.center,
-                        ),
+                        child: gift.name.toLowerCase() == 'rose'
+                            ? Image.asset(
+                                'rose.png',
+                                width: 44,
+                                height: 44,
+                                fit: BoxFit.contain,
+                              )
+                            : Text(
+                                gift.emoji,
+                                style: const TextStyle(fontSize: 44),
+                                textAlign: TextAlign.center,
+                              ),
                       );
                     },
                   ),
@@ -504,10 +511,17 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (hasSelection) ...[
-                    Text(
-                      _selectedGift!.emoji,
-                      style: const TextStyle(fontSize: 24),
-                    ),
+                    _selectedGift!.name.toLowerCase() == 'rose'
+                        ? Image.asset(
+                            'rose.png',
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                          )
+                        : Text(
+                            _selectedGift!.emoji,
+                            style: const TextStyle(fontSize: 24),
+                          ),
                     const SizedBox(width: 12),
                     Text(
                       'Send ${_selectedGift!.name}',
