@@ -1506,7 +1506,7 @@ class _CompactGridCardV5 extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
             child: Column(
               children: [
                 // Avatar section
@@ -1574,7 +1574,7 @@ class _CompactGridCardV5 extends StatelessWidget {
                 
                 // Info section
                 Expanded(
-                  flex: 4,
+                  flex: 5,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1592,7 +1592,30 @@ class _CompactGridCardV5 extends StatelessWidget {
                         ),
                       ),
                       
-                      const SizedBox(height: 4),
+                      // Specializations (themed pill)
+                      if (astrologer.specializations.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: themeService.primaryColor.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              astrologer.specializations.take(2).join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: themeService.primaryColor.withOpacity(0.9),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      
+                      const SizedBox(height: 3),
                       
                       // Rating + Experience (subtle)
                       Row(
@@ -1648,7 +1671,7 @@ class _CompactGridCardV5 extends StatelessWidget {
                   ),
                 ),
                 
-                // Chat button (pill-shaped)
+                // Chat button (pill-shaped with icon)
                 SizedBox(
                   width: double.infinity,
                   height: 34,
@@ -1665,14 +1688,25 @@ class _CompactGridCardV5 extends StatelessWidget {
                         borderRadius: BorderRadius.circular(100),
                       ),
                     ),
-                    child: const Text(
-                      'Chat Now',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          color: Colors.white,
+                          size: 15,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Chat Now',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
