@@ -5,6 +5,7 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/communication_item.dart';
 import '../widgets/communication_filter_chip.dart';
+import '../widgets/sliding_filter_chips.dart';
 import '../widgets/communication_item_card.dart';
 import '../bloc/communication_bloc.dart';
 import '../bloc/communication_event.dart';
@@ -247,46 +248,17 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       return const SizedBox(height: 52);
     }
     
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          CommunicationFilterChip(
-            filter: CommunicationFilter.all,
-            isActive: state.activeFilter == CommunicationFilter.all,
-            count: state.getCountForFilter(CommunicationFilter.all),
-            themeService: themeService,
-            onTap: () => _onFilterTap(CommunicationFilter.all),
-          ),
-          const SizedBox(width: 8),
-          CommunicationFilterChip(
-            filter: CommunicationFilter.calls,
-            isActive: state.activeFilter == CommunicationFilter.calls,
-            count: state.getCountForFilter(CommunicationFilter.calls),
-            themeService: themeService,
-            onTap: () => _onFilterTap(CommunicationFilter.calls),
-          ),
-          const SizedBox(width: 8),
-          CommunicationFilterChip(
-            filter: CommunicationFilter.messages,
-            isActive: state.activeFilter == CommunicationFilter.messages,
-            count: state.getCountForFilter(CommunicationFilter.messages),
-            themeService: themeService,
-            onTap: () => _onFilterTap(CommunicationFilter.messages),
-          ),
-          const SizedBox(width: 8),
-          CommunicationFilterChip(
-            filter: CommunicationFilter.video,
-            isActive: state.activeFilter == CommunicationFilter.video,
-            count: state.getCountForFilter(CommunicationFilter.video),
-            themeService: themeService,
-            onTap: () => _onFilterTap(CommunicationFilter.video),
-          ),
-        ],
-      ),
+    // Use the new sliding pill filter chips
+    return SlidingFilterChips(
+      activeFilter: state.activeFilter,
+      counts: {
+        CommunicationFilter.all: state.getCountForFilter(CommunicationFilter.all),
+        CommunicationFilter.calls: state.getCountForFilter(CommunicationFilter.calls),
+        CommunicationFilter.messages: state.getCountForFilter(CommunicationFilter.messages),
+        CommunicationFilter.video: state.getCountForFilter(CommunicationFilter.video),
+      },
+      themeService: themeService,
+      onFilterTap: _onFilterTap,
     );
   }
 

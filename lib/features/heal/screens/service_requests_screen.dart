@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../shared/widgets/generic_sliding_filter_chips.dart';
 import '../models/service_request_model.dart';
 import '../widgets/service_request_card_widget.dart';
 import '../widgets/service_request_list_skeleton.dart';
@@ -135,123 +136,47 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
     final requests = state is HealLoadedState ? state.serviceRequests : <ServiceRequest>[];
     
     final filters = [
-      {'key': 'all', 'label': 'All', 'count': requests.length},
-      {'key': 'pending', 'label': 'Pending', 'count': requests.where((r) => r.status == RequestStatus.pending).length},
-      {'key': 'confirmed', 'label': 'Confirmed', 'count': requests.where((r) => r.status == RequestStatus.confirmed).length},
-      {'key': 'in_progress', 'label': 'In Progress', 'count': requests.where((r) => r.status == RequestStatus.inProgress).length},
-      {'key': 'completed', 'label': 'Completed', 'count': requests.where((r) => r.status == RequestStatus.completed).length},
+      FilterItem(
+        key: 'all',
+        label: 'All',
+        count: requests.length,
+      ),
+      FilterItem(
+        key: 'pending',
+        label: 'Pending',
+        count: requests.where((r) => r.status == RequestStatus.pending).length,
+        color: const Color(0xFFF59E0B), // Amber
+      ),
+      FilterItem(
+        key: 'confirmed',
+        label: 'Confirmed',
+        count: requests.where((r) => r.status == RequestStatus.confirmed).length,
+        color: const Color(0xFF3B82F6), // Blue
+      ),
+      FilterItem(
+        key: 'in_progress',
+        label: 'In Progress',
+        count: requests.where((r) => r.status == RequestStatus.inProgress).length,
+        color: const Color(0xFF8B5CF6), // Purple
+      ),
+      FilterItem(
+        key: 'completed',
+        label: 'Completed',
+        count: requests.where((r) => r.status == RequestStatus.completed).length,
+        color: const Color(0xFF10B981), // Green
+      ),
     ];
 
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: themeService.surfaceColor,
-        border: Border(
-          bottom: BorderSide(color: themeService.borderColor),
-        ),
-      ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        itemBuilder: (context, index) {
-          final filter = filters[index];
-          final isSelected = _selectedFilter == filter['key'];
-          final filterColor = _getFilterColor(filter['key'] as String, themeService);
-          
-          return Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedFilter = filter['key'] as String;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? filterColor
-                      : themeService.surfaceColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected
-                        ? filterColor
-                        : themeService.borderColor,
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: filterColor.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      filter['label'] as String,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        letterSpacing: 0.2,
-                        color: isSelected
-                            ? Colors.white
-                            : themeService.textPrimary,
-                      ),
-                    ),
-                    if (filter['count'] as int > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.white.withOpacity(0.25)
-                              : filterColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${filter['count']}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? Colors.white
-                                : filterColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    return GenericSlidingFilterChips(
+      filters: filters,
+      selectedKey: _selectedFilter,
+      themeService: themeService,
+      onFilterTap: (key) {
+        setState(() {
+          _selectedFilter = key;
+        });
+      },
     );
-  }
-
-  Color _getFilterColor(String key, ThemeService themeService) {
-    switch (key) {
-      case 'pending':
-        return const Color(0xFFF59E0B); // Amber
-      case 'confirmed':
-        return const Color(0xFF3B82F6); // Blue
-      case 'in_progress':
-        return const Color(0xFF8B5CF6); // Purple
-      case 'completed':
-        return const Color(0xFF10B981); // Green
-      case 'all':
-      default:
-        return themeService.primaryColor;
-    }
   }
 
   Widget _buildRequestsList(HealState state, AppLocalizations l10n, ThemeService themeService) {

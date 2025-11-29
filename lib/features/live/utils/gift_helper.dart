@@ -2,6 +2,45 @@ import 'package:flutter/material.dart';
 
 /// Helper class for gift-related utilities
 class GiftHelper {
+  /// Map of gift names to their image assets
+  static const Map<String, String> giftImages = {
+    'rose': 'rose.png',
+    'star': 'assets/images/star.png',
+    'heart': 'assets/images/heart.png',
+    'diamond': 'assets/images/diamond.png',
+    'rainbow': 'assets/images/rainbow.png',
+    'crown': 'assets/images/crown.png',
+  };
+
+  /// Build gift image widget or emoji fallback
+  static Widget buildGiftImage(String name, String emoji, double size) {
+    final giftName = name.toLowerCase();
+    
+    if (giftImages.containsKey(giftName)) {
+      return Image.asset(
+        giftImages[giftName]!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
+    return Text(
+      emoji,
+      style: TextStyle(fontSize: size),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  /// Check if gift has a custom image
+  static bool hasCustomImage(String name) {
+    return giftImages.containsKey(name.toLowerCase());
+  }
+
+  /// Get gift image path if exists
+  static String? getGiftImagePath(String name) {
+    return giftImages[name.toLowerCase()];
+  }
+
   /// Get the color for a specific gift type
   static Color getGiftColor(String giftName) {
     switch (giftName.toLowerCase()) {

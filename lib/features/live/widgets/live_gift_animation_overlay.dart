@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../utils/gift_helper.dart';
 
 /// Full-screen gift animation overlay
 /// Shows flying emojis, particles, and effects when gifts are sent
@@ -187,19 +188,11 @@ class _LiveGiftAnimationOverlayState extends State<LiveGiftAnimationOverlay>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Main emoji or image
-                      widget.gift.name.toLowerCase() == 'rose'
-                          ? Image.asset(
-                              'rose.png',
-                              width: widget.gift.tier == GiftTier.premium ? 120 : 80,
-                              height: widget.gift.tier == GiftTier.premium ? 120 : 80,
-                              fit: BoxFit.contain,
-                            )
-                          : Text(
-                              widget.gift.emoji,
-                              style: TextStyle(
-                                fontSize: widget.gift.tier == GiftTier.premium ? 120 : 80,
-                              ),
-                            ),
+                      GiftHelper.buildGiftImage(
+                        widget.gift.name,
+                        widget.gift.emoji,
+                        widget.gift.tier == GiftTier.premium ? 120 : 80,
+                      ),
                       
                       // Gift name and sender (for premium gifts)
                       if (widget.gift.tier != GiftTier.low &&

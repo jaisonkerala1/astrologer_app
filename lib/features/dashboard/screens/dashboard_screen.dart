@@ -495,46 +495,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           ],
           ),
-          bottomNavigationBar: AnimatedBottomNavBar(
-            selectedIndex: _selectedIndex,
-            onTap: (navIndex) {
-              // Map bottom nav index to page index (add 1 for hidden Live Prep page)
-              final pageIndex = navIndex + 1;
-              _pageController.jumpToPage(pageIndex);
+          bottomNavigationBar: BlocBuilder<CommunicationBloc, CommunicationState>(
+            builder: (context, commState) {
+              // Get dynamic label and icon based on filter
+              final inboxLabel = _getCommunicationNavLabel(commState);
+              final inboxIcon = _getCommunicationNavIcon(commState);
+              
+              return AnimatedBottomNavBar(
+                selectedIndex: _selectedIndex,
+                onTap: (navIndex) {
+                  // Map bottom nav index to page index (add 1 for hidden Live Prep page)
+                  final pageIndex = navIndex + 1;
+                  _pageController.jumpToPage(pageIndex);
+                },
+                backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
+                    ? themeService.surfaceColor 
+                    : Colors.white,
+                pillColor: themeService.primaryColor, // Matches communication filter pills
+                selectedIconColor: Colors.white,
+                unselectedIconColor: themeService.currentTheme.type == AppThemeType.dark
+                    ? Colors.grey.shade400
+                    : const Color(0xFF9CA3AF),
+                borderColor: themeService.currentTheme.type == AppThemeType.dark
+                    ? themeService.borderColor
+                    : Colors.grey.shade200,
+                items: [
+                  NavItem(
+                    label: l10n.dashboard,
+                    svgAsset: AppAssets.dashboardIcon,
+                  ),
+                  NavItem(
+                    label: inboxLabel,
+                    icon: inboxIcon,
+                  ),
+                  const NavItem(
+                    label: 'Heal',
+                    icon: Icons.spa_outlined,
+                  ),
+                  NavItem(
+                    label: l10n.consultations,
+                    svgAsset: AppAssets.calendarIcon,
+                  ),
+                  const NavItem(
+                    label: 'Profile',
+                    icon: Icons.person_outline_rounded,
+                  ),
+                ],
+              );
             },
-            backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
-                ? themeService.surfaceColor 
-                : Colors.white,
-            pillColor: themeService.primaryColor, // Matches communication filter pills
-            selectedIconColor: Colors.white,
-            unselectedIconColor: themeService.currentTheme.type == AppThemeType.dark
-                ? Colors.grey.shade400
-                : const Color(0xFF9CA3AF),
-            borderColor: themeService.currentTheme.type == AppThemeType.dark
-                ? themeService.borderColor
-                : Colors.grey.shade200,
-            items: [
-              NavItem(
-                label: l10n.dashboard,
-                svgAsset: AppAssets.dashboardIcon,
-              ),
-              const NavItem(
-                label: 'Inbox',
-                icon: Icons.mail_outline_rounded,
-              ),
-              const NavItem(
-                label: 'Heal',
-                icon: Icons.spa_outlined,
-              ),
-              NavItem(
-                label: l10n.consultations,
-                svgAsset: AppAssets.calendarIcon,
-              ),
-              const NavItem(
-                label: 'Profile',
-                icon: Icons.person_outline_rounded,
-              ),
-            ],
           ),
         );
       },
@@ -1410,6 +1418,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (context) => const ReviewsOverviewScreen(),
       ),
     );
+  }
+
+  // Helper to get dynamic navigation label based on communication filter
+  String _getCommunicationNavLabel(CommunicationState state) {
+    if (state is CommunicationLoadedState) {
+      switch (state.activeFilter) {
+        case CommunicationFilter.all:
+          return 'Inbox';
+        case CommunicationFilter.calls:
+          return 'Calls';
+        case CommunicationFilter.messages:
+          return 'Messages';
+        case CommunicationFilter.video:
+          return 'Video';
+      }
+    }
+    return 'Inbox'; // Default fallback
+  }
+
+  // Helper to get dynamic navigation icon based on communication filter
+  IconData _getCommunicationNavIcon(CommunicationState state) {
+    if (state is CommunicationLoadedState) {
+      switch (state.activeFilter) {
+        case CommunicationFilter.all:
+          return Icons.forum_outlined; // Multiple conversations - represents all communications
+        case CommunicationFilter.calls:
+          return Icons.phone_outlined;
+        case CommunicationFilter.messages:
+          return Icons.chat_bubble_outline_rounded;
+        case CommunicationFilter.video:
+          return Icons.videocam_outlined;
+      }
+    }
+    return Icons.forum_outlined; // Default fallback
   }
 
   // Redesigned Calls Today Card

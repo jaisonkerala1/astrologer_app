@@ -103,6 +103,33 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
     Navigator.pop(context);
   }
 
+  /// Helper to build gift image or emoji
+  Widget _buildGiftImage(String name, String emoji, double size) {
+    final giftName = name.toLowerCase();
+    final Map<String, String> giftImages = {
+      'rose': 'rose.png',
+      'star': 'assets/images/star.png',
+      'heart': 'assets/images/heart.png',
+      'diamond': 'assets/images/diamond.png',
+      'rainbow': 'assets/images/rainbow.png',
+      'crown': 'assets/images/crown.png',
+    };
+    
+    if (giftImages.containsKey(giftName)) {
+      return Image.asset(
+        giftImages[giftName]!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
+    return Text(
+      emoji,
+      style: TextStyle(fontSize: size),
+      textAlign: TextAlign.center,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
@@ -272,38 +299,105 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
   Widget _buildCategoryTabs(ThemeService themeService) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: TabBar(
-        controller: _tabController,
-        indicator: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              themeService.primaryColor,
-              themeService.secondaryColor,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.12),
+          width: 1,
         ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.white.withOpacity(0.6),
-        labelStyle: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
-        tabs: _categories.map((category) {
-          return Tab(
-            height: 48,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(category.icon, size: 20),
-                const SizedBox(width: 8),
-                Text(category.name),
-              ],
-            ),
+      ),
+      child: AnimatedBuilder(
+        animation: _tabController.animation!,
+        builder: (context, child) {
+          final animValue = _tabController.animation!.value;
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final tabWidth = constraints.maxWidth / _categories.length;
+              return Stack(
+                children: [
+                  // Sliding pill indicator
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    left: animValue * tabWidth,
+                    top: 0,
+                    bottom: 0,
+                    width: tabWidth,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            themeService.primaryColor,
+                            themeService.secondaryColor,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeService.primaryColor.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Tab labels
+                  Row(
+                    children: List.generate(_categories.length, (index) {
+                      final category = _categories[index];
+                      final isSelected = _tabController.index == index;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _tabController.animateTo(index);
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            height: 44,
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 200),
+                                  style: TextStyle(
+                                    color: isSelected 
+                                        ? Colors.white 
+                                        : Colors.white.withOpacity(0.5),
+                                    fontSize: 14,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        category.icon, 
+                                        size: 18,
+                                        color: isSelected 
+                                            ? Colors.white 
+                                            : Colors.white.withOpacity(0.5),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(category.name),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              );
+            },
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -373,18 +467,7 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
                     builder: (context, scale, child) {
                       return Transform.scale(
                         scale: scale,
-                        child: gift.name.toLowerCase() == 'rose'
-                            ? Image.asset(
-                                'rose.png',
-                                width: 44,
-                                height: 44,
-                                fit: BoxFit.contain,
-                              )
-                            : Text(
-                                gift.emoji,
-                                style: const TextStyle(fontSize: 44),
-                                textAlign: TextAlign.center,
-                              ),
+                        child: _buildGiftImage(gift.name, gift.emoji, 44),
                       );
                     },
                   ),
@@ -490,7 +573,7 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
                           Colors.white.withOpacity(0.05),
                         ],
                       ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(30),
                 border: Border.all(
                   color: hasSelection
                       ? Colors.transparent
@@ -511,17 +594,7 @@ class _LiveGiftBottomSheetState extends State<LiveGiftBottomSheet>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (hasSelection) ...[
-                    _selectedGift!.name.toLowerCase() == 'rose'
-                        ? Image.asset(
-                            'rose.png',
-                            width: 24,
-                            height: 24,
-                            fit: BoxFit.contain,
-                          )
-                        : Text(
-                            _selectedGift!.emoji,
-                            style: const TextStyle(fontSize: 24),
-                          ),
+                    _buildGiftImage(_selectedGift!.name, _selectedGift!.emoji, 24),
                     const SizedBox(width: 12),
                     Text(
                       'Send ${_selectedGift!.name}',

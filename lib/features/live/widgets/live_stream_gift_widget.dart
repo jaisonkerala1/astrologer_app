@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_gift_model.dart';
 import '../services/live_stream_service.dart';
+import '../utils/gift_helper.dart';
 
 class LiveStreamGiftWidget extends StatefulWidget {
   final String liveStreamId;
@@ -89,17 +90,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
         ),
         title: Column(
           children: [
-            gift.name.toLowerCase() == 'rose'
-                ? Image.asset(
-                    'rose.png',
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.contain,
-                  )
-                : Text(
-                    gift.emoji,
-                    style: const TextStyle(fontSize: 64),
-                  ),
+            GiftHelper.buildGiftImage(gift.name, gift.emoji, 64),
             const SizedBox(height: 12),
             Text(
               'Send ${gift.name}?',
@@ -174,17 +165,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                gift.name.toLowerCase() == 'rose'
-                    ? Image.asset(
-                        'rose.png',
-                        width: 20,
-                        height: 20,
-                        fit: BoxFit.contain,
-                      )
-                    : Text(
-                        gift.emoji,
-                        style: const TextStyle(fontSize: 16),
-                      ),
+                GiftHelper.buildGiftImage(gift.name, gift.emoji, 20),
               ],
             ),
           ),
@@ -225,17 +206,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
           SnackBar(
             content: Row(
               children: [
-                gift.name.toLowerCase() == 'rose'
-                    ? Image.asset(
-                        'rose.png',
-                        width: 24,
-                        height: 24,
-                        fit: BoxFit.contain,
-                      )
-                    : Text(
-                        gift.emoji,
-                        style: const TextStyle(fontSize: 24),
-                      ),
+                GiftHelper.buildGiftImage(gift.name, gift.emoji, 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -458,17 +429,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    gift.giftName.toLowerCase() == 'rose'
-                                        ? Image.asset(
-                                            'rose.png',
-                                            width: 16,
-                                            height: 16,
-                                            fit: BoxFit.contain,
-                                          )
-                                        : Text(
-                                            gift.giftEmoji,
-                                            style: const TextStyle(fontSize: 16),
-                                          ),
+                                    GiftHelper.buildGiftImage(gift.giftName, gift.giftEmoji, 16),
                                     const SizedBox(width: 6),
                                     Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -542,17 +503,7 @@ class _LiveStreamGiftWidgetState extends State<LiveStreamGiftWidget>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  gift.name.toLowerCase() == 'rose'
-                      ? Image.asset(
-                          'rose.png',
-                          width: 42,
-                          height: 42,
-                          fit: BoxFit.contain,
-                        )
-                      : Text(
-                          gift.emoji,
-                          style: const TextStyle(fontSize: 42),
-                        ),
+                  GiftHelper.buildGiftImage(gift.name, gift.emoji, 42),
                   const SizedBox(height: 6),
                   Text(
                     gift.name,

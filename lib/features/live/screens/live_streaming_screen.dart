@@ -1082,17 +1082,18 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     children: [
                       // Gift emoji for gift notifications
                       if (comment['isGift'] == 'true' && comment['emoji'] != null) ...[
-                        (comment['message'] != null && comment['message'].toString().toLowerCase().contains('rose'))
-                            ? Image.asset(
-                                'rose.png',
-                                width: 16,
-                                height: 16,
-                                fit: BoxFit.contain,
-                              )
-                            : Text(
-                                comment['emoji']!,
-                                style: const TextStyle(fontSize: 16),
-                              ),
+                        Builder(
+                          builder: (context) {
+                            final msg = comment['message']?.toString().toLowerCase() ?? '';
+                            final giftNames = ['rose', 'star', 'heart', 'diamond', 'rainbow', 'crown'];
+                            for (final name in giftNames) {
+                              if (msg.contains(name)) {
+                                return GiftHelper.buildGiftImage(name, comment['emoji']!, 16);
+                              }
+                            }
+                            return Text(comment['emoji']!, style: const TextStyle(fontSize: 16));
+                          },
+                        ),
                         const SizedBox(width: 6),
                       ],
                       Flexible(
@@ -1566,17 +1567,18 @@ class _GiftsBottomSheetState extends State<_GiftsBottomSheet> {
         child: Row(
           children: [
             // Gift emoji
-            gift.message.toLowerCase().contains('rose')
-                ? Image.asset(
-                    'rose.png',
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.contain,
-                  )
-                : Text(
-                    _extractGiftEmoji(gift.message),
-                    style: const TextStyle(fontSize: 36),
-                  ),
+            Builder(
+              builder: (context) {
+                final msg = gift.message.toLowerCase();
+                final giftNames = ['rose', 'star', 'heart', 'diamond', 'rainbow', 'crown'];
+                for (final name in giftNames) {
+                  if (msg.contains(name)) {
+                    return GiftHelper.buildGiftImage(name, _extractGiftEmoji(gift.message), 36);
+                  }
+                }
+                return Text(_extractGiftEmoji(gift.message), style: const TextStyle(fontSize: 36));
+              },
+            ),
             const SizedBox(width: 12),
             
             // Gift details

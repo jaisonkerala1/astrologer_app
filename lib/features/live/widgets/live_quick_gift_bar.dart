@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../utils/gift_helper.dart';
 
 /// Quick gift bar that appears on long-press of gift button
 /// Shows top 5 most popular gifts for instant sending
@@ -198,17 +199,7 @@ class _LiveQuickGiftBarState extends State<LiveQuickGiftBar>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            gift.name.toLowerCase() == 'rose'
-                ? Image.asset(
-                    'rose.png',
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.contain,
-                  )
-                : Text(
-                    gift.emoji,
-                    style: const TextStyle(fontSize: 32),
-                  ),
+            GiftHelper.buildGiftImage(gift.name, gift.emoji, 32),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

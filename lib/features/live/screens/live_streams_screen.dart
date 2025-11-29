@@ -320,26 +320,17 @@ class _LiveStreamsScreenState extends State<LiveStreamsScreen> {
     );
   }
 
-  Widget _buildCategoryChip(
-    String label,
-    bool isSelected,
-    VoidCallback onTap,
-    ThemeService themeService,
-  ) {
+  Widget _buildCategoryChip(String label, bool isSelected, VoidCallback onTap, ThemeService themeService) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? themeService.primaryColor
-              : themeService.surfaceColor,
+          color: isSelected ? themeService.primaryColor : themeService.surfaceColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? themeService.primaryColor
-                : themeService.borderColor.withOpacity(0.5),
+            color: isSelected ? themeService.primaryColor : themeService.borderColor.withOpacity(0.5),
             width: 1.5,
           ),
           boxShadow: isSelected
