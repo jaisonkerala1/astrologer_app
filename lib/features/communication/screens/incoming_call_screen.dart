@@ -22,6 +22,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _slideController;
+  late AnimationController _acceptSwipeController;
+  late AnimationController _declineSwipeController;
   late Animation<double> _pulseAnimation;
   late Animation<Offset> _slideAnimation;
 
@@ -29,6 +31,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   bool _isConnected = false;
   bool _isEnded = false;
   int _callDuration = 0;
+  
+  // Swipe gesture tracking
+  double _acceptSwipeOffset = 0;
+  double _declineSwipeOffset = 0;
+  static const double _swipeThreshold = -80; // Negative because swipe up
 
   @override
   void initState() {
@@ -44,6 +51,14 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     );
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _acceptSwipeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _declineSwipeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
 
@@ -85,6 +100,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     print('📞 [INCOMING CALL] Screen disposing');
     _pulseController.dispose();
     _slideController.dispose();
+    _acceptSwipeController.dispose();
+    _declineSwipeController.dispose();
     super.dispose();
   }
 
@@ -249,33 +266,32 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Accept button (left side)
-          GestureDetector(
+          // Accept button (left side) - Tap or Swipe Up
+          _buildSwipeableCallButton(
+            color: themeService.successColor,
+            icon: Icons.call,
+            label: 'Accept',
+            swipeOffset: _acceptSwipeOffset,
             onTap: () {
               HapticFeedback.selectionClick();
               _acceptCall();
             },
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: themeService.successColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: themeService.successColor.withOpacity(0.4),
-                    blurRadius: 16,
-                    spreadRadius: 3,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.call,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
+            onSwipeUpdate: (offset) {
+              setState(() {
+                _acceptSwipeOffset = offset.clamp(-120.0, 0.0);
+              });
+            },
+            onSwipeEnd: () {
+              if (_acceptSwipeOffset <= _swipeThreshold) {
+                HapticFeedback.heavyImpact();
+                _acceptCall();
+              } else {
+                // Spring back
+                setState(() {
+                  _acceptSwipeOffset = 0;
+                });
+              }
+            },
           ),
           
           // Message button (center)
@@ -288,11 +304,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: themeService.surfaceColor,
+                color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: themeService.borderColor.withOpacity(0.3),
+                    color: Colors.white.withOpacity(0.1),
                     blurRadius: 8,
                     spreadRadius: 2,
                     offset: const Offset(0, 4),
@@ -307,36 +323,117 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             ),
           ),
           
-          // Decline button (right side)
-          GestureDetector(
+          // Decline button (right side) - Tap or Swipe Up
+          _buildSwipeableCallButton(
+            color: themeService.errorColor,
+            icon: Icons.call_end,
+            label: 'Decline',
+            swipeOffset: _declineSwipeOffset,
             onTap: () {
               HapticFeedback.selectionClick();
               _declineCall();
             },
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: themeService.errorColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: themeService.errorColor.withOpacity(0.4),
-                    blurRadius: 16,
-                    spreadRadius: 3,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.call_end,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
+            onSwipeUpdate: (offset) {
+              setState(() {
+                _declineSwipeOffset = offset.clamp(-120.0, 0.0);
+              });
+            },
+            onSwipeEnd: () {
+              if (_declineSwipeOffset <= _swipeThreshold) {
+                HapticFeedback.heavyImpact();
+                _declineCall();
+              } else {
+                // Spring back
+                setState(() {
+                  _declineSwipeOffset = 0;
+                });
+              }
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSwipeableCallButton({
+    required Color color,
+    required IconData icon,
+    required String label,
+    required double swipeOffset,
+    required VoidCallback onTap,
+    required Function(double) onSwipeUpdate,
+    required VoidCallback onSwipeEnd,
+  }) {
+    // Calculate progress (0 to 1) based on swipe
+    final progress = (swipeOffset.abs() / _swipeThreshold.abs()).clamp(0.0, 1.0);
+    final scale = 1.0 + (progress * 0.15); // Scale up slightly as you swipe
+    final glowIntensity = 0.4 + (progress * 0.4); // Increase glow
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Swipe hint arrow (appears when swiping)
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: progress > 0.1 ? progress : 0,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Icon(
+              Icons.keyboard_arrow_up,
+              color: color.withOpacity(0.8),
+              size: 24,
+            ),
+          ),
+        ),
+        
+        // The button
+        GestureDetector(
+          onTap: onTap,
+          onVerticalDragUpdate: (details) {
+            onSwipeUpdate(swipeOffset + details.delta.dy);
+          },
+          onVerticalDragEnd: (details) {
+            onSwipeEnd();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 100),
+            transform: Matrix4.identity()
+              ..translate(0.0, swipeOffset * 0.5) // Move up as you swipe
+              ..scale(scale),
+            transformAlignment: Alignment.center,
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(glowIntensity),
+                  blurRadius: 16 + (progress * 16),
+                  spreadRadius: 3 + (progress * 5),
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+        ),
+        
+        // Label
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -349,7 +446,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Mute button
           _buildControlButton(
             icon: Icons.mic_off,
-            color: themeService.surfaceColor,
+            color: Colors.white.withOpacity(0.2),
             onTap: () {
               HapticFeedback.selectionClick();
               // TODO: Implement mute functionality
@@ -359,7 +456,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Speaker button
           _buildControlButton(
             icon: Icons.volume_up,
-            color: themeService.surfaceColor,
+            color: Colors.white.withOpacity(0.2),
             onTap: () {
               HapticFeedback.selectionClick();
               // TODO: Implement speaker functionality
@@ -369,7 +466,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           // Keypad button
           _buildControlButton(
             icon: Icons.dialpad,
-            color: themeService.surfaceColor,
+            color: Colors.white.withOpacity(0.2),
             onTap: () {
               HapticFeedback.selectionClick();
               // TODO: Implement keypad functionality

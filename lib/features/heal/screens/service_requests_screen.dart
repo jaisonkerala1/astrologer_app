@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/theme/models/app_theme.dart' show AppThemeType;
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/generic_sliding_filter_chips.dart';
 import '../models/service_request_model.dart';
@@ -112,7 +113,9 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
             print('📘 [ServiceRequests] State: ${state.runtimeType}');
             
             return Scaffold(
-              backgroundColor: themeService.backgroundColor,
+              backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
+                  ? themeService.backgroundColor 
+                  : const Color(0xFFFAFAFA), // Very light gray for subtle card separation
               body: Column(
                 children: [
                   // Filter Chips

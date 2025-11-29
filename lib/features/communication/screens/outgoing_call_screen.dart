@@ -269,7 +269,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // Mute button
           _buildControlButton(
             icon: Icons.mic_off,
-            color: themeService.surfaceColor,
+            color: Colors.white.withOpacity(0.2),
             onTap: () {
               HapticFeedback.selectionClick();
               // TODO: Implement mute functionality
@@ -279,7 +279,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // Speaker button
           _buildControlButton(
             icon: Icons.volume_up,
-            color: themeService.surfaceColor,
+            color: Colors.white.withOpacity(0.2),
             onTap: () {
               HapticFeedback.selectionClick();
               // TODO: Implement speaker functionality
@@ -289,7 +289,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen>
           // Keypad button
           _buildControlButton(
             icon: Icons.dialpad,
-            color: themeService.surfaceColor,
+            color: Colors.white.withOpacity(0.2),
             onTap: () {
               HapticFeedback.selectionClick();
               // TODO: Implement keypad functionality

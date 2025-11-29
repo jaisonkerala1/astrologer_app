@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/theme/models/app_theme.dart' show AppThemeType;
 import '../bloc/consultations_bloc.dart';
 import '../bloc/consultations_event.dart';
 import '../bloc/consultations_state.dart';
@@ -84,7 +85,9 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Scaffold(
-          backgroundColor: themeService.backgroundColor,
+          backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
+              ? themeService.backgroundColor 
+              : const Color(0xFFFAFAFA), // Very light gray for subtle card separation
           appBar: AppBar(
             backgroundColor: themeService.primaryColor,
             elevation: 0,

@@ -1442,7 +1442,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (state is CommunicationLoadedState) {
       switch (state.activeFilter) {
         case CommunicationFilter.all:
-          return Icons.forum_outlined; // Multiple conversations - represents all communications
+          return Icons.chat_bubble_outline_rounded; // Same as messages for consistency
         case CommunicationFilter.calls:
           return Icons.phone_outlined;
         case CommunicationFilter.messages:
@@ -1451,7 +1451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return Icons.videocam_outlined;
       }
     }
-    return Icons.forum_outlined; // Default fallback
+    return Icons.chat_bubble_outline_rounded; // Default fallback
   }
 
   // Redesigned Calls Today Card

@@ -161,14 +161,30 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          elevation: 2,
-          color: themeService.cardColor,
-          shape: RoundedRectangleBorder(
+          decoration: BoxDecoration(
+            color: themeService.cardColor,
             borderRadius: themeService.borderRadius,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 4,
+                spreadRadius: 0,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-          child: InkWell(
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: themeService.borderRadius,
+            child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
               if (widget.onTap != null) {
@@ -285,6 +301,7 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
                 ],
               ),
             ),
+          ),
           ),
         );
       },

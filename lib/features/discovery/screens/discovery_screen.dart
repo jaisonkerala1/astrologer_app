@@ -82,12 +82,12 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with TickerProviderSt
     // Load astrologers with "Online Now" filter on init
     context.read<DiscoveryBloc>().add(const LoadAstrologersEvent(onlineOnly: true));
     
-    // Start auto-play after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _startAutoPlay();
-      }
-    });
+    // Auto-play disabled for smoother scrolling performance
+    // Future.delayed(const Duration(milliseconds: 500), () {
+    //   if (mounted) {
+    //     _startAutoPlay();
+    //   }
+    // });
   }
   
   void _onTabChanged() {
@@ -452,9 +452,9 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with TickerProviderSt
                           itemCount: state.astrologers.length,
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.65,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.78,
                           ),
                           itemBuilder: (context, index) {
                             final astrologer = state.astrologers[index];
@@ -744,9 +744,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with TickerProviderSt
       children: [
         SizedBox(
           height: 180,
-          child: Listener(
-            onPointerDown: (_) => _pauseAutoPlay(),
-            child: PageView.builder(
+          child: PageView.builder(
             controller: _heroController,
             itemCount: featured.length,
             padEnds: false,
@@ -1006,7 +1004,6 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> with TickerProviderSt
                 ),
               );
             },
-            ),
           ),
         ),
         const SizedBox(height: 6),
@@ -1493,14 +1490,10 @@ class _CompactGridCardV5 extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: themeService.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: themeService.borderColor.withOpacity(0.08),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1508,235 +1501,157 @@ class _CompactGridCardV5 extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 16),
-              
-              // Avatar with online indicator
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  ProfileAvatarWidget(
-                    imagePath: astrologer.profilePicture,
-                    radius: 32,
-                    fallbackText: astrologer.name.substring(0, 1).toUpperCase(),
-                    backgroundColor: themeService.primaryColor.withOpacity(0.1),
-                    textColor: themeService.primaryColor,
-                  ),
-                  if (astrologer.isOnline)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: AnimatedBuilder(
-                        animation: pulseAnimation,
-                        builder: (context, child) {
-                          return Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Outer pulse ring - using Transform.scale
-                              Transform.scale(
-                                scale: pulseAnimation.value,
-                                child: Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(0xFF10B981).withOpacity(
-                                      0.3 * (2.0 - pulseAnimation.value),
-                                    ),
-                                    width: 1.5,
-                                  ),
-                                ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+            child: Column(
+              children: [
+                // Avatar section
+                Expanded(
+                  flex: 5,
+                  child: Center(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Main avatar - clean, no border (border only for LIVE)
+                        ProfileAvatarWidget(
+                          imagePath: astrologer.profilePicture,
+                          radius: 34,
+                          fallbackText: astrologer.name.substring(0, 1).toUpperCase(),
+                          backgroundColor: themeService.primaryColor.withOpacity(0.1),
+                          textColor: themeService.primaryColor,
+                        ),
+                        // Online indicator dot (bottom-right, subtle)
+                        if (astrologer.isOnline)
+                          Positioned(
+                            right: 2,
+                            bottom: 2,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: themeService.cardColor,
+                                  width: 2.5,
                                 ),
                               ),
-                              // Inner solid circle (fixed size, no animation)
-                              Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: themeService.cardColor,
-                                    width: 2.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                        ),
-                      ),
-                    ),
-                  if (astrologer.isVerified)
-                    Positioned(
-                      right: -4,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: themeService.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.verified,
-                          color: Colors.white,
-                          size: 12,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Name
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  astrologer.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: themeService.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 4),
-              
-              // Rating
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 13,
-                      color: Colors.amber,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      astrologer.rating.toStringAsFixed(1),
-                      style: TextStyle(
-                        color: themeService.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      ' (${astrologer.totalReviews})',
-                      style: TextStyle(
-                        color: themeService.textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 10),
-              
-              // Experience and price
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.workspace_premium_rounded,
-                      size: 14,
-                      color: themeService.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${astrologer.experience}y',
-                      style: TextStyle(
-                        color: themeService.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 1,
-                      height: 12,
-                      color: themeService.borderColor.withOpacity(0.3),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
-                      style: TextStyle(
-                        color: themeService.primaryColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 10),
-              
-              // Specializations (max 2)
-              if (astrologer.specializations.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: astrologer.specializations.take(2).map((spec) {
-                      return Container(
-                        constraints: const BoxConstraints(maxWidth: 70),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: themeService.primaryColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          spec,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: themeService.primaryColor,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                      );
-                    }).toList(),
+                        // Verified badge (top-right, Instagram style)
+                        if (astrologer.isVerified)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: themeService.cardColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF3B82F6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 8,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              
-              const SizedBox(height: 12),
-              
-              // Chat button
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-                child: SizedBox(
+                
+                // Info section
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Name
+                      Text(
+                        astrologer.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: themeService.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 4),
+                      
+                      // Rating + Experience (subtle)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: 13,
+                            color: Colors.amber.shade600,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            astrologer.rating.toStringAsFixed(1),
+                            style: TextStyle(
+                              color: themeService.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Container(
+                              width: 3,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: themeService.textSecondary.withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${astrologer.experience}y',
+                            style: TextStyle(
+                              color: themeService.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 2),
+                      
+                      // Price (highlight)
+                      Text(
+                        '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                        style: TextStyle(
+                          color: themeService.primaryColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Chat button (pill-shaped)
+                SizedBox(
                   width: double.infinity,
-                  height: 36,
+                  height: 34,
                   child: ElevatedButton(
                     onPressed: () {
                       HapticFeedback.mediumImpact();
@@ -1746,40 +1661,29 @@ class _CompactGridCardV5 extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       backgroundColor: themeService.primaryColor,
                       elevation: 0,
-                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(100),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Chat',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
+                    child: const Text(
+                      'Chat Now',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
 
 
