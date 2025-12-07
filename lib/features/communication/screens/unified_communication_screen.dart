@@ -36,12 +36,15 @@ class UnifiedCommunicationScreen extends StatefulWidget {
 }
 
 class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen> 
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _fabAnimationController;
   late Animation<double> _fabScaleAnimation;
   
   String _searchQuery = '';
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  bool get wantKeepAlive => true; // Keep page alive for smooth transitions
   
   @override
   void initState() {
@@ -72,6 +75,7 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final themeService = Provider.of<ThemeService>(context);
     
     return BlocConsumer<CommunicationBloc, CommunicationState>(

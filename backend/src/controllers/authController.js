@@ -6,6 +6,37 @@ const Otp = require('../models/Otp');
 const twilioService = require('../services/twilioService');
 const normalizeAstrologer = require('../utils/astrologerResponse');
 
+// ============================================
+// TEST PHONE NUMBERS - Bypass Twilio for Development
+// ============================================
+// These phone numbers will use a fixed OTP (123456) without sending SMS
+// Useful for testing without consuming Twilio credits
+// Format: Include country code (e.g., +91, +1)
+const TEST_PHONE_NUMBERS = [
+  '+911111111111',
+  '+911234567890',
+  '+919999999999',
+  '+912222222222',
+  '+913333333333',
+  '1111111111',
+  '1234567890',
+  '9999999999',
+  '2222222222',
+  '3333333333',
+];
+const TEST_OTP = '123456'; // Fixed OTP for test numbers
+
+// Check if phone is a test number
+const isTestPhoneNumber = (phone) => {
+  if (!phone) return false;
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, ''); // Remove spaces, dashes, parentheses
+  return TEST_PHONE_NUMBERS.some(testPhone => 
+    cleanPhone === testPhone || 
+    cleanPhone.endsWith(testPhone) || 
+    testPhone.endsWith(cleanPhone)
+  );
+};
+
 // Generate JWT token
 const generateToken = (astrologerId, sessionId) => {
   return jwt.sign(
@@ -78,8 +109,11 @@ const sendOTP = async (req, res) => {
       });
     }
 
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Check if this is a test phone number
+    const isTestNumber = isTestPhoneNumber(phone);
+    
+    // Generate OTP (use fixed OTP for test numbers)
+    const otp = isTestNumber ? TEST_OTP : Math.floor(100000 + Math.random() * 900000).toString();
     
     // Create OTP record in MongoDB
     const otpRecord = new Otp({
@@ -89,7 +123,20 @@ const sendOTP = async (req, res) => {
     });
     await otpRecord.save();
     
-    // Send OTP via Twilio
+    // Skip Twilio for test numbers
+    if (isTestNumber) {
+      console.log(`🧪 [TEST MODE] OTP for ${phone}: ${otp} (Twilio bypassed)`);
+      return res.json({
+        success: true,
+        message: 'OTP sent successfully to your phone number',
+        otpId: otpRecord.id,
+        // Include hint for test numbers (remove in production if needed)
+        _testMode: true,
+        _hint: 'Test number detected. Use OTP: 123456'
+      });
+    }
+    
+    // Send OTP via Twilio for real numbers
     try {
       await twilioService.sendOTP(phone, otp);
       console.log(`OTP sent to ${phone}: ${otp}`);

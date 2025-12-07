@@ -15,7 +15,8 @@ class LivePreparationScreen extends StatefulWidget {
   State<LivePreparationScreen> createState() => _LivePreparationScreenState();
 }
 
-class _LivePreparationScreenState extends State<LivePreparationScreen> {
+class _LivePreparationScreenState extends State<LivePreparationScreen>
+    with AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -24,6 +25,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
   bool _isLoading = false;
 
   final LiveStreamService _liveService = LiveStreamService();
+
+  @override
+  bool get wantKeepAlive => true; // Keep page alive for smooth transitions
 
   @override
   void initState() {
@@ -40,6 +44,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         final theme = themeService;
