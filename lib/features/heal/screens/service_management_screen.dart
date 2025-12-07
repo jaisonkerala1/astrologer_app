@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,7 @@ import '../widgets/service_category_filter.dart';
 import '../bloc/heal_bloc.dart';
 import '../bloc/heal_event.dart';
 import '../bloc/heal_state.dart';
+import 'add_service_wizard_screen.dart';
 
 class ServiceManagementScreen extends StatefulWidget {
   const ServiceManagementScreen({super.key});
@@ -228,80 +230,89 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
 
   Widget _buildEmptyState(AppLocalizations l10n, ThemeService themeService) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.spa_outlined,
-              size: 64,
-              color: themeService.textHint,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.noServicesFound,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: themeService.textPrimary,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.spa_outlined,
+                size: 64,
+                color: themeService.textHint,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _selectedCategory == 'all'
-                  ? l10n.addYourFirstService
-                  : l10n.noServicesInCategory,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: themeService.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _showAddServiceDialog(context, themeService),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addService),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeService.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: themeService.borderRadius,
+              const SizedBox(height: 16),
+              Text(
+                l10n.noServicesFound,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: themeService.textPrimary,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                _selectedCategory == 'all'
+                    ? l10n.addYourFirstService
+                    : l10n.noServicesInCategory,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: themeService.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => _showAddServiceDialog(context, themeService),
+                icon: const Icon(Icons.add),
+                label: Text(l10n.addService),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeService.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: themeService.borderRadius,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showAddServiceDialog(BuildContext context, ThemeService themeService) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AddServiceDialog(
-        categories: _categories,
-        onServiceAdded: (service) {
-          // Use BLoC to create service
-          context.read<HealBloc>().add(CreateServiceEvent(service));
-        },
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AddServiceWizardScreen(
+          onServiceCreated: (service) {
+            // Use BLoC to create service
+            context.read<HealBloc>().add(CreateServiceEvent(service));
+          },
+        ),
       ),
     );
   }
 
   void _editService(ServiceModel service) {
-    final themeService = Provider.of<ThemeService>(context, listen: false);
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AddServiceDialog(
-        categories: _categories,
-        service: service,
-        onServiceAdded: (updatedService) {
-          // Use BLoC to update service
-          context.read<HealBloc>().add(UpdateServiceEvent(service.id, updatedService));
-        },
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AddServiceWizardScreen(
+          existingService: service,
+          onServiceCreated: (updatedService) {
+            // Use BLoC to update service
+            context.read<HealBloc>().add(UpdateServiceEvent(service.id, updatedService));
+          },
+        ),
       ),
     );
   }

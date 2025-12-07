@@ -711,6 +711,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(

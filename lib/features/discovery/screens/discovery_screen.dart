@@ -1657,21 +1657,11 @@ class _CompactGridCardV5 extends StatelessWidget {
                       ),
                       
                       const SizedBox(height: 2),
-                      
-                      // Price (highlight)
-                      Text(
-                        '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
-                        style: TextStyle(
-                          color: themeService.primaryColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
                     ],
                   ),
                 ),
                 
-                // Chat button (pill-shaped with icon)
+                // Chat button with price (pill-shaped with icon)
                 SizedBox(
                   width: double.infinity,
                   height: 34,
@@ -1690,20 +1680,19 @@ class _CompactGridCardV5 extends StatelessWidget {
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.chat_bubble_outline_rounded,
                           color: Colors.white,
                           size: 15,
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          'Chat Now',
-                          style: TextStyle(
+                          '₹${astrologer.ratePerMinute.toStringAsFixed(0)}/min',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
                           ),
                         ),
                       ],

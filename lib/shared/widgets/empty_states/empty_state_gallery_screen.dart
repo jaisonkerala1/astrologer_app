@@ -264,73 +264,80 @@ class _EmptyStateGalleryScreenState extends State<EmptyStateGalleryScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(tabs.length, (index) {
-          final isSelected = _selectedIndex == index;
-          final tab = tabs[index];
-          
-          return GestureDetector(
-            onTap: () {
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: EdgeInsets.symmetric(
-                horizontal: isSelected ? 20 : 16,
-                vertical: isSelected ? 12 : 10,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? themeService.primaryColor
-                    : themeService.surfaceColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? themeService.primaryColor
-                      : themeService.borderColor,
-                  width: 1.5,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: themeService.primaryColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    tab['icon'] as IconData,
-                    size: isSelected ? 20 : 18,
-                    color: isSelected
-                        ? Colors.white
-                        : themeService.textSecondary,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          children: List.generate(tabs.length, (index) {
+            final isSelected = _selectedIndex == index;
+            final tab = tabs[index];
+            
+            return Padding(
+              padding: EdgeInsets.only(right: index < tabs.length - 1 ? 12 : 0),
+              child: GestureDetector(
+                onTap: () {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSelected ? 20 : 16,
+                    vertical: isSelected ? 12 : 10,
                   ),
-                  if (isSelected) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      tab['label'] as String,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? themeService.primaryColor
+                        : themeService.surfaceColor,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? themeService.primaryColor
+                          : themeService.borderColor,
+                      width: 1.5,
                     ),
-                  ],
-                ],
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: themeService.primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tab['icon'] as IconData,
+                        size: isSelected ? 20 : 18,
+                        color: isSelected
+                            ? Colors.white
+                            : themeService.textSecondary,
+                      ),
+                      if (isSelected) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          tab['label'] as String,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -407,9 +414,10 @@ class _EmptyStateGalleryScreenState extends State<EmptyStateGalleryScreen> {
           
           const SizedBox(height: 24),
           
-          // Preview card with shadow
+          // Preview card with shadow - Fixed height to avoid nested scroll issues
           Container(
             width: double.infinity,
+            height: 500,
             decoration: BoxDecoration(
               color: themeService.surfaceColor,
               borderRadius: BorderRadius.circular(20),

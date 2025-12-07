@@ -36,15 +36,13 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 400),
     );
     
     _fadeAnimation = Tween<double>(
@@ -52,23 +50,7 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-    ));
-    
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack),
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+      curve: Curves.easeOut,
     ));
     
     _animationController.forward();
@@ -83,60 +65,58 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Animated Illustration
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: widget.illustration,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated Illustration
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: widget.illustration,
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Title - Swiggy style (friendly, warm)
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: widget.themeService.textPrimary,
+                    letterSpacing: -0.5,
+                    height: 1.2,
                   ),
-                  
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Message - contextual, helpful
+                Text(
+                  widget.message,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: widget.themeService.textSecondary,
+                    height: 1.5,
+                    letterSpacing: 0.1,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                // Action Button (if provided)
+                if (widget.actionLabel != null && widget.onActionPressed != null) ...[
                   const SizedBox(height: 32),
-                  
-                  // Title - Swiggy style (friendly, warm)
-                  Text(
-                    widget.title,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: widget.themeService.textPrimary,
-                      letterSpacing: -0.5,
-                      height: 1.2,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Message - contextual, helpful
-                  Text(
-                    widget.message,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: widget.themeService.textSecondary,
-                      height: 1.5,
-                      letterSpacing: 0.1,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  // Action Button (if provided)
-                  if (widget.actionLabel != null && widget.onActionPressed != null) ...[
-                    const SizedBox(height: 32),
-                    _buildActionButton(),
-                  ],
+                  _buildActionButton(),
                 ],
-              ),
+              ],
             ),
           ),
         ),

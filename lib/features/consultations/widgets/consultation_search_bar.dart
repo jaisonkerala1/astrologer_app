@@ -297,68 +297,72 @@ class SearchEmptyState extends StatelessWidget {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: themeService.surfaceColor,
-                    borderRadius: BorderRadius.circular(60),
-                  ),
-                  child: Icon(
-                    Icons.search_off_rounded,
-                    size: 48,
-                    color: themeService.textHint,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'No Results Found',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: themeService.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'No consultations match "$searchQuery"',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: themeService.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Try searching with different keywords',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: themeService.textHint,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: onClearSearch,
-                  icon: const Icon(Icons.clear_all_rounded),
-                  label: const Text('Clear Search'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeService.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: themeService.surfaceColor,
+                      borderRadius: BorderRadius.circular(60),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: themeService.borderRadius,
+                    child: Icon(
+                      Icons.search_off_rounded,
+                      size: 48,
+                      color: themeService.textHint,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  Text(
+                    'No Results Found',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: themeService.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No consultations match "$searchQuery"',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: themeService.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Try searching with different keywords',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: themeService.textHint,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: onClearSearch,
+                    icon: const Icon(Icons.clear_all_rounded),
+                    label: const Text('Clear Search'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeService.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: themeService.borderRadius,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

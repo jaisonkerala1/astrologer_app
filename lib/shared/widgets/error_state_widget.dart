@@ -27,57 +27,63 @@ class ErrorStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: padding ?? const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Error icon
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: (iconColor ?? Colors.red).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon ?? Icons.error_outline,
-              size: 40,
-              color: iconColor ?? Colors.red,
-            ),
+    return Center(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Container(
+          padding: padding ?? const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Error icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: (iconColor ?? Colors.red).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon ?? Icons.error_outline,
+                  size: 40,
+                  color: iconColor ?? Colors.red,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Error title
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Error message
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              if (showRetryButton) ...[
+                const SizedBox(height: 32),
+                _buildRetryButton(context),
+              ],
+            ],
           ),
-          
-          const SizedBox(height: 24),
-          
-          // Error title
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Error message
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          if (showRetryButton) ...[
-            const SizedBox(height: 32),
-            _buildRetryButton(context),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -191,57 +197,63 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Empty state icon
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: (iconColor ?? Colors.grey).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon ?? Icons.inbox_outlined,
-              size: 40,
-              color: iconColor ?? Colors.grey,
-            ),
+    return Center(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Empty state icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: (iconColor ?? Colors.grey).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon ?? Icons.inbox_outlined,
+                  size: 40,
+                  color: iconColor ?? Colors.grey,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Empty state title
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Empty state message
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              if (showActionButton && actionText != null && onAction != null) ...[
+                const SizedBox(height: 32),
+                _buildActionButton(context),
+              ],
+            ],
           ),
-          
-          const SizedBox(height: 24),
-          
-          // Empty state title
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Empty state message
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          if (showActionButton && actionText != null && onAction != null) ...[
-            const SizedBox(height: 32),
-            _buildActionButton(context),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -289,49 +301,55 @@ class LoadingStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Loading indicator
-          Container(
-            width: 60,
-            height: 60,
-            child: CircularProgressIndicator(
-              value: showProgress ? progress : null,
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                color ?? AppTheme.primaryColor,
+    return Center(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Loading indicator
+              Container(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(
+                  value: showProgress ? progress : null,
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    color ?? AppTheme.primaryColor,
+                  ),
+                ),
               ),
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Loading message
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          if (showProgress && progress != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              '${(progress! * 100).toInt()}%',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-                fontWeight: FontWeight.w500,
+              
+              const SizedBox(height: 24),
+              
+              // Loading message
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-          ],
-        ],
+              
+              if (showProgress && progress != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  '${(progress! * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

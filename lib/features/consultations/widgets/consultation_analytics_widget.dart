@@ -384,6 +384,7 @@ class ConsultationAnalyticsWidget extends StatelessWidget {
         border: Border.all(color: themeService.borderColor),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.event_note_outlined,

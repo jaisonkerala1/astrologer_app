@@ -245,46 +245,50 @@ class _MyClientsScreenContentState extends State<_MyClientsScreenContent>
 
   Widget _buildEmptyState(ThemeService themeService, String searchQuery) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: themeService.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              searchQuery.isNotEmpty ? Icons.search_off : Icons.people_outline,
-              size: 60,
-              color: themeService.primaryColor.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            searchQuery.isNotEmpty ? 'No clients found' : 'No clients yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: themeService.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Text(
-              searchQuery.isNotEmpty
-                  ? 'Try adjusting your search or filters'
-                  : 'Your client list will appear here after consultations',
-              style: TextStyle(
-                fontSize: 14,
-                color: themeService.textSecondary,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: themeService.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              textAlign: TextAlign.center,
+              child: Icon(
+                searchQuery.isNotEmpty ? Icons.search_off : Icons.people_outline,
+                size: 60,
+                color: themeService.primaryColor.withOpacity(0.5),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              searchQuery.isNotEmpty ? 'No clients found' : 'No clients yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: themeService.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Text(
+                searchQuery.isNotEmpty
+                    ? 'Try adjusting your search or filters'
+                    : 'Your client list will appear here after consultations',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: themeService.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
