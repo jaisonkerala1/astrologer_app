@@ -68,7 +68,7 @@ dependencies:
   
   # UI & Media
   # image_picker: ^0.8.6  # Temporarily disabled due to SDK 35 compatibility issues
-  # cached_network_image: ^3.3.0  # Temporarily disabled due to path_provider dependency
+  cached_network_image: ^3.3.1  # For smooth avatar loading in lists
   intl: ^0.19.0
   flutter_rating_bar: ^4.0.1
   timeago: ^3.6.0

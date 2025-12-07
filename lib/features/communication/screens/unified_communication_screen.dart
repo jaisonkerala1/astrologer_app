@@ -62,8 +62,12 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       ),
     );
     
-    // Load communications via BLoC
-    context.read<CommunicationBloc>().add(const LoadCommunicationsEvent());
+    // Defer BLoC event to after frame is rendered (prevents jank during page transition)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CommunicationBloc>().add(const LoadCommunicationsEvent());
+      }
+    });
   }
 
   @override
@@ -71,6 +75,22 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     _fabAnimationController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Cache filtered communications to avoid recomputing on every frame
+  List<CommunicationItem> _getFilteredCommunications(CommunicationLoadedState state) {
+    var communications = state.filteredCommunications;
+    
+    // Apply search filter only if needed
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      communications = communications.where((item) {
+        return item.contactName.toLowerCase().contains(query) ||
+               item.preview.toLowerCase().contains(query);
+      }).toList();
+    }
+    
+    return communications;
   }
 
   @override
@@ -344,16 +364,8 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
 
     // Loaded state
     if (state is CommunicationLoadedState) {
-      var communications = state.filteredCommunications;
-      
-      // Apply search filter
-      if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        communications = communications.where((item) {
-          return item.contactName.toLowerCase().contains(query) ||
-                 item.preview.toLowerCase().contains(query);
-        }).toList();
-      }
+      // Cache the filtered list to avoid recomputing on every build
+      final communications = _getFilteredCommunications(state);
 
       if (communications.isEmpty) {
         return SliverFillRemaining(
@@ -367,13 +379,19 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               final item = communications[index];
-              return CommunicationItemCard(
-                item: item,
-                themeService: themeService,
-                onTap: () => _onItemTap(item),
+              // Wrap each item in RepaintBoundary for smooth scrolling
+              return RepaintBoundary(
+                child: CommunicationItemCard(
+                  key: ValueKey(item.id), // Helps Flutter reuse widgets
+                  item: item,
+                  themeService: themeService,
+                  onTap: () => _onItemTap(item),
+                ),
               );
             },
             childCount: communications.length,
+            addAutomaticKeepAlives: false, // Don't keep all items alive (saves memory)
+            addRepaintBoundaries: true, // Isolate repaint per item
           ),
         ),
       );

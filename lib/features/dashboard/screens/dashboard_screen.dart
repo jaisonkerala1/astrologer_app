@@ -471,7 +471,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               PageView.builder(
             controller: _pageController,
-            physics: const BouncingScrollPhysics(), // Enables smooth swipe gestures
+            physics: const ClampingScrollPhysics(), // Smoother than bouncing for page transitions
+            allowImplicitScrolling: true, // Pre-cache adjacent pages
             onPageChanged: (pageIndex) {
               setState(() {
                 _currentPageIndex = pageIndex;
@@ -490,7 +491,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
             itemCount: 6, // 6 pages: Live Prep (hidden) + 5 main tabs
             itemBuilder: (context, index) {
-              return _buildPageWithAnimation(index);
+              // Wrap each page in RepaintBoundary to isolate paint operations
+              return RepaintBoundary(
+                child: _buildPageWithAnimation(index),
+              );
             },
           ),
           ],

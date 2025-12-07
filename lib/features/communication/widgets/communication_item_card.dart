@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/communication_item.dart';
 
@@ -60,79 +61,61 @@ class CommunicationItemCard extends StatelessWidget {
   Widget _buildAvatar() {
     return Stack(
       children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: themeService.primaryColor.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+        // Use CachedNetworkImage for smooth scrolling (images are cached locally)
+        CachedNetworkImage(
+          imageUrl: item.avatar,
+          imageBuilder: (context, imageProvider) => Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
               ),
-            ],
-          ),
-          child: ClipOval(
-            child: Image.network(
-              item.avatar,
-              width: 56,
-              height: 56,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                // Fallback to initials if image fails to load
-                return Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        themeService.primaryColor,
-                        themeService.primaryColor.withOpacity(0.7),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      _getInitials(item.contactName),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: themeService.surfaceColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          themeService.primaryColor.withOpacity(0.5),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
           ),
+          placeholder: (context, url) => Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: themeService.surfaceColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                _getInitials(item.contactName),
+                style: TextStyle(
+                  color: themeService.textSecondary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          errorWidget: (context, url, error) => Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: themeService.primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                _getInitials(item.contactName),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+          fadeInDuration: const Duration(milliseconds: 150),
+          fadeOutDuration: const Duration(milliseconds: 150),
+          memCacheWidth: 112, // 2x for high-DPI screens
+          memCacheHeight: 112,
         ),
         
         // Online indicator

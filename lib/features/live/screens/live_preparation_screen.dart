@@ -29,10 +29,20 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   @override
   bool get wantKeepAlive => true; // Keep page alive for smooth transitions
 
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    _titleController.text = 'Daily Astrology Reading';
+    // Defer initialization to after first frame (prevents jank during page transition)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _titleController.text = 'Daily Astrology Reading';
+          _isInitialized = true;
+        });
+      }
+    });
   }
 
   @override
@@ -48,6 +58,37 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         final theme = themeService;
+
+        // Show minimal placeholder during first frame to prevent jank
+        if (!_isInitialized) {
+          return Scaffold(
+            backgroundColor: theme.backgroundColor,
+            appBar: AppBar(
+              elevation: 0,
+              backgroundColor: theme.surfaceColor,
+              leading: IconButton(
+                icon: Icon(Icons.close, color: theme.textPrimary),
+                onPressed: () {
+                  if (widget.onClose != null) {
+                    widget.onClose!();
+                  } else if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+              title: Text(
+                'Go Live',
+                style: TextStyle(
+                  color: theme.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              centerTitle: true,
+            ),
+            body: const SizedBox.shrink(), // Empty body - very fast to render
+          );
+        }
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle(
