@@ -410,7 +410,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Green solid
+                color: _getButtonColor(), // Status-matched color (Orange for pending)
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -479,7 +479,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Green
+                color: _getButtonColor(), // Status-matched color (Green #10B981 for confirmed)
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -548,7 +548,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Green
+                color: _getButtonColor(), // Status-matched color (Blue for in-progress)
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -676,6 +676,15 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
 
   Color _getStatusColor() {
     return Color(int.parse(widget.request.statusColor.replaceFirst('#', '0xFF')));
+  }
+
+  Color _getButtonColor() {
+    // Keep the exact current green shade for confirmed status
+    if (widget.request.status == RequestStatus.confirmed) {
+      return const Color(0xFF10B981); // Current green - DON'T CHANGE
+    }
+    // For other statuses, match the header color
+    return _getStatusColor();
   }
 
   String _formatDate(DateTime date) {

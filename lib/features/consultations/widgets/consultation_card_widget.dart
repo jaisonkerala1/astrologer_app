@@ -607,31 +607,31 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
           // Cancel button - Icon only (compact)
           Container(
             width: 40,
-            height: 40,
-            decoration: BoxDecoration(
+              height: 40,
+              decoration: BoxDecoration(
               color: const Color(0xFFEF4444).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _isCancelling ? null : _handleCancel,
                 borderRadius: BorderRadius.circular(100),
-                child: Center(
-                  child: _isCancelling
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isCancelling ? null : _handleCancel,
+                  borderRadius: BorderRadius.circular(100),
+                  child: Center(
+                    child: _isCancelling
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
-                          ),
-                        )
+                            ),
+                          )
                       : const Icon(
                           Icons.close,
                           size: 20,
                           color: Color(0xFFEF4444),
-                        ),
+                  ),
                 ),
               ),
             ),

@@ -1,5 +1,8 @@
+import 'dart:ui';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
@@ -8,146 +11,309 @@ import 'live_streaming_screen.dart';
 
 class LivePreparationScreen extends StatefulWidget {
   final VoidCallback? onClose;
+  final bool isVisible;
   
-  const LivePreparationScreen({super.key, this.onClose});
+  const LivePreparationScreen({
+    super.key,
+    this.onClose,
+    this.isVisible = true, // Default to true for standalone usage
+  });
 
   @override
   State<LivePreparationScreen> createState() => _LivePreparationScreenState();
 }
 
 class _LivePreparationScreenState extends State<LivePreparationScreen>
-    with AutomaticKeepAliveClientMixin {
-  final _formKey = GlobalKey<FormState>();
+    with WidgetsBindingObserver {
+  // Camera
+  CameraController? _cameraController;
+  List<CameraDescription>? _cameras;
+  bool _isCameraInitialized = false;
+  bool _isFlashOn = false;
+  bool _isFrontCamera = true;
+  bool _isLoadingCamera = true;
+  String? _cameraError;
+  
+  // Form
   final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-
   LiveStreamCategory _selectedCategory = LiveStreamCategory.astrology;
-  bool _isLoading = false;
-
+  bool _isStartingLive = false;
+  
+  // Services
   final LiveStreamService _liveService = LiveStreamService();
-
-  @override
-  bool get wantKeepAlive => true; // Keep page alive for smooth transitions
-
-  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Defer initialization to after first frame (prevents jank during page transition)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addObserver(this);
+    _titleController.text = 'Daily Astrology Reading';
+    
+    // Only initialize camera if page is visible
+    if (widget.isVisible) {
+      _initializeCamera();
+    }
+  }
+
+  @override
+  void didUpdateWidget(LivePreparationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Handle visibility changes
+    if (widget.isVisible && !oldWidget.isVisible) {
+      // Page became visible → Initialize camera
+      _initializeCamera();
+    } else if (!widget.isVisible && oldWidget.isVisible) {
+      // Page became hidden → Pause/dispose camera
+      _pauseCamera();
+    }
+  }
+
+  void _pauseCamera() {
+    if (_cameraController != null && _isCameraInitialized) {
+      _cameraController?.dispose();
+      setState(() {
+        _isCameraInitialized = false;
+        _isLoadingCamera = false;
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+    
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      // Pause camera when app goes to background
+      cameraController.dispose();
+      setState(() {
+        _isCameraInitialized = false;
+      });
+    } else if (state == AppLifecycleState.resumed) {
+      // Resume camera when app comes back to foreground
+      _initializeCamera();
+    }
+  }
+
+  Future<void> _initializeCamera() async {
+    setState(() {
+      _isLoadingCamera = true;
+      _cameraError = null;
+    });
+
+    try {
+      // Request camera permission
+      final cameraStatus = await Permission.camera.request();
+      final microphoneStatus = await Permission.microphone.request();
+      
+      if (!cameraStatus.isGranted || !microphoneStatus.isGranted) {
+        setState(() {
+          _cameraError = 'Camera and microphone permissions are required';
+          _isLoadingCamera = false;
+        });
+        return;
+      }
+
+      // Get available cameras
+      _cameras = await availableCameras();
+      
+      if (_cameras == null || _cameras!.isEmpty) {
+        setState(() {
+          _cameraError = 'No camera found on this device';
+          _isLoadingCamera = false;
+        });
+        return;
+      }
+
+      // Select front camera by default
+      final camera = _cameras!.firstWhere(
+        (cam) => cam.lensDirection == CameraLensDirection.front,
+        orElse: () => _cameras!.first,
+      );
+
+      // Initialize camera controller
+      _cameraController = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: true,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await _cameraController!.initialize();
+      
       if (mounted) {
         setState(() {
-          _titleController.text = 'Daily Astrology Reading';
-          _isInitialized = true;
+          _isCameraInitialized = true;
+          _isLoadingCamera = false;
+          _isFrontCamera = camera.lensDirection == CameraLensDirection.front;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _cameraError = 'Failed to initialize camera: ${e.toString()}';
+          _isLoadingCamera = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+    
+    HapticFeedback.lightImpact();
+    
+    setState(() => _isLoadingCamera = true);
+
+    try {
+      await _cameraController?.dispose();
+      
+      // Toggle camera direction
+      final newCamera = _cameras!.firstWhere(
+        (cam) => cam.lensDirection == 
+          (_isFrontCamera ? CameraLensDirection.back : CameraLensDirection.front),
+        orElse: () => _cameras!.first,
+      );
+
+      _cameraController = CameraController(
+        newCamera,
+        ResolutionPreset.high,
+        enableAudio: true,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await _cameraController!.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+          _isLoadingCamera = false;
+          _isFrontCamera = newCamera.lensDirection == CameraLensDirection.front;
+          _isFlashOn = false; // Reset flash when flipping
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCamera = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null || !_isCameraInitialized) return;
+    
+    HapticFeedback.lightImpact();
+    
+    try {
+      setState(() => _isFlashOn = !_isFlashOn);
+      await _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.torch : FlashMode.off,
+      );
+    } catch (e) {
+      // Flash not supported, revert state
+      if (mounted) {
+        setState(() => _isFlashOn = false);
+      }
+    }
+  }
+
+  Future<void> _startLiveStream() async {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a stream title')),
+      );
+      return;
+    }
+
+    setState(() => _isStartingLive = true);
+    HapticFeedback.mediumImpact();
+
+    try {
+      final success = await _liveService.startLiveStream(
+        title: _titleController.text.trim(),
+        description: null,
+        category: _selectedCategory,
+        quality: LiveStreamQuality.high,
+        isPrivate: false,
+        tags: const [],
+      );
+
+      if (success && mounted) {
+        // Dispose camera before navigating
+        await _cameraController?.dispose();
+        
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const LiveStreamingScreen(),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to start live stream')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isStartingLive = false);
+      }
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Properly dispose camera controller
+    _cameraController?.dispose().then((_) {
+      _cameraController = null;
+    });
     _titleController.dispose();
-    _descriptionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        final theme = themeService;
-
-        // Show minimal placeholder during first frame to prevent jank
-        if (!_isInitialized) {
-          return Scaffold(
-            backgroundColor: theme.backgroundColor,
-            appBar: AppBar(
-              elevation: 0,
-              backgroundColor: theme.surfaceColor,
-              leading: IconButton(
-                icon: Icon(Icons.close, color: theme.textPrimary),
-                onPressed: () {
-                  if (widget.onClose != null) {
-                    widget.onClose!();
-                  } else if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              title: Text(
-                'Go Live',
-                style: TextStyle(
-                  color: theme.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              centerTitle: true,
-            ),
-            body: const SizedBox.shrink(), // Empty body - very fast to render
-          );
-        }
-
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
+          value: const SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness:
-                theme.isDarkMode() ? Brightness.light : Brightness.dark,
-            statusBarBrightness:
-                theme.isDarkMode() ? Brightness.light : Brightness.dark,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
           ),
           child: Scaffold(
-            backgroundColor: theme.backgroundColor,
-            appBar: AppBar(
-              elevation: 0,
-              backgroundColor: theme.surfaceColor,
-              leading: IconButton(
-                icon: Icon(Icons.close, color: theme.textPrimary),
-                onPressed: () {
-                  // Use callback if provided (PageView context), otherwise pop (Route context)
-                  if (widget.onClose != null) {
-                    widget.onClose!();
-                  } else if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              title: Text(
-                'Go Live',
-                style: TextStyle(
-                  color: theme.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              centerTitle: true,
-            ),
-            body: Container(
-              decoration: BoxDecoration(gradient: theme.backgroundGradient),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeroCard(theme),
-                      const SizedBox(height: 28),
-                      _buildInfoBanner(theme),
-                      const SizedBox(height: 24),
-                      _buildTitleField(theme),
-                      const SizedBox(height: 20),
-                      _buildDescriptionField(theme),
-                      const SizedBox(height: 28),
-                      _buildCategorySection(theme),
-                      const SizedBox(height: 32),
-                      _buildStartLiveButton(theme),
-                    ],
-                  ),
-                ),
-              ),
+            extendBodyBehindAppBar: true,
+            backgroundColor: Colors.black,
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Layer 1: Camera Preview (Full Screen)
+                _buildCameraPreview(),
+                
+                // Layer 2: Gradient Overlays
+                _buildGradientOverlays(),
+                
+                // Layer 3: Top Controls
+                _buildTopControls(),
+                
+                // Layer 4: Category Pills
+                _buildCategoryPills(),
+                
+                // Layer 5: Go Live Button + Write Topic Text
+                _buildBottomSection(),
+              ],
             ),
           ),
         );
@@ -155,110 +321,348 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     );
   }
 
-  Widget _buildHeroCard(ThemeService theme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: theme.primaryGradient,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [theme.cardShadow],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  Widget _buildCameraPreview() {
+    if (_cameraError != null) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.videocam_rounded,
-                  color: Colors.white,
-                  size: 32,
-                ),
+              const Icon(Icons.error_outline, color: Colors.white70, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                _cameraError!,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Ready to start streaming?',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Set up the perfect session before going live.',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _initializeCamera,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white24,
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(18),
+        ),
+      );
+    }
+
+    if (_isLoadingCamera || !_isCameraInitialized || _cameraController == null) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    // Full-screen camera preview
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _cameraController!.value.previewSize!.height,
+          height: _cameraController!.value.previewSize!.width,
+          child: CameraPreview(_cameraController!),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGradientOverlays() {
+    return Column(
+      children: [
+        // Top gradient (for controls visibility)
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.6),
+                Colors.black.withOpacity(0.3),
+                Colors.transparent,
+              ],
             ),
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          ),
+        ),
+        const Spacer(),
+        // Bottom gradient (for input & button visibility)
+        Container(
+          height: 380,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [
+                Colors.black.withOpacity(0.8),
+                Colors.black.withOpacity(0.5),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopControls() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 12,
+      left: 16,
+      right: 16,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Close button
+          _buildIconButton(
+            icon: Icons.close,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              if (widget.onClose != null) {
+                widget.onClose!();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          Row(
+            children: [
+              // Flip camera
+              if (_cameras != null && _cameras!.length > 1)
+                _buildIconButton(
+                  icon: Icons.flip_camera_ios,
+                  onTap: _flipCamera,
+                ),
+              if (_cameras != null && _cameras!.length > 1)
+                const SizedBox(width: 12),
+              // Flash (only for back camera)
+              if (!_isFrontCamera)
+                _buildIconButton(
+                  icon: _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                  onTap: _toggleFlash,
+                  isActive: _isFlashOn,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: isActive 
+          ? Colors.white.withOpacity(0.3)
+          : Colors.black.withOpacity(0.4),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withOpacity(isActive ? 0.6 : 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryPills() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 72,
+      left: 16,
+      right: 16,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: LiveStreamCategory.values.map((category) {
+            final isSelected = _selectedCategory == category;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedCategory = category);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isSelected
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(isSelected ? 1 : 0.3),
+                      width: 1.5,
+                    ),
                   ),
                   child: Text(
-                    'LIVE',
+                    _getCategoryDisplayName(category),
                     style: TextStyle(
-                      color: theme.primaryColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
+                      color: isSelected ? Colors.black : Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSection() {
+    return Positioned(
+      bottom: 40,
+      left: 0,
+      right: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Go Live Button
+          Center(
+            child: Container(
+              width: 180,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFE91E63), // Instagram pink
+                    Color(0xFFFC5C7D), // Lighter pink
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFE91E63).withOpacity(0.5),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isStartingLive ? null : _startLiveStream,
+                  borderRadius: BorderRadius.circular(28),
+                  child: Center(
+                    child: _isStartingLive
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'Go Live',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Write your topic text (below button, left aligned)
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.only(left: 32),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: _showTitleBottomSheet,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Your audience is waiting',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Icon(
+                        Icons.edit_outlined,
+                        color: Colors.white.withOpacity(0.9),
+                        size: 16,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(width: 6),
                       Text(
-                        'Craft a compelling title and description. Focus on the transformation viewers will experience.',
+                        _titleController.text.trim().isEmpty
+                            ? 'Write your topic'
+                            : _titleController.text.trim().length > 25
+                                ? '${_titleController.text.trim().substring(0, 25)}...'
+                                : _titleController.text.trim(),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 12,
-                          height: 1.45,
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -266,241 +670,21 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     );
   }
 
-  Widget _buildInfoBanner(ThemeService theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: theme.infoColor.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.infoColor.withOpacity(0.18)),
+  void _showTitleBottomSheet() {
+    HapticFeedback.lightImpact();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => _TitleBottomSheet(
+        controller: _titleController,
+        onSave: () {
+          setState(() {}); // Refresh UI to show updated title
+        },
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.lightbulb, color: theme.infoColor, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Make it discoverable',
-                  style: TextStyle(
-                    color: theme.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Use clear, benefit-driven titles so the right viewers can find you quickly.',
-                  style: TextStyle(
-                    color: theme.textSecondary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitleField(ThemeService theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Stream title *',
-          style: TextStyle(
-            color: theme.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _titleController,
-          style: TextStyle(color: theme.textPrimary, fontSize: 16),
-          decoration: _inputDecoration(
-            theme,
-            hint: 'Example: Live Tarot for upcoming relationships',
-            icon: Icons.title_rounded,
-          ),
-          maxLength: 80,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please add a title';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionField(ThemeService theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Description (optional)',
-          style: TextStyle(
-            color: theme.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _descriptionController,
-          style: TextStyle(color: theme.textPrimary, fontSize: 15, height: 1.4),
-          decoration: _inputDecoration(
-            theme,
-            hint: 'Outline what you will cover and highlight the outcomes viewers will receive.',
-            icon: Icons.short_text_rounded,
-          ),
-          maxLines: 4,
-          maxLength: 400,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategorySection(ThemeService theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.category_outlined, color: theme.textSecondary, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              'Category',
-              style: TextStyle(
-                color: theme.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 10,
-          children: LiveStreamCategory.values.map((category) {
-            final isSelected = _selectedCategory == category;
-            return ChoiceChip(
-              label: Text(
-                _getCategoryDisplayName(category),
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : theme.textSecondary,
-                ),
-              ),
-              avatar: Icon(
-                _getCategoryIcon(category),
-                size: 18,
-                color: isSelected ? Colors.white : theme.textSecondary,
-              ),
-              selected: isSelected,
-              showCheckmark: false,
-              onSelected: (_) {
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
-              selectedColor: theme.primaryColor,
-              backgroundColor: theme.surfaceColor,
-              side: BorderSide(
-                color: isSelected
-                    ? theme.primaryColor
-                    : theme.borderColor.withOpacity(0.8),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              pressElevation: 0,
-              elevation: 0,
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStartLiveButton(ThemeService theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: 60,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _startLiveStream,
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.zero,
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              elevation: 8,
-              shadowColor: const Color(0xFFFF2D55).withOpacity(0.45),
-            ),
-            child: Ink(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF5F6D), Color(0xFFFF2D55)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Container(
-                alignment: Alignment.center,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.radio_button_checked_rounded, size: 22),
-                          SizedBox(width: 10),
-                          Text(
-                            'Start live stream',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Your stream will be public. Adjust advanced settings once you are live.',
-          style: TextStyle(
-            color: theme.textSecondary,
-            fontSize: 12,
-            height: 1.4,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 
@@ -524,114 +708,189 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
         return 'Spiritual';
     }
   }
+}
 
-  IconData _getCategoryIcon(LiveStreamCategory category) {
-    switch (category) {
-      case LiveStreamCategory.general:
-        return Icons.auto_awesome;
-      case LiveStreamCategory.astrology:
-        return Icons.nights_stay;
-      case LiveStreamCategory.healing:
-        return Icons.self_improvement;
-      case LiveStreamCategory.meditation:
-        return Icons.spa;
-      case LiveStreamCategory.tarot:
-        return Icons.filter_frames;
-      case LiveStreamCategory.numerology:
-        return Icons.calculate;
-      case LiveStreamCategory.palmistry:
-        return Icons.pan_tool_alt;
-      case LiveStreamCategory.spiritual:
-        return Icons.brightness_high;
-    }
-  }
+// Facebook-inspired bottom sheet for title input
+class _TitleBottomSheet extends StatefulWidget {
+  final TextEditingController controller;
+  final VoidCallback onSave;
+  
+  const _TitleBottomSheet({
+    required this.controller,
+    required this.onSave,
+  });
 
-  Future<void> _startLiveStream() async {
-    if (!_formKey.currentState!.validate()) return;
+  @override
+  State<_TitleBottomSheet> createState() => _TitleBottomSheetState();
+}
 
-    setState(() {
-      _isLoading = true;
+class _TitleBottomSheetState extends State<_TitleBottomSheet> {
+  late FocusNode _focusNode;
+  
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    
+    // Auto-focus when sheet opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
     });
-
-    HapticFeedback.selectionClick();
-
-    try {
-      final success = await _liveService.startLiveStream(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        category: _selectedCategory,
-        quality: LiveStreamQuality.high,
-        isPrivate: false,
-        tags: const [],
-      );
-
-      if (success && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const LiveStreamingScreen(),
-          ),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to start live stream. Please try again.'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
-  InputDecoration _inputDecoration(
-    ThemeService theme, {
-    required String hint,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-        color: theme.textHint,
-        fontSize: 14,
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleDone() {
+    HapticFeedback.lightImpact();
+    widget.onSave();
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      prefixIcon: Icon(icon, color: theme.textSecondary),
-      filled: true,
-      fillColor: theme.surfaceColor,
-      counterStyle: TextStyle(color: theme.textHint),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.borderColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.borderColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.primaryColor, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.errorColor),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.errorColor, width: 1.5),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1A1A2E),
+              Color(0xFF0F0F1E),
+            ],
+          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'What\'s your stream about?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _handleDone,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE91E63),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Divider
+            Container(
+              height: 1,
+              color: Colors.white.withOpacity(0.1),
+            ),
+            
+            // Input field
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: TextField(
+                  controller: widget.controller,
+                  focusNode: _focusNode,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "e.g., Daily Astrology Reading",
+                    hintStyle: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 16,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  maxLines: 3,
+                  maxLength: 80,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _handleDone(),
+                ),
+              ),
+            ),
+            
+            // Tips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    color: Colors.amber.withOpacity(0.8),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Use clear, engaging titles to attract viewers',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

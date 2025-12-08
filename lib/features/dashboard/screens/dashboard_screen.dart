@@ -243,6 +243,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     switch (index) {
       case 0:
         return LivePreparationScreen(
+          isVisible: _currentPageIndex == 0, // Only visible when on page 0
           onClose: () {
             // Navigate back to dashboard page when close is pressed
             _pageController.animateToPage(

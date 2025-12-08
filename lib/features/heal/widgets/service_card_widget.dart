@@ -27,7 +27,7 @@ class ServiceCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final category = _getCategoryInfo(service.category);
-
+    
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Container(
@@ -77,30 +77,30 @@ class ServiceCardWidget extends StatelessWidget {
                     // Top row: Service name + Status chip
                     Row(
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                service.name,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            service.name,
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: themeService.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                category.name,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: themeService.textSecondary,
-                                ),
-                              ),
-                            ],
+                              color: themeService.textPrimary,
+                            ),
                           ),
-                        ),
-                        _buildStatusChip(themeService, l10n),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            category.name,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: themeService.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    _buildStatusChip(themeService, l10n),
+                  ],
+                ),
                     
                     const SizedBox(height: 16),
                     
@@ -153,10 +153,10 @@ class ServiceCardWidget extends StatelessWidget {
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                           color: themeService.backgroundColor,
                           borderRadius: BorderRadius.circular(8),
-                        ),
+                            ),
                         child: Row(
                           children: [
                             Icon(
@@ -166,7 +166,7 @@ class ServiceCardWidget extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
+                            child: Text(
                                 service.description,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: themeService.textPrimary,
@@ -200,7 +200,7 @@ class ServiceCardWidget extends StatelessWidget {
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
+                decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
@@ -242,115 +242,115 @@ class ServiceCardWidget extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             color: themeService.textSecondary,
-          ),
-        ),
+                  ),
+                ),
       ],
     );
   }
 
   Widget _buildActionButtons(ThemeService themeService, AppLocalizations l10n) {
     return Row(
-      children: [
+                  children: [
         // Edit button - Primary action (prominent)
-        Expanded(
-          child: Container(
+                    Expanded(
+                      child: Container(
             height: 40,
-            decoration: BoxDecoration(
-              color: themeService.primaryColor,
+                        decoration: BoxDecoration(
+                          color: themeService.primaryColor,
               borderRadius: BorderRadius.circular(100),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onEdit();
-                },
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              onEdit();
+                            },
                 borderRadius: BorderRadius.circular(100),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.edit, size: 16, color: Colors.white),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.edit, size: 16, color: Colors.white),
                       const SizedBox(width: 6),
-                      Text(
-                        l10n.edit,
-                        style: const TextStyle(
-                          color: Colors.white,
+                                  Text(
+                                    l10n.edit,
+                                    style: const TextStyle(
+                                      color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+                    ),
         
-        const SizedBox(width: 8),
+                    const SizedBox(width: 8),
         
         // Pause/Activate button - Icon only
         Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
-            color: service.isActive 
+                        decoration: BoxDecoration(
+                          color: service.isActive
                 ? const Color(0xFFF59E0B).withOpacity(0.1)
                 : const Color(0xFF10B981).withOpacity(0.1),
             borderRadius: BorderRadius.circular(100),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onToggleStatus();
-              },
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              onToggleStatus();
+                            },
               borderRadius: BorderRadius.circular(100),
-              child: Center(
+                            child: Center(
                 child: Icon(
-                  service.isActive ? Icons.pause : Icons.play_arrow,
+                                    service.isActive ? Icons.pause : Icons.play_arrow,
                   size: 20,
                   color: service.isActive 
                       ? const Color(0xFFF59E0B)
                       : const Color(0xFF10B981),
-                ),
-              ),
-            ),
-          ),
-        ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
         
-        const SizedBox(width: 8),
+                    const SizedBox(width: 8),
         
         // Delete button - Icon only
-        Container(
+                    Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
+                      decoration: BoxDecoration(
             color: const Color(0xFFEF4444).withOpacity(0.1),
             borderRadius: BorderRadius.circular(100),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onDelete();
-              },
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onDelete();
+                          },
               borderRadius: BorderRadius.circular(100),
-              child: const Center(
-                child: Icon(
-                  Icons.delete_outline,
+                          child: const Center(
+                            child: Icon(
+                              Icons.delete_outline,
                   size: 20,
                   color: Color(0xFFEF4444),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
     );
   }
 
