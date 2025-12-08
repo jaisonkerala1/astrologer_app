@@ -197,62 +197,128 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               ),
             ),
             
-            // Content - ULTRA-MINIMAL Single Row Design
+            // Content - HORIZONTAL SPLIT (Apple Wallet Style)
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Service Name - Bold, Clean
-                  Text(
-                    request.serviceName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textColor,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 6),
-                  
-                  // Single Row: Price • Date • Time • Category
-                  Text(
-                    '₹${request.price.toStringAsFixed(0)} • ${_formatDate(request.requestedDate)} • ${request.requestedTime} • ${request.serviceCategory}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textColor.withOpacity(0.65),
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                  
-                  // Special Instructions - Ultra compact (if exists)
-                  if (request.specialInstructions.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Row(
+                  // Left Side: Service Info
+                  Expanded(
+                    flex: 60,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 12,
-                          color: AppTheme.primaryColor.withOpacity(0.6),
+                        // Service Name
+                        Text(
+                          request.serviceName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textColor,
+                            letterSpacing: -0.3,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            request.specialInstructions,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.textColor.withOpacity(0.5),
-                              fontStyle: FontStyle.italic,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 6),
+                        // Category
+                        Text(
+                          request.serviceCategory,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textColor.withOpacity(0.6),
+                          ),
+                        ),
+                        // Special Instructions (if exists)
+                        if (request.specialInstructions.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 12,
+                                color: AppTheme.primaryColor.withOpacity(0.6),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  request.specialInstructions,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.textColor.withOpacity(0.5),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  
+                  // Vertical Divider
+                  Container(
+                    width: 1,
+                    height: 60,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppTheme.textColor.withOpacity(0.0),
+                          AppTheme.textColor.withOpacity(0.15),
+                          AppTheme.textColor.withOpacity(0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  // Right Side: Price + Timing
+                  Expanded(
+                    flex: 40,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Price - Hero
+                        Text(
+                          '₹${request.price.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.successColor,
+                            letterSpacing: -0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Date
+                        Text(
+                          _formatDate(request.requestedDate),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textColor.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Time
+                        Text(
+                          request.requestedTime,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textColor.withOpacity(0.6),
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -326,15 +392,8 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
   }
 
   Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16), // Increased padding, flat design
       child: Row(
         children: _getActionButtons(context, l10n),
       ),
