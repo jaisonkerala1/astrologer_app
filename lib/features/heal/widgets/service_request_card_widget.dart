@@ -143,7 +143,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: _getStatusColor().withOpacity(0.08),
+                color: _getStatusColor().withOpacity(0.20), // Harder color - 20%
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -392,44 +392,9 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
     switch (widget.request.status) {
       case RequestStatus.pending:
         return [
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444), // Red solid
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onReject();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.close, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text(
-                          'Reject',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
+          // Accept button - Primary action (65% width for balance)
+          Flexible(
+            flex: 65,
             child: Container(
               height: 40,
               decoration: BoxDecoration(
@@ -448,14 +413,14 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        Icon(Icons.check, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
+                        Icon(Icons.check, size: 18, color: Colors.white),
+                        SizedBox(width: 6),
                         Text(
                           'Accept',
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
                       ],
@@ -465,15 +430,44 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          // Reject button - Icon only
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onReject();
+                },
+                borderRadius: BorderRadius.circular(100),
+                child: const Center(
+                  child: Icon(
+                    Icons.close,
+                    size: 20,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ];
       
       case RequestStatus.confirmed:
         return [
-          Expanded(
+          // Start button - Primary action (65% width for balance)
+          Flexible(
+            flex: 65,
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Match Accept button green
+                color: const Color(0xFF10B981), // Green
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -488,14 +482,14 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        Icon(Icons.play_arrow, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
+                        Icon(Icons.play_arrow, size: 18, color: Colors.white),
+                        SizedBox(width: 6),
                         Text(
                           'Start',
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
                       ],
@@ -506,37 +500,27 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400, // Grey solid
+          // Cancel button - Icon only
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onReject();
+                },
                 borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onReject();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.close, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
+                child: Center(
+                  child: Icon(
+                    Icons.close,
+                    size: 20,
+                    color: Colors.grey.shade700,
                   ),
                 ),
               ),
@@ -546,50 +530,13 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
       
       case RequestStatus.inProgress:
         return [
-          if (widget.onPause != null) ...[
-            Expanded(
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B), // Orange for pause
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      widget.onPause!();
-                    },
-                    borderRadius: BorderRadius.circular(100),
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.pause, size: 16, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text(
-                            'Pause',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
+          // Complete button - Primary action (65% width for balance)
+          Flexible(
+            flex: 65,
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Match Accept button green
+                color: const Color(0xFF10B981), // Green
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -604,14 +551,14 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        Icon(Icons.check, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
+                        Icon(Icons.check, size: 18, color: Colors.white),
+                        SizedBox(width: 6),
                         Text(
                           'Complete',
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
                       ],
@@ -621,6 +568,35 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               ),
             ),
           ),
+          if (widget.onPause != null) ...[
+            const SizedBox(width: 8),
+            // Pause button - Icon only
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onPause!();
+                  },
+                  borderRadius: BorderRadius.circular(100),
+                  child: const Center(
+                    child: Icon(
+                      Icons.pause,
+                      size: 20,
+                      color: Color(0xFFF59E0B),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ];
       
       case RequestStatus.completed:

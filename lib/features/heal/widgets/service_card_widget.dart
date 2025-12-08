@@ -4,7 +4,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/service_model.dart';
+import '../screens/service_detail_screen.dart';
+import 'category_icon_widget.dart';
 
+/// Service card widget inspired by consultation card design
+/// Clean, minimal with strong visual hierarchy
 class ServiceCardWidget extends StatelessWidget {
   final ServiceModel service;
   final VoidCallback onEdit;
@@ -23,274 +27,165 @@ class ServiceCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final category = _getCategoryInfo(service.category);
-    
+
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: themeService.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: themeService.borderColor,
-              width: 1,
-            ),
+            borderRadius: themeService.borderRadius,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 4,
+                spreadRadius: 0,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _getCategoryColor(category.color).withOpacity(0.1),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: themeService.borderRadius,
+            child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              // Tap on card goes to detail screen (read-only)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ServiceDetailScreen(
+                    service: service,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _getCategoryColor(category.color),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        category.icon,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            service.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: themeService.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            category.name,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: themeService.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildStatusChip(themeService, l10n),
-                  ],
-                ),
-              ),
-              
-              // Content
-              Padding(
+              );
+            },
+            borderRadius: themeService.borderRadius,
+            child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Description
-                    Text(
-                      service.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: themeService.textPrimary,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // Price and Duration
+                    // Top row: Service name + Status chip
                     Row(
                       children: [
-                        _buildInfoChip(
-                          icon: Icons.currency_rupee,
-                          label: '₹${service.price.toStringAsFixed(0)}',
-                          color: themeService.successColor,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                service.name,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: themeService.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                category.name,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: themeService.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        _buildInfoChip(
-                          icon: Icons.schedule,
-                          label: service.duration,
-                          color: themeService.primaryColor,
+                        _buildStatusChip(themeService, l10n),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Info row 1: Duration + Price
+                    Row(
+                      children: [
+                        _buildInfoItem(
+                          Icons.schedule,
+                          service.duration,
+                          themeService,
+                        ),
+                        const SizedBox(width: 16),
+                        _buildInfoItem(
+                          Icons.currency_rupee,
+                          '₹${service.price.toStringAsFixed(0)}',
+                          themeService,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
                     
-                    // Benefits
-                    if (service.benefits.isNotEmpty) ...[
-                      Text(
-                        '${l10n.benefits}:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 8),
+                    
+                    // Info row 2: Category with icon
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.category_outlined,
+                          size: 16,
                           color: themeService.textSecondary,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: service.benefits.take(3).map((benefit) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: themeService.primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 4),
+                        CategoryIconWidget(
+                          category: category,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          category.name,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: themeService.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Description if available (compact)
+                    if (service.description.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: themeService.backgroundColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.note_outlined,
+                              size: 16,
+                              color: themeService.textSecondary,
                             ),
-                            child: Text(
-                              benefit,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: themeService.primaryColor,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                service.description,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: themeService.textPrimary,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ],
+                        ),
                       ),
                     ],
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Action buttons (consultation style)
+                    _buildActionButtons(themeService, l10n),
                   ],
                 ),
               ),
-              
-              // Actions (Consultation card style)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: themeService.backgroundColor,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: themeService.primaryColor,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              onEdit();
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.edit, size: 16, color: Colors.white),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    l10n.edit,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: service.isActive
-                              ? const Color(0xFFF59E0B) // Orange for pause
-                              : const Color(0xFF10B981), // Green for activate
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              onToggleStatus();
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    service.isActive ? Icons.pause : Icons.play_arrow,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    service.isActive ? l10n.pause : l10n.activate,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      height: 36,
-                      width: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444), // Red for delete
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            onDelete();
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: const Center(
-                            child: Icon(
-                              Icons.delete_outline,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -298,53 +193,162 @@ class ServiceCardWidget extends StatelessWidget {
   }
 
   Widget _buildStatusChip(ThemeService themeService, AppLocalizations l10n) {
+    final isActive = service.isActive;
+    final color = isActive ? const Color(0xFF10B981) : const Color(0xFF6B7280);
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: service.isActive
-            ? themeService.successColor.withOpacity(0.1)
-            : themeService.textSecondary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        service.isActive ? l10n.active : l10n.inactive,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: service.isActive
-              ? themeService.successColor
-              : themeService.textSecondary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
+          Icon(
+            isActive ? Icons.check_circle : Icons.pause_circle,
+            size: 12,
+            color: color,
+          ),
           const SizedBox(width: 4),
           Text(
-            label,
+            isActive ? l10n.active : l10n.inactive,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
               color: color,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String text, ThemeService themeService) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: themeService.textSecondary,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: themeService.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(ThemeService themeService, AppLocalizations l10n) {
+    return Row(
+      children: [
+        // Edit button - Primary action (prominent)
+        Expanded(
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: themeService.primaryColor,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onEdit();
+                },
+                borderRadius: BorderRadius.circular(100),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit, size: 16, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.edit,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(width: 8),
+        
+        // Pause/Activate button - Icon only
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: service.isActive 
+                ? const Color(0xFFF59E0B).withOpacity(0.1)
+                : const Color(0xFF10B981).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onToggleStatus();
+              },
+              borderRadius: BorderRadius.circular(100),
+              child: Center(
+                child: Icon(
+                  service.isActive ? Icons.pause : Icons.play_arrow,
+                  size: 20,
+                  color: service.isActive 
+                      ? const Color(0xFFF59E0B)
+                      : const Color(0xFF10B981),
+                ),
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(width: 8),
+        
+        // Delete button - Icon only
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEF4444).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onDelete();
+              },
+              borderRadius: BorderRadius.circular(100),
+              child: const Center(
+                child: Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: Color(0xFFEF4444),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -360,9 +364,5 @@ class ServiceCardWidget extends StatelessWidget {
         color: '#6B7280',
       ),
     );
-  }
-
-  Color _getCategoryColor(String colorHex) {
-    return Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
   }
 }

@@ -106,6 +106,7 @@ class ServiceCategory {
   final String description;
   final String icon;
   final String color;
+  final String? iconPath; // Optional path to image asset (if provided, use instead of emoji)
 
   ServiceCategory({
     required this.id,
@@ -113,6 +114,7 @@ class ServiceCategory {
     required this.description,
     required this.icon,
     required this.color,
+    this.iconPath,
   });
 
   static List<ServiceCategory> getDefaultCategories() {
@@ -123,6 +125,7 @@ class ServiceCategory {
         description: 'Online Pooja Services',
         icon: '🕉️',
         color: '#FF6B6B',
+        iconPath: 'assets/images/epooja.png', // Custom image for e-pooja
       ),
       ServiceCategory(
         id: 'reiki_healing',

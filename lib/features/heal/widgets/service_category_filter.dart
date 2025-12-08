@@ -27,6 +27,7 @@ class ServiceCategoryFilter extends StatelessWidget {
             key: cat.id,
             label: cat.name,
             icon: cat.icon,
+            iconPath: cat.iconPath, // Pass iconPath for image support
           )),
         ];
 

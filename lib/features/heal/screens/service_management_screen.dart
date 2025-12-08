@@ -11,6 +11,7 @@ import '../models/service_model.dart';
 import '../widgets/service_card_widget.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/service_category_filter.dart';
+import '../widgets/service_list_skeleton.dart';
 import '../bloc/heal_bloc.dart';
 import '../bloc/heal_event.dart';
 import '../bloc/heal_state.dart';
@@ -129,21 +130,9 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
   }
 
   Widget _buildServicesList(HealState state, AppLocalizations l10n, ThemeService themeService) {
-    // Loading state
+    // Loading state with beautiful skeleton
     if (state is HealLoading && state.isInitialLoad) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: themeService.primaryColor),
-            const SizedBox(height: 16),
-            Text(
-              'Loading services...',
-              style: TextStyle(color: themeService.textSecondary),
-            ),
-          ],
-        ),
-      );
+      return const ServiceListSkeleton();
     }
 
     // Error state

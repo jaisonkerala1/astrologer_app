@@ -9,6 +9,7 @@ class FilterItem {
   final int count;
   final String? icon; // Optional emoji icon
   final Color? color; // Optional custom color for this filter
+  final String? iconPath; // Optional image asset path
 
   const FilterItem({
     required this.key,
@@ -16,6 +17,7 @@ class FilterItem {
     this.count = 0,
     this.icon,
     this.color,
+    this.iconPath,
   });
 }
 
@@ -225,8 +227,25 @@ class _GenericSlidingFilterChipsState extends State<GenericSlidingFilterChips> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Optional icon
-            if (filter.icon != null) ...[
+            // Optional icon (image or emoji)
+            if (filter.iconPath != null) ...[
+              Image.asset(
+                filter.iconPath!,
+                width: 16,
+                height: 16,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  // Fallback to emoji if image fails
+                  return filter.icon != null
+                      ? Text(
+                          filter.icon!,
+                          style: const TextStyle(fontSize: 16),
+                        )
+                      : const SizedBox.shrink();
+                },
+              ),
+              const SizedBox(width: 6),
+            ] else if (filter.icon != null) ...[
               Text(
                 filter.icon!,
                 style: const TextStyle(fontSize: 16),

@@ -91,7 +91,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
-      onTap: widget.onPressed,
+      onTap: widget.isLoading ? null : widget.onPressed,
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {

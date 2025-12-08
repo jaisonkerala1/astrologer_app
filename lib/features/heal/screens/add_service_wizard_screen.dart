@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/service_model.dart';
+import '../widgets/category_icon_widget.dart';
 
 /// Premium Service Creation Wizard
 /// Inspired by verification flows - immersive, step-by-step experience
@@ -427,9 +428,9 @@ class _AddServiceWizardScreenState extends State<AddServiceWizardScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              category.icon,
-                              style: const TextStyle(fontSize: 28),
+                            CategoryIconWidget(
+                              category: category,
+                              size: 28,
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -1339,4 +1340,5 @@ class _SuccessDialogState extends State<_SuccessDialog>
     );
   }
 }
+
 

@@ -508,11 +508,13 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
     return Row(
       children: [
         if (canStart) ...[
-          Expanded(
+          // Start button - Primary action (70% width)
+          Flexible(
+            flex: 70,
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Match heal tab Accept button green
+                color: const Color(0xFF10B981), // Green
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -533,14 +535,14 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.play_arrow, size: 16, color: Colors.white),
-                              const SizedBox(width: 4),
+                              const Icon(Icons.play_arrow, size: 18, color: Colors.white),
+                              const SizedBox(width: 6),
                               Text(
                                 _isStarting ? 'Starting...' : 'Start',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
                                 ),
                               ),
                             ],
@@ -553,11 +555,13 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
           const SizedBox(width: 8),
         ],
         if (canComplete) ...[
-          Expanded(
+          // Complete button - Primary action (70% width)
+          Flexible(
+            flex: 70,
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981), // Match heal tab Accept button green
+                color: const Color(0xFF10B981), // Green
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Material(
@@ -578,14 +582,14 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check, size: 16, color: Colors.white),
-                              const SizedBox(width: 4),
+                              const Icon(Icons.check, size: 18, color: Colors.white),
+                              const SizedBox(width: 6),
                               Text(
                                 _isCompleting ? 'Completing...' : 'Complete',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
                                 ),
                               ),
                             ],
@@ -598,44 +602,34 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
           const SizedBox(width: 8),
         ],
         if (canCancel) ...[
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444), // Red solid like service request reject
+          // Cancel button - Icon only (compact)
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isCancelling ? null : _handleCancel,
                 borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isCancelling ? null : _handleCancel,
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                    child: _isCancelling
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.close, size: 16, color: Colors.white),
-                              SizedBox(width: 4),
-                              Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                child: Center(
+                  child: _isCancelling
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
                           ),
-                  ),
+                        )
+                      : const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: Color(0xFFEF4444),
+                        ),
                 ),
               ),
             ),

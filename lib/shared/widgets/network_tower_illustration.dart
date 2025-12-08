@@ -339,10 +339,10 @@ class NetworkTowerPainter extends CustomPainter {
     final scale = size.width / 200;
     final center = Offset(size.width / 2, size.height / 2);
     
-    // Sparkle opacity animation (twinkling effect)
-    final sparkleOpacity1 = 0.3 + (0.5 * math.sin(sparkleAnimation * 2 * math.pi));
-    final sparkleOpacity2 = 0.3 + (0.5 * math.sin(sparkleAnimation * 2 * math.pi + math.pi / 2));
-    final sparkleOpacity3 = 0.3 + (0.5 * math.sin(sparkleAnimation * 2 * math.pi + math.pi));
+    // Sparkle opacity animation (twinkling effect) - clamped to valid 0.0-1.0 range
+    final sparkleOpacity1 = (0.5 + (0.3 * math.sin(sparkleAnimation * 2 * math.pi))).clamp(0.0, 1.0);
+    final sparkleOpacity2 = (0.5 + (0.3 * math.sin(sparkleAnimation * 2 * math.pi + math.pi / 2))).clamp(0.0, 1.0);
+    final sparkleOpacity3 = (0.5 + (0.3 * math.sin(sparkleAnimation * 2 * math.pi + math.pi))).clamp(0.0, 1.0);
     
     // Plus sign sparkles at different positions
     _drawPlusSparkle(canvas, Offset(center.dx + 65 * scale, center.dy - 70 * scale), 
