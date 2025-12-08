@@ -66,6 +66,8 @@ class ServiceCardWidget extends StatelessWidget {
                 ),
               );
             },
+            splashColor: themeService.primaryColor.withOpacity(0.1), // Purple ripple
+            highlightColor: themeService.primaryColor.withOpacity(0.05), // Purple highlight
             borderRadius: themeService.borderRadius,
             child: Padding(
                 padding: const EdgeInsets.all(16),

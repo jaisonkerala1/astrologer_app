@@ -200,6 +200,8 @@ class _ConsultationCardWidgetState extends State<ConsultationCardWidget> {
                 );
               }
             },
+            splashColor: const Color(0xFF10B981).withOpacity(0.1), // Green ripple
+            highlightColor: const Color(0xFF10B981).withOpacity(0.05), // Green highlight
             borderRadius: themeService.borderRadius,
             child: Padding(
               padding: const EdgeInsets.all(16),

@@ -120,8 +120,12 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           ),
         ],
       ),
-      child: InkWell(
+      child: Material(
+        color: Colors.transparent, // Transparent to allow ripple effect
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
         onTap: () {
+          HapticFeedback.selectionClick(); // Add haptic feedback
           if (onTap != null) {
             onTap!();
           } else {
@@ -135,6 +139,8 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
             );
           }
         },
+        splashColor: _getStatusColor().withOpacity(0.1), // Status color ripple
+        highlightColor: _getStatusColor().withOpacity(0.05), // Status color highlight
         borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,115 +197,61 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
               ),
             ),
             
-            // Content
+            // Content - ULTRA-MINIMAL Single Row Design
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Service Info
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.spa,
-                        size: 16,
-                        color: AppTheme.primaryColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          request.serviceName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textColor,
+                  // Service Name - Bold, Clean
+                  Text(
+                    request.serviceName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textColor,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 6),
+                  
+                  // Single Row: Price • Date • Time • Category
+                  Text(
+                    '₹${request.price.toStringAsFixed(0)} • ${_formatDate(request.requestedDate)} • ${request.requestedTime} • ${request.serviceCategory}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textColor.withOpacity(0.65),
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  
+                  // Special Instructions - Ultra compact (if exists)
+                  if (request.specialInstructions.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 12,
+                          color: AppTheme.primaryColor.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            request.specialInstructions,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textColor.withOpacity(0.5),
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      Text(
-                        '₹${request.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.successColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Category
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      ],
                     ),
-                    child: Text(
-                      request.serviceCategory,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Date & Time
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: AppTheme.textColor.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _formatDate(request.requestedDate),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textColor.withOpacity(0.8),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: AppTheme.textColor.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        request.requestedTime,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textColor.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Special Instructions
-                  if (request.specialInstructions.isNotEmpty) ...[
-                    Text(
-                      'Special Instructions:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor.withOpacity(0.8),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      request.specialInstructions,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textColor.withOpacity(0.7),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                   ],
                 ],
               ),
@@ -310,6 +262,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           ],
         ),
       ),
+      ), // Close Material wrapper
     );
   }
 
@@ -638,6 +591,28 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
       default:
         return [];
     }
+  }
+
+  Widget _buildInfoChip(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: AppTheme.textColor.withOpacity(0.6),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textColor.withOpacity(0.8),
+          ),
+        ),
+      ],
+    );
   }
 
   Color _getStatusColor() {
