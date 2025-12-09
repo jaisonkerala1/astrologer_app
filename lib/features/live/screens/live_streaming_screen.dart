@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
@@ -9,6 +11,7 @@ import '../services/live_stream_service.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_gift_animation_overlay.dart';
+import '../widgets/live_video_preview_widget.dart';
 import '../utils/gift_helper.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
@@ -19,16 +22,33 @@ class LiveStreamingScreen extends StatefulWidget {
 }
 
 class _LiveStreamingScreenState extends State<LiveStreamingScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late final LiveStreamService _liveService;
+  
+  // Camera state - Agora-ready architecture
+  CameraController? _cameraController;
+  List<CameraDescription>? _cameras;
+  bool _isCameraInitialized = false;
+  bool _isLoadingCamera = true;
+  String? _cameraError;
+  bool _isFrontCamera = true;
+  bool _isFlashOn = false;
+  
+  // Countdown state
+  bool _isCountingDown = true;
+  int _countdownValue = 5;
+  Timer? _countdownTimer;
   
   late AnimationController _pulseController;
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late AnimationController _commentController;
+  late AnimationController _countdownAnimController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _countdownScaleAnimation;
+  late Animation<double> _countdownFadeAnimation;
   
   bool _isEnding = false;
   bool _isControlsVisible = true;
@@ -61,25 +81,208 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _liveService = LiveStreamService(); // Get the singleton instance
     _initializeAnimations();
     _hideSystemUI();
+    _initializeCamera(); // Initialize camera for live streaming
     _startStream();
     _startCommentSimulation();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _countdownTimer?.cancel();
+    _cameraController?.dispose();
     _pulseController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     _commentController.dispose();
+    _countdownAnimController.dispose();
     _commentsController.dispose();
     _commentSimulationTimer?.cancel();
     // SystemUI is restored in _confirmEndStream() before navigation to prevent flickering
     // Keeping this as a safety fallback
     _showSystemUI();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+    
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      // Pause camera when app goes to background
+      cameraController.dispose();
+      setState(() {
+        _isCameraInitialized = false;
+      });
+    } else if (state == AppLifecycleState.resumed && !_isEnding) {
+      // Resume camera when app comes back to foreground (unless ending stream)
+      _initializeCamera();
+    }
+  }
+
+  /// Initialize camera for live streaming
+  Future<void> _initializeCamera() async {
+    if (_isEnding) return; // Don't initialize if ending stream
+    
+    setState(() {
+      _isLoadingCamera = true;
+      _cameraError = null;
+    });
+
+    try {
+      // Request camera permission
+      final cameraStatus = await Permission.camera.request();
+      final microphoneStatus = await Permission.microphone.request();
+      
+      if (!cameraStatus.isGranted || !microphoneStatus.isGranted) {
+        setState(() {
+          _cameraError = 'Camera and microphone permissions are required';
+          _isLoadingCamera = false;
+        });
+        return;
+      }
+
+      // Get available cameras
+      _cameras = await availableCameras();
+      
+      if (_cameras == null || _cameras!.isEmpty) {
+        setState(() {
+          _cameraError = 'No camera found on this device';
+          _isLoadingCamera = false;
+        });
+        return;
+      }
+
+      // Select front camera by default (for live streaming)
+      final camera = _cameras!.firstWhere(
+        (cam) => cam.lensDirection == (_isFrontCamera 
+            ? CameraLensDirection.front 
+            : CameraLensDirection.back),
+        orElse: () => _cameras!.first,
+      );
+
+      // Initialize camera controller with high resolution for streaming
+      _cameraController = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: true, // Enable audio for live streaming
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await _cameraController!.initialize();
+      
+      // Set flash mode
+      if (_isFlashOn) {
+        await _cameraController!.setFlashMode(FlashMode.torch);
+      }
+
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+          _isLoadingCamera = false;
+        });
+        // Start countdown after camera is ready
+        _startCountdown();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _cameraError = 'Failed to initialize camera: ${e.toString()}';
+          _isLoadingCamera = false;
+        });
+      }
+    }
+  }
+
+  /// Start the countdown animation before going live
+  void _startCountdown() {
+    if (!_isCountingDown) return;
+    
+    // Play haptic feedback for first number
+    HapticFeedback.mediumImpact();
+    _countdownAnimController.forward();
+    
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      setState(() {
+        _countdownValue--;
+      });
+      
+      if (_countdownValue > 0) {
+        // Animate next number
+        HapticFeedback.mediumImpact();
+        _countdownAnimController.reset();
+        _countdownAnimController.forward();
+      } else {
+        // Countdown finished - go live!
+        timer.cancel();
+        HapticFeedback.heavyImpact();
+        setState(() {
+          _isCountingDown = false;
+        });
+        // Start the pulse animation now that we're live
+        _pulseController.repeat(reverse: true);
+      }
+    });
+  }
+
+  /// Switch between front and back camera
+  Future<void> _switchCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+    
+    setState(() {
+      _isFrontCamera = !_isFrontCamera;
+      _isCameraInitialized = false;
+      _isLoadingCamera = true;
+    });
+    
+    await _cameraController?.dispose();
+    await _initializeCamera();
+    
+    HapticFeedback.selectionClick();
+  }
+
+  /// Toggle flash/torch
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null || !_isCameraInitialized) return;
+    
+    // Flash only works on back camera
+    if (_isFrontCamera) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Flash is only available on back camera'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.black87,
+        ),
+      );
+      return;
+    }
+    
+    try {
+      setState(() {
+        _isFlashOn = !_isFlashOn;
+      });
+      
+      await _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.torch : FlashMode.off,
+      );
+      
+      HapticFeedback.selectionClick();
+    } catch (e) {
+      // Ignore flash errors
+    }
   }
 
   void _initializeAnimations() {
@@ -100,6 +303,12 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     
     _commentController = AnimationController(
       duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    // Countdown animation - scales and fades each number
+    _countdownAnimController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     
@@ -126,8 +335,25 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       parent: _slideController,
       curve: Curves.easeOutCubic,
     ));
+    
+    // Countdown number animation - scale up and fade out
+    _countdownScaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.5,
+    ).animate(CurvedAnimation(
+      parent: _countdownAnimController,
+      curve: Curves.easeOut,
+    ));
+    
+    _countdownFadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _countdownAnimController,
+      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+    ));
 
-    _pulseController.repeat(reverse: true);
+    // Don't start pulse animation until countdown finishes
     _fadeController.forward();
     _slideController.forward();
   }
@@ -333,6 +559,12 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     });
     print('🛑 [LIVE_STREAMING] Set _isEnding = true');
     
+    // Dispose camera immediately when ending stream
+    _cameraController?.dispose();
+    _cameraController = null;
+    _isCameraInitialized = false;
+    print('📷 [LIVE_STREAMING] Camera disposed');
+    
     _liveService.endLiveStream();
     print('🛑 [LIVE_STREAMING] Called _liveService.endLiveStream()');
     
@@ -427,56 +659,63 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   // Camera Preview
                   _buildCameraPreview(themeService),
                   
-                  // Top gradient overlay
-                  _buildTopGradient(),
+                  // Countdown overlay (shows during countdown)
+                  if (_isCountingDown && _isCameraInitialized)
+                    _buildCountdownOverlay(themeService),
                   
-                  // Bottom gradient overlay
-                  _buildBottomGradient(),
-                  
-                  // Tap to toggle controls (must be before buttons so buttons are on top)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: _toggleControls,
-                      child: Container(color: Colors.transparent),
+                  // Show live UI only after countdown
+                  if (!_isCountingDown) ...[
+                    // Top gradient overlay
+                    _buildTopGradient(),
+                    
+                    // Bottom gradient overlay
+                    _buildBottomGradient(),
+                    
+                    // Tap to toggle controls (must be before buttons so buttons are on top)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: _toggleControls,
+                        child: Container(color: Colors.transparent),
+                      ),
                     ),
-                  ),
-                  
-                  // Live indicator with animation
-              _buildLiveIndicator(),
-              
-                  // Stream info
-                  _buildStreamInfo(stream, themeService),
-                  
-                  // Viewer count
-                  _buildViewerCount(stream),
-                  
-                  // Duration
-                  _buildDuration(stream),
-                  
-                  // Floating comments (always visible)
-                  _buildFloatingComments(),
-                  
-                  // Gift animations overlay
-                  ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
-                    gift: GiftAnimation(
-                      name: gift['name'],
-                      emoji: gift['emoji'],
-                      value: gift['value'],
-                      color: gift['color'],
-                      tier: gift['tier'],
-                      senderName: gift['senderName'] ?? 'Anonymous',
-                      combo: gift['combo'] ?? 1,
-                    ),
-                    onComplete: () {
-                      setState(() {
-                        _giftAnimations.remove(gift);
-                      });
-                    },
-                    key: ValueKey(gift['id']),
-                  )),
-                  
-                  // Modern action buttons (right side)
-                  if (_isControlsVisible) _buildModernActionButtons(themeService),
+                    
+                    // Live indicator with animation
+                    _buildLiveIndicator(),
+                    
+                    // Stream info
+                    _buildStreamInfo(stream, themeService),
+                    
+                    // Viewer count
+                    _buildViewerCount(stream),
+                    
+                    // Duration
+                    _buildDuration(stream),
+                    
+                    // Floating comments (always visible)
+                    _buildFloatingComments(),
+                    
+                    // Gift animations overlay
+                    ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
+                      gift: GiftAnimation(
+                        name: gift['name'],
+                        emoji: gift['emoji'],
+                        value: gift['value'],
+                        color: gift['color'],
+                        tier: gift['tier'],
+                        senderName: gift['senderName'] ?? 'Anonymous',
+                        combo: gift['combo'] ?? 1,
+                      ),
+                      onComplete: () {
+                        setState(() {
+                          _giftAnimations.remove(gift);
+                        });
+                      },
+                      key: ValueKey(gift['id']),
+                    )),
+                    
+                    // Modern action buttons (right side)
+                    if (_isControlsVisible) _buildModernActionButtons(themeService),
+                  ],
                   
                   // Ending overlay
               if (_isEnding) _buildEndingOverlay(),
@@ -515,83 +754,104 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  Widget _buildCameraPreview(ThemeService themeService) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            themeService.primaryColor.withOpacity(0.3),
-            themeService.secondaryColor.withOpacity(0.3),
-            Colors.black.withOpacity(0.8),
-          ],
+  /// Minimal countdown overlay before going live
+  Widget _buildCountdownOverlay(ThemeService themeService) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.6),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // "Going Live in" text
+              Text(
+                'Going Live in',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Animated countdown number
+              AnimatedBuilder(
+                animation: _countdownAnimController,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _countdownScaleAnimation.value,
+                    child: Opacity(
+                      opacity: _countdownFadeAnimation.value,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _countdownValue > 0 
+                                ? Colors.white.withOpacity(0.3)
+                                : Colors.red,
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_countdownValue > 0 
+                                  ? Colors.white 
+                                  : Colors.red).withOpacity(0.2),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            _countdownValue > 0 
+                                ? '$_countdownValue' 
+                                : '●',
+                            style: TextStyle(
+                              color: _countdownValue > 0 
+                                  ? Colors.white 
+                                  : Colors.red,
+                              fontSize: _countdownValue > 0 ? 64 : 32,
+                              fontWeight: FontWeight.w200,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 40),
+              
+              // Subtle hint
+              Text(
+                'Get ready to shine ✨',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      child: Stack(
-        children: [
-          // Mock camera feed
-          Center(
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.0,
-                  colors: [
-                    Colors.white.withOpacity(0.1),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.videocam,
-                      size: 100,
-                      color: Colors.white24,
-            ),
-                    SizedBox(height: 16),
-            Text(
-                      'Live Camera Feed',
-              style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w300,
-              ),
-            ),
-                    SizedBox(height: 8),
-            Text(
-                      'Meta-style Live Streaming',
-              style: TextStyle(
-                        color: Colors.white24,
-                fontSize: 14,
-              ),
-            ),
-          ],
-                ),
-              ),
-            ),
-          ),
-          
-          // Camera overlay effects
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    );
+  }
+
+  Widget _buildCameraPreview(ThemeService themeService) {
+    // Use the Agora-ready LiveVideoPreviewWidget
+    return LiveVideoPreviewWidget(
+      videoSource: VideoSource.localCamera,
+      cameraController: _cameraController,
+      isCameraInitialized: _isCameraInitialized,
+      isLoading: _isLoadingCamera,
+      errorMessage: _cameraError,
+      onRetry: _initializeCamera,
     );
   }
 
@@ -808,6 +1068,27 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Flip camera
+          _buildActionButton(
+            icon: Icons.flip_camera_ios,
+            label: '',
+            onTap: _switchCamera,
+            color: Colors.white,
+          ),
+          const SizedBox(height: 12),
+          
+          // Flash toggle (only show for back camera)
+          if (!_isFrontCamera)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildActionButton(
+                icon: _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                label: '',
+                onTap: _toggleFlash,
+                color: _isFlashOn ? Colors.amber : Colors.white,
+              ),
+            ),
+          
           // Hearts/Likes received
           _buildActionButton(
             icon: Icons.favorite,
@@ -817,7 +1098,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             },
             color: Colors.red,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           
           // Comments
           _buildActionButton(
@@ -826,7 +1107,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             onTap: _openComments,
             color: Colors.white,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           
           // Gifts received
           _buildActionButton(
@@ -835,7 +1116,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             onTap: _openGifts,
             color: Colors.amber,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           
           // Settings
           _buildActionButton(
@@ -844,7 +1125,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             onTap: _toggleSettings,
             color: Colors.white,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           
           // End stream button (prominent red)
           GestureDetector(
