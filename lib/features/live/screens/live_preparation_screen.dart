@@ -24,7 +24,7 @@ class LivePreparationScreen extends StatefulWidget {
 }
 
 class _LivePreparationScreenState extends State<LivePreparationScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   // Camera
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
@@ -39,6 +39,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   LiveStreamCategory _selectedCategory = LiveStreamCategory.astrology;
   bool _isStartingLive = false;
   
+  // Animation
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+  
   // Services
   final LiveStreamService _liveService = LiveStreamService();
 
@@ -46,7 +50,16 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _titleController.text = 'Daily Astrology Reading';
+    // Don't set default text - let user type their own topic
+    
+    // Initialize shake animation
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _shakeAnimation = Tween<double>(begin: 0, end: 10).chain(
+      CurveTween(curve: Curves.elasticIn),
+    ).animate(_shakeController);
     
     // Only initialize camera if page is visible
     if (widget.isVisible) {
@@ -223,9 +236,39 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   }
 
   Future<void> _startLiveStream() async {
+    // Validate topic/description is not empty
     if (_titleController.text.trim().isEmpty) {
+      // Trigger shake animation
+      _shakeController.forward(from: 0);
+      
+      // Haptic feedback (error vibration)
+      HapticFeedback.heavyImpact();
+      
+      // Show bottom sheet if not already open
+      _showTitleBottomSheet();
+      
+      // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a stream title')),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Please add a topic for your stream',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
       return;
     }
@@ -280,6 +323,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       _cameraController = null;
     });
     _titleController.dispose();
+    _shakeController.dispose();
     super.dispose();
   }
 
@@ -308,10 +352,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 // Layer 3: Top Controls
                 _buildTopControls(),
                 
-                // Layer 4: Category Pills
-                _buildCategoryPills(),
-                
-                // Layer 5: Go Live Button + Write Topic Text
+                // Layer 4: Go Live Button + Write Topic Text
                 _buildBottomSection(),
               ],
             ),
@@ -550,24 +591,82 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Go Live Button
-          Center(
+          // Write your topic text (above button, left aligned)
+          Padding(
+            padding: const EdgeInsets.only(left: 32, right: 32),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AnimatedBuilder(
+                animation: _shakeAnimation,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(_shakeAnimation.value * 
+                        ((_shakeController.value * 4).floor() % 2 == 0 ? 1 : -1), 0),
+                    child: child,
+                  );
+                },
+                child: GestureDetector(
+                  onTap: _showTitleBottomSheet,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white.withOpacity(0.9),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _titleController.text.trim().isEmpty
+                              ? 'Write your topic'
+                              : _titleController.text.trim().length > 25
+                                  ? '${_titleController.text.trim().substring(0, 25)}...'
+                                  : _titleController.text.trim(),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Go Live Button (full width, aligned with topic text)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Container(
-              width: 180,
-              height: 56,
+              width: double.infinity,
+              height: 52,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFE91E63), // Instagram pink
-                    Color(0xFFFC5C7D), // Lighter pink
-                  ],
+                  colors: [Color(0xFFFF4444), Color(0xFFCC0000)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(26),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFE91E63).withOpacity(0.5),
+                    color: const Color(0xFFFF4444).withOpacity(0.5),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -577,7 +676,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _isStartingLive ? null : _startLiveStream,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(26),
                   child: Center(
                     child: _isStartingLive
                         ? const SizedBox(
@@ -591,13 +690,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
+                              const Icon(
+                                Icons.sensors,
+                                color: Colors.white,
+                                size: 20,
                               ),
                               const SizedBox(width: 10),
                               const Text(
@@ -611,55 +707,6 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                               ),
                             ],
                           ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          // Write your topic text (below button, left aligned)
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.only(left: 32),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: GestureDetector(
-                onTap: _showTitleBottomSheet,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit_outlined,
-                        color: Colors.white.withOpacity(0.9),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _titleController.text.trim().isEmpty
-                            ? 'Write your topic'
-                            : _titleController.text.trim().length > 25
-                                ? '${_titleController.text.trim().substring(0, 25)}...'
-                                : _titleController.text.trim(),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -681,6 +728,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       enableDrag: true,
       builder: (context) => _TitleBottomSheet(
         controller: _titleController,
+        selectedCategory: _selectedCategory,
+        onCategoryChanged: (category) {
+          setState(() => _selectedCategory = category);
+        },
         onSave: () {
           setState(() {}); // Refresh UI to show updated title
         },
@@ -714,10 +765,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 class _TitleBottomSheet extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSave;
+  final LiveStreamCategory selectedCategory;
+  final Function(LiveStreamCategory) onCategoryChanged;
   
   const _TitleBottomSheet({
     required this.controller,
     required this.onSave,
+    required this.selectedCategory,
+    required this.onCategoryChanged,
   });
 
   @override
@@ -752,13 +807,9 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.4,
-        decoration: const BoxDecoration(
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -775,123 +826,232 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(top: 12),
+              margin: const EdgeInsets.only(top: 12, bottom: 12),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'What\'s your stream about?',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _handleDone,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE91E63),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Done',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Divider
+            // Header (increased height)
             Container(
-              height: 1,
-              color: Colors.white.withOpacity(0.1),
-            ),
-            
-            // Input field
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
+              padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withOpacity(0.08),
                     width: 1,
                   ),
                 ),
-                child: TextField(
-                  controller: widget.controller,
-                  focusNode: _focusNode,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "e.g., Daily Astrology Reading",
-                    hintStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 16,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  maxLines: 3,
-                  maxLength: 80,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _handleDone(),
-                ),
               ),
-            ),
-            
-            // Tips
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    color: Colors.amber.withOpacity(0.8),
-                    size: 18,
+                  const Text(
+                    'Add details to your stream',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Use clear, engaging titles to attract viewers',
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _handleDone,
+                    child: const Text(
+                      'Done',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 12,
+                        color: Color(0xFF4A9FFF),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          
+          // Content Area
+          Expanded(
+            child: Column(
+              children: [
+                // Category Chips (at top, always visible)
+                _buildCategoryChips(),
+                
+                // Divider
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  color: Colors.white.withOpacity(0.08),
+                ),
+                
+                // Text Input Area (below categories)
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: _focusNode,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "What will you talk about today?",
+                        hintStyle: TextStyle(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        filled: false,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      minLines: 1,
+                      maxLines: 5,
+                      maxLength: 200,
+                      textInputAction: TextInputAction.newline,
+                      keyboardType: TextInputType.multiline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+  
+  Widget _buildCategoryChips() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Category',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: LiveStreamCategory.values.map((category) {
+                final isSelected = widget.selectedCategory == category;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onCategoryChanged(category);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white.withOpacity(0.15)
+                            : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.white.withOpacity(0.4)
+                              : Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _getCategoryEmoji(category),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getCategoryDisplayName(category),
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.8),
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _getCategoryDisplayName(LiveStreamCategory category) {
+    switch (category) {
+      case LiveStreamCategory.general:
+        return 'General';
+      case LiveStreamCategory.astrology:
+        return 'Astrology';
+      case LiveStreamCategory.healing:
+        return 'Healing';
+      case LiveStreamCategory.meditation:
+        return 'Meditation';
+      case LiveStreamCategory.tarot:
+        return 'Tarot';
+      case LiveStreamCategory.numerology:
+        return 'Numerology';
+      case LiveStreamCategory.palmistry:
+        return 'Palmistry';
+      case LiveStreamCategory.spiritual:
+        return 'Spiritual';
+    }
+  }
+  
+  String _getCategoryEmoji(LiveStreamCategory category) {
+    switch (category) {
+      case LiveStreamCategory.general:
+        return '💬';
+      case LiveStreamCategory.astrology:
+        return '⭐';
+      case LiveStreamCategory.healing:
+        return '🌿';
+      case LiveStreamCategory.meditation:
+        return '🧘';
+      case LiveStreamCategory.tarot:
+        return '🔮';
+      case LiveStreamCategory.numerology:
+        return '🔢';
+      case LiveStreamCategory.palmistry:
+        return '✋';
+      case LiveStreamCategory.spiritual:
+        return '🕉️';
+    }
+  }
 }
+
+
+
