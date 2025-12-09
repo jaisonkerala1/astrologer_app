@@ -12,11 +12,13 @@ import 'live_streaming_screen.dart';
 class LivePreparationScreen extends StatefulWidget {
   final VoidCallback? onClose;
   final bool isVisible;
+  final Function(int)? onNavigateToPage; // Callback to navigate to specific page
   
   const LivePreparationScreen({
     super.key,
     this.onClose,
     this.isVisible = true, // Default to true for standalone usage
+    this.onNavigateToPage,
   });
 
   @override
@@ -38,7 +40,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   final _titleController = TextEditingController();
   LiveStreamCategory _selectedCategory = LiveStreamCategory.astrology;
   bool _isStartingLive = false;
-  
+
   // Animation
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
@@ -79,6 +81,13 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       // Page became hidden → Pause/dispose camera
       _pauseCamera();
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Camera initialization is handled explicitly in _goLive() after returning from live stream
+    // and in didUpdateWidget() for visibility changes
   }
 
   void _pauseCamera() {
@@ -287,15 +296,26 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       );
 
       if (success && mounted) {
-        // Dispose camera before navigating
+        // Dispose camera before navigating to live streaming
         await _cameraController?.dispose();
+        _cameraController = null;
+        setState(() {
+          _isCameraInitialized = false;
+          _isLoadingCamera = false;
+        });
         
         if (mounted) {
-          Navigator.of(context).pushReplacement(
+          // Push to live streaming screen
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const LiveStreamingScreen(),
             ),
           );
+          
+          // After returning from live stream - reinitialize camera and stay here
+          if (mounted) {
+            _initializeCamera();
+          }
         }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -342,7 +362,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
             backgroundColor: Colors.black,
             body: Stack(
               fit: StackFit.expand,
-              children: [
+                    children: [
                 // Layer 1: Camera Preview (Full Screen)
                 _buildCameraPreview(),
                 
@@ -354,7 +374,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 
                 // Layer 4: Go Live Button + Write Topic Text
                 _buildBottomSection(),
-              ],
+                    ],
             ),
           ),
         );
@@ -364,10 +384,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
   Widget _buildCameraPreview() {
     if (_cameraError != null) {
-      return Container(
+    return Container(
         color: Colors.black,
         child: Center(
-          child: Column(
+      child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error_outline, color: Colors.white70, size: 64),
@@ -376,7 +396,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 _cameraError!,
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
                 textAlign: TextAlign.center,
-              ),
+                    ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _initializeCamera,
@@ -398,7 +418,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
         color: Colors.black,
         child: const Center(
           child: CircularProgressIndicator(
-            color: Colors.white,
+                    color: Colors.white,
             strokeWidth: 2,
           ),
         ),
@@ -432,9 +452,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 Colors.black.withOpacity(0.6),
                 Colors.black.withOpacity(0.3),
                 Colors.transparent,
-              ],
-            ),
-          ),
+                    ],
+                  ),
+                ),
         ),
         const Spacer(),
         // Bottom gradient (for input & button visibility)
@@ -450,9 +470,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 Colors.transparent,
               ],
             ),
+            ),
           ),
-        ),
-      ],
+        ],
     );
   }
 
@@ -477,7 +497,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
             },
           ),
           Row(
-            children: [
+              children: [
               // Flip camera
               if (_cameras != null && _cameras!.length > 1)
                 _buildIconButton(
@@ -493,8 +513,8 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                   onTap: _toggleFlash,
                   isActive: _isFlashOn,
                 ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -516,8 +536,8 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
         border: Border.all(
           color: Colors.white.withOpacity(isActive ? 0.6 : 0.3),
           width: 1.5,
+          ),
         ),
-      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -566,14 +586,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                     ),
                   ),
                   child: Text(
-                    _getCategoryDisplayName(category),
-                    style: TextStyle(
+                _getCategoryDisplayName(category),
+                style: TextStyle(
                       color: isSelected ? Colors.black : Colors.white,
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                     ),
-                  ),
+              ),
                 ),
               ),
             );
@@ -622,7 +642,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
+      children: [
                         Icon(
                           Icons.edit_outlined,
                           color: Colors.white.withOpacity(0.9),
@@ -679,14 +699,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                   borderRadius: BorderRadius.circular(26),
                   child: Center(
                     child: _isStartingLive
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -845,7 +865,7 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
                 ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Add details to your stream',
@@ -999,17 +1019,17 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
                           ),
                         ],
                       ),
-                    ),
-                  ),
+              ),
+            ),
                 );
               }).toList(),
-            ),
           ),
-        ],
+        ),
+      ],
       ),
     );
   }
-  
+
   String _getCategoryDisplayName(LiveStreamCategory category) {
     switch (category) {
       case LiveStreamCategory.general:
@@ -1030,7 +1050,7 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
         return 'Spiritual';
     }
   }
-  
+
   String _getCategoryEmoji(LiveStreamCategory category) {
     switch (category) {
       case LiveStreamCategory.general:
@@ -1049,7 +1069,7 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
         return '✋';
       case LiveStreamCategory.spiritual:
         return '🕉️';
-    }
+      }
   }
 }
 

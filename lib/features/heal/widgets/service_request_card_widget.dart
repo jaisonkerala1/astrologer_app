@@ -123,7 +123,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
       child: Material(
         color: Colors.transparent, // Transparent to allow ripple effect
         borderRadius: BorderRadius.circular(20),
-        child: InkWell(
+      child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick(); // Add haptic feedback
           if (onTap != null) {
@@ -208,7 +208,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     flex: 60,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    children: [
                         // Service Name
                         Text(
                           request.serviceName,
@@ -230,11 +230,11 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.textColor.withOpacity(0.6),
-                          ),
                         ),
+                      ),
                         // Special Instructions (if exists)
                         if (request.specialInstructions.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                  const SizedBox(height: 8),
                           Row(
                             children: [
                               Icon(
@@ -285,7 +285,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                     flex: 40,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
+                    children: [
                         // Price - Hero
                         Text(
                           '₹${request.price.toStringAsFixed(0)}',
@@ -295,27 +295,27 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
                             color: AppTheme.successColor,
                             letterSpacing: -0.8,
                           ),
-                        ),
+                      ),
                         const SizedBox(height: 8),
                         // Date
-                        Text(
-                          _formatDate(request.requestedDate),
-                          style: TextStyle(
-                            fontSize: 12,
+                      Text(
+                        _formatDate(request.requestedDate),
+                        style: TextStyle(
+                          fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.textColor.withOpacity(0.7),
                           ),
-                        ),
+                      ),
                         const SizedBox(height: 4),
                         // Time
-                        Text(
-                          request.requestedTime,
-                          style: TextStyle(
-                            fontSize: 12,
+                      Text(
+                        request.requestedTime,
+                        style: TextStyle(
+                          fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.textColor.withOpacity(0.6),
-                          ),
-                        ),
+                      ),
+                    ),
                       ],
                     ),
                   ),
@@ -446,19 +446,19 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           // Reject button - Icon only
           Container(
             width: 40,
-            height: 40,
-            decoration: BoxDecoration(
+              height: 40,
+              decoration: BoxDecoration(
               color: const Color(0xFFEF4444).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  widget.onReject();
-                },
                 borderRadius: BorderRadius.circular(100),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                  widget.onReject();
+                  },
+                  borderRadius: BorderRadius.circular(100),
                 child: const Center(
                   child: Icon(
                     Icons.close,
@@ -515,20 +515,20 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
           // Cancel button - Icon only
           Container(
             width: 40,
-            height: 40,
-            decoration: BoxDecoration(
+              height: 40,
+              decoration: BoxDecoration(
               color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  widget.onReject();
-                },
                 borderRadius: BorderRadius.circular(100),
-                child: Center(
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onReject();
+                  },
+                  borderRadius: BorderRadius.circular(100),
+                  child: Center(
                   child: Icon(
                     Icons.close,
                     size: 20,

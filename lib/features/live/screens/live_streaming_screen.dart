@@ -579,7 +579,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         print('🛑 [LIVE_STREAMING] Attempting Navigator.pop()');
         print('🛑 [LIVE_STREAMING] Navigator.canPop: ${Navigator.of(context).canPop()}');
         try {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop('ended'); // Return 'ended' to trigger dashboard navigation
           print('✅ [LIVE_STREAMING] Navigator.pop() executed successfully');
         } catch (e, stackTrace) {
           print('❌ [LIVE_STREAMING] ERROR during Navigator.pop(): $e');
