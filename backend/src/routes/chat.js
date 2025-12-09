@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
+const loonaController = require('../controllers/loonaController');
+
+// Loona AI endpoint - Generate AI response
+router.post('/loona/generate', loonaController.generateResponse);
 
 // Get all conversations for a user
 router.get('/conversations/:userId', chatController.getConversations);

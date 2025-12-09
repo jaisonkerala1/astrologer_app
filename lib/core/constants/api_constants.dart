@@ -31,6 +31,7 @@ class ApiConstants {
   static const String chatUpdateSettings = '/api/chat/conversations';
   static const String chatClearHistory = '/api/chat/history';
   static const String chatDeleteConversation = '/api/chat/conversations';
+  static const String loonaGenerate = '/api/chat/loona/generate';
   
   // Notification endpoints
   static const String notifications = '/api/notifications';

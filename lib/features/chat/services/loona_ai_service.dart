@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/constants/api_constants.dart';
 import '../models/chat_message.dart';
 import '../models/conversation.dart';
 import '../models/chat_settings.dart';
@@ -15,35 +16,30 @@ class LoonaAIService {
   final Dio _dio = Dio();
   final StorageService _storageService = StorageService();
   final ChatApiService _chatApiService = ChatApiService();
-  
-  static const String _openRouterApiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-  static const String _apiKey = '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';
-  static const String _model = 'anthropic/claude-3-haiku';
 
   void initialize() {
-    _dio.options.baseUrl = _openRouterApiUrl;
+    _dio.options.baseUrl = ApiConstants.baseUrl;
     _dio.options.headers = {
-      'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://astrologer-app.com',
-      'X-Title': 'Astrologer App',
+      'Accept': 'application/json',
     };
+    _dio.options.connectTimeout = const Duration(milliseconds: ApiConstants.connectTimeout);
+    _dio.options.receiveTimeout = const Duration(milliseconds: ApiConstants.receiveTimeout);
     
     // Add request interceptor for debugging
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
-        print('OpenRouter API Request: ${options.method} ${options.path}');
-        print('Headers: ${options.headers}');
+        print('Loona API Request: ${options.method} ${options.path}');
         print('Data: ${options.data}');
         handler.next(options);
       },
       onResponse: (response, handler) {
-        print('OpenRouter API Response: ${response.statusCode}');
+        print('Loona API Response: ${response.statusCode}');
         print('Response Data: ${response.data}');
         handler.next(response);
       },
       onError: (error, handler) {
-        print('OpenRouter API Error: ${error.message}');
+        print('Loona API Error: ${error.message}');
         print('Error Response: ${error.response?.data}');
         handler.next(error);
       },
@@ -57,25 +53,49 @@ class LoonaAIService {
     ChatSettings? settings,
   }) async {
     try {
-      // Build context for Loona
-      final context = _buildContext(userProfile, settings);
-      
-      // Prepare messages for the API
-      final messages = _prepareMessages(context, conversationHistory, userMessage);
-      
-      final response = await _dio.post('', data: {
-        'model': _model,
-        'messages': messages,
-        'max_tokens': 800,
-        'temperature': 0.3,
-        'top_p': 0.8,
-        'frequency_penalty': 0.0,
-        'presence_penalty': 0.0,
-      });
+      // Prepare conversation history (non-typing messages only)
+      final history = conversationHistory
+          .where((m) => !m.isTyping)
+          .map((m) => {
+                'content': m.content,
+                'isFromUser': m.isFromUser,
+                'timestamp': m.timestamp.toIso8601String(),
+              })
+          .toList();
 
-      if (response.statusCode == 200) {
-        final content = response.data['choices'][0]['message']['content'];
-        return content.toString().trim();
+      // Prepare user profile data
+      Map<String, dynamic>? profileData;
+      if (userProfile != null) {
+        profileData = {
+          'name': userProfile.name,
+          'experience': userProfile.experience,
+          'specializations': userProfile.specializations,
+          'languages': userProfile.languages,
+        };
+      }
+
+      // Prepare settings data
+      Map<String, dynamic>? settingsData;
+      if (settings != null) {
+        settingsData = {
+          'shareUserInfo': settings.shareUserInfo,
+        };
+      }
+
+      // Call backend endpoint
+      final response = await _dio.post(
+        ApiConstants.loonaGenerate,
+        data: {
+          'userMessage': userMessage,
+          'conversationHistory': history,
+          'userProfile': profileData,
+          'settings': settingsData,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final aiResponse = response.data['data']['response'];
+        return aiResponse.toString().trim();
       } else {
         throw Exception('Failed to get response from Loona AI');
       }
@@ -89,78 +109,6 @@ class LoonaAIService {
       }
       return _getFallbackResponse(userProfile);
     }
-  }
-
-  String _buildContext(AstrologerModel? userProfile, ChatSettings? settings) {
-    final buffer = StringBuffer();
-    
-    // Loona's professional identity and role
-    buffer.writeln("You are Loona, a professional AI assistant specialized in astrology and designed to support professional astrologers. You provide accurate, insightful, and helpful guidance while maintaining the highest standards of professionalism.");
-    buffer.writeln();
-    
-    // Core expertise areas
-    buffer.writeln("Your Expertise:");
-    buffer.writeln("- Advanced astrological knowledge including natal charts, transits, progressions, and synastry");
-    buffer.writeln("- Professional astrology practice guidance and business advice");
-    buffer.writeln("- App features and functionality support");
-    buffer.writeln("- Client consultation best practices");
-    buffer.writeln("- Astrological software and tools guidance");
-    buffer.writeln();
-    
-    // User context if available and sharing is enabled
-    if (userProfile != null && (settings?.shareUserInfo ?? true)) {
-      buffer.writeln("Astrologer Profile:");
-      buffer.writeln("- Name: ${userProfile.name}");
-      buffer.writeln("- Professional Experience: ${userProfile.experience} years");
-      buffer.writeln("- Specializations: ${userProfile.specializations.join(', ')}");
-      buffer.writeln("- Languages: ${userProfile.languages.join(', ')}");
-      buffer.writeln();
-    }
-    
-    // Professional guidelines for responses
-    buffer.writeln("Professional Guidelines:");
-    buffer.writeln("- Maintain a professional yet approachable tone");
-    buffer.writeln("- Provide accurate, evidence-based astrological information");
-    buffer.writeln("- Offer practical solutions and actionable advice");
-    buffer.writeln("- Respect the astrologer's expertise and experience level");
-    buffer.writeln("- Keep responses focused, informative, and relevant");
-    buffer.writeln("- Acknowledge limitations and suggest professional resources when appropriate");
-    buffer.writeln("- Support the astrologer's professional growth and client service quality");
-    buffer.writeln("- Never make medical, legal, or financial advice outside astrological context");
-    buffer.writeln("- Encourage ethical and responsible astrological practice");
-    
-    return buffer.toString();
-  }
-
-  List<Map<String, String>> _prepareMessages(
-    String context,
-    List<ChatMessage> conversationHistory,
-    String userMessage,
-  ) {
-    final messages = <Map<String, String>>[];
-    
-    // Add system context
-    messages.add({
-      'role': 'system',
-      'content': context,
-    });
-    
-    // Add conversation history (last 8 messages to keep context manageable but comprehensive)
-    final recentHistory = conversationHistory.take(8).toList();
-    for (final message in recentHistory) {
-      messages.add({
-        'role': message.isFromUser ? 'user' : 'assistant',
-        'content': message.content,
-      });
-    }
-    
-    // Add current user message
-    messages.add({
-      'role': 'user',
-      'content': userMessage,
-    });
-    
-    return messages;
   }
 
   String _getFallbackResponse(AstrologerModel? userProfile) {
