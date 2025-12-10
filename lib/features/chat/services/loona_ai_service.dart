@@ -62,7 +62,7 @@ class LoonaAIService {
                 'timestamp': m.timestamp.toIso8601String(),
               })
           .toList();
-
+      
       // Prepare user profile data
       Map<String, dynamic>? profileData;
       if (userProfile != null) {

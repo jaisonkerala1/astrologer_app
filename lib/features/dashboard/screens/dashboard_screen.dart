@@ -252,14 +252,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               curve: Curves.easeInOut,
             );
           },
-          onNavigateToPage: (int pageIndex) {
-            // Navigate to specific page after live stream ends
-            _pageController.animateToPage(
-              pageIndex,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          },
         ); // Hidden page - swipe right from Dashboard
       case 1:
         return _buildDashboardContent(); // Dashboard

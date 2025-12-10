@@ -276,5 +276,11 @@
   "andWord": " और ",
   "privacyPolicy": "गोपनीयता नीति",
   "tapHighlightedText": "पूर्ण विवरण देखने के लिए हाइलाइट किए गए टेक्स्ट पर टैप करें",
-  "mustAcceptTermsError": "जारी रखने के लिए आपको शर्तें स्वीकार करनी होंगी"
+  "mustAcceptTermsError": "जारी रखने के लिए आपको शर्तें स्वीकार करनी होंगी",
+  "createDiscussion": "चर्चा बनाएं",
+  "postDiscussion": "पोस्ट करें",
+  "posting": "पोस्ट हो रहा है...",
+  "discussionTopicHint": "आप क्या सोच रहे हैं?",
+  "discussionDescriptionHint": "अधिक विवरण जोड़ें (वैकल्पिक)...",
+  "discussionTopicRequired": "कृपया अपनी चर्चा के लिए एक विषय दर्ज करें"
 }

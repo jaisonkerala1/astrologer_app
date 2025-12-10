@@ -15,7 +15,7 @@ import 'discussion_detail_screen.dart';
 import 'favorites_screen.dart';
 import '../services/discussion_service.dart';
 import '../models/discussion_models.dart';
-import '../widgets/facebook_create_post_bottom_sheet.dart';
+import '../widgets/simple_create_discussion_bottom_sheet.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../clients/widgets/client_search_bar.dart';
 
@@ -711,7 +711,6 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
@@ -770,9 +769,9 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => FacebookCreatePostBottomSheet(
-        onSubmit: (title, content, category, privacy) {
-          _createPost(title, content, category, privacy);
+      builder: (context) => SimpleCreateDiscussionBottomSheet(
+        onSubmit: (title, content, category) {
+          _createPost(title, content, category);
         },
       ),
     );
@@ -787,7 +786,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     );
   }
 
-  void _createPost(String title, String content, String category, String privacy) async {
+  void _createPost(String title, String content, String category) async {
     if (title.trim().isEmpty || content.trim().isEmpty) return;
 
     final newPost = DiscussionPost(

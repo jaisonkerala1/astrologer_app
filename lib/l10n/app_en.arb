@@ -1104,6 +1104,30 @@
   "mustAcceptTermsError": "You must accept the terms to continue",
   "@mustAcceptTermsError": {
     "description": "Terms error message"
+  },
+  "createDiscussion": "Create Discussion",
+  "@createDiscussion": {
+    "description": "Create discussion title"
+  },
+  "postDiscussion": "Post",
+  "@postDiscussion": {
+    "description": "Post discussion button"
+  },
+  "posting": "Posting...",
+  "@posting": {
+    "description": "Posting state"
+  },
+  "discussionTopicHint": "What's on your mind?",
+  "@discussionTopicHint": {
+    "description": "Discussion topic placeholder"
+  },
+  "discussionDescriptionHint": "Add more details (optional)...",
+  "@discussionDescriptionHint": {
+    "description": "Discussion description placeholder"
+  },
+  "discussionTopicRequired": "Please enter a topic for your discussion",
+  "@discussionTopicRequired": {
+    "description": "Topic required validation message"
   }
 }
 
