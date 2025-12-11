@@ -22,6 +22,11 @@ import '../../auth/bloc/auth_state.dart';
 import '../models/dashboard_stats_model.dart';
 import '../widgets/status_toggle_widget.dart';
 import '../widgets/earnings_card_widget.dart';
+import '../widgets/analytics_earnings_card/analytics_earnings_card.dart';
+import '../widgets/analytics_communication_card/analytics_communication_card.dart';
+import '../widgets/analytics_schedule_card/analytics_schedule_card.dart';
+import '../widgets/analytics_rating_card/analytics_rating_card.dart';
+import '../widgets/analytics_sessions_card/analytics_sessions_card.dart';
 import '../widgets/stats_card_widget.dart';
 import '../widgets/calendar_card_widget.dart';
 import '../widgets/dashboard_skeleton_loader.dart';
@@ -721,10 +726,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.all(AppConstants.defaultPadding),
                     child: Column(
                       children: [
-                          // Earnings Card
-                          EarningsCardWidget(
+                          // Analytics Earnings Card - Interactive Chart
+                          AnalyticsEarningsCard(
                             todayEarnings: stats.todayEarnings,
                             totalEarnings: stats.totalEarnings,
+                            totalCalls: stats.totalCalls,
+                            averageRating: stats.averageRating,
                             isLoading: isLoading,
                             onRefresh: () {
                               context.read<DashboardBloc>().add(RefreshDashboardEvent());
@@ -741,20 +748,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 16),
                           
-                          // Communication Cards - Redesigned
-                          Column(
-                            children: [
-                              // Calls Today Card - New Design
-                              _buildCallsCard(stats.callsToday, isLoading: isLoading),
-                              const SizedBox(height: 12),
-                              // Messages Today Card - New Design
-                              _buildMessagesCard(isLoading: isLoading),
-                        ],
-                        ),
+                          // Communication Card - Combined Calls & Messages
+                          AnalyticsCommunicationCard(
+                            callsToday: stats.callsToday,
+                            messagesCount: 5, // TODO: Get from actual data
+                            missedCalls: 2, // TODO: Get from actual data
+                            pendingMessages: 3, // TODO: Get from actual data
+                            isLoading: isLoading,
+                            onCallsTap: () => _openCommunicationScreen('calls'),
+                            onMessagesTap: () => _openCommunicationScreen('messages'),
+                          ),
                         const SizedBox(height: 16),
                         
-                        // Calendar Card
-                        CalendarCardWidget(
+                        // Schedule Card - Clean design
+                        AnalyticsScheduleCard(
                           onTap: () {
                             // Navigate to calendar screen
                             Navigator.push(
@@ -767,25 +774,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(height: 16),
                         
+                        // Rating & Sessions Cards - Side by side (compact)
                         Row(
                           children: [
                             Expanded(
-                              child: StatsCardWidget(
-                                title: 'Avg Rating',
-                                value: stats.averageRating.toStringAsFixed(1),
-                                icon: Icons.star,
-                                color: AppTheme.ratingColor,
+                              child: AnalyticsRatingCard(
+                                averageRating: stats.averageRating,
                                 isLoading: isLoading,
                                 onTap: () => _openReviewsScreen(),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
                             Expanded(
-                              child: StatsCardWidget(
-                                title: 'Analytics',
-                                value: '${stats.totalSessions}',
-                                icon: Icons.analytics,
-                                color: AppTheme.infoColor,
+                              child: AnalyticsSessionsCard(
+                                totalSessions: stats.totalSessions,
                                 isLoading: isLoading,
                                 onTap: () {
                                   Navigator.push(
