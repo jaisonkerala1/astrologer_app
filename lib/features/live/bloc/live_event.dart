@@ -122,4 +122,14 @@ class RefreshLiveEvent extends LiveEvent {
   const RefreshLiveEvent();
 }
 
+// Audio Level Event
+class AudioLevelUpdatedEvent extends LiveEvent {
+  final double level; // 0.0 to 1.0
+  
+  const AudioLevelUpdatedEvent(this.level);
+  
+  @override
+  List<Object?> get props => [level];
+}
+
 

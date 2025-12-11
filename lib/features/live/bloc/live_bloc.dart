@@ -20,6 +20,7 @@ class LiveBloc extends Bloc<LiveEvent, LiveState> {
     on<SendReactionEvent>(_onSendReaction);
     on<LoadStreamAnalyticsEvent>(_onLoadStreamAnalytics);
     on<RefreshLiveEvent>(_onRefresh);
+    on<AudioLevelUpdatedEvent>(_onAudioLevelUpdated);
   }
 
   Future<void> _onStartLiveStream(StartLiveStreamEvent event, Emitter<LiveState> emit) async {
@@ -204,6 +205,19 @@ class LiveBloc extends Bloc<LiveEvent, LiveState> {
 
   Future<void> _onRefresh(RefreshLiveEvent event, Emitter<LiveState> emit) async {
     add(const LoadLiveStreamsEvent());
+  }
+
+  void _onAudioLevelUpdated(AudioLevelUpdatedEvent event, Emitter<LiveState> emit) {
+    if (state is LiveLoadedState) {
+      final currentState = state as LiveLoadedState;
+      emit(currentState.copyWith(audioLevel: event.level));
+    } else {
+      // If no live data loaded yet, still emit a lightweight state so UI can react
+      emit(LiveLoadedState(
+        streams: const [],
+        audioLevel: event.level,
+      ));
+    }
   }
 }
 

@@ -1,12 +1,20 @@
 import 'dart:ui';
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mic_stream/mic_stream.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
+import '../bloc/live_bloc.dart';
+import '../bloc/live_event.dart';
+import '../bloc/live_state.dart';
 import 'live_streaming_screen.dart';
 
 class LivePreparationScreen extends StatefulWidget {
@@ -35,12 +43,19 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   bool _isFrontCamera = true;
   bool _isLoadingCamera = true;
   String? _cameraError;
+  bool _isCameraMuted = false; // User manually turned off camera
+  
+  // Audio
+  StreamSubscription<List<int>>? _audioSubscription;
+  Timer? _audioUpdateTimer;
+  double _lastAudioLevel = 0.0;
+  bool _isMicMuted = false; // User manually muted mic
   
   // Form
   final _titleController = TextEditingController();
   LiveStreamCategory _selectedCategory = LiveStreamCategory.astrology;
   bool _isStartingLive = false;
-  
+
   // Settings
   bool _isPublic = true;
   bool _isHDQuality = true;
@@ -97,12 +112,75 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
   void _pauseCamera() {
     if (_cameraController != null && _isCameraInitialized) {
+      _stopAudioStream();
       _cameraController?.dispose();
       setState(() {
         _isCameraInitialized = false;
         _isLoadingCamera = false;
       });
     }
+  }
+
+  void _startAudioStream() {
+    try {
+      // Start listening to microphone
+      _audioSubscription = MicStream.microphone(
+        audioSource: AudioSource.DEFAULT,
+        sampleRate: 16000,
+        channelConfig: ChannelConfig.CHANNEL_IN_MONO,
+        audioFormat: AudioFormat.ENCODING_PCM_16BIT,
+      ).listen((samples) {
+        if (samples.isNotEmpty && mounted) {
+          final normalizedLevel = _computeAudioLevel(samples);
+
+          // Dispatch to BLoC (throttled by timer to avoid excessive updates)
+          if (_audioUpdateTimer == null || !_audioUpdateTimer!.isActive) {
+            context.read<LiveBloc>().add(AudioLevelUpdatedEvent(normalizedLevel));
+            
+            // Throttle updates to ~20 times per second
+            _audioUpdateTimer = Timer(const Duration(milliseconds: 50), () {});
+          }
+        }
+      });
+    } catch (e) {
+      print('Error starting audio stream: $e');
+    }
+  }
+
+  void _stopAudioStream() {
+    _audioSubscription?.cancel();
+    _audioSubscription = null;
+    _audioUpdateTimer?.cancel();
+    _audioUpdateTimer = null;
+    _lastAudioLevel = 0.0;
+    
+    // Reset audio level to 0
+    if (mounted) {
+      context.read<LiveBloc>().add(const AudioLevelUpdatedEvent(0.0));
+    }
+  }
+
+  double _computeAudioLevel(List<int> samples) {
+    // Convert PCM 16-bit little-endian bytes to signed 16-bit samples
+    final byteData = ByteData.view(Uint8List.fromList(samples).buffer);
+    final sampleCount = byteData.lengthInBytes ~/ 2;
+    if (sampleCount == 0) return 0.0;
+
+    double sumSq = 0;
+    for (int i = 0; i < sampleCount; i++) {
+      final sample = byteData.getInt16(i * 2, Endian.little).toDouble();
+      sumSq += sample * sample;
+    }
+
+    // Root-mean-square amplitude
+    final rms = math.sqrt(sumSq / sampleCount);
+
+    // Normalize: typical voice RMS ~2000-8000; scale for responsiveness
+    final normalized = (rms / 5000.0).clamp(0.0, 1.0);
+
+    // Smooth to avoid jitter
+    _lastAudioLevel = (_lastAudioLevel * 0.65) + (normalized * 0.35);
+    return _lastAudioLevel;
   }
 
   @override
@@ -114,13 +192,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     }
 
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      // Pause camera when app goes to background
+      // Pause camera and stop audio when app goes to background
+      _stopAudioStream();
       cameraController.dispose();
       setState(() {
         _isCameraInitialized = false;
       });
     } else if (state == AppLifecycleState.resumed) {
-      // Resume camera when app comes back to foreground
+      // Resume camera (and audio) when app comes back to foreground
       _initializeCamera();
     }
   }
@@ -171,11 +250,17 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
       await _cameraController!.initialize();
       
+      // Start audio stream only if mic is not muted
+      if (!_isMicMuted) {
+        _startAudioStream();
+      }
+      
       if (mounted) {
         setState(() {
           _isCameraInitialized = true;
           _isLoadingCamera = false;
           _isFrontCamera = camera.lensDirection == CameraLensDirection.front;
+          _isCameraMuted = false; // Reset muted flag on successful init
         });
       }
     } catch (e) {
@@ -301,7 +386,8 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       );
 
       if (success && mounted) {
-        // Dispose camera before navigating to live streaming
+        // Stop audio stream and dispose camera before navigating to live streaming
+        _stopAudioStream();
         await _cameraController?.dispose();
         _cameraController = null;
         setState(() {
@@ -343,6 +429,8 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Stop audio stream
+    _stopAudioStream();
     // Properly dispose camera controller
     _cameraController?.dispose().then((_) {
       _cameraController = null;
@@ -380,6 +468,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 // Layer 3.5: Top Badges (Minimal Settings)
                 _buildTopBadges(),
                 
+                // Layer 3.7: Camera/Mic Status (render on top)
+                _buildCameraMicStatus(),
+                
                 // Layer 4: Bottom Section
                 _buildBottomSection(),
                     ],
@@ -391,6 +482,70 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   }
 
   Widget _buildCameraPreview() {
+    // Show creative placeholder when camera is manually muted
+    if (_isCameraMuted) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1A1A2E),
+              const Color(0xFF16213E),
+              const Color(0xFF0F0F1E),
+            ],
+          ),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.black.withOpacity(0.3),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.videocam_off,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Camera Off',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap the camera icon to turn it back on',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     if (_cameraError != null) {
     return Container(
         color: Colors.black,
@@ -526,6 +681,206 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildCameraMicStatus() {
+    final bool cameraActive = !_isCameraMuted && _isCameraInitialized && _cameraError == null;
+    final bool micActive = !_isMicMuted && _audioSubscription != null;
+    
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 68,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStatusIcon(
+              icon: cameraActive ? Icons.videocam : Icons.videocam_off,
+              isActive: cameraActive,
+              onTap: _toggleCamera,
+            ),
+            const SizedBox(width: 6),
+            Container(
+              width: 1,
+              height: 20,
+              color: Colors.white.withOpacity(0.2),
+            ),
+            const SizedBox(width: 6),
+            _buildStatusIcon(
+              icon: micActive ? Icons.mic : Icons.mic_off,
+              isActive: micActive,
+              onTap: _toggleMic,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusIcon({
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white.withOpacity(isActive ? 0.9 : 0.4),
+                size: 22,
+              ),
+              if (isActive)
+                Positioned(
+                  right: -3,
+                  top: -3,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.black.withOpacity(0.3),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.6),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleCamera() {
+    setState(() {
+      _isCameraMuted = !_isCameraMuted;
+    });
+    
+    if (_isCameraMuted) {
+      // Stop camera
+      _stopAudioStream(); // Also stop audio when camera is off
+      _cameraController?.dispose();
+      setState(() {
+        _isCameraInitialized = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.videocam_off, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Camera turned off'),
+            ],
+          ),
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } else {
+      // Restart camera
+      _initializeCamera();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.videocam, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Camera turned on'),
+            ],
+          ),
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+    }
+  }
+
+  void _toggleMic() {
+    setState(() {
+      _isMicMuted = !_isMicMuted;
+    });
+    
+    if (_isMicMuted) {
+      // Stop mic
+      _stopAudioStream();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.mic_off, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Microphone muted'),
+            ],
+          ),
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } else {
+      // Start mic (only if camera is on)
+      if (!_isCameraMuted && _isCameraInitialized) {
+        _startAudioStream();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.mic, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Microphone unmuted'),
+              ],
+            ),
+            duration: const Duration(seconds: 1),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      } else {
+        // Can't unmute mic without camera
+        setState(() {
+          _isMicMuted = true; // Revert
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Turn on camera first'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildIconButton({
@@ -733,18 +1088,18 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     final topicText = _titleController.text.trim();
     
     return AnimatedBuilder(
-      animation: _shakeAnimation,
-      builder: (context, child) {
-        return Transform.translate(
+                animation: _shakeAnimation,
+                builder: (context, child) {
+                  return Transform.translate(
           offset: Offset(
             _shakeAnimation.value * ((_shakeController.value * 4).floor() % 2 == 0 ? 1 : -1),
             0,
           ),
-          child: child,
-        );
-      },
-      child: GestureDetector(
-        onTap: _showTitleBottomSheet,
+                    child: child,
+                  );
+                },
+                child: GestureDetector(
+                  onTap: _showTitleBottomSheet,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
@@ -772,7 +1127,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                           Shadow(
                             color: Colors.black54,
                             blurRadius: 12,
-                          ),
+                      ),
                         ],
                       ),
                       maxLines: 2,
@@ -781,10 +1136,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                   ),
                   if (hasTopicFilled) ...[
                     const SizedBox(width: 8),
-                    Icon(
+                        Icon(
                       Icons.edit,
                       color: Colors.white.withOpacity(0.7),
-                      size: 16,
+                          size: 16,
                       shadows: const [
                         Shadow(color: Colors.black54, blurRadius: 8),
                       ],
@@ -804,70 +1159,94 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                           Shadow(color: Colors.black54, blurRadius: 8),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
                       _getCategoryDisplayName(_selectedCategory),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w500,
                         shadows: const [
                           Shadow(color: Colors.black54, blurRadius: 8),
                         ],
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
               ],
             ],
-          ),
-        ),
-      ),
+                  ),
+                ),
+              ),
     );
   }
 
   Widget _buildAudioMeter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Row(
-        children: [
-          Icon(
-            Icons.mic,
-            color: Colors.white.withOpacity(0.8),
-            size: 16,
-            shadows: const [
-              Shadow(color: Colors.black54, blurRadius: 8),
+    return BlocBuilder<LiveBloc, LiveState>(
+      builder: (context, state) {
+        // Get audio level from state (default to 0.0)
+        double audioLevel = 0.0;
+        if (state is LiveLoadedState) {
+          audioLevel = state.audioLevel;
+        }
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Row(
+            children: [
+              Icon(
+                Icons.mic,
+                color: Colors.white.withOpacity(0.8),
+                size: 16,
+                shadows: const [
+                  Shadow(color: Colors.black54, blurRadius: 8),
+                ],
+              ),
+              const SizedBox(width: 12),
+              // Real-time audio bars responding to mic input
+              Expanded(
+                child: SizedBox(
+                  height: 26, // fixed height so topic area doesn't shift
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(20, (index) {
+                      // Calculate height based on audio level
+                      // Base height + audio level contribution
+                      final baseHeight = 3.0;
+                      final maxHeight = 22.0; // taller bars for clearer movement
+                      final heightRange = maxHeight - baseHeight;
+                      
+                      // Add some variation for visual interest (wave effect)
+                      final variation = (index % 3) * 0.2;
+                      final calculatedHeight = baseHeight + (audioLevel * heightRange * (1.0 + variation));
+                      
+                      // Fade out bars on the edges
+                      final opacity = index < 15 ? 0.8 : 0.3;
+                      
+                      return Container(
+                        width: 3,
+                        height: calculatedHeight.clamp(baseHeight, maxHeight),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(opacity),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(width: 12),
-          // Simple static audio bars
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(20, (index) {
-                // Create varying heights for visual interest
-                final heights = [3.0, 6.0, 10.0, 8.0, 12.0, 6.0, 14.0, 10.0, 8.0, 16.0, 
-                                 12.0, 8.0, 14.0, 6.0, 10.0, 8.0, 12.0, 6.0, 8.0, 4.0];
-                return Container(
-                  width: 3,
-                  height: heights[index],
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(index < 15 ? 0.8 : 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildMinimalGoLiveButton(bool isEnabled) {
     return GestureDetector(
-      onTap: (isEnabled && !_isStartingLive) ? _startLiveStream : null,
+      onTap: !_isStartingLive ? _handleGoLiveTap : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Row(
@@ -877,11 +1256,11 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
               const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
             else ...[
               Container(
                 width: 10,
@@ -899,28 +1278,41 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                         ]
                       : null,
                 ),
-              ),
+                              ),
               const SizedBox(width: 12),
               Text(
                 'GO LIVE',
-                style: TextStyle(
+                                style: TextStyle(
                   color: isEnabled ? Colors.white : Colors.white.withOpacity(0.4),
                   fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
                   shadows: const [
                     Shadow(
                       color: Colors.black54,
                       blurRadius: 12,
-                    ),
-                  ],
-                ),
-              ),
+                              ),
+                            ],
+                          ),
+                  ),
             ],
           ],
-        ),
+          ),
       ),
     );
+  }
+
+  Future<void> _handleGoLiveTap() async {
+    // If no topic, open the bottom sheet first
+    if (_titleController.text.trim().isEmpty) {
+      await _showTitleBottomSheet();
+      if (!mounted) return;
+      if (_titleController.text.trim().isNotEmpty) {
+        await _startLiveStream();
+      }
+    } else {
+      await _startLiveStream();
+    }
   }
 
   String _getCategoryEmoji(LiveStreamCategory category) {
@@ -944,10 +1336,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     }
   }
 
-  void _showTitleBottomSheet() {
+  Future<void> _showTitleBottomSheet() async {
     HapticFeedback.lightImpact();
     
-    showModalBottomSheet(
+    return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

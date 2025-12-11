@@ -29,6 +29,7 @@ class LiveLoadedState extends LiveState {
   final Map<String, dynamic>? analytics;
   final String? successMessage;
   final bool isBroadcasting; // True if user is broadcasting
+  final double audioLevel; // Real-time audio level (0.0 to 1.0)
 
   const LiveLoadedState({
     required this.streams,
@@ -37,6 +38,7 @@ class LiveLoadedState extends LiveState {
     this.analytics,
     this.successMessage,
     this.isBroadcasting = false,
+    this.audioLevel = 0.0,
   });
 
   @override
@@ -47,6 +49,7 @@ class LiveLoadedState extends LiveState {
     analytics,
     successMessage,
     isBroadcasting,
+    audioLevel,
   ];
 
   LiveLoadedState copyWith({
@@ -56,6 +59,7 @@ class LiveLoadedState extends LiveState {
     Map<String, dynamic>? analytics,
     String? successMessage,
     bool? isBroadcasting,
+    double? audioLevel,
     bool clearActiveStream = false,
   }) {
     return LiveLoadedState(
@@ -65,6 +69,7 @@ class LiveLoadedState extends LiveState {
       analytics: analytics ?? this.analytics,
       successMessage: successMessage,
       isBroadcasting: isBroadcasting ?? this.isBroadcasting,
+      audioLevel: audioLevel ?? this.audioLevel,
     );
   }
 

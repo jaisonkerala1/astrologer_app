@@ -53,6 +53,7 @@ dependencies:
   flutter_svg: ^1.1.6
   connectivity_plus: ^5.0.2
   camera: ^0.10.5+9
+  mic_stream: ^0.7.2
   
   # Video Calling (Mock Implementation)
   # flutter_webrtc: ^0.9.44  # Commented out for mock implementation
