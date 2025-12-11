@@ -40,6 +40,11 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   final _titleController = TextEditingController();
   LiveStreamCategory _selectedCategory = LiveStreamCategory.astrology;
   bool _isStartingLive = false;
+  
+  // Settings
+  bool _isPublic = true;
+  bool _isHDQuality = true;
+  bool _commentsEnabled = true;
 
   // Animation
   late AnimationController _shakeController;
@@ -372,7 +377,10 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                 // Layer 3: Top Controls
                 _buildTopControls(),
                 
-                // Layer 4: Go Live Button + Write Topic Text
+                // Layer 3.5: Top Badges (Minimal Settings)
+                _buildTopBadges(),
+                
+                // Layer 4: Bottom Section
                 _buildBottomSection(),
                     ],
             ),
@@ -604,137 +612,336 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   }
 
   Widget _buildBottomSection() {
+    final bool hasTopicFilled = _titleController.text.trim().isNotEmpty;
+    
     return Positioned(
-      bottom: 40,
+      bottom: 0,
       left: 0,
       right: 0,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Write your topic text (above button, left aligned)
-          Padding(
-            padding: const EdgeInsets.only(left: 32, right: 32),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: AnimatedBuilder(
-                animation: _shakeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_shakeAnimation.value * 
-                        ((_shakeController.value * 4).floor() % 2 == 0 ? 1 : -1), 0),
-                    child: child,
-                  );
-                },
-                child: GestureDetector(
-                  onTap: _showTitleBottomSheet,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-      children: [
-                        Icon(
-                          Icons.edit_outlined,
-                          color: Colors.white.withOpacity(0.9),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _titleController.text.trim().isEmpty
-                              ? 'Write your topic'
-                              : _titleController.text.trim().length > 25
-                                  ? '${_titleController.text.trim().substring(0, 25)}...'
-                                  : _titleController.text.trim(),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          // Topic Display (minimal text overlay)
+          _buildMinimalTopicDisplay(),
+          
+          const SizedBox(height: 20),
+          
+          // Audio Level Meter
+          _buildAudioMeter(),
+          
+          const SizedBox(height: 24),
+          
+          // Thin separator line
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withOpacity(0.3),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
           
           const SizedBox(height: 20),
           
-          // Go Live Button (full width, aligned with topic text)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Container(
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF4444), Color(0xFFCC0000)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          // Simple Go Live Button
+          _buildMinimalGoLiveButton(hasTopicFilled),
+          
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopBadges() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 72,
+      left: 16,
+      right: 16,
+      child: Row(
+        children: [
+          _buildMinimalBadge(
+            label: _isHDQuality ? 'HD' : 'SD',
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _isHDQuality = !_isHDQuality);
+            },
+          ),
+          const SizedBox(width: 8),
+          _buildMinimalBadge(
+            label: _isPublic ? 'Public' : 'Private',
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _isPublic = !_isPublic);
+            },
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _commentsEnabled = !_commentsEnabled);
+            },
+            child: Icon(
+              _commentsEnabled ? Icons.chat_bubble : Icons.chat_bubble_outline,
+              color: Colors.white,
+              size: 20,
+              shadows: const [
+                Shadow(
+                  color: Colors.black54,
+                  blurRadius: 8,
                 ),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFF4444).withOpacity(0.5),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isStartingLive ? null : _startLiveStream,
-                  borderRadius: BorderRadius.circular(26),
-                  child: Center(
-                    child: _isStartingLive
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.sensors,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              const Text(
-                                'Go Live',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildMinimalBadge({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMinimalTopicDisplay() {
+    final bool hasTopicFilled = _titleController.text.trim().isNotEmpty;
+    final topicText = _titleController.text.trim();
+    
+    return AnimatedBuilder(
+      animation: _shakeAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(
+            _shakeAnimation.value * ((_shakeController.value * 4).floor() % 2 == 0 ? 1 : -1),
+            0,
+          ),
+          child: child,
+        );
+      },
+      child: GestureDetector(
+        onTap: _showTitleBottomSheet,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    hasTopicFilled ? Icons.description : Icons.edit_outlined,
+                    color: Colors.white,
+                    size: 18,
+                    shadows: const [
+                      Shadow(color: Colors.black54, blurRadius: 8),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      hasTopicFilled ? topicText : 'No topic - Tap to add',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: hasTopicFilled ? 16 : 15,
+                        fontWeight: hasTopicFilled ? FontWeight.w600 : FontWeight.w500,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 12,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (hasTopicFilled) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.edit,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 16,
+                      shadows: const [
+                        Shadow(color: Colors.black54, blurRadius: 8),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+              if (hasTopicFilled) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      _getCategoryEmoji(_selectedCategory),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        shadows: [
+                          Shadow(color: Colors.black54, blurRadius: 8),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _getCategoryDisplayName(_selectedCategory),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 8),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioMeter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Row(
+        children: [
+          Icon(
+            Icons.mic,
+            color: Colors.white.withOpacity(0.8),
+            size: 16,
+            shadows: const [
+              Shadow(color: Colors.black54, blurRadius: 8),
+            ],
+          ),
+          const SizedBox(width: 12),
+          // Simple static audio bars
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(20, (index) {
+                // Create varying heights for visual interest
+                final heights = [3.0, 6.0, 10.0, 8.0, 12.0, 6.0, 14.0, 10.0, 8.0, 16.0, 
+                                 12.0, 8.0, 14.0, 6.0, 10.0, 8.0, 12.0, 6.0, 8.0, 4.0];
+                return Container(
+                  width: 3,
+                  height: heights[index],
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(index < 15 ? 0.8 : 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMinimalGoLiveButton(bool isEnabled) {
+    return GestureDetector(
+      onTap: (isEnabled && !_isStartingLive) ? _startLiveStream : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_isStartingLive)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            else ...[
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: isEnabled ? const Color(0xFFFF4444) : Colors.grey,
+                  shape: BoxShape.circle,
+                  boxShadow: isEnabled
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFF4444).withOpacity(0.6),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'GO LIVE',
+                style: TextStyle(
+                  color: isEnabled ? Colors.white : Colors.white.withOpacity(0.4),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  shadows: const [
+                    Shadow(
+                      color: Colors.black54,
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCategoryEmoji(LiveStreamCategory category) {
+    switch (category) {
+      case LiveStreamCategory.general:
+        return '💬';
+      case LiveStreamCategory.astrology:
+        return '⭐';
+      case LiveStreamCategory.healing:
+        return '🌿';
+      case LiveStreamCategory.meditation:
+        return '🧘';
+      case LiveStreamCategory.tarot:
+        return '🔮';
+      case LiveStreamCategory.numerology:
+        return '🔢';
+      case LiveStreamCategory.palmistry:
+        return '✋';
+      case LiveStreamCategory.spiritual:
+        return '🕉️';
+    }
   }
 
   void _showTitleBottomSheet() {
