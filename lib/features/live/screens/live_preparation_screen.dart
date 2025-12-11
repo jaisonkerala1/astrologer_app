@@ -661,14 +661,6 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
           ),
           Row(
               children: [
-              // Flip camera
-              if (_cameras != null && _cameras!.length > 1)
-                _buildIconButton(
-                  icon: Icons.flip_camera_ios,
-                  onTap: _flipCamera,
-                ),
-              if (_cameras != null && _cameras!.length > 1)
-                const SizedBox(width: 12),
               // Flash (only for back camera)
               if (!_isFrontCamera)
                 _buildIconButton(
@@ -686,41 +678,95 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   Widget _buildCameraMicStatus() {
     final bool cameraActive = !_isCameraMuted && _isCameraInitialized && _cameraError == null;
     final bool micActive = !_isMicMuted && _audioSubscription != null;
+    final bool canFlip = _cameras != null && _cameras!.length > 1;
     
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 68,
+      top: MediaQuery.of(context).padding.top + 80,
       right: 16,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Camera Flip - Google Camera style
+          if (canFlip)
+            _buildGoogleCameraIcon(
+              icon: Icons.flip_camera_ios_rounded,
+              onTap: _flipCamera,
+              isActive: true,
+            ),
+          if (canFlip) const SizedBox(height: 16),
+          
+          // Camera On/Off
+          _buildGoogleCameraIcon(
+            icon: cameraActive ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+            onTap: _toggleCamera,
+            isActive: cameraActive,
+            showActiveIndicator: true,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildStatusIcon(
-              icon: cameraActive ? Icons.videocam : Icons.videocam_off,
-              isActive: cameraActive,
-              onTap: _toggleCamera,
-            ),
-            const SizedBox(width: 6),
-            Container(
-              width: 1,
-              height: 20,
-              color: Colors.white.withOpacity(0.2),
-            ),
-            const SizedBox(width: 6),
-            _buildStatusIcon(
-              icon: micActive ? Icons.mic : Icons.mic_off,
-              isActive: micActive,
-              onTap: _toggleMic,
-            ),
-          ],
+          const SizedBox(height: 16),
+          
+          // Mic On/Off
+          _buildGoogleCameraIcon(
+            icon: micActive ? Icons.mic_rounded : Icons.mic_off_rounded,
+            onTap: _toggleMic,
+            isActive: micActive,
+            showActiveIndicator: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoogleCameraIcon({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isActive,
+    bool showActiveIndicator = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withOpacity(0.25),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white.withOpacity(isActive ? 1.0 : 0.5),
+                size: 24,
+              ),
+              if (showActiveIndicator && isActive)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
