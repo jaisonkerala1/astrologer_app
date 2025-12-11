@@ -63,11 +63,11 @@ class _AnalyticsEarningsCardState extends State<AnalyticsEarningsCard>
   late Animation<double> _chartAnimation;
   late Animation<double> _countUpAnimation;
 
-  // Chart colors - Coral to Orange gradient (inspired by reference images)
-  static const Color _chartLineStart = Color(0xFFFF6B6B);
-  static const Color _chartLineEnd = Color(0xFFFF8E53);
-  static const Color _chartFillStart = Color(0x40FF6B6B);
-  static const Color _chartFillEnd = Color(0x08FF8E53);
+  // Chart colors - Emerald Green gradient (positive, motivating)
+  static const Color _chartLineStart = Color(0xFF10B981); // Emerald green
+  static const Color _chartLineEnd = Color(0xFF34D399);   // Light emerald
+  static const Color _chartFillStart = Color(0x4010B981); // Semi-transparent green
+  static const Color _chartFillEnd = Color(0x0834D399);   // Very light green fade
 
   @override
   void initState() {

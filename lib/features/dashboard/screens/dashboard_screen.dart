@@ -723,6 +723,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.all(AppConstants.defaultPadding),
                     child: Column(
                       children: [
+                          // Communication Card - Combined Calls & Messages (FIRST - Most Urgent)
+                          AnalyticsCommunicationCard(
+                            callsToday: stats.callsToday,
+                            messagesCount: 5, // TODO: Get from actual data
+                            missedCalls: 2, // TODO: Get from actual data
+                            pendingMessages: 3, // TODO: Get from actual data
+                            callsYesterday: 8, // Mock data for demo - TODO: Get from actual data
+                            messagesYesterday: 3, // Mock data for demo
+                            isLoading: isLoading,
+                            onCallsTap: () => _openCommunicationScreen('calls'),
+                            onMessagesTap: () => _openCommunicationScreen('messages'),
+                          ),
+                          const SizedBox(height: 16),
+                          
                           // Analytics Earnings Card - Interactive Chart
                           AnalyticsEarningsCard(
                             todayEarnings: stats.todayEarnings,
@@ -742,18 +756,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               );
                             },
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          // Communication Card - Combined Calls & Messages
-                          AnalyticsCommunicationCard(
-                            callsToday: stats.callsToday,
-                            messagesCount: 5, // TODO: Get from actual data
-                            missedCalls: 2, // TODO: Get from actual data
-                            pendingMessages: 3, // TODO: Get from actual data
-                            isLoading: isLoading,
-                            onCallsTap: () => _openCommunicationScreen('calls'),
-                            onMessagesTap: () => _openCommunicationScreen('messages'),
                           ),
                         const SizedBox(height: 16),
                         

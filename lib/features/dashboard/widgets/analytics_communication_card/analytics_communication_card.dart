@@ -6,12 +6,14 @@ import '../../../../shared/widgets/value_shimmer.dart';
 /// Communication type options
 enum CommunicationType { calls, messages }
 
-/// Combined Communication Card with touch effects
+/// Combined Communication Card with touch effects and trend indicators
 class AnalyticsCommunicationCard extends StatefulWidget {
   final int callsToday;
   final int messagesCount;
   final int missedCalls;
   final int pendingMessages;
+  final int callsYesterday;
+  final int messagesYesterday;
   final VoidCallback? onCallsTap;
   final VoidCallback? onMessagesTap;
   final bool isLoading;
@@ -22,6 +24,8 @@ class AnalyticsCommunicationCard extends StatefulWidget {
     this.messagesCount = 0,
     this.missedCalls = 0,
     this.pendingMessages = 0,
+    this.callsYesterday = 0,
+    this.messagesYesterday = 0,
     this.onCallsTap,
     this.onMessagesTap,
     this.isLoading = false,
@@ -91,6 +95,24 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
 
   String get _statusLabel =>
       _selectedType == CommunicationType.calls ? 'Missed' : 'Unread';
+
+  // Trend calculation
+  int get _yesterdayValue => _selectedType == CommunicationType.calls
+      ? widget.callsYesterday
+      : widget.messagesYesterday;
+
+  double get _trendPercentage {
+    if (_yesterdayValue == 0) {
+      return _currentValue > 0 ? 100.0 : 0.0;
+    }
+    return ((_currentValue - _yesterdayValue) / _yesterdayValue) * 100;
+  }
+
+  bool get _isTrendPositive => _trendPercentage >= 0;
+
+  Color get _trendColor => _isTrendPositive
+      ? const Color(0xFF10B981) // Green
+      : const Color(0xFFEF4444); // Red
 
   void _onTypeChanged(CommunicationType type) {
     if (type != _selectedType) {
@@ -303,6 +325,9 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              const SizedBox(height: 8),
+              // Trend indicator
+              _buildTrendIndicator(theme, isDark),
             ],
           ),
         ),
@@ -358,6 +383,59 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
+    if (widget.isLoading || _yesterdayValue == 0 && _currentValue == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, _) {
+        return AnimatedOpacity(
+          opacity: _animation.value,
+          duration: const Duration(milliseconds: 300),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _trendColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isTrendPositive
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
+                  size: 16,
+                  color: _trendColor,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${_isTrendPositive ? '+' : ''}${_trendPercentage.toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _trendColor,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'vs yesterday',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white38 : Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
