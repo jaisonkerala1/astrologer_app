@@ -1060,43 +1060,30 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
   Widget _buildTopBadges() {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 72,
+      top: MediaQuery.of(context).padding.top + 80,
       left: 16,
-      right: 16,
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildMinimalBadge(
-            label: _isHDQuality ? 'HD' : 'SD',
+          // HD/SD Toggle - Google Camera style
+          _buildGoogleCameraIcon(
+            icon: _isHDQuality ? Icons.hd_rounded : Icons.sd_rounded,
             onTap: () {
               HapticFeedback.selectionClick();
               setState(() => _isHDQuality = !_isHDQuality);
             },
+            isActive: true,
           ),
-          const SizedBox(width: 8),
-          _buildMinimalBadge(
-            label: _isPublic ? 'Public' : 'Private',
-            onTap: () {
-              HapticFeedback.selectionClick();
-              setState(() => _isPublic = !_isPublic);
-            },
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
+          const SizedBox(height: 16),
+          
+          // Comments Toggle
+          _buildGoogleCameraIcon(
+            icon: _commentsEnabled ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
             onTap: () {
               HapticFeedback.selectionClick();
               setState(() => _commentsEnabled = !_commentsEnabled);
             },
-            child: Icon(
-              _commentsEnabled ? Icons.chat_bubble : Icons.chat_bubble_outline,
-              color: Colors.white,
-              size: 20,
-              shadows: const [
-                Shadow(
-                  color: Colors.black54,
-                  blurRadius: 8,
-                ),
-              ],
-            ),
+            isActive: _commentsEnabled,
           ),
         ],
       ),
