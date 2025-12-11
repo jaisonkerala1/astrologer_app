@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import '../../core/constants/api_constants.dart';
 
 class ProfileAvatarWidget extends StatelessWidget {
   final String? imagePath;
@@ -26,9 +27,7 @@ class ProfileAvatarWidget extends StatelessWidget {
       backgroundColor: backgroundColor ?? Colors.white,
       backgroundImage: imageProvider,
       onBackgroundImageError: imageProvider != null ? (exception, stackTrace) {
-        print('🖼️ [PROFILE_AVATAR] Image loading error: $exception');
-        print('🖼️ [PROFILE_AVATAR] Image path: $imagePath');
-        print('🖼️ [PROFILE_AVATAR] This is expected for Railway ephemeral storage');
+        // Silent fail - fallback to text avatar
       } : null,
       child: imageProvider == null 
           ? Text(
@@ -51,21 +50,18 @@ class ProfileAvatarWidget extends StatelessWidget {
       }
       
       if (imagePath!.startsWith('http://') || 
-          imagePath!.startsWith('https://') || 
-          imagePath!.startsWith('/uploads/')) {
-        // Network URL - construct full URL for Railway backend
-        if (imagePath!.startsWith('/uploads/')) {
-          final fullUrl = 'https://astrologerapp-production.up.railway.app$imagePath';
-          print('🖼️ [PROFILE_AVATAR] Loading from Railway: $fullUrl');
-          return NetworkImage(fullUrl);
-        }
+          imagePath!.startsWith('https://')) {
+        // Full URL provided
         return NetworkImage(imagePath!);
+      } else if (imagePath!.startsWith('/uploads/')) {
+        // Relative path - construct full URL using ApiConstants
+        final fullUrl = '${ApiConstants.baseUrl}$imagePath';
+        return NetworkImage(fullUrl);
       } else {
         // Local file path
         return FileImage(File(imagePath!));
       }
     } catch (e) {
-      print('🖼️ [PROFILE_AVATAR] Error creating image provider: $e');
       return null;
     }
   }
