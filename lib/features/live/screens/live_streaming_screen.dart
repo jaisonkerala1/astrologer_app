@@ -54,6 +54,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   
   bool _isEnding = false;
   bool _isControlsVisible = true;
+  String? _currentStreamId; // To end stream properly
   
   // Settings state
   bool _showViewerCount = true;
@@ -156,35 +157,34 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         return;
       }
 
-      // Get astrologer ID for unique channel name
-      String visitorId = 'default';
-      try {
-        final storage = StorageService();
-        final userData = await storage.getUserData();
-        if (userData != null) {
-          final userMap = jsonDecode(userData);
-          visitorId = userMap['id'] ?? userMap['_id'] ?? 'default';
-        }
-      } catch (e) {
-        debugPrint('⚠️ [LIVE] Could not get user ID: $e');
-      }
-      
-      final String channelName = 'live_$visitorId';
+      // Start live stream via backend - this registers the stream AND returns token
+      String channelName = '';
       String token = '';
       
-      // Get token from backend
       try {
         final liveRepo = getIt<LiveRepository>();
-        token = await liveRepo.getAgoraToken(
-          channelName: channelName,
-          uid: 0,
-          isBroadcaster: true,
+        
+        // Call /api/live/start - registers stream in database
+        final liveStream = await liveRepo.startLiveStream(
+          title: 'Live Session',
+          description: 'Live astrology session',
+          category: LiveStreamCategory.astrology,
+          tags: ['live', 'astrology'],
         );
-        debugPrint('✅ [LIVE] Got token from backend for channel: $channelName');
+        
+        channelName = liveStream.channelName;
+        token = liveStream.agoraToken ?? '';
+        
+        // Store stream ID for ending later
+        _currentStreamId = liveStream.id;
+        
+        debugPrint('✅ [LIVE] Stream registered: $channelName');
+        debugPrint('✅ [LIVE] Stream ID: ${liveStream.id}');
+        
       } catch (e) {
-        debugPrint('❌ [LIVE] Failed to get token: $e');
+        debugPrint('❌ [LIVE] Failed to start stream: $e');
         setState(() {
-          _agoraError = 'Failed to get streaming token. Please try again.';
+          _agoraError = 'Failed to start live stream. Please try again.';
           _isLoadingAgora = false;
         });
         return;
@@ -569,6 +569,17 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     // Stop Agora broadcast
     await _agoraService.stopBroadcasting();
     debugPrint('📷 [LIVE_STREAMING] Agora broadcast stopped');
+    
+    // End stream in backend database
+    if (_currentStreamId != null) {
+      try {
+        final liveRepo = getIt<LiveRepository>();
+        await liveRepo.endLiveStream(_currentStreamId!);
+        debugPrint('✅ [LIVE_STREAMING] Stream ended in backend');
+      } catch (e) {
+        debugPrint('⚠️ [LIVE_STREAMING] Failed to end stream in backend: $e');
+      }
+    }
     
     _liveService.endLiveStream();
     debugPrint('🛑 [LIVE_STREAMING] Called _liveService.endLiveStream()');
