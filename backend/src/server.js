@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = 7566; // Force port 7566
-console.log('🚀 Server starting - force redeploy 2025-09-20 v2');
+console.log('🚀 Server starting - LIVE STREAMING UPDATE 2025-12-12 v3');
 
 // Security middleware
 app.use(helmet());
@@ -113,7 +113,23 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/seed', require('./routes/seed'));
 app.use('/api/migration', require('./routes/migration'));
-app.use('/api/live', require('./routes/live'));
+
+// Live streaming routes
+try {
+  const liveRoutes = require('./routes/live');
+  app.use('/api/live', liveRoutes);
+  console.log('✅ Live streaming routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load live routes:', error.message);
+  // Fallback route to show error
+  app.use('/api/live', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Live routes failed to load',
+      error: error.message
+    });
+  });
+}
 
 
 
