@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import '../../../core/di/service_locator.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import 'live_astrologer_circle_widget.dart';
 import '../../live/screens/live_feed_screen.dart';
+import '../../live/screens/live_stream_viewer_screen.dart';
 import '../../live/bloc/live_feed_bloc.dart';
 import '../../live/data/repositories/mock_live_feed_repository.dart';
 import '../../live/bloc/live_feed_event.dart';
@@ -264,17 +266,17 @@ class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWid
   void _handleAstrologerTap(BuildContext context, LiveStreamModel stream) async {
     HapticFeedback.lightImpact();
     
+    debugPrint('📺 [DASHBOARD] Tapped stream: ${stream.astrologerName}');
+    debugPrint('📺 [DASHBOARD] Channel: ${stream.channelName}');
+    debugPrint('📺 [DASHBOARD] Token: ${stream.agoraToken?.substring(0, 20)}...');
+    
     try {
+      // Navigate directly to viewer screen with real stream data
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => BlocProvider(
-            create: (context) => LiveFeedBloc(
-              repository: MockLiveFeedRepository(),
-            ),
-            child: LiveFeedScreen(
-              initialStreamId: stream.id,
-            ),
+          builder: (context) => LiveStreamViewerScreen(
+            liveStream: stream,
           ),
         ),
       );
@@ -284,6 +286,7 @@ class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWid
         overlays: SystemUiOverlay.values,
       );
     } catch (e) {
+      debugPrint('❌ [DASHBOARD] Error: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -91,7 +91,7 @@ class AgoraService extends ChangeNotifier {
       
       _engine!.registerEventHandler(RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint('✅ [AGORA] Joined channel: ${connection.channelId}, uid: ${connection.localUid}');
+          debugPrint('✅✅✅ [AGORA] JOINED channel: ${connection.channelId}, MY UID: ${connection.localUid}');
           _isJoined = true;
           _localUid = connection.localUid;
           _currentChannel = connection.channelId;
@@ -99,7 +99,7 @@ class AgoraService extends ChangeNotifier {
           onJoinChannelSuccess?.call();
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint('👤 [AGORA] Remote user joined: $remoteUid');
+          debugPrint('👤👤👤 [AGORA] REMOTE USER JOINED: $remoteUid on channel: ${connection.channelId}');
           _remoteUsers.add(remoteUid);
           // First remote user is likely the broadcaster
           _broadcasterUid ??= remoteUid;

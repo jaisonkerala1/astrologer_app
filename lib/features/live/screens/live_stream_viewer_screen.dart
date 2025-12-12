@@ -247,11 +247,16 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       };
       
       // Join as audience
+      debugPrint('📺 [VIEWER] Joining channel: $channelName');
+      debugPrint('📺 [VIEWER] Token length: ${token.length}');
+      
       final success = await _agoraService.joinAsAudience(
         channelName: channelName,
         token: token,
         uid: 0,
       );
+      
+      debugPrint('📺 [VIEWER] Join result: $success');
       
       if (success && mounted) {
         setState(() {
