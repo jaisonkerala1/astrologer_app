@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../core/constants/api_constants.dart';
 
 /// Hero Credit Card Widget - Fintech-inspired earnings display
 /// Displays wallet balance in a stunning credit card design with mini chart
@@ -459,12 +460,24 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
   }
 
   Widget _buildProfileAvatar() {
-    final hasValidUrl = widget.profileImageUrl != null && 
-                        widget.profileImageUrl!.isNotEmpty &&
-                        (widget.profileImageUrl!.startsWith('http://') || 
-                         widget.profileImageUrl!.startsWith('https://'));
+    // Build full image URL
+    String? imageUrl;
+    if (widget.profileImageUrl != null && widget.profileImageUrl!.isNotEmpty) {
+      if (widget.profileImageUrl!.startsWith('http://') || 
+          widget.profileImageUrl!.startsWith('https://')) {
+        // Already a full URL
+        imageUrl = widget.profileImageUrl;
+      } else {
+        // Relative path - prepend base URL
+        imageUrl = '${ApiConstants.baseUrl}${widget.profileImageUrl}';
+      }
+    }
     
-    if (hasValidUrl) {
+    print('🖼️ Profile Image URL: ${widget.profileImageUrl}');
+    print('🖼️ Full Image URL: $imageUrl');
+    print('🖼️ Profile Name: ${widget.profileName}');
+    
+    if (imageUrl != null) {
       return Container(
         width: 24,
         height: 24,
@@ -474,7 +487,7 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
         ),
         child: ClipOval(
           child: Image.network(
-            widget.profileImageUrl!,
+            imageUrl,
             width: 24,
             height: 24,
             fit: BoxFit.cover,
