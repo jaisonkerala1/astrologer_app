@@ -1,17 +1,16 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:camera/camera.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
+import '../services/agora_service.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_gift_animation_overlay.dart';
-import '../widgets/live_video_preview_widget.dart';
 import '../utils/gift_helper.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
@@ -24,13 +23,12 @@ class LiveStreamingScreen extends StatefulWidget {
 class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final LiveStreamService _liveService;
+  late final AgoraService _agoraService;
   
-  // Camera state - Agora-ready architecture
-  CameraController? _cameraController;
-  List<CameraDescription>? _cameras;
-  bool _isCameraInitialized = false;
-  bool _isLoadingCamera = true;
-  String? _cameraError;
+  // Agora state
+  bool _isAgoraInitialized = false;
+  bool _isLoadingAgora = true;
+  String? _agoraError;
   bool _isFrontCamera = true;
   bool _isFlashOn = false;
   
@@ -83,9 +81,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _liveService = LiveStreamService(); // Get the singleton instance
+    _agoraService = AgoraService(); // Get Agora singleton
     _initializeAnimations();
     _hideSystemUI();
-    _initializeCamera(); // Initialize camera for live streaming
+    _initializeAgora(); // Initialize Agora for live streaming
     _startStream();
     _startCommentSimulation();
   }
@@ -94,7 +93,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _countdownTimer?.cancel();
-    _cameraController?.dispose();
+    // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
@@ -110,93 +109,76 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _cameraController;
-    
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      return;
-    }
-
+    // Agora handles lifecycle internally, but we can pause/resume if needed
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      // Pause camera when app goes to background
-      cameraController.dispose();
-      setState(() {
-        _isCameraInitialized = false;
-      });
+      // Agora SDK handles background state internally
+      debugPrint('📱 [LIVE] App paused - Agora continues in background');
     } else if (state == AppLifecycleState.resumed && !_isEnding) {
-      // Resume camera when app comes back to foreground (unless ending stream)
-      _initializeCamera();
+      debugPrint('📱 [LIVE] App resumed');
     }
   }
 
-  /// Initialize camera for live streaming
-  Future<void> _initializeCamera() async {
+  /// Initialize Agora for live streaming
+  Future<void> _initializeAgora() async {
     if (_isEnding) return; // Don't initialize if ending stream
     
     setState(() {
-      _isLoadingCamera = true;
-      _cameraError = null;
+      _isLoadingAgora = true;
+      _agoraError = null;
     });
 
     try {
-      // Request camera permission
-      final cameraStatus = await Permission.camera.request();
-      final microphoneStatus = await Permission.microphone.request();
+      // Set up error callback
+      _agoraService.onError = (message) {
+        if (mounted) {
+          setState(() {
+            _agoraError = message;
+          });
+        }
+      };
       
-      if (!cameraStatus.isGranted || !microphoneStatus.isGranted) {
+      _agoraService.onJoinChannelSuccess = () {
+        debugPrint('✅ [LIVE] Successfully joined Agora channel');
+      };
+
+      // Initialize Agora engine
+      final initialized = await _agoraService.initialize();
+      
+      if (!initialized) {
         setState(() {
-          _cameraError = 'Camera and microphone permissions are required';
-          _isLoadingCamera = false;
+          _agoraError = 'Failed to initialize Agora. Check permissions.';
+          _isLoadingAgora = false;
         });
         return;
       }
 
-      // Get available cameras
-      _cameras = await availableCameras();
+      // Start broadcasting with Agora RTC token
+      final broadcasting = await _agoraService.startBroadcasting(
+        channelName: AgoraService.defaultChannelName,
+        token: AgoraService.defaultTestToken,
+      );
       
-      if (_cameras == null || _cameras!.isEmpty) {
+      if (!broadcasting) {
         setState(() {
-          _cameraError = 'No camera found on this device';
-          _isLoadingCamera = false;
+          _agoraError = 'Failed to start broadcasting';
+          _isLoadingAgora = false;
         });
         return;
-      }
-
-      // Select front camera by default (for live streaming)
-      final camera = _cameras!.firstWhere(
-        (cam) => cam.lensDirection == (_isFrontCamera 
-            ? CameraLensDirection.front 
-            : CameraLensDirection.back),
-        orElse: () => _cameras!.first,
-      );
-
-      // Initialize camera controller with high resolution for streaming
-      _cameraController = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: true, // Enable audio for live streaming
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-
-      await _cameraController!.initialize();
-      
-      // Set flash mode
-      if (_isFlashOn) {
-        await _cameraController!.setFlashMode(FlashMode.torch);
       }
 
       if (mounted) {
         setState(() {
-          _isCameraInitialized = true;
-          _isLoadingCamera = false;
+          _isAgoraInitialized = true;
+          _isLoadingAgora = false;
         });
-        // Start countdown after camera is ready
+        // Start countdown after Agora is ready
         _startCountdown();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _cameraError = 'Failed to initialize camera: ${e.toString()}';
-          _isLoadingCamera = false;
+          _agoraError = 'Failed to initialize Agora: ${e.toString()}';
+          _isLoadingAgora = false;
         });
       }
     }
@@ -240,24 +222,15 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
 
   /// Switch between front and back camera
   Future<void> _switchCamera() async {
-    if (_cameras == null || _cameras!.length < 2) return;
-    
+    await _agoraService.switchCamera();
     setState(() {
       _isFrontCamera = !_isFrontCamera;
-      _isCameraInitialized = false;
-      _isLoadingCamera = true;
     });
-    
-    await _cameraController?.dispose();
-    await _initializeCamera();
-    
     HapticFeedback.selectionClick();
   }
 
   /// Toggle flash/torch
   Future<void> _toggleFlash() async {
-    if (_cameraController == null || !_isCameraInitialized) return;
-    
     // Flash only works on back camera
     if (_isFrontCamera) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -275,9 +248,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         _isFlashOn = !_isFlashOn;
       });
       
-      await _cameraController!.setFlashMode(
-        _isFlashOn ? FlashMode.torch : FlashMode.off,
-      );
+      await _agoraService.setFlash(_isFlashOn);
       
       HapticFeedback.selectionClick();
     } catch (e) {
@@ -548,45 +519,38 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     );
   }
 
-  void _confirmEndStream() {
-    print('🛑 [LIVE_STREAMING] _confirmEndStream() started');
-    print('🛑 [LIVE_STREAMING] Widget mounted: $mounted');
-    print('🛑 [LIVE_STREAMING] Context valid: ${context != null}');
-    print('🛑 [LIVE_STREAMING] Navigator.canPop: ${Navigator.of(context).canPop()}');
+  void _confirmEndStream() async {
+    debugPrint('🛑 [LIVE_STREAMING] _confirmEndStream() started');
+    debugPrint('🛑 [LIVE_STREAMING] Widget mounted: $mounted');
     
     setState(() {
       _isEnding = true;
     });
-    print('🛑 [LIVE_STREAMING] Set _isEnding = true');
+    debugPrint('🛑 [LIVE_STREAMING] Set _isEnding = true');
     
-    // Dispose camera immediately when ending stream
-    _cameraController?.dispose();
-    _cameraController = null;
-    _isCameraInitialized = false;
-    print('📷 [LIVE_STREAMING] Camera disposed');
+    // Stop Agora broadcast
+    await _agoraService.stopBroadcasting();
+    debugPrint('📷 [LIVE_STREAMING] Agora broadcast stopped');
     
     _liveService.endLiveStream();
-    print('🛑 [LIVE_STREAMING] Called _liveService.endLiveStream()');
+    debugPrint('🛑 [LIVE_STREAMING] Called _liveService.endLiveStream()');
     
     // ✅ Restore SystemUI BEFORE navigation to prevent flickering
     _showSystemUI();
-    print('✅ [LIVE_STREAMING] SystemUI restored before navigation');
+    debugPrint('✅ [LIVE_STREAMING] SystemUI restored before navigation');
     
     Future.delayed(const Duration(seconds: 2), () {
-      print('🛑 [LIVE_STREAMING] Delay finished (2 seconds)');
-      print('🛑 [LIVE_STREAMING] Widget mounted: $mounted');
+      debugPrint('🛑 [LIVE_STREAMING] Delay finished (2 seconds)');
       if (mounted) {
-        print('🛑 [LIVE_STREAMING] Attempting Navigator.pop()');
-        print('🛑 [LIVE_STREAMING] Navigator.canPop: ${Navigator.of(context).canPop()}');
         try {
           Navigator.of(context).pop('ended'); // Return 'ended' to trigger dashboard navigation
-          print('✅ [LIVE_STREAMING] Navigator.pop() executed successfully');
+          debugPrint('✅ [LIVE_STREAMING] Navigator.pop() executed successfully');
         } catch (e, stackTrace) {
-          print('❌ [LIVE_STREAMING] ERROR during Navigator.pop(): $e');
-          print('❌ [LIVE_STREAMING] StackTrace: $stackTrace');
+          debugPrint('❌ [LIVE_STREAMING] ERROR during Navigator.pop(): $e');
+          debugPrint('❌ [LIVE_STREAMING] StackTrace: $stackTrace');
         }
       } else {
-        print('⚠️ [LIVE_STREAMING] Widget not mounted - Cannot pop');
+        debugPrint('⚠️ [LIVE_STREAMING] Widget not mounted - Cannot pop');
       }
     });
   }
@@ -660,7 +624,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                   _buildCameraPreview(themeService),
                   
                   // Countdown overlay (shows during countdown)
-                  if (_isCountingDown && _isCameraInitialized)
+                  if (_isCountingDown && _isAgoraInitialized)
                     _buildCountdownOverlay(themeService),
                   
                   // Show live UI only after countdown
@@ -844,14 +808,85 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   Widget _buildCameraPreview(ThemeService themeService) {
-    // Use the Agora-ready LiveVideoPreviewWidget
-    return LiveVideoPreviewWidget(
-      videoSource: VideoSource.localCamera,
-      cameraController: _cameraController,
-      isCameraInitialized: _isCameraInitialized,
-      isLoading: _isLoadingCamera,
-      errorMessage: _cameraError,
-      onRetry: _initializeCamera,
+    // Show loading state
+    if (_isLoadingAgora) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Initializing broadcast...',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Show error state
+    if (_agoraError != null) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white70, size: 64),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _agoraError!,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _initializeAgora,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white24,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Show Agora video preview
+    if (_isAgoraInitialized && _agoraService.engine != null) {
+      return AgoraVideoView(
+        controller: VideoViewController(
+          rtcEngine: _agoraService.engine!,
+          canvas: const VideoCanvas(uid: 0), // 0 = local user
+        ),
+      );
+    }
+    
+    // Fallback
+    return Container(
+      color: Colors.black,
+      child: const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white,
+          strokeWidth: 2,
+        ),
+      ),
     );
   }
 

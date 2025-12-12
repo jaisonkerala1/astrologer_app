@@ -402,3 +402,4 @@ class CompactAudioWaveform extends StatelessWidget {
   }
 }
 
+
