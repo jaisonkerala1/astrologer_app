@@ -10,6 +10,7 @@ import 'package:mic_stream/mic_stream.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/widgets/audio/audio_waveform_widget.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
 import '../bloc/live_bloc.dart';
@@ -1228,53 +1229,91 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Row(
             children: [
-              Icon(
-                Icons.mic,
-                color: Colors.white.withOpacity(0.8),
-                size: 16,
-                shadows: const [
-                  Shadow(color: Colors.black54, blurRadius: 8),
-                ],
-              ),
-              const SizedBox(width: 12),
-              // Real-time audio bars responding to mic input
-              Expanded(
-                child: SizedBox(
-                  height: 26, // fixed height so topic area doesn't shift
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(20, (index) {
-                      // Calculate height based on audio level
-                      // Base height + audio level contribution
-                      final baseHeight = 3.0;
-                      final maxHeight = 22.0; // taller bars for clearer movement
-                      final heightRange = maxHeight - baseHeight;
-                      
-                      // Add some variation for visual interest (wave effect)
-                      final variation = (index % 3) * 0.2;
-                      final calculatedHeight = baseHeight + (audioLevel * heightRange * (1.0 + variation));
-                      
-                      // Fade out bars on the edges
-                      final opacity = index < 15 ? 0.8 : 0.3;
-                      
-                      return Container(
-                        width: 3,
-                        height: calculatedHeight.clamp(baseHeight, maxHeight),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(opacity),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      );
-                    }),
-                  ),
+              // Mic icon with glow when active
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: audioLevel > 0.1 
+                      ? Colors.white.withOpacity(0.15) 
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _isMicMuted ? Icons.mic_off : Icons.mic,
+                  color: _isMicMuted 
+                      ? Colors.red.withOpacity(0.8)
+                      : Colors.white.withOpacity(audioLevel > 0.1 ? 1.0 : 0.6),
+                  size: 18,
+                  shadows: const [
+                    Shadow(color: Colors.black54, blurRadius: 8),
+                  ],
                 ),
               ),
+              const SizedBox(width: 12),
+              // WhatsApp-style waveform visualization
+              Expanded(
+                child: AudioWaveformWidget(
+                  mode: WaveformMode.live,
+                  audioLevel: _isMicMuted ? 0.0 : audioLevel,
+                  barCount: 40,
+                  barWidth: 3.0,
+                  barSpacing: 2.0,
+                  minBarHeight: 4.0,
+                  maxBarHeight: 28.0,
+                  activeColor: Colors.white,
+                  inactiveColor: Colors.white38,
+                  enableRippleEffect: true,
+                  enableGlow: true,
+                  barBorderRadius: 2.0,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Audio level indicator
+              if (!_isMicMuted)
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: audioLevel > 0.1 ? 1.0 : 0.0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getAudioLevelColor(audioLevel).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _getAudioLevelColor(audioLevel).withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _getAudioLevelLabel(audioLevel),
+                      style: TextStyle(
+                        color: _getAudioLevelColor(audioLevel),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
       },
     );
+  }
+  
+  Color _getAudioLevelColor(double level) {
+    if (level > 0.8) return Colors.red; // Too loud
+    if (level > 0.5) return Colors.green; // Good
+    if (level > 0.2) return Colors.amber; // Low
+    return Colors.white54; // Very low
+  }
+  
+  String _getAudioLevelLabel(double level) {
+    if (level > 0.8) return 'LOUD';
+    if (level > 0.5) return 'GOOD';
+    if (level > 0.2) return 'LOW';
+    return 'QUIET';
   }
 
   Widget _buildMinimalGoLiveButton(bool isEnabled) {

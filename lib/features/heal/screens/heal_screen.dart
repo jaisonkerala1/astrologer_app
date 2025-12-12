@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../shared/theme/models/app_theme.dart' show AppThemeType;
 import '../../../core/di/service_locator.dart';
 import '../screens/service_management_screen.dart';
 import '../screens/service_requests_screen.dart';
@@ -72,7 +73,9 @@ class _HealScreenState extends State<HealScreen> with TickerProviderStateMixin, 
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
           return Scaffold(
-            backgroundColor: themeService.backgroundColor,
+            backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
+                ? themeService.backgroundColor 
+                : const Color(0xFFF5F5F7), // Matching profile screen background
             appBar: AppBar(
             backgroundColor: themeService.primaryColor,
             elevation: 0,
