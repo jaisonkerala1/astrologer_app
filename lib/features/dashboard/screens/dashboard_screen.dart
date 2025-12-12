@@ -56,7 +56,6 @@ import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notification_service.dart';
 import '../widgets/live_astrologers_stories_widget.dart';
-import '../widgets/minimal_availability_toggle_widget.dart';
 import '../../live/screens/live_preparation_screen.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../discovery/screens/discovery_screen.dart';
@@ -714,9 +713,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   
                   // Live Astrologers Stories Widget - Instagram Style
                   const LiveAstrologersStoriesWidget(),
-                  
-                  // Minimal Availability Toggle - Above Earnings Card
-                  const MinimalAvailabilityToggleWidget(),
                   
                   // Content with padding
                   Padding(

@@ -47,10 +47,16 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
   late AnimationController _countUpController;
   late AnimationController _chartController;
   late AnimationController _scaleController;
+  late AnimationController _flipController;
+  late AnimationController _currencyController;
   late Animation<double> _countUpAnimation;
   late Animation<double> _chartAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _flipAnimation;
+  late Animation<double> _currencyAnimation;
   bool _isPressed = false;
+  bool _isFlipped = false;
+  bool _isProfileLoading = false;
 
   // Theme colors - Using app's primary colors
   static const Color _gradientStart = Color(0xFF1E40AF); // Primary Blue
@@ -93,8 +99,30 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
       CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
     );
 
+    // Flip animation controller
+    _flipController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _flipAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutCubic),
+    );
+
+    // Currency symbol animation
+    _currencyController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _currencyAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _currencyController, curve: Curves.elasticOut),
+    );
+
+    // Check if profile is loading
+    _isProfileLoading = widget.profileImageUrl == null || widget.profileName == null;
+
     // Start animations with slight delay for chart
     _countUpController.forward();
+    _currencyController.forward();
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) _chartController.forward();
     });
@@ -106,6 +134,8 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
     _countUpController.dispose();
     _chartController.dispose();
     _scaleController.dispose();
+    _flipController.dispose();
+    _currencyController.dispose();
     super.dispose();
   }
 
@@ -114,8 +144,17 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.totalEarnings != widget.totalEarnings) {
       _countUpController.forward(from: 0);
+      _currencyController.forward(from: 0);
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) _chartController.forward(from: 0);
+      });
+    }
+    
+    // Update profile loading state
+    if (oldWidget.profileImageUrl != widget.profileImageUrl || 
+        oldWidget.profileName != widget.profileName) {
+      setState(() {
+        _isProfileLoading = widget.profileImageUrl == null || widget.profileName == null;
       });
     }
   }
@@ -146,22 +185,56 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
     _scaleController.reverse();
   }
 
+  void _toggleFlip() {
+    setState(() {
+      _isFlipped = !_isFlipped;
+    });
+    if (_isFlipped) {
+      _flipController.forward();
+    } else {
+      _flipController.reverse();
+    }
+    HapticFeedback.mediumImpact();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return AnimatedBuilder(
-      animation: _scaleAnimation,
+      animation: Listenable.merge([_scaleAnimation, _flipAnimation]),
       builder: (context, child) {
+        final angle = _flipAnimation.value * 3.14159; // pi
+        final isFront = angle < 1.5708; // pi/2
+        
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: GestureDetector(
-            onTapDown: _onTapDown,
-            onTapUp: _onTapUp,
-            onTapCancel: _onTapCancel,
-            onTap: widget.onTap,
-            child: Container(
+          child: Transform(
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001) // perspective
+              ..rotateY(angle),
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTapDown: _onTapDown,
+              onTapUp: _onTapUp,
+              onTapCancel: _onTapCancel,
+              onTap: widget.onTap,
+              onDoubleTap: _toggleFlip,
+              child: isFront ? _buildFrontCard(isDark) : Transform(
+                transform: Matrix4.identity()..rotateY(3.14159),
+                alignment: Alignment.center,
+                child: _buildBackCard(isDark),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFrontCard(bool isDark) {
+    return Container(
               height: 200,
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -282,20 +355,23 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
                         
                         const Spacer(),
                         
-                        // Main amount with count-up animation
+                        // Main amount with count-up animation and currency animation
                         AnimatedBuilder(
-                          animation: _countUpAnimation,
+                          animation: Listenable.merge([_countUpAnimation, _currencyAnimation]),
                           builder: (context, _) {
                             final displayAmount = (widget.availableBalance * _countUpAnimation.value);
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  '₹',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w500,
+                                Transform.scale(
+                                  scale: _currencyAnimation.value,
+                                  child: Text(
+                                    '₹',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -406,20 +482,24 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // Profile image or placeholder
-                                    _buildProfileAvatar(),
+                                    // Profile image with skeleton
+                                    _isProfileLoading 
+                                      ? _buildProfileSkeleton()
+                                      : _buildProfileAvatar(),
                                     const SizedBox(width: 6),
                                     // Profile name or "Profile"
-                                    Text(
-                                      widget.profileName != null
-                                          ? _getFirstName(widget.profileName!)
-                                          : 'Profile',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                    _isProfileLoading
+                                      ? _buildNameSkeleton()
+                                      : Text(
+                                          widget.profileName != null
+                                              ? _getFirstName(widget.profileName!)
+                                              : 'Profile',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                   ],
                                 ),
                               ),
@@ -431,10 +511,128 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
                   ),
                 ],
               ),
-            ),
+            );
+  }
+
+  /// Build back side of card with detailed stats
+  Widget _buildBackCard(bool isDark) {
+    return Container(
+              height: 200,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_gradientMiddle, _gradientEnd, _gradientStart],
+                  stops: [0.0, 0.5, 1.0],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: _gradientStart.withOpacity(_isPressed ? 0.5 : 0.4),
+                    blurRadius: _isPressed ? 30 : 20,
+                    offset: Offset(0, _isPressed ? 15 : 10),
+                    spreadRadius: _isPressed ? 2 : 0,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Decorative circles
+                  Positioned(
+                    top: -30,
+                    left: -30,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                  ),
+                  
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Detailed Stats',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: Colors.white.withOpacity(0.6),
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Stats grid
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildStatRow('Total Earnings', '₹${widget.totalEarnings.toStringAsFixed(0)}'),
+                              _buildStatRow('Available Balance', '₹${widget.availableBalance.toStringAsFixed(0)}'),
+                              _buildStatRow('Pending Amount', '₹${widget.pendingAmount.toStringAsFixed(0)}'),
+                              _buildStatRow('Growth', '${widget.growthPercentage >= 0 ? '+' : ''}${widget.growthPercentage.toStringAsFixed(1)}%'),
+                            ],
+                          ),
+                        ),
+                        
+                        // Tap to flip hint
+                        Center(
+                          child: Text(
+                            'Double tap to flip',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
-        );
-      },
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 
@@ -564,6 +762,110 @@ class _EarningsCreditCardWidgetState extends State<EarningsCreditCardWidget>
       return '${(amount / 1000).toStringAsFixed(1)}K';
     }
     return amount.toStringAsFixed(2);
+  }
+
+  /// Build skeleton loader for profile avatar
+  Widget _buildProfileSkeleton() {
+    return _SkeletonShimmer(
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+    );
+  }
+
+  /// Build skeleton loader for profile name
+  Widget _buildNameSkeleton() {
+    return _SkeletonShimmer(
+      width: 50,
+      height: 12,
+      borderRadius: 4,
+    );
+  }
+}
+
+/// Skeleton shimmer widget matching discovery screen style
+class _SkeletonShimmer extends StatefulWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  const _SkeletonShimmer({
+    required this.width,
+    required this.height,
+    required this.borderRadius,
+  });
+
+  @override
+  State<_SkeletonShimmer> createState() => _SkeletonShimmerState();
+}
+
+class _SkeletonShimmerState extends State<_SkeletonShimmer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
+    _shimmerController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        final shimmerWidth = 0.4;
+        final shimmerPosition = _shimmerAnimation.value;
+        
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          child: Container(
+            width: widget.width,
+            height: widget.height,
+            color: Colors.white.withOpacity(0.2),
+            child: Stack(
+              children: [
+                if (shimmerPosition >= 0.0 && shimmerPosition <= 1.0)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withOpacity(0.4),
+                            Colors.transparent,
+                          ],
+                          stops: [
+                            (shimmerPosition - shimmerWidth / 2).clamp(0.0, 1.0),
+                            shimmerPosition.clamp(0.0, 1.0),
+                            (shimmerPosition + shimmerWidth / 2).clamp(0.0, 1.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

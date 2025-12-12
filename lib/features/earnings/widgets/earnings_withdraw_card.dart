@@ -82,6 +82,86 @@ class _EarningsWithdrawCardState extends State<EarningsWithdrawCard>
     super.dispose();
   }
 
+  /// Build bank logo based on bank name
+  Widget _buildBankLogo(String bankName) {
+    // Bank colors and initial mapping
+    final bankData = _getBankData(bankName);
+    
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Bank colored dot
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: bankData['color'] as Color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Bank initials
+          Text(
+            bankData['initial'] as String,
+            style: TextStyle(
+              color: bankData['color'] as Color,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getBankData(String bankName) {
+    final name = bankName.toUpperCase();
+    
+    // Popular Indian banks
+    if (name.contains('HDFC')) {
+      return {'initial': 'H', 'color': const Color(0xFF004C8F)};
+    } else if (name.contains('ICICI')) {
+      return {'initial': 'I', 'color': const Color(0xFFFF6F00)};
+    } else if (name.contains('SBI') || name.contains('STATE BANK')) {
+      return {'initial': 'S', 'color': const Color(0xFF22409A)};
+    } else if (name.contains('AXIS')) {
+      return {'initial': 'A', 'color': const Color(0xFF800000)};
+    } else if (name.contains('KOTAK')) {
+      return {'initial': 'K', 'color': const Color(0xFFED232A)};
+    } else if (name.contains('PNB') || name.contains('PUNJAB')) {
+      return {'initial': 'P', 'color': const Color(0xFF071E5F)};
+    } else if (name.contains('BOB') || name.contains('BARODA')) {
+      return {'initial': 'B', 'color': const Color(0xFFEC6A37)};
+    } else if (name.contains('CANARA')) {
+      return {'initial': 'C', 'color': const Color(0xFFD32F2F)};
+    } else if (name.contains('UNION')) {
+      return {'initial': 'U', 'color': const Color(0xFF1A237E)};
+    } else if (name.contains('IDBI')) {
+      return {'initial': 'ID', 'color': const Color(0xFF006633)};
+    } else if (name.contains('YES')) {
+      return {'initial': 'Y', 'color': const Color(0xFF003DA5)};
+    } else if (name.contains('INDIAN')) {
+      return {'initial': 'IN', 'color': const Color(0xFF1976D2)};
+    } else {
+      // Default for unknown banks
+      return {'initial': bankName.substring(0, 1).toUpperCase(), 'color': AppTheme.primaryColor};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -166,19 +246,8 @@ class _EarningsWithdrawCardState extends State<EarningsWithdrawCard>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Bank icon/logo
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
+                            // Bank logo
+                            _buildBankLogo(widget.bankAccount.bankName),
                             
                             // Bank name & primary badge
                             Row(
@@ -339,20 +408,8 @@ class EarningsWithdrawCardCompact extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Bank icon
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.account_balance_rounded,
-                color: AppTheme.primaryColor,
-                size: 24,
-              ),
-            ),
+            // Bank logo
+            _buildCompactBankLogo(bankAccount.bankName),
             const SizedBox(width: 12),
             
             // Bank details
@@ -437,6 +494,66 @@ class EarningsWithdrawCardCompact extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Build compact bank logo
+  static Widget _buildCompactBankLogo(String bankName) {
+    final bankData = _getCompactBankData(bankName);
+    
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: (bankData['color'] as Color).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (bankData['color'] as Color).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          bankData['initial'] as String,
+          style: TextStyle(
+            color: bankData['color'] as Color,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Map<String, dynamic> _getCompactBankData(String bankName) {
+    final name = bankName.toUpperCase();
+    
+    if (name.contains('HDFC')) {
+      return {'initial': 'H', 'color': const Color(0xFF004C8F)};
+    } else if (name.contains('ICICI')) {
+      return {'initial': 'I', 'color': const Color(0xFFFF6F00)};
+    } else if (name.contains('SBI') || name.contains('STATE BANK')) {
+      return {'initial': 'S', 'color': const Color(0xFF22409A)};
+    } else if (name.contains('AXIS')) {
+      return {'initial': 'A', 'color': const Color(0xFF800000)};
+    } else if (name.contains('KOTAK')) {
+      return {'initial': 'K', 'color': const Color(0xFFED232A)};
+    } else if (name.contains('PNB') || name.contains('PUNJAB')) {
+      return {'initial': 'P', 'color': const Color(0xFF071E5F)};
+    } else if (name.contains('BOB') || name.contains('BARODA')) {
+      return {'initial': 'B', 'color': const Color(0xFFEC6A37)};
+    } else if (name.contains('CANARA')) {
+      return {'initial': 'C', 'color': const Color(0xFFD32F2F)};
+    } else if (name.contains('UNION')) {
+      return {'initial': 'U', 'color': const Color(0xFF1A237E)};
+    } else if (name.contains('IDBI')) {
+      return {'initial': 'ID', 'color': const Color(0xFF006633)};
+    } else if (name.contains('YES')) {
+      return {'initial': 'Y', 'color': const Color(0xFF003DA5)};
+    } else if (name.contains('INDIAN')) {
+      return {'initial': 'IN', 'color': const Color(0xFF1976D2)};
+    } else {
+      return {'initial': bankName.substring(0, 1).toUpperCase(), 'color': AppTheme.primaryColor};
+    }
   }
 }
 

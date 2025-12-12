@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/services/status_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/value_shimmer.dart';
 
@@ -237,8 +239,8 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
         
         const Spacer(),
         
-        // Active status badge
-        _buildActiveBadge(isDark),
+        // Interactive Online/Offline Toggle Badge
+        _buildStatusToggleBadge(isDark),
       ],
     );
   }
@@ -301,35 +303,95 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
     );
   }
 
-  Widget _buildActiveBadge(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _activeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
+  Widget _buildStatusToggleBadge(bool isDark) {
+    return Consumer<StatusService>(
+      builder: (context, statusService, child) {
+        final isOnline = statusService.isOnline;
+        final isUpdating = statusService.isUpdating;
+        
+        final onlineColor = const Color(0xFF10B981); // Green
+        final offlineColor = const Color(0xFFEF4444); // Red
+        
+        return GestureDetector(
+          onTap: isUpdating ? null : () {
+            HapticFeedback.mediumImpact();
+            statusService.toggleStatus();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
-              color: _activeColor,
-              shape: BoxShape.circle,
+              color: isOnline ? onlineColor : offlineColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: (isOnline ? onlineColor : offlineColor).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Toggle switch knob
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  alignment: isOnline ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: isUpdating
+                          ? SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isOnline ? onlineColor : offlineColor,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              isOnline ? Icons.check_rounded : Icons.close_rounded,
+                              size: 14,
+                              color: isOnline ? onlineColor : offlineColor,
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // Status text
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    isOnline ? 'ON' : 'OFF',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 6),
-          Text(
-            'Active',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: _activeColor,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
