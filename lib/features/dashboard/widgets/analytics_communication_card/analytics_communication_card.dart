@@ -6,7 +6,7 @@ import '../../../../shared/widgets/value_shimmer.dart';
 /// Communication type options
 enum CommunicationType { calls, messages }
 
-/// Combined Communication Card with touch effects and trend indicators
+/// Combined Communication Card with world-class UI/UX design
 class AnalyticsCommunicationCard extends StatefulWidget {
   final int callsToday;
   final int messagesCount;
@@ -45,7 +45,7 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
 
-  // Colors for calls and messages
+  // Colors
   static const Color _callsColor = Color(0xFF10B981); // Green
   static const Color _messagesColor = Color(0xFF3B82F6); // Blue
 
@@ -53,16 +53,16 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     _animation = CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOut,
+      curve: Curves.easeOutCubic,
     );
     
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 120),
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
@@ -86,17 +86,13 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
       ? widget.callsToday
       : widget.messagesCount;
 
-  String get _currentLabel =>
-      _selectedType == CommunicationType.calls ? 'Calls Today' : 'Messages Today';
-
   int get _statusCount => _selectedType == CommunicationType.calls
       ? widget.missedCalls
       : widget.pendingMessages;
 
   String get _statusLabel =>
-      _selectedType == CommunicationType.calls ? 'Missed' : 'Unread';
+      _selectedType == CommunicationType.calls ? 'missed' : 'unread';
 
-  // Trend calculation
   int get _yesterdayValue => _selectedType == CommunicationType.calls
       ? widget.callsYesterday
       : widget.messagesYesterday;
@@ -110,16 +106,10 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
 
   bool get _isTrendPositive => _trendPercentage >= 0;
 
-  Color get _trendColor => _isTrendPositive
-      ? const Color(0xFF10B981) // Green
-      : const Color(0xFFEF4444); // Red
-
   void _onTypeChanged(CommunicationType type) {
     if (type != _selectedType) {
       HapticFeedback.selectionClick();
-      setState(() {
-        _selectedType = type;
-      });
+      setState(() => _selectedType = type);
       _animationController.forward(from: 0);
     }
   }
@@ -127,7 +117,6 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
   void _onTapDown(TapDownDetails details) {
     setState(() => _isPressed = true);
     _scaleController.forward();
-    HapticFeedback.selectionClick();
   }
 
   void _onTapUp(TapUpDetails details) {
@@ -138,6 +127,15 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
   void _onTapCancel() {
     setState(() => _isPressed = false);
     _scaleController.reverse();
+  }
+
+  void _navigateToDetail() {
+    HapticFeedback.lightImpact();
+    if (_selectedType == CommunicationType.calls) {
+      widget.onCallsTap?.call();
+    } else {
+      widget.onMessagesTap?.call();
+    }
   }
 
   @override
@@ -154,9 +152,7 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
             onTapDown: _onTapDown,
             onTapUp: _onTapUp,
             onTapCancel: _onTapCancel,
-            onTap: _selectedType == CommunicationType.calls
-                ? widget.onCallsTap
-                : widget.onMessagesTap,
+            onTap: _navigateToDetail,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
@@ -164,47 +160,63 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: _isPressed
-                      ? _activeColor.withOpacity(0.5)
-                      : Colors.transparent,
-                  width: 2,
+                      ? _activeColor.withOpacity(0.4)
+                      : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+                  width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: _isPressed
-                        ? _activeColor.withOpacity(0.2)
+                        ? _activeColor.withOpacity(0.15)
                         : (isDark
                             ? Colors.black.withOpacity(0.3)
-                            : Colors.grey.withOpacity(0.15)),
-                    blurRadius: _isPressed ? 24 : 20,
-                    offset: const Offset(0, 8),
-                    spreadRadius: _isPressed ? 2 : 0,
+                            : Colors.grey.withOpacity(0.1)),
+                    blurRadius: _isPressed ? 20 : 16,
+                    offset: const Offset(0, 6),
+                    spreadRadius: _isPressed ? 1 : 0,
                   ),
                 ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _selectedType == CommunicationType.calls
-                      ? widget.onCallsTap
-                      : widget.onMessagesTap,
-                  borderRadius: BorderRadius.circular(20),
-                  splashColor: _activeColor.withOpacity(0.15),
-                  highlightColor: _activeColor.withOpacity(0.08),
-                  hoverColor: _activeColor.withOpacity(0.05),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Material(
+                  color: Colors.transparent,
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Header with type selector
-                        _buildHeader(theme, isDark),
+                        // Row 1: Toggle + View All
+                        _buildTopRow(isDark),
                         
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
-                        // Main content - Big number with status
-                        _buildMainContent(theme, isDark),
+                        // Row 2: Big number + Trend
+                        _buildMainRow(theme, isDark),
                         
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
+                        
+                        // Divider
+                        Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                isDark ? Colors.white12 : Colors.grey.shade200,
+                                isDark ? Colors.white12 : Colors.grey.shade200,
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.2, 0.8, 1.0],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 14),
+                        
+                        // Status bar
+                        _buildStatusBar(isDark),
                       ],
                     ),
                   ),
@@ -217,31 +229,29 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
     );
   }
 
-  Widget _buildHeader(ThemeData theme, bool isDark) {
+  Widget _buildTopRow(bool isDark) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Communication',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppTheme.textColor,
-          ),
-        ),
-        // Type selector - Flat rounded chips
-        _buildTypeSelector(isDark),
+        // Toggle chips
+        _buildToggleChips(isDark),
+        
+        const Spacer(),
+        
+        // Active status badge
+        _buildActiveBadge(isDark),
       ],
     );
   }
 
-  Widget _buildTypeSelector(bool isDark) {
+  Widget _buildToggleChips(bool isDark) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: CommunicationType.values.map((type) {
         final isSelected = _selectedType == type;
         final color = type == CommunicationType.calls ? _callsColor : _messagesColor;
+        
         return Padding(
-          padding: const EdgeInsets.only(left: 6),
+          padding: EdgeInsets.only(left: type == CommunicationType.calls ? 0 : 6),
           child: GestureDetector(
             onTap: () => _onTypeChanged(type),
             child: AnimatedContainer(
@@ -249,12 +259,12 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? color.withOpacity(0.15)
+                    ? color
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
-                      ? color.withOpacity(0.4)
+                      ? color
                       : (isDark ? Colors.white12 : Colors.grey.shade200),
                   width: 1,
                 ),
@@ -267,18 +277,18 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
                         ? Icons.phone_rounded
                         : Icons.chat_bubble_rounded,
                     size: 14,
-                    color: isSelected
-                        ? color
+                    color: isSelected 
+                        ? Colors.white 
                         : (isDark ? Colors.white54 : Colors.grey.shade500),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 5),
                   Text(
                     type == CommunicationType.calls ? 'Calls' : 'Chat',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                       color: isSelected
-                          ? color
+                          ? Colors.white
                           : (isDark ? Colors.white54 : Colors.grey.shade500),
                     ),
                   ),
@@ -291,105 +301,126 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
     );
   }
 
-  Widget _buildMainContent(ThemeData theme, bool isDark) {
+  Widget _buildActiveBadge(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _activeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _activeColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Active',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _activeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViewAllButton(bool isDark) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: _navigateToDetail,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: _activeColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'View All',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 5),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainRow(ThemeData theme, bool isDark) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Big number
+        // Left: Big number + label
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Big animated number
               widget.isLoading
-                  ? const ValueShimmer(width: 90, height: 64, borderRadius: 8)
+                  ? const ValueShimmer(width: 80, height: 52, borderRadius: 8)
                   : AnimatedBuilder(
                       animation: _animation,
                       builder: (context, _) {
                         return Text(
                           (_currentValue * _animation.value).round().toString(),
-                          style: theme.textTheme.displayLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            fontSize: 52,
+                            fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : AppTheme.textColor,
                             letterSpacing: -2,
                             height: 1,
-                            fontSize: 56,
                           ),
                         );
                       },
                     ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
-                _currentLabel,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: isDark ? Colors.white60 : Colors.grey.shade600,
+                _selectedType == CommunicationType.calls ? 'calls today' : 'messages today',
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  letterSpacing: 0.2,
                 ),
               ),
-              const SizedBox(height: 8),
-              // Trend indicator
-              _buildTrendIndicator(theme, isDark),
             ],
           ),
         ),
         
-        // Status indicator (if any)
-        if (_statusCount > 0)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: _isPressed
-                  ? Colors.red.withOpacity(0.2)
-                  : Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _selectedType == CommunicationType.calls
-                      ? Icons.phone_missed_rounded
-                      : Icons.mark_chat_unread_rounded,
-                  size: 20,
-                  color: Colors.red,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '$_statusCount $_statusLabel',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          // Arrow indicator
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: _isPressed
-                  ? _activeColor.withOpacity(0.2)
-                  : _activeColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              Icons.arrow_forward_rounded,
-              size: _isPressed ? 26 : 24,
-              color: _activeColor,
-            ),
-          ),
+        // Right: Trend badge
+        _buildTrendBadge(isDark),
       ],
     );
   }
 
-  Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
-    if (widget.isLoading || _yesterdayValue == 0 && _currentValue == 0) {
+  Widget _buildTrendBadge(bool isDark) {
+    if (widget.isLoading || (_yesterdayValue == 0 && _currentValue == 0)) {
       return const SizedBox.shrink();
     }
+
+    final trendColor = _isTrendPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return AnimatedBuilder(
       animation: _animation,
@@ -397,45 +428,136 @@ class _AnalyticsCommunicationCardState extends State<AnalyticsCommunicationCard>
         return AnimatedOpacity(
           opacity: _animation.value,
           duration: const Duration(milliseconds: 300),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: trendColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isTrendPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      size: 16,
+                      color: trendColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_isTrendPositive ? '+' : ''}${_trendPercentage.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: trendColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'vs yesterday',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white30 : Colors.grey.shade400,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusBar(bool isDark) {
+    return Row(
+      children: [
+        // Status indicator (missed/unread) with icon
+        if (_statusCount > 0) ...[
+          Icon(
+            _selectedType == CommunicationType.calls
+                ? Icons.phone_missed_rounded
+                : Icons.mark_chat_unread_rounded,
+            size: 16,
+            color: Colors.red.shade400,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$_statusCount $_statusLabel',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade400,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 4,
+            height: 4,
             decoration: BoxDecoration(
-              color: _trendColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: isDark ? Colors.white.withOpacity(0.2) : Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        
+        // Last activity
+        Icon(
+          Icons.access_time_rounded,
+          size: 14,
+          color: isDark ? Colors.white30 : Colors.grey.shade400,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            _selectedType == CommunicationType.calls ? 'Last call 12m ago' : 'Last message 5m ago',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white38 : Colors.grey.shade500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        
+        const SizedBox(width: 12),
+        
+        // View All button
+        GestureDetector(
+          onTap: _navigateToDetail,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: _activeColor,
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  _isTrendPositive
-                      ? Icons.trending_up_rounded
-                      : Icons.trending_down_rounded,
-                  size: 16,
-                  color: _trendColor,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${_isTrendPositive ? '+' : ''}${_trendPercentage.toStringAsFixed(0)}%',
+                const Text(
+                  'View All',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _trendColor,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  'vs yesterday',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white38 : Colors.grey.shade500,
-                  ),
+                const SizedBox(width: 5),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: Colors.white,
                 ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

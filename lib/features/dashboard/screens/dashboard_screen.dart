@@ -969,22 +969,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       // Navigate to profile
                       navigateToTab(4); // Profile tab
                     },
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-                      ),
-                      child: ProfileAvatarWidget(
-                        imagePath: user?.profilePicture,
-                        radius: 28,
-                        fallbackText: user?.name?.isNotEmpty == true 
-                                    ? user!.name!.substring(0, 1).toUpperCase()
-                            : 'A',
-                        backgroundColor: Colors.white,
-                        textColor: const Color(0xFF1E40AF),
-                      ),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                          ),
+                          child: ProfileAvatarWidget(
+                            imagePath: user?.profilePicture,
+                            radius: 28,
+                            fallbackText: user?.name?.isNotEmpty == true 
+                                        ? user!.name!.substring(0, 1).toUpperCase()
+                                : 'A',
+                            backgroundColor: Colors.white,
+                            textColor: const Color(0xFF1E40AF),
+                          ),
+                        ),
+                        // Online Status Indicator
+                        if (user?.isOnline == true)
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.green.withOpacity(0.5),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1115,33 +1144,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             // Navigate to profile
                             navigateToTab(4); // Profile tab
                           },
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: themeService.isVedicMode() 
-                                    ? Colors.white.withOpacity(0.2)
-                                    : Colors.white.withOpacity(0.3), 
-                                width: 2
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: themeService.isVedicMode() 
+                                        ? Colors.white.withOpacity(0.2)
+                                        : Colors.white.withOpacity(0.3), 
+                                    width: 2
+                                  ),
+                                ),
+                                child: ProfileAvatarWidget(
+                                  imagePath: user?.profilePicture,
+                                  radius: 28,
+                                  fallbackText: user?.name?.isNotEmpty == true 
+                                      ? user!.name!.substring(0, 1).toUpperCase()
+                                      : 'A',
+                                  backgroundColor: themeService.isVedicMode() 
+                                      ? const Color(0xFF1a1a2e)
+                                      : Colors.white,
+                                  textColor: themeService.isVedicMode() 
+                                      ? Colors.white
+                                      : themeService.primaryColor,
+                                ),
                               ),
-                            ),
-                            child: ProfileAvatarWidget(
-                              imagePath: user?.profilePicture,
-                              radius: 28,
-                              fallbackText: user?.name?.isNotEmpty == true 
-                                  ? user!.name!.substring(0, 1).toUpperCase()
-                                  : 'A',
-                              backgroundColor: themeService.isVedicMode() 
-                                  ? const Color(0xFF1a1a2e)
-                                  : Colors.white,
-                              textColor: themeService.isVedicMode() 
-                                  ? Colors.white
-                                  : themeService.primaryColor,
-                      ),
-                    ),
-                  ),
+                              // Online Status Indicator
+                              if (user?.isOnline == true)
+                                Positioned(
+                                  bottom: 2,
+                                  right: 2,
+                                  child: Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.green.withOpacity(0.5),
+                                          blurRadius: 6,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
