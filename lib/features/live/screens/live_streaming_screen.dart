@@ -156,32 +156,38 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         return;
       }
 
-      // Get astrologer ID for channel name
-      String channelName = 'live_broadcast';
+      // ============================================
+      // Channel name for broadcasting
+      // ============================================
+      String channelName = 'test_live';
       String token = '';
       
+      // Get astrologer ID for unique channel
       try {
         final storage = StorageService();
         final userData = await storage.getUserData();
         if (userData != null) {
           final userMap = jsonDecode(userData);
-          final astrologerId = userMap['id'] ?? userMap['_id'] ?? '';
-          if (astrologerId.isNotEmpty) {
-            channelName = 'live_$astrologerId';
+          final visitorId = userMap['id'] ?? userMap['_id'] ?? '';
+          if (visitorId.isNotEmpty) {
+            channelName = 'live_$visitorId';
           }
         }
-        
-        // Get token from backend
+      } catch (e) {
+        debugPrint('⚠️ [LIVE] Could not get astrologer ID: $e');
+      }
+      
+      // Try to get token from backend
+      try {
         final liveRepo = getIt<LiveRepository>();
         token = await liveRepo.getAgoraToken(
           channelName: channelName,
           uid: 0,
           isBroadcaster: true,
         );
-        debugPrint('📺 [LIVE] Got token for channel: $channelName');
+        debugPrint('📺 [LIVE] Got token from backend for channel: $channelName');
       } catch (e) {
-        debugPrint('⚠️ [LIVE] Failed to get token from backend: $e');
-        // Continue without token for testing (will fail in production)
+        debugPrint('⚠️ [LIVE] Backend token failed: $e - broadcasting without token');
       }
 
       // Start broadcasting
