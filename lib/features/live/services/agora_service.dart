@@ -3,32 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Agora Live Streaming Service
-/// Handles all Agora RTC Engine operations for live broadcasting
+/// Handles all Agora RTC Engine operations for live broadcasting and viewing
 class AgoraService extends ChangeNotifier {
   static final AgoraService _instance = AgoraService._internal();
   factory AgoraService() => _instance;
   AgoraService._internal();
 
   // ============================================
-  // AGORA CONFIGURATION - UPDATE THESE VALUES
+  // AGORA CONFIGURATION
   // ============================================
   
-  /// Your Agora App ID from the Agora Console
   static const String appId = '6358473261094f98be1fea84042b1fcf';
-  
-  /// Default channel name for testing
-  /// Use the same channel name in Agora Web Demo to view the stream
-  static const String defaultChannelName = 'abc';
-
-  /// Debug/testing token (TEMPORARY).
-  /// NOTE: Tokens expire; for production generate tokens from your backend.
-  static const String defaultTestToken =
-      '007eJxTYEhu+XhDtOirR7dZ2LQq9ntcaXskEphYKzTjgxZd+r19x2UFBjNjUwsTc2MjM0MDS5M0S4ukVMO01EQLEwMToyTDtOS0G/+tMxsCGRnuPpvJysgAgSA+M0NiUjIDAwAILh+F';
-  
-  /// Temporary token - Generate from Agora Console for testing
-  /// Set to null if App Certificate is disabled (not recommended for production)
-  /// For testing: Go to Agora Console > Project > Generate temp token
-  String? _token;
   
   // ============================================
   // ENGINE STATE
@@ -37,9 +22,13 @@ class AgoraService extends ChangeNotifier {
   RtcEngine? _engine;
   bool _isInitialized = false;
   bool _isJoined = false;
-  bool _isBroadcasting = false;
+  bool _isBroadcaster = false;
   String? _currentChannel;
   int? _localUid;
+  
+  // Remote users (for audience viewing)
+  final Set<int> _remoteUsers = {};
+  int? _broadcasterUid;
   
   // Video/Audio state
   bool _isVideoEnabled = true;
@@ -52,6 +41,7 @@ class AgoraService extends ChangeNotifier {
   Function(int uid)? onUserOffline;
   Function()? onJoinChannelSuccess;
   Function()? onLeaveChannel;
+  Function(int uid)? onFirstRemoteVideoFrame;
   
   // ============================================
   // GETTERS
@@ -60,20 +50,20 @@ class AgoraService extends ChangeNotifier {
   RtcEngine? get engine => _engine;
   bool get isInitialized => _isInitialized;
   bool get isJoined => _isJoined;
-  bool get isBroadcasting => _isBroadcasting;
+  bool get isBroadcaster => _isBroadcaster;
   String? get currentChannel => _currentChannel;
   int? get localUid => _localUid;
   bool get isVideoEnabled => _isVideoEnabled;
   bool get isAudioEnabled => _isAudioEnabled;
   bool get isFrontCamera => _isFrontCamera;
+  Set<int> get remoteUsers => _remoteUsers;
+  int? get broadcasterUid => _broadcasterUid;
   
   // ============================================
   // INITIALIZATION
   // ============================================
   
-  /// Initialize the Agora RTC Engine
-  /// Must be called before any other operations
-  Future<bool> initialize() async {
+  Future<bool> initialize({bool forBroadcasting = true}) async {
     if (_isInitialized && _engine != null) {
       debugPrint('🎥 [AGORA] Already initialized');
       return true;
@@ -82,15 +72,16 @@ class AgoraService extends ChangeNotifier {
     try {
       debugPrint('🎥 [AGORA] Initializing RTC Engine...');
       
-      // Request permissions
-      final permissionsGranted = await _requestPermissions();
-      if (!permissionsGranted) {
-        debugPrint('❌ [AGORA] Permissions not granted');
-        onError?.call('Camera and microphone permissions are required');
-        return false;
+      // Request permissions only for broadcasting
+      if (forBroadcasting) {
+        final permissionsGranted = await _requestPermissions();
+        if (!permissionsGranted) {
+          debugPrint('❌ [AGORA] Permissions not granted');
+          onError?.call('Camera and microphone permissions are required');
+          return false;
+        }
       }
       
-      // Create RTC Engine
       _engine = createAgoraRtcEngine();
       
       await _engine!.initialize(RtcEngineContext(
@@ -98,7 +89,6 @@ class AgoraService extends ChangeNotifier {
         channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
       ));
       
-      // Register event handlers
       _engine!.registerEventHandler(RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           debugPrint('✅ [AGORA] Joined channel: ${connection.channelId}, uid: ${connection.localUid}');
@@ -109,20 +99,37 @@ class AgoraService extends ChangeNotifier {
           onJoinChannelSuccess?.call();
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint('👤 [AGORA] User joined: $remoteUid');
+          debugPrint('👤 [AGORA] Remote user joined: $remoteUid');
+          _remoteUsers.add(remoteUid);
+          // First remote user is likely the broadcaster
+          _broadcasterUid ??= remoteUid;
+          notifyListeners();
           onUserJoined?.call(remoteUid);
         },
         onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint('👤 [AGORA] User offline: $remoteUid, reason: $reason');
+          debugPrint('👤 [AGORA] Remote user offline: $remoteUid, reason: $reason');
+          _remoteUsers.remove(remoteUid);
+          if (_broadcasterUid == remoteUid) {
+            _broadcasterUid = _remoteUsers.isNotEmpty ? _remoteUsers.first : null;
+          }
+          notifyListeners();
           onUserOffline?.call(remoteUid);
         },
         onLeaveChannel: (RtcConnection connection, RtcStats stats) {
           debugPrint('🚪 [AGORA] Left channel: ${connection.channelId}');
           _isJoined = false;
-          _isBroadcasting = false;
+          _isBroadcaster = false;
           _currentChannel = null;
+          _remoteUsers.clear();
+          _broadcasterUid = null;
           notifyListeners();
           onLeaveChannel?.call();
+        },
+        onFirstRemoteVideoFrame: (RtcConnection connection, int remoteUid, int width, int height, int elapsed) {
+          debugPrint('📺 [AGORA] First remote video frame from: $remoteUid (${width}x$height)');
+          _broadcasterUid = remoteUid;
+          notifyListeners();
+          onFirstRemoteVideoFrame?.call(remoteUid);
         },
         onError: (ErrorCodeType err, String msg) {
           debugPrint('❌ [AGORA] Error: $err - $msg');
@@ -130,41 +137,38 @@ class AgoraService extends ChangeNotifier {
         },
         onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
           debugPrint('⚠️ [AGORA] Token will expire soon');
-          // TODO: Implement token refresh logic
         },
       ));
       
-      // Enable video
       await _engine!.enableVideo();
       await _engine!.enableAudio();
       
-      // Set video encoder configuration for live streaming
-      await _engine!.setVideoEncoderConfiguration(
-        const VideoEncoderConfiguration(
-          dimensions: VideoDimensions(width: 1280, height: 720),
-          frameRate: 30,
-          bitrate: 2000,
-          orientationMode: OrientationMode.orientationModeAdaptive,
-        ),
-      );
+      if (forBroadcasting) {
+        await _engine!.setVideoEncoderConfiguration(
+          const VideoEncoderConfiguration(
+            dimensions: VideoDimensions(width: 1280, height: 720),
+            frameRate: 30,
+            bitrate: 2000,
+            orientationMode: OrientationMode.orientationModeAdaptive,
+          ),
+        );
+      }
       
       _isInitialized = true;
-      debugPrint('✅ [AGORA] RTC Engine initialized successfully');
+      debugPrint('✅ [AGORA] RTC Engine initialized');
       notifyListeners();
       return true;
       
     } catch (e) {
       debugPrint('❌ [AGORA] Initialization failed: $e');
-      onError?.call('Failed to initialize Agora: $e');
+      onError?.call('Failed to initialize: $e');
       return false;
     }
   }
   
-  /// Request camera and microphone permissions
   Future<bool> _requestPermissions() async {
     final cameraStatus = await Permission.camera.request();
     final micStatus = await Permission.microphone.request();
-    
     return cameraStatus.isGranted && micStatus.isGranted;
   }
   
@@ -172,46 +176,30 @@ class AgoraService extends ChangeNotifier {
   // BROADCASTING (HOST)
   // ============================================
   
-  /// Start broadcasting as a host
-  /// [channelName] - The channel name to broadcast on
-  /// [token] - The temporary token (optional for testing if App Certificate is disabled)
   Future<bool> startBroadcasting({
-    String? channelName,
-    String? token,
-    int uid = 0, // 0 = auto-assign
+    required String channelName,
+    required String token,
+    int uid = 0,
   }) async {
     if (!_isInitialized || _engine == null) {
-      final initialized = await initialize();
+      final initialized = await initialize(forBroadcasting: true);
       if (!initialized) return false;
     }
     
     if (_isJoined) {
-      debugPrint('⚠️ [AGORA] Already broadcasting');
+      debugPrint('⚠️ [AGORA] Already in a channel');
       return true;
     }
     
     try {
-      final channel = channelName ?? defaultChannelName;
-      _token = token;
+      debugPrint('🎥 [AGORA] Starting broadcast on channel: $channelName');
       
-      debugPrint('🎥 [AGORA] Starting broadcast on channel: $channel');
-      
-      // Set client role to broadcaster (host)
       await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-      
-      // Start local video preview
       await _engine!.startPreview();
       
-      // Set camera to front by default
-      if (_isFrontCamera) {
-        await _engine!.switchCamera();
-        _isFrontCamera = true;
-      }
-      
-      // Join channel as broadcaster
       await _engine!.joinChannel(
-        token: _token ?? '',
-        channelId: channel,
+        token: token,
+        channelId: channelName,
         uid: uid,
         options: const ChannelMediaOptions(
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
@@ -223,9 +211,9 @@ class AgoraService extends ChangeNotifier {
         ),
       );
       
-      _isBroadcasting = true;
-      _currentChannel = channel;
-      debugPrint('✅ [AGORA] Broadcast started on channel: $channel');
+      _isBroadcaster = true;
+      _currentChannel = channelName;
+      debugPrint('✅ [AGORA] Broadcast started');
       notifyListeners();
       return true;
       
@@ -236,84 +224,132 @@ class AgoraService extends ChangeNotifier {
     }
   }
   
-  /// Stop broadcasting and leave the channel
-  Future<void> stopBroadcasting() async {
+  // ============================================
+  // AUDIENCE (VIEWER)
+  // ============================================
+  
+  Future<bool> joinAsAudience({
+    required String channelName,
+    required String token,
+    int uid = 0,
+  }) async {
+    if (!_isInitialized || _engine == null) {
+      final initialized = await initialize(forBroadcasting: false);
+      if (!initialized) return false;
+    }
+    
+    if (_isJoined) {
+      debugPrint('⚠️ [AGORA] Already in a channel');
+      // Leave current channel first
+      await leaveChannel();
+    }
+    
+    try {
+      debugPrint('👀 [AGORA] Joining as audience on channel: $channelName');
+      
+      // Set role to AUDIENCE
+      await _engine!.setClientRole(role: ClientRoleType.clientRoleAudience);
+      
+      // Join channel
+      await _engine!.joinChannel(
+        token: token,
+        channelId: channelName,
+        uid: uid,
+        options: const ChannelMediaOptions(
+          clientRoleType: ClientRoleType.clientRoleAudience,
+          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+          publishCameraTrack: false,
+          publishMicrophoneTrack: false,
+          autoSubscribeVideo: true,
+          autoSubscribeAudio: true,
+        ),
+      );
+      
+      _isBroadcaster = false;
+      _currentChannel = channelName;
+      debugPrint('✅ [AGORA] Joined as audience');
+      notifyListeners();
+      return true;
+      
+    } catch (e) {
+      debugPrint('❌ [AGORA] Failed to join as audience: $e');
+      onError?.call('Failed to join stream: $e');
+      return false;
+    }
+  }
+  
+  // ============================================
+  // LEAVE / STOP
+  // ============================================
+  
+  Future<void> leaveChannel() async {
     if (!_isJoined || _engine == null) {
-      debugPrint('⚠️ [AGORA] Not broadcasting');
       return;
     }
     
     try {
-      debugPrint('🛑 [AGORA] Stopping broadcast...');
+      debugPrint('🛑 [AGORA] Leaving channel...');
       
-      await _engine!.stopPreview();
+      if (_isBroadcaster) {
+        await _engine!.stopPreview();
+      }
       await _engine!.leaveChannel();
       
-      _isBroadcasting = false;
+      _isBroadcaster = false;
       _isJoined = false;
       _currentChannel = null;
+      _remoteUsers.clear();
+      _broadcasterUid = null;
       
-      debugPrint('✅ [AGORA] Broadcast stopped');
+      debugPrint('✅ [AGORA] Left channel');
       notifyListeners();
       
     } catch (e) {
-      debugPrint('❌ [AGORA] Failed to stop broadcasting: $e');
+      debugPrint('❌ [AGORA] Failed to leave channel: $e');
     }
   }
+  
+  Future<void> stopBroadcasting() async => leaveChannel();
   
   // ============================================
   // VIDEO/AUDIO CONTROLS
   // ============================================
   
-  /// Toggle local video on/off
   Future<void> toggleVideo() async {
     if (_engine == null) return;
-    
     _isVideoEnabled = !_isVideoEnabled;
     await _engine!.muteLocalVideoStream(!_isVideoEnabled);
-    debugPrint('📹 [AGORA] Video ${_isVideoEnabled ? 'enabled' : 'disabled'}');
     notifyListeners();
   }
   
-  /// Toggle local audio on/off
   Future<void> toggleAudio() async {
     if (_engine == null) return;
-    
     _isAudioEnabled = !_isAudioEnabled;
     await _engine!.muteLocalAudioStream(!_isAudioEnabled);
-    debugPrint('🎤 [AGORA] Audio ${_isAudioEnabled ? 'enabled' : 'disabled'}');
     notifyListeners();
   }
   
-  /// Switch between front and back camera
   Future<void> switchCamera() async {
     if (_engine == null) return;
-    
     await _engine!.switchCamera();
     _isFrontCamera = !_isFrontCamera;
-    debugPrint('📷 [AGORA] Switched to ${_isFrontCamera ? 'front' : 'back'} camera');
     notifyListeners();
   }
   
-  /// Enable/disable camera flash (torch)
   Future<void> setFlash(bool enabled) async {
     if (_engine == null) return;
-    
     await _engine!.setCameraTorchOn(enabled);
-    debugPrint('🔦 [AGORA] Flash ${enabled ? 'on' : 'off'}');
   }
   
   // ============================================
   // CLEANUP
   // ============================================
   
-  /// Dispose the Agora RTC Engine
-  /// Call this when the app is closing or the feature is no longer needed
-  Future<void> dispose() async {
+  Future<void> disposeEngine() async {
     debugPrint('🧹 [AGORA] Disposing...');
     
     if (_isJoined) {
-      await stopBroadcasting();
+      await leaveChannel();
     }
     
     if (_engine != null) {
@@ -323,30 +359,18 @@ class AgoraService extends ChangeNotifier {
     
     _isInitialized = false;
     _isJoined = false;
-    _isBroadcasting = false;
+    _isBroadcaster = false;
     _currentChannel = null;
     _localUid = null;
+    _remoteUsers.clear();
+    _broadcasterUid = null;
     
     debugPrint('✅ [AGORA] Disposed');
   }
   
-  // ============================================
-  // TOKEN MANAGEMENT
-  // ============================================
-  
-  /// Set the authentication token
-  /// Use this to update the token before joining or when the token expires
-  void setToken(String token) {
-    _token = token;
-  }
-  
-  /// Renew the token (call this when token is about to expire)
   Future<void> renewToken(String newToken) async {
     if (_engine == null) return;
-    
-    _token = newToken;
     await _engine!.renewToken(newToken);
     debugPrint('🔄 [AGORA] Token renewed');
   }
 }
-

@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
 import '../services/agora_service.dart';
@@ -152,10 +156,38 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         return;
       }
 
-      // Start broadcasting with Agora RTC token
+      // Get astrologer ID for channel name
+      String channelName = 'live_broadcast';
+      String token = '';
+      
+      try {
+        final storage = StorageService();
+        final userData = await storage.getUserData();
+        if (userData != null) {
+          final userMap = jsonDecode(userData);
+          final astrologerId = userMap['id'] ?? userMap['_id'] ?? '';
+          if (astrologerId.isNotEmpty) {
+            channelName = 'live_$astrologerId';
+          }
+        }
+        
+        // Get token from backend
+        final liveRepo = getIt<LiveRepository>();
+        token = await liveRepo.getAgoraToken(
+          channelName: channelName,
+          uid: 0,
+          isBroadcaster: true,
+        );
+        debugPrint('📺 [LIVE] Got token for channel: $channelName');
+      } catch (e) {
+        debugPrint('⚠️ [LIVE] Failed to get token from backend: $e');
+        // Continue without token for testing (will fail in production)
+      }
+
+      // Start broadcasting
       final broadcasting = await _agoraService.startBroadcasting(
-        channelName: AgoraService.defaultChannelName,
-        token: AgoraService.defaultTestToken,
+        channelName: channelName,
+        token: token,
       );
       
       if (!broadcasting) {

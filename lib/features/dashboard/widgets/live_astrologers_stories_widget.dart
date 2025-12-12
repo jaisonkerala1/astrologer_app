@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../data/repositories/live/live_repository.dart';
 import 'live_astrologer_circle_widget.dart';
 import '../../live/screens/live_feed_screen.dart';
 import '../../live/bloc/live_feed_bloc.dart';
@@ -10,26 +12,66 @@ import '../../live/data/repositories/mock_live_feed_repository.dart';
 import '../../live/bloc/live_feed_event.dart';
 import '../../live/screens/view_all_live_screen.dart';
 import '../../live/models/live_stream_model.dart';
-import '../../live/services/live_stream_service.dart';
 
-class LiveAstrologersStoriesWidget extends StatelessWidget {
+class LiveAstrologersStoriesWidget extends StatefulWidget {
   const LiveAstrologersStoriesWidget({super.key});
 
   @override
+  State<LiveAstrologersStoriesWidget> createState() => _LiveAstrologersStoriesWidgetState();
+}
+
+class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWidget> {
+  List<LiveStreamModel> _liveStreams = [];
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchActiveLiveStreams();
+  }
+
+  Future<void> _fetchActiveLiveStreams() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
+
+      final liveRepo = getIt<LiveRepository>();
+      final streams = await liveRepo.getActiveLiveStreams();
+      
+      if (mounted) {
+        setState(() {
+          _liveStreams = streams;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching live streams: $e');
+      if (mounted) {
+        setState(() {
+          _liveStreams = [];
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Get screen width for responsive sizing
+    // Hide completely if no live streams and not loading
+    if (!_isLoading && _liveStreams.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
-    
-    // Responsive container height. We design for the child item to fit
-    // within its allocated height without overflow across widths.
-    // Adjusted to match profile image size
     final double containerHeight = screenWidth < 360
-        ? 122.0  // Matches profile image size proportions
+        ? 122.0
         : screenWidth < 400
             ? 134.0
             : 146.0;
-    
-    // Calculate responsive font sizes
     final double titleFontSize = screenWidth < 360 ? 14.0 : 16.0;
     final double buttonFontSize = screenWidth < 360 ? 11.0 : 12.0;
     
@@ -41,26 +83,13 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with "Live Now" title
+              // Header
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Row(
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Pulsing red dot
+                    _buildPulsingDot(),
                     const SizedBox(width: 8),
                     Text(
                       'Live Now',
@@ -70,70 +99,55 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
                         fontSize: titleFontSize,
                       ),
                     ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () async {
-                        // Navigate to all live streams (grid) with a fresh LiveFeedBloc
-                        HapticFeedback.selectionClick();
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BlocProvider(
-                              create: (context) => LiveFeedBloc(
-                                repository: MockLiveFeedRepository(),
-                              )..add(const LoadLiveFeedEvent()),
-                              child: const ViewAllLiveScreen(),
-                            ),
-                          ),
-                        );
-                        // Restore System UI after returning
-                        SystemChrome.setEnabledSystemUIMode(
-                          SystemUiMode.manual,
-                          overlays: SystemUiOverlay.values,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    if (_liveStreams.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: themeService.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: themeService.primaryColor.withOpacity(0.3),
-                            width: 1,
-                          ),
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          'View All',
-                          style: TextStyle(
-                            color: themeService.primaryColor,
-                            fontSize: buttonFontSize,
-                            fontWeight: FontWeight.w500,
+                          '${_liveStreams.length}',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ),
+                    ],
+                    const Spacer(),
+                    if (_liveStreams.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => _navigateToViewAll(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: themeService.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: themeService.primaryColor.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'View All',
+                            style: TextStyle(
+                              color: themeService.primaryColor,
+                              fontSize: buttonFontSize,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
               
-              // Horizontal scrolling live astrologers
+              // Content
               Expanded(
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 4, bottom: 4),
-                  itemCount: _getMockLiveAstrologers().length,
-                  itemBuilder: (context, index) {
-                    final astrologer = _getMockLiveAstrologers()[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: LiveAstrologerCircleWidget(
-                        astrologer: astrologer,
-                        onTap: () => _handleAstrologerTap(context, astrologer),
-                        onLongPress: () => _handleAstrologerLongPress(context, astrologer),
-                      ),
-                    );
-                  },
-                ),
+                child: _buildContent(themeService),
               ),
             ],
           ),
@@ -142,30 +156,115 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     );
   }
 
-  void _handleAstrologerTap(BuildContext context, MockLiveAstrologer astrologer) async {
+  Widget _buildPulsingDot() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.8, end: 1.2),
+      duration: const Duration(milliseconds: 800),
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.4),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
+  Widget _buildContent(ThemeService themeService) {
+    if (_isLoading) {
+      return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 4, bottom: 4),
+        itemCount: 5,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: _buildSkeletonItem(themeService),
+          );
+        },
+      );
+    }
+
+    if (_hasError || _liveStreams.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      itemCount: _liveStreams.length,
+      itemBuilder: (context, index) {
+        final stream = _liveStreams[index];
+        return Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: LiveAstrologerCircleWidget(
+            astrologer: MockLiveAstrologer(
+              id: stream.astrologerId,
+              name: stream.astrologerName,
+              profilePicture: stream.astrologerProfilePicture,
+              specialty: stream.astrologerSpecialty,
+              viewerCount: stream.viewerCount,
+              isLive: stream.isLive,
+              liveStreamUrl: '',
+              thumbnailUrl: stream.thumbnailUrl ?? '',
+            ),
+            onTap: () => _handleAstrologerTap(context, stream),
+            onLongPress: () => _handleAstrologerLongPress(context, stream),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSkeletonItem(ThemeService themeService) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: themeService.isDarkMode()
+                ? Colors.grey[800]
+                : Colors.grey[300],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: 50,
+          height: 10,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(5),
+            color: themeService.isDarkMode()
+                ? Colors.grey[800]
+                : Colors.grey[300],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleAstrologerTap(BuildContext context, LiveStreamModel stream) async {
     HapticFeedback.lightImpact();
     
     try {
-      // Convert MockLiveAstrologer to LiveStreamModel
-      final liveStream = LiveStreamModel(
-        id: astrologer.id,
-        astrologerId: astrologer.id,
-        astrologerName: astrologer.name,
-        astrologerProfilePicture: astrologer.profilePicture,
-        astrologerSpecialty: astrologer.specialty,
-        title: '${astrologer.specialty} Session',
-        description: 'Join me for a live ${astrologer.specialty.toLowerCase()} session!',
-        viewerCount: astrologer.viewerCount,
-        isLive: astrologer.isLive,
-        startedAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        thumbnailUrl: astrologer.thumbnailUrl,
-        tags: [astrologer.specialty.toLowerCase()],
-        rating: 4.5 + (astrologer.viewerCount % 50) / 10, // Mock rating
-        totalSessions: 100 + astrologer.viewerCount,
-        isVerified: astrologer.viewerCount > 200,
-      );
-      
-      // Navigate to live feed (vertical scrolling)
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -174,25 +273,15 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
               repository: MockLiveFeedRepository(),
             ),
             child: LiveFeedScreen(
-              initialStreamId: liveStream.id,
+              initialStreamId: stream.id,
             ),
           ),
         ),
       );
 
-      // Restore System UI AFTER returning (prevents flicker)
       SystemChrome.setEnabledSystemUIMode(
         SystemUiMode.manual,
         overlays: SystemUiOverlay.values,
-      );
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: Colors.black,
-          systemNavigationBarIconBrightness: Brightness.light,
-        ),
       );
     } catch (e) {
       if (context.mounted) {
@@ -206,104 +295,37 @@ class LiveAstrologersStoriesWidget extends StatelessWidget {
     }
   }
 
-  void _handleAstrologerLongPress(BuildContext context, MockLiveAstrologer astrologer) {
+  void _handleAstrologerLongPress(BuildContext context, LiveStreamModel stream) {
     HapticFeedback.selectionClick();
-    // TODO: Show profile preview modal
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${astrologer.name} - ${astrologer.specialty}'),
+        content: Text('${stream.astrologerName} - ${stream.astrologerSpecialty}'),
         duration: const Duration(seconds: 1),
       ),
     );
   }
 
-  List<MockLiveAstrologer> _getMockLiveAstrologers() {
-    return [
-      MockLiveAstrologer(
-        id: '1',
-        name: 'Priya Sharma',
-        profilePicture: null,
-        specialty: 'Vedic Astrology',
-        viewerCount: 234,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=400&fit=crop&crop=face',
+  void _navigateToViewAll(BuildContext context) async {
+    HapticFeedback.selectionClick();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (context) => LiveFeedBloc(
+            repository: MockLiveFeedRepository(),
+          )..add(const LoadLiveFeedEvent()),
+          child: const ViewAllLiveScreen(),
+        ),
       ),
-      MockLiveAstrologer(
-        id: '2',
-        name: 'Raj Kumar',
-        profilePicture: null,
-        specialty: 'Tarot Reading',
-        viewerCount: 189,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
-      ),
-      MockLiveAstrologer(
-        id: '3',
-        name: 'Anita Singh',
-        profilePicture: null,
-        specialty: 'Numerology',
-        viewerCount: 156,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face',
-      ),
-      MockLiveAstrologer(
-        id: '4',
-        name: 'Vikram Joshi',
-        profilePicture: null,
-        specialty: 'Palmistry',
-        viewerCount: 98,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
-      ),
-      MockLiveAstrologer(
-        id: '5',
-        name: 'Sita Devi',
-        profilePicture: null,
-        specialty: 'Crystal Healing',
-        viewerCount: 312,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face',
-      ),
-      MockLiveAstrologer(
-        id: '6',
-        name: 'Arjun Patel',
-        profilePicture: null,
-        specialty: 'Vastu Shastra',
-        viewerCount: 67,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face',
-      ),
-      MockLiveAstrologer(
-        id: '7',
-        name: 'Meera Jain',
-        profilePicture: null,
-        specialty: 'Palmistry',
-        viewerCount: 145,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face',
-      ),
-      MockLiveAstrologer(
-        id: '8',
-        name: 'Krishna Das',
-        profilePicture: null,
-        specialty: 'Vedic Remedies',
-        viewerCount: 278,
-        isLive: true,
-        liveStreamUrl: '',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&crop=face',
-      ),
-    ];
+    );
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
   }
 }
 
-// Mock data class
+// Keep for backward compatibility with LiveAstrologerCircleWidget
 class MockLiveAstrologer {
   final String id;
   final String name;

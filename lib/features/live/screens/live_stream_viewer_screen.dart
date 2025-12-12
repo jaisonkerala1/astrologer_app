@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
 import '../widgets/live_stream_info_widget.dart';
 import '../widgets/live_action_stack_widget.dart';
@@ -14,6 +17,7 @@ import '../widgets/live_gift_leaderboard.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
 import '../services/live_stream_service.dart';
+import '../services/agora_service.dart';
 import '../utils/gift_helper.dart';
 
 class LiveStreamViewerScreen extends StatefulWidget {
@@ -58,8 +62,15 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   bool _isGiftPulsing = false;
   
   final LiveStreamService _liveStreamService = LiveStreamService();
+  final AgoraService _agoraService = AgoraService();
   final ScrollController _commentsScrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
+  
+  // Agora state
+  bool _isAgoraConnected = false;
+  bool _isAgoraLoading = true;
+  String? _agoraError;
+  int? _remoteBroadcasterUid;
   Timer? _commentSimulationTimer;
   Timer? _giftSimulationTimer;
   final List<Map<String, String>> _floatingComments = []; // Only last 4 for floating display
@@ -165,20 +176,147 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   }
 
   Future<void> _joinLiveStream() async {
+    setState(() {
+      _isAgoraLoading = true;
+      _agoraError = null;
+    });
+    
     try {
-      await _liveStreamService.joinLiveStream(widget.liveStream.id);
-      // Simulate stream connection
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
+      // Get channel name from the stream (uses astrologerId as channel)
+      final channelName = widget.liveStream.channelName;
+      
+      // Get token from backend
+      String token = widget.liveStream.agoraToken ?? '';
+      
+      if (token.isEmpty) {
+        try {
+          final liveRepo = getIt<LiveRepository>();
+          token = await liveRepo.getAgoraToken(
+            channelName: channelName,
+            uid: 0,
+            isBroadcaster: false,
+          );
+        } catch (e) {
+          debugPrint('Failed to get token from backend: $e');
+          // Continue without token for testing
+        }
+      }
+      
+      // Set up Agora callbacks
+      _agoraService.onUserJoined = (uid) {
+        debugPrint('📺 [VIEWER] Broadcaster joined: $uid');
+        if (mounted) {
+          setState(() {
+            _remoteBroadcasterUid = uid;
+            _isStreamActive = true;
+          });
+        }
+      };
+      
+      _agoraService.onUserOffline = (uid) {
+        debugPrint('📺 [VIEWER] Broadcaster left: $uid');
+        if (mounted && _remoteBroadcasterUid == uid) {
+          setState(() {
+            _remoteBroadcasterUid = null;
+            _isStreamActive = false;
+          });
+          _showStreamEndedDialog();
+        }
+      };
+      
+      _agoraService.onError = (message) {
+        debugPrint('❌ [VIEWER] Agora error: $message');
+        if (mounted) {
+          setState(() {
+            _agoraError = message;
+            _isAgoraLoading = false;
+          });
+        }
+      };
+      
+      _agoraService.onFirstRemoteVideoFrame = (uid) {
+        debugPrint('📺 [VIEWER] First video frame from: $uid');
+        if (mounted) {
+          setState(() {
+            _remoteBroadcasterUid = uid;
+            _isAgoraConnected = true;
+            _isAgoraLoading = false;
+            _isStreamActive = true;
+          });
+        }
+      };
+      
+      // Join as audience
+      final success = await _agoraService.joinAsAudience(
+        channelName: channelName,
+        token: token,
+        uid: 0,
+      );
+      
+      if (success && mounted) {
         setState(() {
-          _isStreamActive = true;
+          _isAgoraConnected = true;
+          _isAgoraLoading = false;
+        });
+        
+        // Check if broadcaster is already in channel
+        if (_agoraService.broadcasterUid != null) {
+          setState(() {
+            _remoteBroadcasterUid = _agoraService.broadcasterUid;
+            _isStreamActive = true;
+          });
+        }
+      } else if (mounted) {
+        setState(() {
+          _agoraError = 'Failed to join stream';
+          _isAgoraLoading = false;
         });
       }
+      
+      // Also call the service for analytics
+      await _liveStreamService.joinLiveStream(widget.liveStream.id);
+      
     } catch (e) {
+      debugPrint('❌ [VIEWER] Failed to join: $e');
       if (mounted) {
-        _showErrorDialog('Failed to join live stream: $e');
+        setState(() {
+          _agoraError = 'Failed to join: $e';
+          _isAgoraLoading = false;
+        });
       }
     }
+  }
+  
+  void _showStreamEndedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Stream Ended',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'This live stream has ended.',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (widget.onExit != null) {
+                widget.onExit!();
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('OK', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -190,6 +328,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _commentSimulationTimer?.cancel();
     _giftSimulationTimer?.cancel();
     _comboResetTimer?.cancel();
+    
+    // Leave Agora channel
+    _agoraService.leaveChannel();
+    
     _liveStreamService.leaveLiveStream(widget.liveStream.id);
     // SystemUI is restored in PopScope before navigation to prevent flickering
     // Keeping this as a safety fallback
@@ -779,6 +921,92 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   }
 
   Widget _buildVideoArea(ThemeService themeService) {
+    // Show loading state
+    if (_isAgoraLoading) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              SizedBox(height: 16),
+              Text(
+                'Connecting to stream...',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Show error state
+    if (_agoraError != null) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white70, size: 64),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _agoraError!,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _joinLiveStream,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white24,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Show Agora remote video if connected
+    if (_isAgoraConnected && _remoteBroadcasterUid != null && _agoraService.engine != null) {
+      return AgoraVideoView(
+        controller: VideoViewController.remote(
+          rtcEngine: _agoraService.engine!,
+          canvas: VideoCanvas(uid: _remoteBroadcasterUid!),
+          connection: RtcConnection(channelId: widget.liveStream.channelName),
+        ),
+      );
+    }
+    
+    // Waiting for broadcaster
+    if (_isAgoraConnected && _remoteBroadcasterUid == null) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              SizedBox(height: 16),
+              Text(
+                'Waiting for broadcaster...',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Fallback - show placeholder (should not reach here normally)
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -796,7 +1024,6 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       ),
       child: Stack(
         children: [
-          // Mock video background
           Center(
             child: Container(
               width: double.infinity,

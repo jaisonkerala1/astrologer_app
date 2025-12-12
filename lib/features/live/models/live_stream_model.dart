@@ -39,6 +39,12 @@ class LiveStreamModel extends Equatable {
   final int likes;
   final LiveStreamCategory category;
   final int duration;
+  
+  // Agora-specific fields
+  final String? agoraChannelName;
+  final String? agoraToken;
+  final int? agoraUid;
+  final DateTime? tokenExpiresAt;
 
   const LiveStreamModel({
     required this.id,
@@ -61,18 +67,26 @@ class LiveStreamModel extends Equatable {
     this.likes = 0,
     this.category = LiveStreamCategory.general,
     this.duration = 0,
+    this.agoraChannelName,
+    this.agoraToken,
+    this.agoraUid,
+    this.tokenExpiresAt,
   });
+
+  /// Generate Agora channel name from astrologerId
+  String get channelName => agoraChannelName ?? 'live_$astrologerId';
 
   @override
   List<Object?> get props => [
     id, astrologerId, astrologerName, astrologerProfilePicture, astrologerSpecialty,
     title, description, viewerCount, isLive, startedAt, thumbnailUrl, streamUrl,
     tags, rating, totalSessions, language, isVerified, likes, category, duration,
+    agoraChannelName, agoraToken, agoraUid, tokenExpiresAt,
   ];
 
   factory LiveStreamModel.fromJson(Map<String, dynamic> json) {
     return LiveStreamModel(
-      id: json['id'] ?? '',
+      id: json['id'] ?? json['_id'] ?? '',
       astrologerId: json['astrologerId'] ?? '',
       astrologerName: json['astrologerName'] ?? '',
       astrologerProfilePicture: json['astrologerProfilePicture'],
@@ -95,6 +109,12 @@ class LiveStreamModel extends Equatable {
         orElse: () => LiveStreamCategory.general,
       ),
       duration: json['duration'] ?? 0,
+      agoraChannelName: json['agoraChannelName'] ?? json['channelName'],
+      agoraToken: json['agoraToken'] ?? json['token'],
+      agoraUid: json['agoraUid'] ?? json['uid'],
+      tokenExpiresAt: json['tokenExpiresAt'] != null 
+          ? DateTime.parse(json['tokenExpiresAt']) 
+          : null,
     );
   }
 
@@ -120,6 +140,10 @@ class LiveStreamModel extends Equatable {
       'likes': likes,
       'category': category.toString().split('.').last,
       'duration': duration,
+      'agoraChannelName': agoraChannelName,
+      'agoraToken': agoraToken,
+      'agoraUid': agoraUid,
+      'tokenExpiresAt': tokenExpiresAt?.toIso8601String(),
     };
   }
 
@@ -144,6 +168,10 @@ class LiveStreamModel extends Equatable {
     int? likes,
     LiveStreamCategory? category,
     int? duration,
+    String? agoraChannelName,
+    String? agoraToken,
+    int? agoraUid,
+    DateTime? tokenExpiresAt,
   }) {
     return LiveStreamModel(
       id: id ?? this.id,
@@ -166,6 +194,10 @@ class LiveStreamModel extends Equatable {
       likes: likes ?? this.likes,
       category: category ?? this.category,
       duration: duration ?? this.duration,
+      agoraChannelName: agoraChannelName ?? this.agoraChannelName,
+      agoraToken: agoraToken ?? this.agoraToken,
+      agoraUid: agoraUid ?? this.agoraUid,
+      tokenExpiresAt: tokenExpiresAt ?? this.tokenExpiresAt,
     );
   }
 
@@ -192,7 +224,7 @@ class LiveStreamModel extends Equatable {
     }
   }
 
-  int get commentsCount => likes; // placeholder for mock data consistency
+  int get commentsCount => likes;
 
   String get formattedDuration {
     final now = DateTime.now();

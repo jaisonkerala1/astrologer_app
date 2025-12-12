@@ -30,6 +30,16 @@ abstract class LiveRepository {
   // Stream Stats
   Future<Map<String, dynamic>> getStreamAnalytics(String streamId);
   Future<int> getViewerCount(String streamId);
+  
+  // Agora Token
+  Future<String> getAgoraToken({
+    required String channelName,
+    required int uid,
+    required bool isBroadcaster,
+  });
+  
+  // Active Streams (for dashboard)
+  Future<List<LiveStreamModel>> getActiveLiveStreams();
 }
 
 

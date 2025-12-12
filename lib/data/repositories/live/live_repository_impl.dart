@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../features/live/models/live_stream_model.dart';
@@ -242,6 +243,43 @@ class LiveRepositoryImpl extends BaseRepository implements LiveRepository {
       return userDataMap['name'] ?? '';
     }
     return 'User';
+  }
+
+  @override
+  Future<String> getAgoraToken({
+    required String channelName,
+    required int uid,
+    required bool isBroadcaster,
+  }) async {
+    try {
+      final response = await apiService.post('/api/live/agora-token', data: {
+        'channelName': channelName,
+        'uid': uid,
+        'role': isBroadcaster ? 'publisher' : 'subscriber',
+      });
+      if (response.data['success'] == true) {
+        return response.data['data']['token'] ?? response.data['token'] ?? '';
+      }
+      throw Exception('Failed to get Agora token');
+    } catch (e) {
+      throw Exception(handleError(e));
+    }
+  }
+
+  @override
+  Future<List<LiveStreamModel>> getActiveLiveStreams() async {
+    try {
+      final response = await apiService.get('/api/live/active');
+      if (response.data['success'] == true) {
+        final List<dynamic> data = response.data['data'] ?? [];
+        return data.map((json) => LiveStreamModel.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      // Return empty list on error (no active streams)
+      debugPrint('Error fetching active streams: $e');
+      return [];
+    }
   }
 }
 
