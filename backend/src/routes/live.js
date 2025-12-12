@@ -508,5 +508,75 @@ router.get('/:streamId/viewers', async (req, res) => {
   }
 });
 
+/**
+ * Force end a stream (admin/cleanup)
+ * POST /api/live/:streamId/force-end
+ */
+router.post('/:streamId/force-end', async (req, res) => {
+  try {
+    const { streamId } = req.params;
+
+    const stream = await LiveStream.findByIdAndUpdate(
+      streamId,
+      { 
+        isLive: false,
+        endedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stream not found'
+      });
+    }
+
+    console.log(`🛑 Force ended stream: ${stream.agoraChannelName}`);
+
+    res.json({
+      success: true,
+      message: 'Stream force ended',
+      data: stream
+    });
+
+  } catch (error) {
+    console.error('Error force ending stream:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to force end stream'
+    });
+  }
+});
+
+/**
+ * End all stuck streams for an astrologer
+ * POST /api/live/cleanup/:astrologerId
+ */
+router.post('/cleanup/:visitorId', async (req, res) => {
+  try {
+    const { visitorId } = req.params;
+
+    const result = await LiveStream.updateMany(
+      { astrologerId: visitorId, isLive: true },
+      { isLive: false, endedAt: new Date() }
+    );
+
+    console.log(`🧹 Cleaned up ${result.modifiedCount} stuck streams for astrologer: ${visitorId}`);
+
+    res.json({
+      success: true,
+      message: `Ended ${result.modifiedCount} stuck streams`
+    });
+
+  } catch (error) {
+    console.error('Error cleaning up streams:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cleanup streams'
+    });
+  }
+});
+
 module.exports = router;
 
