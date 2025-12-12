@@ -113,6 +113,7 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/seed', require('./routes/seed'));
 app.use('/api/migration', require('./routes/migration'));
+app.use('/api/live', require('./routes/live'));
 
 
 
