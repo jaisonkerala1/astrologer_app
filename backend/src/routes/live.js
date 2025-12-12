@@ -102,7 +102,7 @@ router.post('/agora-token', auth, async (req, res) => {
  */
 router.post('/start', auth, async (req, res) => {
   try {
-    const astrologerId = req.user.id;
+    const astrologerId = req.user.astrologerId;
     const { title, description, category, tags } = req.body;
 
     // Get astrologer details
@@ -193,7 +193,7 @@ router.post('/start', auth, async (req, res) => {
 router.post('/:streamId/end', auth, async (req, res) => {
   try {
     const { streamId } = req.params;
-    const astrologerId = req.user.id;
+    const astrologerId = req.user.astrologerId;
 
     const liveStream = await LiveStream.findOne({
       _id: streamId,
