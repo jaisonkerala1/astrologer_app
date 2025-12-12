@@ -157,37 +157,33 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       }
 
       // ============================================
-      // Channel name for broadcasting
+      // TEMPORARY TOKEN FOR TESTING
+      // Generate from: https://console.agora.io
+      // 1. Go to your project → Generate Temp RTC Token
+      // 2. Channel: "test_broadcast" (or change below)
+      // 3. UID: 0
+      // 4. Role: Publisher
+      // 5. Copy token and paste below
       // ============================================
-      String channelName = 'test_live';
-      String token = '';
+      const String tempChannelName = 'test_broadcast';
+      const String tempToken = 'PASTE_YOUR_TOKEN_HERE'; // 👈 Update this!
       
-      // Get astrologer ID for unique channel
-      try {
-        final storage = StorageService();
-        final userData = await storage.getUserData();
-        if (userData != null) {
-          final userMap = jsonDecode(userData);
-          final visitorId = userMap['id'] ?? userMap['_id'] ?? '';
-          if (visitorId.isNotEmpty) {
-            channelName = 'live_$visitorId';
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ [LIVE] Could not get astrologer ID: $e');
-      }
+      String channelName = tempChannelName;
+      String token = tempToken;
       
-      // Try to get token from backend
+      // Try backend first (will work once Railway deploys)
       try {
         final liveRepo = getIt<LiveRepository>();
-        token = await liveRepo.getAgoraToken(
+        final backendToken = await liveRepo.getAgoraToken(
           channelName: channelName,
           uid: 0,
           isBroadcaster: true,
         );
-        debugPrint('📺 [LIVE] Got token from backend for channel: $channelName');
+        token = backendToken;
+        debugPrint('✅ [LIVE] Using backend token');
       } catch (e) {
-        debugPrint('⚠️ [LIVE] Backend token failed: $e - broadcasting without token');
+        debugPrint('⚠️ [LIVE] Backend not ready, using temp token');
+        // Use temp token from above
       }
 
       // Start broadcasting

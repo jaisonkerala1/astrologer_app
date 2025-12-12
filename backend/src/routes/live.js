@@ -3,11 +3,24 @@ const router = express.Router();
 const LiveStream = require('../models/LiveStream');
 const Astrologer = require('../models/Astrologer');
 const auth = require('../middleware/auth');
-const { RtcTokenBuilder, RtcRole } = require('agora-token');
+
+// Agora token builder - handle if not installed
+let RtcTokenBuilder, RtcRole;
+try {
+  const agoraToken = require('agora-token');
+  RtcTokenBuilder = agoraToken.RtcTokenBuilder;
+  RtcRole = agoraToken.RtcRole;
+  console.log('✅ agora-token package loaded');
+} catch (e) {
+  console.error('⚠️ agora-token package not installed:', e.message);
+  RtcTokenBuilder = null;
+  RtcRole = { PUBLISHER: 1, SUBSCRIBER: 2 };
+}
 
 // Agora credentials from environment
 const AGORA_APP_ID = process.env.AGORA_APP_ID;
 const AGORA_APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE;
+console.log('🔑 Agora App ID configured:', AGORA_APP_ID ? 'YES' : 'NO');
 
 /**
  * Generate Agora RTC Token
@@ -43,6 +56,13 @@ router.post('/agora-token', auth, async (req, res) => {
     const privilegeExpireTime = currentTime + expireTime;
 
     // Generate token
+    if (!RtcTokenBuilder) {
+      return res.status(500).json({
+        success: false,
+        message: 'Agora token builder not available. Run: npm install agora-token'
+      });
+    }
+
     const token = RtcTokenBuilder.buildTokenWithUid(
       AGORA_APP_ID,
       AGORA_APP_CERTIFICATE,
