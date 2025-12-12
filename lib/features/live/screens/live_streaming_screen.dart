@@ -156,34 +156,38 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         return;
       }
 
-      // ============================================
-      // TEMPORARY TOKEN FOR TESTING
-      // Generate from: https://console.agora.io
-      // 1. Go to your project → Generate Temp RTC Token
-      // 2. Channel: "test_broadcast" (or change below)
-      // 3. UID: 0
-      // 4. Role: Publisher
-      // 5. Copy token and paste below
-      // ============================================
-      const String tempChannelName = 'test_broadcast';
-      const String tempToken = 'PASTE_YOUR_TOKEN_HERE'; // 👈 Update this!
+      // Get astrologer ID for unique channel name
+      String visitorId = 'default';
+      try {
+        final storage = StorageService();
+        final userData = await storage.getUserData();
+        if (userData != null) {
+          final userMap = jsonDecode(userData);
+          visitorId = userMap['id'] ?? userMap['_id'] ?? 'default';
+        }
+      } catch (e) {
+        debugPrint('⚠️ [LIVE] Could not get user ID: $e');
+      }
       
-      String channelName = tempChannelName;
-      String token = tempToken;
+      final String channelName = 'live_$visitorId';
+      String token = '';
       
-      // Try backend first (will work once Railway deploys)
+      // Get token from backend
       try {
         final liveRepo = getIt<LiveRepository>();
-        final backendToken = await liveRepo.getAgoraToken(
+        token = await liveRepo.getAgoraToken(
           channelName: channelName,
           uid: 0,
           isBroadcaster: true,
         );
-        token = backendToken;
-        debugPrint('✅ [LIVE] Using backend token');
+        debugPrint('✅ [LIVE] Got token from backend for channel: $channelName');
       } catch (e) {
-        debugPrint('⚠️ [LIVE] Backend not ready, using temp token');
-        // Use temp token from above
+        debugPrint('❌ [LIVE] Failed to get token: $e');
+        setState(() {
+          _agoraError = 'Failed to get streaming token. Please try again.';
+          _isLoadingAgora = false;
+        });
+        return;
       }
 
       // Start broadcasting
