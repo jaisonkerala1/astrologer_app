@@ -4,9 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/service_request_model.dart';
-import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../screens/service_request_detail_screen.dart';
 
+/// World-class Service Request Card with "One Primary Action" design
+/// Matches dashboard card aesthetic with clean, minimal, deliberate interactions
 class ServiceRequestCardWidget extends StatefulWidget {
   final ServiceRequest request;
   final VoidCallback onAccept;
@@ -31,14 +32,47 @@ class ServiceRequestCardWidget extends StatefulWidget {
   State<ServiceRequestCardWidget> createState() => _ServiceRequestCardWidgetState();
 }
 
-class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
+class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
+    with TickerProviderStateMixin {
   Timer? _timer;
   Duration _elapsedTime = Duration.zero;
+  
+  // Animation controllers
+  late AnimationController _scaleController;
+  late AnimationController _glowController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
+    _initAnimations();
+  }
+
+  void _initAnimations() {
+    // Scale animation for press effect
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 120),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+    
+    // Glow animation for in-progress status
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _glowAnimation = Tween<double>(begin: 0.3, end: 0.8).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+    
+    if (widget.request.status == RequestStatus.inProgress) {
+      _glowController.repeat(reverse: true);
+    }
   }
 
   @override
@@ -48,12 +82,22 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
         widget.request.startedAt != oldWidget.request.startedAt) {
       _stopTimer();
       _startTimer();
+      
+      // Update glow animation
+      if (widget.request.status == RequestStatus.inProgress) {
+        _glowController.repeat(reverse: true);
+      } else {
+        _glowController.stop();
+        _glowController.reset();
+      }
     }
   }
 
   @override
   void dispose() {
     _stopTimer();
+    _scaleController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -89,280 +133,466 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
     return '$minutes:$seconds';
   }
 
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _scaleController.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _scaleController.reverse();
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+    _scaleController.reverse();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final request = widget.request; // Local reference for cleaner code
-    final onTap = widget.onTap;
-    final onAccept = widget.onAccept;
-    final onReject = widget.onReject;
-    final onComplete = widget.onComplete;
-    final onStart = widget.onStart;
-    final onPause = widget.onPause;
+    final request = widget.request;
+    final isInProgress = request.status == RequestStatus.inProgress;
+    
+    return AnimatedBuilder(
+      animation: Listenable.merge([_scaleAnimation, _glowAnimation]),
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                // Base shadow
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 3,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 1),
+                ),
+                // Glow effect for in-progress
+                if (isInProgress)
+                  BoxShadow(
+                    color: _getStatusColor().withOpacity(_glowAnimation.value * 0.3),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                // Press shadow glow
+                if (_isPressed)
+                  BoxShadow(
+                    color: _getStatusColor().withOpacity(0.2),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  ),
+              ],
+              // Glow border for in-progress
+              border: isInProgress
+                  ? Border.all(
+                      color: _getStatusColor().withOpacity(_glowAnimation.value),
+                      width: 2,
+                    )
+                  : null,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                onTapDown: _onTapDown,
+                onTapUp: _onTapUp,
+                onTapCancel: _onTapCancel,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  if (widget.onTap != null) {
+                    widget.onTap!();
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ServiceRequestDetailScreen(
+                          request: request,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                splashColor: _getStatusColor().withOpacity(0.1),
+                highlightColor: _getStatusColor().withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    _buildHeader(),
+                    
+                    // Gradient Divider
+                    _buildGradientDivider(),
+                    
+                    // Content
+                    _buildContent(),
+                    
+                    // Single Primary Action
+                    _buildPrimaryAction(context, l10n),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader() {
+    final request = widget.request;
+    final isInProgress = request.status == RequestStatus.inProgress;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: const Offset(0, 3),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _getStatusColor().withOpacity(0.12),
+            _getStatusColor().withOpacity(0.06),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Avatar with status indicator
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: _getStatusColor().withOpacity(0.2),
+                child: Text(
+                  request.customerName[0].toUpperCase(),
+                  style: TextStyle(
+                    color: _getStatusColor(),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              // Live indicator for in-progress
+              if (isInProgress)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getStatusColor().withOpacity(0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      size: 8,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 3,
-            spreadRadius: 0,
-            offset: const Offset(0, 1),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  request.customerName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textColor,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  request.customerPhone,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
           ),
+          // Status chip or Timer
+          _buildStatusChip(),
         ],
       ),
-      child: Material(
-        color: Colors.transparent, // Transparent to allow ripple effect
-        borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick(); // Add haptic feedback
-          if (onTap != null) {
-            onTap!();
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ServiceRequestDetailScreen(
-                  request: request,
-                ),
-              ),
-            );
-          }
-        },
-        splashColor: _getStatusColor().withOpacity(0.1), // Status color ripple
-        highlightColor: _getStatusColor().withOpacity(0.05), // Status color highlight
-        borderRadius: BorderRadius.circular(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: _getStatusColor().withOpacity(0.20), // Harder color - 20%
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: _getStatusColor(),
-                    child: Text(
-                      request.customerName[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          request.customerName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          request.customerPhone,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textColor.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildStatusChip(),
-                ],
-              ),
-            ),
-            
-            // Content - HORIZONTAL SPLIT (Apple Wallet Style)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left Side: Service Info
-                  Expanded(
-                    flex: 60,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                        // Service Name
-                        Text(
-                          request.serviceName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textColor,
-                            letterSpacing: -0.3,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        // Category
-                        Text(
-                          request.serviceCategory,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.textColor.withOpacity(0.6),
-                        ),
-                      ),
-                        // Special Instructions (if exists)
-                        if (request.specialInstructions.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 12,
-                                color: AppTheme.primaryColor.withOpacity(0.6),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  request.specialInstructions,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.textColor.withOpacity(0.5),
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  
-                  // Vertical Divider
-                  Container(
-                    width: 1,
-                    height: 60,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppTheme.textColor.withOpacity(0.0),
-                          AppTheme.textColor.withOpacity(0.15),
-                          AppTheme.textColor.withOpacity(0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  // Right Side: Price + Timing
-                  Expanded(
-                    flex: 40,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                        // Price - Hero
-                        Text(
-                          '₹${request.price.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.successColor,
-                            letterSpacing: -0.8,
-                          ),
-                      ),
-                        const SizedBox(height: 8),
-                        // Date
-                      Text(
-                        _formatDate(request.requestedDate),
-                        style: TextStyle(
-                          fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textColor.withOpacity(0.7),
-                          ),
-                      ),
-                        const SizedBox(height: 4),
-                        // Time
-                      Text(
-                        request.requestedTime,
-                        style: TextStyle(
-                          fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.textColor.withOpacity(0.6),
-                      ),
-                    ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Actions
-            _buildActionButtons(context, l10n),
+    );
+  }
+
+  Widget _buildGradientDivider() {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            _getStatusColor().withOpacity(0.2),
+            Colors.transparent,
           ],
         ),
       ),
-      ), // Close Material wrapper
+    );
+  }
+
+  Widget _buildContent() {
+    final request = widget.request;
+    
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left Side: Service Info
+          Expanded(
+            flex: 60,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Service icon + name
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor().withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _getServiceIcon(),
+                        size: 16,
+                        color: _getStatusColor(),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        request.serviceName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textColor,
+                          letterSpacing: -0.3,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Category
+                Text(
+                  request.serviceCategory,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor.withOpacity(0.5),
+                  ),
+                ),
+                // Special Instructions
+                if (request.specialInstructions.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 12,
+                          color: Colors.amber.shade700,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            request.specialInstructions,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.amber.shade800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          
+          // Vertical Divider
+          Container(
+            width: 1,
+            height: 60,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.textColor.withOpacity(0.0),
+                  AppTheme.textColor.withOpacity(0.1),
+                  AppTheme.textColor.withOpacity(0.0),
+                ],
+              ),
+            ),
+          ),
+          
+          // Right Side: Price + Timing
+          Expanded(
+            flex: 35,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Price - Hero
+                Text(
+                  '₹${request.price.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: _getStatusColor(),
+                    letterSpacing: -0.8,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Date with icon
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 12,
+                      color: AppTheme.textColor.withOpacity(0.4),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDate(request.requestedDate),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Time with icon
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 12,
+                      color: AppTheme.textColor.withOpacity(0.4),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      request.requestedTime,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textColor.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildStatusChip() {
-    // Show minimal timer for in-progress requests
-    if (widget.request.status == RequestStatus.inProgress && widget.request.startedAt != null) {
+    final request = widget.request;
+    
+    // Show live timer for in-progress requests
+    if (request.status == RequestStatus.inProgress && request.startedAt != null) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              _getStatusColor().withOpacity(0.15),
-              _getStatusColor().withOpacity(0.08),
+              _getStatusColor().withOpacity(0.2),
+              _getStatusColor().withOpacity(0.1),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _getStatusColor().withOpacity(0.3),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: _getStatusColor(),
-                shape: BoxShape.circle,
-              ),
+            // Pulsing dot
+            AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (context, child) {
+                return Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _getStatusColor().withOpacity(_glowAnimation.value),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(width: 6),
             Text(
               _formatDuration(_elapsedTime),
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: _getStatusColor(),
                 fontFamily: 'monospace',
                 letterSpacing: 0.5,
@@ -375,15 +605,15 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
     
     // Default status chip
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _getStatusColor().withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
+        color: _getStatusColor().withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        widget.request.statusText,
+        request.statusText,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
           color: _getStatusColor(),
         ),
@@ -391,300 +621,327 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
+  Widget _buildPrimaryAction(BuildContext context, AppLocalizations l10n) {
+    final request = widget.request;
+    
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16), // Increased padding, flat design
-      child: Row(
-        children: _getActionButtons(context, l10n),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: _buildSingleActionButton(request.status),
+    );
+  }
+
+  Widget _buildSingleActionButton(RequestStatus status) {
+    switch (status) {
+      case RequestStatus.pending:
+        return Align(
+          alignment: Alignment.centerRight,
+          child: _buildActionPill(
+            label: 'View Request',
+            icon: Icons.arrow_forward_rounded,
+            color: _getStatusColor(),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ServiceRequestDetailScreen(
+                    request: widget.request,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      
+      case RequestStatus.confirmed:
+        return Align(
+          alignment: Alignment.centerRight,
+          child: _buildActionPill(
+            label: 'Start Pooja',
+            icon: Icons.play_arrow_rounded,
+            color: _getStatusColor(),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              _showStartConfirmation();
+            },
+          ),
+        );
+      
+      case RequestStatus.inProgress:
+        return Align(
+          alignment: Alignment.centerRight,
+          child: _buildActionPill(
+            label: 'Complete',
+            icon: Icons.check_rounded,
+            color: _getStatusColor(),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              widget.onComplete();
+            },
+          ),
+        );
+      
+      case RequestStatus.completed:
+        return Align(
+          alignment: Alignment.centerRight,
+          child: _buildActionPill(
+            label: 'View Details',
+            icon: Icons.arrow_forward_rounded,
+            color: AppTheme.textColor.withOpacity(0.4),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ServiceRequestDetailScreen(
+                    request: widget.request,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      
+      case RequestStatus.cancelled:
+        return Align(
+          alignment: Alignment.centerRight,
+          child: _buildActionPill(
+            label: 'View Details',
+            icon: Icons.arrow_forward_rounded,
+            color: AppTheme.textColor.withOpacity(0.4),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ServiceRequestDetailScreen(
+                    request: widget.request,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+    }
+  }
+
+  Widget _buildActionPill({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isCompleted = widget.request.status == RequestStatus.completed || 
+                        widget.request.status == RequestStatus.cancelled;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isCompleted ? color.withOpacity(0.15) : color,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: !isCompleted
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isCompleted ? color : Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Icon(
+              icon,
+              size: 14,
+              color: isCompleted ? color : Colors.white,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  List<Widget> _getActionButtons(BuildContext context, AppLocalizations l10n) {
-    switch (widget.request.status) {
-      case RequestStatus.pending:
-        return [
-          // Accept button - Primary action (65% width for balance)
-          Flexible(
-            flex: 65,
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getButtonColor(), // Status-matched color (Orange for pending)
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onAccept();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.check, size: 18, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          'Accept',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+  void _showStartConfirmation() {
+    final request = widget.request;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
-          const SizedBox(width: 8),
-          // Reject button - Icon only
-          Container(
-            width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                  widget.onReject();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                child: const Center(
-                  child: Icon(
-                    Icons.close,
-                    size: 20,
-                    color: Color(0xFFEF4444),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ];
-      
-      case RequestStatus.confirmed:
-        return [
-          // Start button - Primary action (65% width for balance)
-          Flexible(
-            flex: 65,
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getButtonColor(), // Status-matched color (Green #10B981 for confirmed)
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onStart();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.play_arrow, size: 18, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          'Start',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Cancel button - Icon only
-          Container(
-            width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onReject();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                  child: Icon(
-                    Icons.close,
-                    size: 20,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ];
-      
-      case RequestStatus.inProgress:
-        return [
-          // Complete button - Primary action (65% width for balance)
-          Flexible(
-            flex: 65,
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getButtonColor(), // Status-matched color (Blue for in-progress)
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onComplete();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.check, size: 18, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          'Complete',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (widget.onPause != null) ...[
-            const SizedBox(width: 8),
-            // Pause button - Icon only
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
             Container(
               width: 40,
-              height: 40,
+              height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onPause!();
-                  },
-                  borderRadius: BorderRadius.circular(100),
-                  child: const Center(
-                    child: Icon(
-                      Icons.pause,
-                      size: 20,
-                      color: Color(0xFFF59E0B),
+            ),
+            const SizedBox(height: 24),
+            
+            // Icon
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: _getStatusColor().withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.play_arrow_rounded,
+                size: 32,
+                color: _getStatusColor(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Title
+            const Text(
+              'Start Pooja?',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Description
+            Text(
+              'You are about to start ${request.serviceName} for ${request.customerName}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textColor.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Actions
+            Row(
+              children: [
+                // Cancel
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textColor.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-        ];
-      
-      case RequestStatus.completed:
-      case RequestStatus.cancelled:
-        return [
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppTheme.textColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.request.status == RequestStatus.completed
-                        ? Icons.check_circle
-                        : Icons.cancel,
-                    size: 16,
-                    color: AppTheme.textColor.withOpacity(0.6),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    widget.request.status == RequestStatus.completed
-                        ? 'Completed'
-                        : 'Cancelled',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textColor.withOpacity(0.6),
+                const SizedBox(width: 12),
+                // Start
+                Expanded(
+                  flex: 2,
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.heavyImpact();
+                      Navigator.pop(context);
+                      widget.onStart();
+                    },
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getStatusColor().withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Start Now',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ];
-      default:
-        return [];
-    }
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildInfoChip(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: AppTheme.textColor.withOpacity(0.6),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.textColor.withOpacity(0.8),
-          ),
-        ),
-      ],
-    );
+  IconData _getServiceIcon() {
+    final category = widget.request.serviceCategory.toLowerCase();
+    if (category.contains('temple') || category.contains('pooja')) {
+      return Icons.temple_hindu_rounded;
+    } else if (category.contains('astro')) {
+      return Icons.auto_awesome_rounded;
+    } else if (category.contains('vastu')) {
+      return Icons.home_rounded;
+    } else if (category.contains('numerology')) {
+      return Icons.numbers_rounded;
+    } else if (category.contains('healing')) {
+      return Icons.self_improvement_rounded;
+    }
+    return Icons.spa_rounded;
   }
 
   Color _getStatusColor() {
     return Color(int.parse(widget.request.statusColor.replaceFirst('#', '0xFF')));
-  }
-
-  Color _getButtonColor() {
-    // Keep the exact current green shade for confirmed status
-    if (widget.request.status == RequestStatus.confirmed) {
-      return const Color(0xFF10B981); // Current green - DON'T CHANGE
-    }
-    // For other statuses, match the header color
-    return _getStatusColor();
   }
 
   String _formatDate(DateTime date) {
