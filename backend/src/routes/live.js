@@ -50,8 +50,8 @@ router.post('/agora-token', auth, async (req, res) => {
       ? RtcRole.PUBLISHER 
       : RtcRole.SUBSCRIBER;
 
-    // Token expires in 24 hours
-    const expireTime = 86400;
+    // Token expires in 1 hour (production standard)
+    const expireTime = 3600; // 1 hour (was 24 hours)
     const currentTime = Math.floor(Date.now() / 1000);
     const privilegeExpireTime = currentTime + expireTime;
 
@@ -91,6 +91,101 @@ router.post('/agora-token', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to generate token',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Refresh Agora Token (for long-running streams)
+ * POST /api/live/refresh-token
+ */
+router.post('/refresh-token', auth, async (req, res) => {
+  try {
+    const { channelName, uid = 0, role = 'publisher' } = req.body;
+    const astrologerId = req.user.astrologerId;
+
+    if (!channelName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Channel name is required'
+      });
+    }
+
+    if (!AGORA_APP_ID || !AGORA_APP_CERTIFICATE) {
+      return res.status(500).json({
+        success: false,
+        message: 'Agora not configured on server'
+      });
+    }
+
+    // 1. Validate stream still exists and is active
+    const stream = await LiveStream.findOne({
+      agoraChannelName: channelName,
+      isLive: true
+    });
+
+    if (!stream) {
+      console.log(`⚠️ [TOKEN_REFRESH] Stream not found or inactive: ${channelName}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Stream no longer active'
+      });
+    }
+
+    // 2. For broadcaster: verify it's their stream
+    if (role === 'publisher' && stream.astrologerId.toString() !== astrologerId) {
+      console.log(`⚠️ [TOKEN_REFRESH] Unauthorized broadcaster attempt: ${astrologerId}`);
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to broadcast this stream'
+      });
+    }
+
+    // 3. Generate new token (1 hour expiry)
+    const expireTime = 3600; // 1 hour
+    const currentTime = Math.floor(Date.now() / 1000);
+    const privilegeExpireTime = currentTime + expireTime;
+
+    const rtcRole = role === 'publisher' 
+      ? RtcRole.PUBLISHER 
+      : RtcRole.SUBSCRIBER;
+
+    if (!RtcTokenBuilder) {
+      return res.status(500).json({
+        success: false,
+        message: 'Agora token builder not available'
+      });
+    }
+
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      AGORA_APP_ID,
+      AGORA_APP_CERTIFICATE,
+      channelName,
+      uid,
+      rtcRole,
+      privilegeExpireTime,
+      privilegeExpireTime
+    );
+
+    console.log(`🔄 [TOKEN_REFRESH] Token refreshed for ${role}: ${channelName}`);
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        channelName,
+        uid,
+        role,
+        expiresAt: new Date(privilegeExpireTime * 1000).toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('[TOKEN_REFRESH] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to refresh token',
       error: error.message
     });
   }
@@ -150,7 +245,7 @@ router.post('/start', auth, async (req, res) => {
     // Generate token for broadcaster
     let token = '';
     if (AGORA_APP_ID && AGORA_APP_CERTIFICATE) {
-      const expireTime = 86400;
+      const expireTime = 3600; // 1 hour
       const currentTime = Math.floor(Date.now() / 1000);
       const privilegeExpireTime = currentTime + expireTime;
 
