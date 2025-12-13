@@ -14,6 +14,31 @@ const userCommentTimestamps = new Map();
 const MAX_COMMENTS_PER_WINDOW = 3; // Max 3 comments
 const RATE_LIMIT_WINDOW = 10000; // Per 10 seconds
 const MAX_MESSAGE_LENGTH = 200; // Max 200 characters
+const RATE_LIMIT_CLEANUP_INTERVAL = 1800000; // 30 minutes
+
+// Cleanup job: Remove stale rate limit entries every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+  
+  for (const [userId, timestamps] of userCommentTimestamps.entries()) {
+    // Remove timestamps older than 30 minutes
+    const recentTimestamps = timestamps.filter(t => now - t < RATE_LIMIT_CLEANUP_INTERVAL);
+    
+    if (recentTimestamps.length === 0) {
+      // No recent activity, remove user completely
+      userCommentTimestamps.delete(userId);
+      cleanedCount++;
+    } else if (recentTimestamps.length !== timestamps.length) {
+      // Update with cleaned timestamps
+      userCommentTimestamps.set(userId, recentTimestamps);
+    }
+  }
+  
+  if (cleanedCount > 0) {
+    console.log(`🧹 [LIVE] Cleaned ${cleanedCount} stale rate limit entries`);
+  }
+}, RATE_LIMIT_CLEANUP_INTERVAL);
 
 /**
  * Sanitize comment message

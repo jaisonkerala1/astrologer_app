@@ -1,8 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../bloc/live_comment_bloc.dart';
+import '../bloc/live_comment_state.dart';
+import '../models/live_comment_model.dart';
 import '../utils/gift_helper.dart';
 
 /// Sheet height modes
@@ -15,11 +20,10 @@ enum CommentSheetHeight {
 /// Modern bottom sheet for viewing and managing live comments
 /// Inspired by YouTube Live, TikTok, and Instagram Live
 /// Supports peek/half/full height modes for better UX
-/// Real-time updates via callback function
+/// Real-time updates via BLoC stream (no polling)
 class LiveCommentsBottomSheet extends StatefulWidget {
   final String streamId;
   final String astrologerName;
-  final List<LiveComment> Function() getComments;
   final Function(String) onCommentSend;
   final CommentSheetHeight initialHeight;
 
@@ -27,7 +31,6 @@ class LiveCommentsBottomSheet extends StatefulWidget {
     super.key,
     required this.streamId,
     required this.astrologerName,
-    required this.getComments,
     required this.onCommentSend,
     this.initialHeight = CommentSheetHeight.half,
   });
@@ -39,7 +42,6 @@ class LiveCommentsBottomSheet extends StatefulWidget {
     BuildContext context, {
     required String streamId,
     required String astrologerName,
-    required List<LiveComment> Function() getComments,
     required Function(String) onCommentSend,
     CommentSheetHeight initialHeight = CommentSheetHeight.half,
   }) {
@@ -52,7 +54,6 @@ class LiveCommentsBottomSheet extends StatefulWidget {
       builder: (context) => LiveCommentsBottomSheet(
         streamId: streamId,
         astrologerName: astrologerName,
-        getComments: getComments,
         onCommentSend: onCommentSend,
         initialHeight: initialHeight,
       ),
@@ -66,8 +67,7 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
   late ScrollController _scrollController;
   late CommentSheetHeight _currentHeight;
   late FocusNode _focusNode;
-  late Timer _updateTimer;
-  List<LiveComment> _comments = [];
+  int _previousCommentCount = 0;
   
   @override
   void initState() {
@@ -77,21 +77,9 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
     _currentHeight = widget.initialHeight;
     _focusNode = FocusNode();
     
-    // Get initial comments
-    _refreshComments();
-    
-    // Update every second for real-time feel
-    _updateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        _refreshComments();
-      }
-    });
-    
     // Auto-scroll to bottom when new comments arrive
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
+      _scrollToBottom(animated: false);
     });
     
     // Expand to full when keyboard appears
@@ -104,19 +92,26 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
     });
   }
 
-  void _refreshComments() {
-    setState(() {
-      _comments = widget.getComments();
-    });
-  }
-
   @override
   void dispose() {
-    _updateTimer.cancel();
     _commentController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+  
+  void _scrollToBottom({bool animated = true}) {
+    if (!_scrollController.hasClients) return;
+    
+    if (animated) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    } else {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
   }
   
   double get _sheetHeight {
@@ -154,13 +149,7 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
     
     // Scroll to bottom after sending
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      _scrollToBottom();
     });
   }
 
@@ -187,13 +176,16 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
               ),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             ),
-            child: Column(
-              children: [
-                _buildDragHandle(),
-                _buildHeader(themeService),
-                Expanded(child: _buildCommentsList(themeService)),
-                _buildCommentInput(themeService),
-              ],
+            child: BlocProvider.value(
+              value: getIt<LiveCommentBloc>(),
+              child: Column(
+                children: [
+                  _buildDragHandle(),
+                  _buildHeader(themeService),
+                  Expanded(child: _buildCommentsList(themeService)),
+                  _buildCommentInput(themeService),
+                ],
+              ),
             ),
           ),
         );
@@ -213,110 +205,165 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
     );
   }
 
+  
   Widget _buildHeader(ThemeService themeService) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.08),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Text(
-            'Comments',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${_comments.length}',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          // Height toggle button
-          GestureDetector(
-            onTap: _toggleHeight,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                _currentHeight == CommentSheetHeight.peek
-                    ? Icons.unfold_more_rounded
-                    : _currentHeight == CommentSheetHeight.half
-                        ? Icons.fullscreen_rounded
-                        : Icons.fullscreen_exit_rounded,
-                color: Colors.white.withOpacity(0.7),
-                size: 20,
+    return BlocBuilder<LiveCommentBloc, LiveCommentState>(
+      builder: (context, state) {
+        final commentCount = state is LiveCommentLoaded ? state.allComments.length : 0;
+        
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withOpacity(0.08),
+                width: 1,
               ),
             ),
           ),
-          const SizedBox(width: 4),
-          // Close button
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              Navigator.pop(context);
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.close_rounded,
-                color: Colors.white.withOpacity(0.7),
-                size: 20,
+          child: Row(
+            children: [
+              Text(
+                'Comments',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+              const SizedBox(width: 6),
+              Text(
+                '$commentCount',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              // Scroll to bottom button
+              if (commentCount > 0)
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _scrollToBottom();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.arrow_downward_rounded,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 4),
+              // Height toggle button
+              GestureDetector(
+                onTap: _toggleHeight,
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    _currentHeight == CommentSheetHeight.peek
+                        ? Icons.unfold_more_rounded
+                        : _currentHeight == CommentSheetHeight.half
+                            ? Icons.fullscreen_rounded
+                            : Icons.fullscreen_exit_rounded,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Close button
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommentsList(ThemeService themeService) {
-    if (_comments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline_rounded,
-              size: 48,
-              color: Colors.white.withOpacity(0.2),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No comments yet',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: _comments.length,
-      itemBuilder: (context, index) {
-        return _buildCommentItem(_comments[index], themeService);
+        );
       },
     );
   }
 
-  Widget _buildCommentItem(LiveComment comment, ThemeService themeService) {
+  Widget _buildCommentsList(ThemeService themeService) {
+    // Use BlocBuilder for real-time updates (no polling timer needed!)
+    return BlocBuilder<LiveCommentBloc, LiveCommentState>(
+      builder: (context, state) {
+        if (state is! LiveCommentLoaded) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: themeService.primaryColor,
+            ),
+          );
+        }
+        
+        final comments = state.allComments;
+        
+        // Auto-scroll when new comments arrive
+        if (comments.length > _previousCommentCount) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        }
+        _previousCommentCount = comments.length;
+        
+        if (comments.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 48,
+                  color: Colors.white.withOpacity(0.2),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No comments yet',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Be the first to comment!',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.3),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          itemCount: comments.length,
+          itemBuilder: (context, index) {
+            return _buildCommentItem(comments[index], themeService);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCommentItem(LiveCommentModel comment, ThemeService themeService) {
     // Gift notification - special design with gift-specific colors (minimal and flat)
     if (comment.isGift) {
       final giftName = GiftHelper.extractGiftName(comment.message) ?? 'Star';
@@ -416,12 +463,15 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
               children: [
                 Row(
                   children: [
-                    Text(
-                      comment.userName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        comment.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -574,35 +624,6 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
     }
     
     return '🎁'; // Default gift emoji
-  }
-}
-
-class LiveComment {
-  final String userName;
-  final String message;
-  final DateTime timestamp;
-  final bool isGift;
-
-  LiveComment({
-    required this.userName,
-    required this.message,
-    required this.timestamp,
-    this.isGift = false,
-  });
-
-  String get timeAgo {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-    
-    if (difference.inSeconds < 10) {
-      return 'now';
-    } else if (difference.inMinutes < 1) {
-      return '${difference.inSeconds}s';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m';
-    } else {
-      return '${difference.inHours}h';
-    }
   }
 }
 

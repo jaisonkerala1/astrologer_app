@@ -1774,21 +1774,6 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       context,
       streamId: _currentStreamId ?? 'host-stream',
       astrologerName: 'You',
-      getComments: () {
-        // Get FRESH comments from BLoC state every time this is called
-        if (_commentBloc.state is LiveCommentLoaded) {
-          final state = _commentBloc.state as LiveCommentLoaded;
-          return state.allComments.map((comment) {
-            return LiveComment(
-              userName: comment.userName,
-              message: comment.message,
-              timestamp: comment.timestamp,
-              isGift: comment.isGift,
-            );
-          }).toList();
-        }
-        return [];
-      },
       onCommentSend: (text) {
         // Send comment via BLoC
         if (_currentStreamId != null) {

@@ -485,21 +485,6 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       context,
       streamId: widget.liveStream.id,
       astrologerName: widget.liveStream.astrologerName,
-      getComments: () {
-        // Get FRESH comments from BLoC state every time this is called
-        if (_commentBloc.state is LiveCommentLoaded) {
-          final state = _commentBloc.state as LiveCommentLoaded;
-          return state.allComments.map((comment) {
-            return LiveComment(
-              userName: comment.userName,
-              message: comment.message,
-              timestamp: comment.timestamp,
-              isGift: comment.isGift,
-            );
-          }).toList();
-        }
-        return [];
-      },
       onCommentSend: (text) {
         // Send comment via BLoC
         _commentBloc.add(LiveCommentSendEvent(
