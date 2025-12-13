@@ -80,9 +80,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   bool _allowShare = true;
   bool _microphoneEnabled = true;
   
-  // Engagement metrics
+  // Engagement metrics (local counts only, not likes - likes are real-time from socket)
   int _viewersCount = 0;
-  int _likesCount = 0;
   int _heartsCount = 0;
   int _commentsCount = 0;
   int _giftsTotal = 0;
@@ -719,32 +718,21 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     await Future.delayed(const Duration(seconds: 1));
     print('🎥 [LIVE_STREAMING] Current stream: ${_liveService.currentStream}');
     
-    // Initialize with some starting metrics
+    // Initialize with some starting metrics (hearts only - viewers and likes are real-time)
     setState(() {
-      _viewersCount = 5 + _random.nextInt(15);  // 5-20 initial viewers
-      _likesCount = 10 + _random.nextInt(30);
       _heartsCount = 50 + _random.nextInt(100);
       _commentsCount = _floatingComments.length;
     });
     
-    // Simulate engagement growth
+    // Simulate engagement growth (only hearts, not likes)
     Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted || _isEnding) {
         timer.cancel();
         return;
       }
       setState(() {
-        // Viewers fluctuate
-        _viewersCount += _random.nextInt(3) - 1;  // -1, 0, or +1
-        if (_viewersCount < 1) _viewersCount = 1;
-        
         // Hearts grow
         _heartsCount += _random.nextInt(10);
-        
-        // Likes grow slower
-        if (_random.nextBool()) {
-          _likesCount++;
-        }
       });
     });
     

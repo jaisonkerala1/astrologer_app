@@ -56,8 +56,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   bool _isStreamActive = true;
   bool _isLiked = false;
   
-  // Engagement metrics
-  int _likesCount = 1234;      // Unique users who liked
+  // Engagement metrics (local counts)
   int _heartsCount = 5432;     // Total heart reactions (can spam)
   int _commentsCount = 567;
   int _giftsTotal = 4850;
@@ -568,6 +567,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         _isLiked = true;
         
         // Send like to server via socket
+        debugPrint('👍 [VIEWER] Sending like for stream: ${widget.liveStream.id}, socket connected: ${_socketService.isConnected}');
         _socketService.likeLiveStream(widget.liveStream.id);
       }
     });

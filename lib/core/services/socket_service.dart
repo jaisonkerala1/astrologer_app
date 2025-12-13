@@ -372,13 +372,16 @@ class SocketService {
 
   /// Like a live stream (one-time per user)
   void likeLiveStream(String streamId) {
-    if (!isConnected) return;
+    if (!isConnected) {
+      debugPrint('⚠️ [SOCKET] Cannot like - not connected');
+      return;
+    }
 
     _socket!.emit(LiveSocketEvents.like, {
       'streamId': streamId,
     });
 
-    debugPrint('👍 [SOCKET] Liked stream: $streamId');
+    debugPrint('👍 [SOCKET] Emitted like event for stream: $streamId');
   }
 
   /// Unlike a live stream
