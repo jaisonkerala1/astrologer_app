@@ -114,17 +114,17 @@ router.post('/start', auth, async (req, res) => {
       });
     }
 
-    // Check if already live
+    // Check if already live - auto-end previous stream
     const existingStream = await LiveStream.findOne({
       astrologerId,
       isLive: true
     });
 
     if (existingStream) {
-      return res.status(400).json({
-        success: false,
-        message: 'You already have an active live stream'
-      });
+      console.log(`🔄 [LIVE] Auto-ending previous stream for astrologer: ${astrologerId}`);
+      existingStream.isLive = false;
+      existingStream.endedAt = new Date();
+      await existingStream.save();
     }
 
     // Create channel name
