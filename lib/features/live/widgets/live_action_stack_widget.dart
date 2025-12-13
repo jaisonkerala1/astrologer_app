@@ -8,6 +8,7 @@ import '../models/live_stream_model.dart';
 /// Includes: Profile, Likes, Comments, Gifts, Share buttons with engagement metrics
 class LiveActionStackWidget extends StatefulWidget {
   final LiveStreamModel liveStream;
+  final int likesCount;     // Unique users who liked (one-time)
   final int heartsCount;    // Total heart reactions (can spam)
   final int commentsCount;
   final VoidCallback onProfileTap;
@@ -19,6 +20,7 @@ class LiveActionStackWidget extends StatefulWidget {
   const LiveActionStackWidget({
     super.key,
     required this.liveStream,
+    required this.likesCount,
     required this.heartsCount,
     required this.commentsCount,
     required this.onProfileTap,
@@ -181,7 +183,7 @@ class _LiveActionStackWidgetState extends State<LiveActionStackWidget>
     return _buildActionButton(
       icon: widget.isLiked ? Icons.favorite : Icons.favorite_border,
       iconColor: widget.isLiked ? Colors.red : Colors.white,
-      count: _formatCount(widget.heartsCount), // Shows total hearts (Instagram/TikTok style)
+      count: _formatCount(widget.likesCount), // Shows unique likes count
       onTap: widget.onLikeTap,
       scale: widget.isLiked ? _scaleAnimation : null,
     );

@@ -21,6 +21,9 @@ class LiveSocketEvents {
   static const String comment = 'live:comment';
   static const String gift = 'live:gift';
   static const String reaction = 'live:reaction';
+  static const String like = 'live:like';
+  static const String unlike = 'live:unlike';
+  static const String likeCount = 'live:like_count';
   static const String end = 'live:end';
   static const String viewerJoined = 'live:viewer_joined';
   static const String viewerLeft = 'live:viewer_left';
@@ -70,6 +73,7 @@ class SocketService {
   final _liveCommentController = StreamController<Map<String, dynamic>>.broadcast();
   final _liveGiftController = StreamController<Map<String, dynamic>>.broadcast();
   final _liveReactionController = StreamController<Map<String, dynamic>>.broadcast();
+  final _likesCountController = StreamController<Map<String, dynamic>>.broadcast();
   final _liveEndController = StreamController<Map<String, dynamic>>.broadcast();
   final _viewerJoinedController = StreamController<Map<String, dynamic>>.broadcast();
   final _viewerLeftController = StreamController<Map<String, dynamic>>.broadcast();
@@ -79,6 +83,7 @@ class SocketService {
   Stream<Map<String, dynamic>> get liveCommentStream => _liveCommentController.stream;
   Stream<Map<String, dynamic>> get liveGiftStream => _liveGiftController.stream;
   Stream<Map<String, dynamic>> get liveReactionStream => _liveReactionController.stream;
+  Stream<Map<String, dynamic>> get likesCountStream => _likesCountController.stream;
   Stream<Map<String, dynamic>> get liveEndStream => _liveEndController.stream;
   Stream<Map<String, dynamic>> get viewerJoinedStream => _viewerJoinedController.stream;
   Stream<Map<String, dynamic>> get viewerLeftStream => _viewerLeftController.stream;
@@ -226,6 +231,11 @@ class SocketService {
       _liveReactionController.add(Map<String, dynamic>.from(data));
     });
 
+    _socket!.on(LiveSocketEvents.likeCount, (data) {
+      debugPrint('👍 [SOCKET] Like count: $data');
+      _likesCountController.add(Map<String, dynamic>.from(data));
+    });
+
     _socket!.on(LiveSocketEvents.end, (data) {
       debugPrint('🛑 [SOCKET] Live end: $data');
       _liveEndController.add(Map<String, dynamic>.from(data));
@@ -360,6 +370,28 @@ class SocketService {
     });
   }
 
+  /// Like a live stream (one-time per user)
+  void likeLiveStream(String streamId) {
+    if (!isConnected) return;
+
+    _socket!.emit(LiveSocketEvents.like, {
+      'streamId': streamId,
+    });
+
+    debugPrint('👍 [SOCKET] Liked stream: $streamId');
+  }
+
+  /// Unlike a live stream
+  void unlikeLiveStream(String streamId) {
+    if (!isConnected) return;
+
+    _socket!.emit(LiveSocketEvents.unlike, {
+      'streamId': streamId,
+    });
+
+    debugPrint('👎 [SOCKET] Unliked stream: $streamId');
+  }
+
   /// End a live stream (broadcaster only)
   void endLiveStream(String streamId) {
     if (!isConnected) return;
@@ -479,6 +511,7 @@ class SocketService {
     _liveCommentController.close();
     _liveGiftController.close();
     _liveReactionController.close();
+    _likesCountController.close();
     _liveEndController.close();
     _viewerJoinedController.close();
     _viewerLeftController.close();

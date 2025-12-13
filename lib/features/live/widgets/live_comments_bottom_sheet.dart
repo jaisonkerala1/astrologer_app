@@ -627,3 +627,34 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
   }
 }
 
+/// Legacy LiveComment class for gifts feature
+/// TODO: Refactor gifts to use LiveCommentModel
+class LiveComment {
+  final String userName;
+  final String message;
+  final DateTime timestamp;
+  final bool isGift;
+
+  LiveComment({
+    required this.userName,
+    required this.message,
+    required this.timestamp,
+    this.isGift = false,
+  });
+
+  String get timeAgo {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    if (difference.inSeconds < 10) {
+      return 'now';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds}s';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m';
+    } else {
+      return '${difference.inHours}h';
+    }
+  }
+}
+

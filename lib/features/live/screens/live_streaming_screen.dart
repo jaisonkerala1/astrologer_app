@@ -110,7 +110,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   // Socket.IO for real-time viewer count
   late final SocketService _socketService;
   StreamSubscription<Map<String, dynamic>>? _viewerCountSubscription;
+  StreamSubscription<Map<String, dynamic>>? _likesCountSubscription;
   int _realViewerCount = 0;
+  int _realLikesCount = 0;
   
   // Constants
   static const int _backgroundTimeoutSeconds = 5; // End stream after 5s in background (reduced from 30s)
@@ -145,6 +147,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _heartbeatTimer?.cancel(); // Cancel heartbeat timer
     _connectivitySubscription?.cancel();
     _viewerCountSubscription?.cancel(); // Cancel socket subscription
+    _likesCountSubscription?.cancel(); // Cancel likes socket subscription
     _commentBloc.close(); // Close comment BLoC
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
@@ -233,6 +236,16 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             _realViewerCount = data['count'] ?? 0;
           });
           debugPrint('👥 [LIVE] Real-time viewer count: $_realViewerCount');
+        }
+      });
+      
+      // Listen for likes count updates
+      _likesCountSubscription = _socketService.likesCountStream.listen((data) {
+        if (mounted && data['streamId'] == _currentStreamId) {
+          setState(() {
+            _realLikesCount = data['count'] ?? 0;
+          });
+          debugPrint('👍 [LIVE] Real-time likes count: $_realLikesCount');
         }
       });
       
@@ -1635,10 +1648,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
               ),
             ),
           
-          // Hearts/Likes received
+          // Hearts/Likes received - Show real-time likes count
           _buildActionButton(
             icon: Icons.favorite,
-            label: _formatCount(_heartsCount),
+            label: _formatCount(_realLikesCount),
             onTap: () {
               // TODO: Show likes list
             },

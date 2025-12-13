@@ -77,7 +77,9 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   
   // Real-time viewer count from socket
   StreamSubscription<Map<String, dynamic>>? _viewerCountSubscription;
+  StreamSubscription<Map<String, dynamic>>? _likesCountSubscription;
   int _realViewerCount = 0;
+  int _realLikesCount = 0;
   
   // Agora state
   bool _isAgoraConnected = false;
@@ -165,6 +167,16 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
             _realViewerCount = data['count'] ?? 0;
           });
           debugPrint('👥 [VIEWER] Real-time viewer count: $_realViewerCount');
+        }
+      });
+      
+      // Listen for likes count updates
+      _likesCountSubscription = _socketService.likesCountStream.listen((data) {
+        if (mounted && data['streamId'] == widget.liveStream.id) {
+          setState(() {
+            _realLikesCount = data['count'] ?? 0;
+          });
+          debugPrint('👍 [VIEWER] Real-time likes count: $_realLikesCount');
         }
       });
       
@@ -438,6 +450,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _comboResetTimer?.cancel();
     _reconnectTimer?.cancel(); // Cancel reconnect timer
     _viewerCountSubscription?.cancel(); // Cancel socket subscription
+    _likesCountSubscription?.cancel(); // Cancel likes socket subscription
     _commentBloc.close(); // Close comment BLoC
     
     // Leave socket room
@@ -553,14 +566,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       // Toggle like status ONCE per user (first tap only)
       if (!_isLiked) {
         _isLiked = true;
-        _likesCount++; // Count this user's like only ONCE
         
-        // TODO: Send to server - user liked this stream
-        // _liveService.likeStream(widget.liveStream.id);
+        // Send like to server via socket
+        _socketService.likeLiveStream(widget.liveStream.id);
       }
-      
-      // TODO: Send to server - heart reaction (every tap)
-      // _liveService.sendHeartReaction(widget.liveStream.id);
     });
   }
   
@@ -958,6 +967,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                             : 0;
                         return LiveActionStackWidget(
                           liveStream: widget.liveStream,
+                          likesCount: _realLikesCount,  // Real-time unique likes count
                           heartsCount: _heartsCount,  // Shows total heart reactions (Instagram/TikTok style)
                           commentsCount: realCommentCount,
                           onProfileTap: () {

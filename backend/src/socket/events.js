@@ -17,6 +17,9 @@ module.exports = {
     COMMENT: 'live:comment',
     GIFT: 'live:gift',
     REACTION: 'live:reaction',
+    LIKE: 'live:like',              // NEW: User likes the stream
+    UNLIKE: 'live:unlike',          // NEW: User unlikes the stream
+    LIKE_COUNT: 'live:like_count',  // NEW: Broadcast like count updates
     END: 'live:end',
     VIEWER_JOINED: 'live:viewer_joined',
     VIEWER_LEFT: 'live:viewer_left',
