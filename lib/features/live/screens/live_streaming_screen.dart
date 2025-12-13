@@ -1761,28 +1761,24 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   void _openComments([List<LiveCommentModel>? comments]) {
     HapticFeedback.selectionClick();
     
-    // Get comments from BLoC if not provided
-    List<LiveCommentModel> commentsToShow = comments ?? [];
-    
-    // If no comments passed, get from BLoC state
-    if (commentsToShow.isEmpty && _commentBloc.state is LiveCommentLoaded) {
-      commentsToShow = (_commentBloc.state as LiveCommentLoaded).allComments;
-    }
-    
     LiveCommentsBottomSheet.show(
       context,
       streamId: _currentStreamId ?? 'host-stream',
       astrologerName: 'You',
       getComments: () {
-        // Convert LiveCommentModel to LiveComment for bottom sheet
-        return commentsToShow.map((comment) {
-          return LiveComment(
-            userName: comment.userName,
-            message: comment.message,
-            timestamp: comment.timestamp,
-            isGift: comment.isGift,
-          );
-        }).toList();
+        // Get FRESH comments from BLoC state every time this is called
+        if (_commentBloc.state is LiveCommentLoaded) {
+          final state = _commentBloc.state as LiveCommentLoaded;
+          return state.allComments.map((comment) {
+            return LiveComment(
+              userName: comment.userName,
+              message: comment.message,
+              timestamp: comment.timestamp,
+              isGift: comment.isGift,
+            );
+          }).toList();
+        }
+        return [];
       },
       onCommentSend: (text) {
         // Send comment via BLoC

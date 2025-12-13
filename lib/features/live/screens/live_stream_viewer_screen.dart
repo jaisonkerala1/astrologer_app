@@ -478,26 +478,24 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   void _openExpandedComments() {
     HapticFeedback.selectionClick();
     
-    // Get comments from BLoC
-    List<LiveCommentModel> allComments = [];
-    if (_commentBloc.state is LiveCommentLoaded) {
-      allComments = (_commentBloc.state as LiveCommentLoaded).allComments;
-    }
-    
     LiveCommentsBottomSheet.show(
       context,
       streamId: widget.liveStream.id,
       astrologerName: widget.liveStream.astrologerName,
       getComments: () {
-        // Convert LiveCommentModel to LiveComment for bottom sheet
-        return allComments.map((comment) {
-          return LiveComment(
-            userName: comment.userName,
-            message: comment.message,
-            timestamp: comment.timestamp,
-            isGift: comment.isGift,
-          );
-        }).toList();
+        // Get FRESH comments from BLoC state every time this is called
+        if (_commentBloc.state is LiveCommentLoaded) {
+          final state = _commentBloc.state as LiveCommentLoaded;
+          return state.allComments.map((comment) {
+            return LiveComment(
+              userName: comment.userName,
+              message: comment.message,
+              timestamp: comment.timestamp,
+              isGift: comment.isGift,
+            );
+          }).toList();
+        }
+        return [];
       },
       onCommentSend: (text) {
         // Send comment via BLoC
