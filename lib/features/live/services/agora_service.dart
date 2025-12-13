@@ -140,10 +140,16 @@ class AgoraService extends ChangeNotifier {
         onTokenPrivilegeWillExpire: (RtcConnection connection, String token) async {
           debugPrint('🔄 [AGORA] Token will expire in 30 seconds - Refreshing...');
           
+          final channelId = connection.channelId;
+          if (channelId == null) {
+            debugPrint('⚠️ [AGORA] Cannot refresh token - channel ID is null');
+            return;
+          }
+          
           try {
             // Fetch new token from backend
             final newToken = await _refreshToken(
-              channelName: connection.channelId,
+              channelName: channelId,
               uid: _localUid ?? 0,
             );
             
@@ -161,9 +167,15 @@ class AgoraService extends ChangeNotifier {
           // Emergency: Token already expired
           debugPrint('⚠️ [AGORA] Token EXPIRED - Emergency refresh');
           
+          final channelId = connection.channelId;
+          if (channelId == null) {
+            debugPrint('⚠️ [AGORA] Cannot refresh token - channel ID is null');
+            return;
+          }
+          
           try {
             final newToken = await _refreshToken(
-              channelName: connection.channelId,
+              channelName: channelId,
               uid: _localUid ?? 0,
             );
             

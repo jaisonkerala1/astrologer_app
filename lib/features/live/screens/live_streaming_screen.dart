@@ -85,6 +85,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   // Auto-end stream timers
   Timer? _backgroundTimer;
   Timer? _networkLossTimer;
+  Timer? _heartbeatTimer; // Send heartbeat every 30s
   DateTime? _backgroundTime;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   bool _hasNetworkConnection = true;
@@ -113,6 +114,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _countdownTimer?.cancel();
     _backgroundTimer?.cancel();
     _networkLossTimer?.cancel();
+    _heartbeatTimer?.cancel(); // Cancel heartbeat timer
     _connectivitySubscription?.cancel();
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
@@ -246,6 +248,35 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   void _cancelNetworkLossTimer() {
     _networkLossTimer?.cancel();
     _networkLossTimer = null;
+  }
+  
+  /// Start heartbeat timer (send every 30 seconds)
+  void _startHeartbeat() {
+    if (_currentStreamId == null) return;
+    
+    debugPrint('💓 [LIVE] Starting heartbeat timer (every 30s)');
+    
+    // Send first heartbeat immediately
+    _sendHeartbeat();
+    
+    // Then send every 30 seconds
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _sendHeartbeat();
+    });
+  }
+  
+  /// Send heartbeat to backend
+  Future<void> _sendHeartbeat() async {
+    if (_currentStreamId == null || _isEnding) return;
+    
+    try {
+      final liveRepo = getIt<LiveRepository>();
+      await liveRepo.sendHeartbeat(_currentStreamId!);
+      // debugPrint('💓 [LIVE] Heartbeat sent');
+    } catch (e) {
+      debugPrint('⚠️ [LIVE] Failed to send heartbeat: $e');
+      // Don't crash stream if heartbeat fails
+    }
   }
   
   /// Auto-end stream without confirmation
@@ -384,6 +415,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         });
         // Start countdown after Agora is ready
         _startCountdown();
+        // Start heartbeat to keep stream alive
+        _startHeartbeat();
       }
     } catch (e) {
       if (mounted) {

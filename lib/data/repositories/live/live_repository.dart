@@ -44,6 +44,8 @@ abstract class LiveRepository {
     required bool isBroadcaster,
   });
   
+  Future<void> sendHeartbeat(String streamId);
+  
   // Active Streams (for dashboard)
   Future<List<LiveStreamModel>> getActiveLiveStreams();
 }

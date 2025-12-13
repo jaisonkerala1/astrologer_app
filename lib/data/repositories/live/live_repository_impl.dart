@@ -302,6 +302,16 @@ class LiveRepositoryImpl extends BaseRepository implements LiveRepository {
       return [];
     }
   }
+  
+  @override
+  Future<void> sendHeartbeat(String streamId) async {
+    try {
+      await apiService.post('/api/live/$streamId/heartbeat');
+    } catch (e) {
+      // Silently fail - heartbeat is best effort
+      debugPrint('Heartbeat failed: $e');
+    }
+  }
 }
 
 
