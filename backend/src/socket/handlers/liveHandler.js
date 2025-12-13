@@ -244,7 +244,10 @@ function initLiveHandler(io, socket) {
       for (const { roomId, room } of leftRooms) {
         if (room.type === 'live') {
           const streamId = roomId.replace(EVENTS.ROOM_PREFIX.LIVE, '');
-          const viewerCount = roomManager.getRoomUserCount(roomId);
+          
+          // Get viewer count (exclude broadcaster)
+          const users = roomManager.getRoomUsers(roomId);
+          const viewerCount = users.filter(u => !u.isBroadcaster).length;
           
           // Notify remaining users
           io.to(roomId).emit(EVENTS.LIVE.VIEWER_COUNT, {
@@ -279,7 +282,9 @@ function handleLeaveStream(io, socket, roomId, streamId) {
   socket.leave(roomId);
   roomManager.leaveRoom(socket.id, roomId);
   
-  const viewerCount = roomManager.getRoomUserCount(roomId);
+  // Get viewer count (exclude broadcaster)
+  const users = roomManager.getRoomUsers(roomId);
+  const viewerCount = users.filter(u => !u.isBroadcaster).length;
   
   // Notify remaining users
   io.to(roomId).emit(EVENTS.LIVE.VIEWER_COUNT, {
