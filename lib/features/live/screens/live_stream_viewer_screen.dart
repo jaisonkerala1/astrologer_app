@@ -171,11 +171,16 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       
       // Listen for likes count updates
       _likesCountSubscription = _socketService.likesCountStream.listen((data) {
+        debugPrint('👍 [VIEWER] Received LIKE_COUNT event: $data');
+        debugPrint('👍 [VIEWER] Comparing streamId: ${data['streamId']} vs ${widget.liveStream.id}');
         if (mounted && data['streamId'] == widget.liveStream.id) {
+          final newCount = data['count'] ?? 0;
+          debugPrint('👍 [VIEWER] Updating likes count from $_realLikesCount to $newCount');
           setState(() {
-            _realLikesCount = data['count'] ?? 0;
+            _realLikesCount = newCount;
           });
-          debugPrint('👍 [VIEWER] Real-time likes count: $_realLikesCount');
+        } else {
+          debugPrint('👍 [VIEWER] Ignoring - streamId mismatch or not mounted');
         }
       });
       

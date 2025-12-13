@@ -240,11 +240,16 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       
       // Listen for likes count updates
       _likesCountSubscription = _socketService.likesCountStream.listen((data) {
+        debugPrint('👍 [LIVE] Received LIKE_COUNT event: $data');
+        debugPrint('👍 [LIVE] Comparing streamId: ${data['streamId']} vs $_currentStreamId');
         if (mounted && data['streamId'] == _currentStreamId) {
+          final newCount = data['count'] ?? 0;
+          debugPrint('👍 [LIVE] Updating likes count from $_realLikesCount to $newCount');
           setState(() {
-            _realLikesCount = data['count'] ?? 0;
+            _realLikesCount = newCount;
           });
-          debugPrint('👍 [LIVE] Real-time likes count: $_realLikesCount');
+        } else {
+          debugPrint('👍 [LIVE] Ignoring - streamId mismatch or not mounted');
         }
       });
       

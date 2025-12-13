@@ -92,13 +92,19 @@ function initLiveHandler(io, socket) {
 
       const roomId = `${EVENTS.ROOM_PREFIX.LIVE}${streamId}`;
       
-      // Create or get room
-      roomManager.getOrCreateRoom(roomId, 'live', {
+      // Create or get room - include likes Set in initial metadata
+      const room = roomManager.getOrCreateRoom(roomId, 'live', {
         streamId,
         streamTitle,
         broadcasterId: isBroadcaster ? user.id : null,
         startedAt: new Date(),
+        likes: new Set(), // Initialize likes Set when room is created
       });
+      
+      // Ensure likes Set exists (for rooms created before this update)
+      if (!room.metadata.likes) {
+        room.metadata.likes = new Set();
+      }
 
       // Join socket room
       socket.join(roomId);
@@ -115,13 +121,9 @@ function initLiveHandler(io, socket) {
       // Get current viewer count (exclude broadcaster)
       const users = roomManager.getRoomUsers(roomId);
       const viewerCount = users.filter(u => !u.isBroadcaster).length;
+      const likeCount = room.metadata.likes.size;
 
-      // Initialize likes set if not exists
-      const metadata = roomManager.getRoomMetadata(roomId);
-      if (!metadata.likes) {
-        metadata.likes = new Set();
-      }
-      const likeCount = metadata.likes.size;
+      console.log(`📊 [LIVE] Room ${roomId} - Likes: ${likeCount}, Viewers: ${viewerCount}`);
 
       // Notify everyone in room about new viewer count
       io.to(roomId).emit(EVENTS.LIVE.VIEWER_COUNT, {
@@ -136,6 +138,8 @@ function initLiveHandler(io, socket) {
         count: likeCount,
         timestamp: Date.now(),
       });
+      
+      console.log(`📤 [LIVE] Sent LIKE_COUNT to ${user.name}: ${likeCount}`);
 
       // Notify others that a viewer joined (not for broadcaster)
       if (!isBroadcaster) {
@@ -364,6 +368,8 @@ function initLiveHandler(io, socket) {
     try {
       const { streamId } = data;
       
+      console.log(`👍 [LIVE] Like event received from ${user.name} for stream: ${streamId}`);
+      
       if (!streamId) {
         socket.emit(EVENTS.ERROR, { message: 'Stream ID required' });
         return;
@@ -373,18 +379,27 @@ function initLiveHandler(io, socket) {
       
       // Check if user is in this room
       if (!roomManager.isUserInRoom(socket.id, roomId)) {
+        console.log(`⚠️ [LIVE] User ${user.name} not in room ${roomId}`);
         socket.emit(EVENTS.ERROR, { message: 'Not in this stream' });
         return;
       }
 
-      // Get or initialize room metadata
-      const metadata = roomManager.getRoomMetadata(roomId);
-      if (!metadata.likes) {
-        metadata.likes = new Set();
+      // Get room and initialize likes if needed
+      const room = roomManager.rooms.get(roomId);
+      if (!room) {
+        console.log(`⚠️ [LIVE] Room not found: ${roomId}`);
+        socket.emit(EVENTS.ERROR, { message: 'Stream not found' });
+        return;
+      }
+      
+      if (!room.metadata.likes) {
+        room.metadata.likes = new Set();
+        console.log(`📦 [LIVE] Initialized likes Set for room ${roomId}`);
       }
       
       // Check if user already liked
-      if (metadata.likes.has(user.id)) {
+      if (room.metadata.likes.has(user.id)) {
+        console.log(`⚠️ [LIVE] User ${user.name} already liked stream ${streamId}`);
         socket.emit(EVENTS.ERROR, { 
           message: 'Already liked this stream',
           alreadyLiked: true 
@@ -393,8 +408,11 @@ function initLiveHandler(io, socket) {
       }
       
       // Add like
-      metadata.likes.add(user.id);
-      const likeCount = metadata.likes.size;
+      room.metadata.likes.add(user.id);
+      const likeCount = room.metadata.likes.size;
+      
+      console.log(`👍 [LIVE] ${user.name} liked stream ${streamId} - now ${likeCount} total likes`);
+      console.log(`👍 [LIVE] Likes Set contents: ${Array.from(room.metadata.likes)}`);
       
       // Broadcast updated like count to all in room
       io.to(roomId).emit(EVENTS.LIVE.LIKE_COUNT, {
@@ -403,7 +421,7 @@ function initLiveHandler(io, socket) {
         timestamp: Date.now(),
       });
       
-      console.log(`👍 [LIVE] ${user.name} liked stream ${streamId} - ${likeCount} total likes`);
+      console.log(`📤 [LIVE] Broadcast LIKE_COUNT ${likeCount} to room ${roomId}`);
       
     } catch (error) {
       console.error('❌ [LIVE] Like error:', error);
