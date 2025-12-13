@@ -265,6 +265,27 @@ class LiveRepositoryImpl extends BaseRepository implements LiveRepository {
       throw Exception(handleError(e));
     }
   }
+  
+  @override
+  Future<String> refreshAgoraToken({
+    required String channelName,
+    required int uid,
+    required bool isBroadcaster,
+  }) async {
+    try {
+      final response = await apiService.post('/api/live/refresh-token', data: {
+        'channelName': channelName,
+        'uid': uid,
+        'role': isBroadcaster ? 'publisher' : 'subscriber',
+      });
+      if (response.data['success'] == true) {
+        return response.data['data']['token'] ?? '';
+      }
+      throw Exception('Failed to refresh Agora token');
+    } catch (e) {
+      throw Exception(handleError(e));
+    }
+  }
 
   @override
   Future<List<LiveStreamModel>> getActiveLiveStreams() async {

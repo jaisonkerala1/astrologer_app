@@ -38,6 +38,12 @@ abstract class LiveRepository {
     required bool isBroadcaster,
   });
   
+  Future<String> refreshAgoraToken({
+    required String channelName,
+    required int uid,
+    required bool isBroadcaster,
+  });
+  
   // Active Streams (for dashboard)
   Future<List<LiveStreamModel>> getActiveLiveStreams();
 }

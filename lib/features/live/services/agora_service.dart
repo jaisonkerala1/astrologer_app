@@ -1,6 +1,8 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../data/repositories/live/live_repository.dart';
 
 /// Agora Live Streaming Service
 /// Handles all Agora RTC Engine operations for live broadcasting and viewing
@@ -135,8 +137,43 @@ class AgoraService extends ChangeNotifier {
           debugPrint('❌ [AGORA] Error: $err - $msg');
           onError?.call('Agora Error: $msg');
         },
-        onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
-          debugPrint('⚠️ [AGORA] Token will expire soon');
+        onTokenPrivilegeWillExpire: (RtcConnection connection, String token) async {
+          debugPrint('🔄 [AGORA] Token will expire in 30 seconds - Refreshing...');
+          
+          try {
+            // Fetch new token from backend
+            final newToken = await _refreshToken(
+              channelName: connection.channelId,
+              uid: _localUid ?? 0,
+            );
+            
+            // Renew token in SDK
+            await _engine!.renewToken(newToken);
+            
+            debugPrint('✅ [AGORA] Token refreshed successfully');
+            
+          } catch (e) {
+            debugPrint('❌ [AGORA] Token refresh failed: $e');
+            onError?.call('Failed to refresh token');
+          }
+        },
+        onRequestToken: (RtcConnection connection) async {
+          // Emergency: Token already expired
+          debugPrint('⚠️ [AGORA] Token EXPIRED - Emergency refresh');
+          
+          try {
+            final newToken = await _refreshToken(
+              channelName: connection.channelId,
+              uid: _localUid ?? 0,
+            );
+            
+            await _engine!.renewToken(newToken);
+            debugPrint('✅ [AGORA] Emergency token refresh successful');
+            
+          } catch (e) {
+            debugPrint('❌ [AGORA] Emergency token refresh failed: $e');
+            onError?.call('Connection lost - please restart stream');
+          }
         },
       ));
       
@@ -372,5 +409,28 @@ class AgoraService extends ChangeNotifier {
     if (_engine == null) return;
     await _engine!.renewToken(newToken);
     debugPrint('🔄 [AGORA] Token renewed');
+  }
+  
+  /// Refresh token from backend
+  Future<String> _refreshToken({
+    required String channelName,
+    required int uid,
+  }) async {
+    try {
+      final liveRepo = getIt<LiveRepository>();
+      
+      // Call refresh-token endpoint
+      final token = await liveRepo.refreshAgoraToken(
+        channelName: channelName,
+        uid: uid,
+        isBroadcaster: _isBroadcaster,
+      );
+      
+      return token;
+      
+    } catch (e) {
+      debugPrint('❌ [AGORA] Failed to fetch new token: $e');
+      rethrow;
+    }
   }
 }
