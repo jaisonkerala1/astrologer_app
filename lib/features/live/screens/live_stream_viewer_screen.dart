@@ -99,7 +99,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   void initState() {
     super.initState();
     _socketService = getIt<SocketService>();
-    _commentBloc = LiveCommentBloc(socketService: _socketService);
+    _commentBloc = LiveCommentBloc(
+      socketService: _socketService,
+      liveRepository: getIt<LiveRepository>(),
+    );
     _setupAnimations();
     _setupSystemUI();
     _joinLiveStream();

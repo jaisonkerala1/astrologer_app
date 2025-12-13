@@ -2,23 +2,28 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_comment_model.dart';
 import 'live_comment_event.dart';
 import 'live_comment_state.dart';
 
 /// Live Comment BLoC
 /// Manages real-time comments for live streaming
+/// Fetches historical comments on join and receives new comments in real-time
 class LiveCommentBloc extends Bloc<LiveCommentEvent, LiveCommentState> {
   final SocketService socketService;
+  final LiveRepository liveRepository;
   StreamSubscription<Map<String, dynamic>>? _commentSubscription;
   String? _currentStreamId;
   
   // Constants
   static const int maxFloatingComments = 4; // Show last 4 comments
   static const int maxStoredComments = 200; // Keep max 200 in memory
+  static const int initialFetchLimit = 50; // Fetch last 50 comments on join
   
   LiveCommentBloc({
     required this.socketService,
+    required this.liveRepository,
   }) : super(const LiveCommentInitial()) {
     on<LiveCommentSubscribeEvent>(_onSubscribe);
     on<LiveCommentReceivedEvent>(_onCommentReceived);
@@ -42,7 +47,31 @@ class LiveCommentBloc extends Bloc<LiveCommentEvent, LiveCommentState> {
       // Cancel any existing subscription
       await _commentSubscription?.cancel();
       
-      // Subscribe to comment stream
+      // Fetch historical comments for late joiners
+      List<LiveCommentModel> historicalComments = [];
+      try {
+        historicalComments = await liveRepository.getStreamComments(
+          event.streamId,
+          limit: initialFetchLimit,
+        );
+        debugPrint('📜 [COMMENT BLOC] Loaded ${historicalComments.length} historical comments');
+      } catch (e) {
+        // Don't fail if we can't fetch history
+        debugPrint('⚠️ [COMMENT BLOC] Could not fetch historical comments: $e');
+      }
+      
+      // Prepare initial floating comments (last 4 from history)
+      final floatingComments = historicalComments.length > maxFloatingComments
+          ? historicalComments.sublist(historicalComments.length - maxFloatingComments)
+          : List<LiveCommentModel>.from(historicalComments);
+      
+      // Emit loaded state with historical comments
+      emit(LiveCommentLoaded(
+        allComments: historicalComments,
+        floatingComments: floatingComments,
+      ));
+      
+      // Subscribe to new real-time comments
       _commentSubscription = socketService.liveCommentStream.listen((data) {
         debugPrint('📥 [COMMENT BLOC] Raw comment data received: $data');
         // Only process comments for our stream
@@ -58,12 +87,6 @@ class LiveCommentBloc extends Bloc<LiveCommentEvent, LiveCommentState> {
           debugPrint('🔕 [COMMENT BLOC] Comment for different stream: ${data['streamId']} vs $_currentStreamId');
         }
       });
-      
-      // Emit initial loaded state
-      emit(const LiveCommentLoaded(
-        allComments: [],
-        floatingComments: [],
-      ));
       
       debugPrint('✅ [COMMENT BLOC] Subscribed to stream: ${event.streamId}');
       

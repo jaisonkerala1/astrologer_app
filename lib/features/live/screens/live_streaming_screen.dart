@@ -123,7 +123,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _liveService = LiveStreamService(); // Get the singleton instance
     _agoraService = AgoraService(); // Get Agora singleton
     _socketService = getIt<SocketService>(); // Get socket service
-    _commentBloc = LiveCommentBloc(socketService: _socketService); // Initialize comment BLoC
+    _commentBloc = LiveCommentBloc(
+      socketService: _socketService,
+      liveRepository: getIt<LiveRepository>(),
+    ); // Initialize comment BLoC with repository for historical comments
     _initializeAnimations();
     _hideSystemUI();
     _initializeAgora(); // Initialize Agora for live streaming

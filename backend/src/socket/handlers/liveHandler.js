@@ -5,6 +5,7 @@
 
 const EVENTS = require('../events');
 const roomManager = require('../roomManager');
+const LiveComment = require('../../models/LiveComment');
 
 // Rate limiting: Track user comment timestamps
 const userCommentTimestamps = new Map();
@@ -137,7 +138,7 @@ function initLiveHandler(io, socket) {
   /**
    * Send a comment in live stream
    */
-  socket.on(EVENTS.LIVE.COMMENT, (data) => {
+  socket.on(EVENTS.LIVE.COMMENT, async (data) => {
     try {
       const { streamId, message } = data;
       
@@ -184,16 +185,30 @@ function initLiveHandler(io, socket) {
         return;
       }
 
-      // Create comment object
+      // Determine user type based on socket user role
+      const userType = user.role === 'astrologer' ? 'Astrologer' : 'User';
+      
+      // Save comment to database for persistence
+      const savedComment = await LiveComment.create({
+        streamId,
+        userId: user.id,
+        userType,
+        userName: user.name,
+        userAvatar: user.profileImage || null,
+        message: sanitizedMessage,
+        isGift: false,
+      });
+
+      // Create comment object for broadcast
       const comment = {
-        id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: savedComment._id.toString(),
         streamId,
         userId: user.id,
         userName: user.name,
         userAvatar: user.profileImage || null,
         message: sanitizedMessage,
-        timestamp: Date.now(),
-        isGift: false, // Distinguish from gift notifications
+        timestamp: savedComment.createdAt.getTime(),
+        isGift: false,
       };
 
       // Broadcast to all in room (including sender)
@@ -210,7 +225,7 @@ function initLiveHandler(io, socket) {
   /**
    * Send a gift in live stream
    */
-  socket.on(EVENTS.LIVE.GIFT, (data) => {
+  socket.on(EVENTS.LIVE.GIFT, async (data) => {
     try {
       const { streamId, giftType, giftValue = 0 } = data;
       
@@ -226,19 +241,48 @@ function initLiveHandler(io, socket) {
         return;
       }
 
+      // Determine user type
+      const userType = user.role === 'astrologer' ? 'Astrologer' : 'User';
+      
+      // Save gift as comment to database
+      const savedGift = await LiveComment.create({
+        streamId,
+        userId: user.id,
+        userType,
+        userName: user.name,
+        userAvatar: user.profileImage || null,
+        message: `sent a ${giftType}`,
+        isGift: true,
+        giftType,
+        giftValue,
+      });
+
       const gift = {
-        id: `gift_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: savedGift._id.toString(),
         streamId,
         senderId: user.id,
         senderName: user.name,
         senderAvatar: user.profileImage || null,
-        giftType, // 'heart', 'star', 'diamond', 'crown', 'rainbow'
+        giftType,
         giftValue,
-        timestamp: Date.now(),
+        timestamp: savedGift.createdAt.getTime(),
       };
 
       // Broadcast to all in room
       io.to(roomId).emit(EVENTS.LIVE.GIFT, gift);
+      
+      // Also broadcast as comment for display in comments section
+      io.to(roomId).emit(EVENTS.LIVE.COMMENT, {
+        id: savedGift._id.toString(),
+        streamId,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.profileImage || null,
+        message: `sent a ${giftType}`,
+        timestamp: savedGift.createdAt.getTime(),
+        isGift: true,
+        giftType,
+      });
       
       console.log(`🎁 [LIVE] Gift in ${streamId}: ${user.name} sent ${giftType}`);
       

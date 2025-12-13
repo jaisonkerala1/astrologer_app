@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const LiveStream = require('../models/LiveStream');
+const LiveComment = require('../models/LiveComment');
 const Astrologer = require('../models/Astrologer');
 const auth = require('../middleware/auth');
 
@@ -708,6 +709,70 @@ router.post('/:streamId/force-end', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to force end stream'
+    });
+  }
+});
+
+/**
+ * Get comments for a stream (for late joiners)
+ * GET /api/live/:streamId/comments
+ * Query params: limit (default 50), before (timestamp for pagination)
+ */
+router.get('/:streamId/comments', async (req, res) => {
+  try {
+    const { streamId } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100); // Max 100
+    const before = req.query.before ? new Date(parseInt(req.query.before)) : null;
+
+    // Verify stream exists
+    const stream = await LiveStream.findById(streamId);
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stream not found'
+      });
+    }
+
+    // Build query
+    const query = { streamId };
+    if (before) {
+      query.createdAt = { $lt: before };
+    }
+
+    // Fetch comments (newest first for pagination, reversed for display)
+    const comments = await LiveComment.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // Transform to match frontend model
+    const formattedComments = comments.map(comment => ({
+      id: comment._id.toString(),
+      streamId: comment.streamId.toString(),
+      userId: comment.userId.toString(),
+      userName: comment.userName,
+      userAvatar: comment.userAvatar,
+      message: comment.message,
+      timestamp: comment.createdAt.getTime(),
+      isGift: comment.isGift,
+      giftType: comment.giftType,
+    })).reverse(); // Reverse for chronological order
+
+    res.json({
+      success: true,
+      data: {
+        comments: formattedComments,
+        hasMore: comments.length === limit,
+        oldestTimestamp: comments.length > 0 ? comments[comments.length - 1].createdAt.getTime() : null
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch comments',
+      error: error.message
     });
   }
 });

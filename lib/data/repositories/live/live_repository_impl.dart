@@ -130,16 +130,21 @@ class LiveRepositoryImpl extends BaseRepository implements LiveRepository {
   }
 
   @override
-  Future<List<LiveCommentModel>> getStreamComments(String streamId) async {
+  Future<List<LiveCommentModel>> getStreamComments(String streamId, {int limit = 50}) async {
     try {
-      final response = await apiService.get('/api/live/$streamId/comments');
+      final response = await apiService.get('/api/live/$streamId/comments', queryParameters: {
+        'limit': limit,
+      });
       if (response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        return data.map((json) => LiveCommentModel.fromJson(json)).toList();
+        final data = response.data['data'];
+        final List<dynamic> comments = data['comments'] ?? data ?? [];
+        return comments.map((json) => LiveCommentModel.fromJson(json)).toList();
       }
       throw Exception('Failed to load comments');
     } catch (e) {
-      throw Exception(handleError(e));
+      // Return empty list on error - don't fail stream join
+      debugPrint('Error fetching comments: $e');
+      return [];
     }
   }
 

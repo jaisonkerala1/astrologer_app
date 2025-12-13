@@ -22,7 +22,7 @@ abstract class LiveRepository {
   Future<void> leaveStream(String streamId);
   
   // Interactions (Comments, Gifts, Reactions)
-  Future<List<LiveCommentModel>> getStreamComments(String streamId);
+  Future<List<LiveCommentModel>> getStreamComments(String streamId, {int limit = 50});
   Future<LiveCommentModel> sendComment(String streamId, String message);
   Future<LiveGiftModel> sendGift(String streamId, String giftName, int giftValue);
   Future<LiveReactionModel> sendReaction(String streamId, String emoji);
