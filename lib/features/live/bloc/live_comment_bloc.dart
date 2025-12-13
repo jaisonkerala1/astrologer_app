@@ -36,19 +36,26 @@ class LiveCommentBloc extends Bloc<LiveCommentEvent, LiveCommentState> {
       _currentStreamId = event.streamId;
       emit(const LiveCommentLoading());
       
+      debugPrint('🔔 [COMMENT BLOC] Subscribing to stream: ${event.streamId}');
+      debugPrint('🔔 [COMMENT BLOC] Socket connected: ${socketService.isConnected}');
+      
       // Cancel any existing subscription
       await _commentSubscription?.cancel();
       
       // Subscribe to comment stream
       _commentSubscription = socketService.liveCommentStream.listen((data) {
+        debugPrint('📥 [COMMENT BLOC] Raw comment data received: $data');
         // Only process comments for our stream
         if (data['streamId'] == _currentStreamId) {
           try {
             final comment = LiveCommentModel.fromJson(data);
+            debugPrint('📥 [COMMENT BLOC] Parsed comment: ${comment.userName}: ${comment.message}');
             add(LiveCommentReceivedEvent(comment));
           } catch (e) {
             debugPrint('❌ [COMMENT BLOC] Failed to parse comment: $e');
           }
+        } else {
+          debugPrint('🔕 [COMMENT BLOC] Comment for different stream: ${data['streamId']} vs $_currentStreamId');
         }
       });
       

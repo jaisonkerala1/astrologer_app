@@ -220,6 +220,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       // Connect to socket
       await _socketService.connect();
       
+      // Wait a moment to ensure connection is stable
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       // Listen for viewer count updates
       _viewerCountSubscription = _socketService.viewerCountStream.listen((data) {
         if (mounted && data['streamId'] == _currentStreamId) {
@@ -230,7 +233,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         }
       });
       
-      debugPrint('🔌 [LIVE] Socket connected for broadcaster');
+      debugPrint('🔌 [LIVE] Socket connected: ${_socketService.isConnected}');
     } catch (e) {
       debugPrint('⚠️ [LIVE] Socket connection error: $e');
     }
@@ -238,17 +241,29 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   
   /// Join socket room when stream starts
   void _joinSocketRoom() {
-    if (_currentStreamId != null && _socketService.isConnected) {
-      _socketService.joinLiveStream(
-        streamId: _currentStreamId!,
-        isBroadcaster: true,
-        streamTitle: widget.title ?? 'Live Session',
-      );
-      
-      // Subscribe to comments via BLoC
-      _commentBloc.add(LiveCommentSubscribeEvent(_currentStreamId!));
-      
-      debugPrint('📺 [LIVE] Joined socket room as broadcaster: $_currentStreamId');
+    debugPrint('🔍 [LIVE] Attempting to join socket room. StreamId: $_currentStreamId, isConnected: ${_socketService.isConnected}');
+    
+    if (_currentStreamId != null) {
+      if (_socketService.isConnected) {
+        _socketService.joinLiveStream(
+          streamId: _currentStreamId!,
+          isBroadcaster: true,
+          streamTitle: widget.title ?? 'Live Session',
+        );
+        
+        // Subscribe to comments via BLoC
+        _commentBloc.add(LiveCommentSubscribeEvent(_currentStreamId!));
+        
+        debugPrint('📺 [LIVE] Joined socket room as broadcaster: $_currentStreamId');
+      } else {
+        // Socket not connected yet, retry after a delay
+        debugPrint('⚠️ [LIVE] Socket not connected, retrying in 1 second...');
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted && _currentStreamId != null) {
+            _joinSocketRoom();
+          }
+        });
+      }
     }
   }
   

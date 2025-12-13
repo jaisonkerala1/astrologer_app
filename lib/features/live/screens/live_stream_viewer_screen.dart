@@ -184,6 +184,8 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   
   /// Join socket room as viewer
   void _joinSocketRoom() {
+    debugPrint('🔍 [VIEWER] Attempting to join socket room. StreamId: ${widget.liveStream.id}, isConnected: ${_socketService.isConnected}');
+    
     if (_socketService.isConnected) {
       _socketService.joinLiveStream(
         streamId: widget.liveStream.id,
@@ -194,6 +196,14 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       _commentBloc.add(LiveCommentSubscribeEvent(widget.liveStream.id));
       
       debugPrint('📺 [VIEWER] Joined socket room: ${widget.liveStream.id}');
+    } else {
+      // Socket not connected yet, retry after a delay
+      debugPrint('⚠️ [VIEWER] Socket not connected, retrying in 1 second...');
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          _joinSocketRoom();
+        }
+      });
     }
   }
   

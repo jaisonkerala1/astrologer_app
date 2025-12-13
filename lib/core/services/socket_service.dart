@@ -316,12 +316,20 @@ class SocketService {
     required String streamId,
     required String message,
   }) {
-    if (!isConnected) return;
+    debugPrint('📤 [SOCKET] Sending comment to stream $streamId: $message');
+    debugPrint('📤 [SOCKET] isConnected: $isConnected');
+    
+    if (!isConnected) {
+      debugPrint('⚠️ [SOCKET] Cannot send comment - socket not connected!');
+      return;
+    }
 
     _socket!.emit(LiveSocketEvents.comment, {
       'streamId': streamId,
       'message': message,
     });
+    
+    debugPrint('✅ [SOCKET] Comment emitted successfully');
   }
 
   /// Send a gift in live stream
