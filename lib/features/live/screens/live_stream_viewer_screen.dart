@@ -957,24 +957,32 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                   },
                 )),
                 
-                // Right-side action stack (TikTok style)
+                // Right-side action stack (TikTok style) - Real-time comment count
                 if (_isControlsVisible)
                   Positioned(
                     right: 12,
                     bottom: MediaQuery.of(context).padding.bottom + 80,
-                    child: LiveActionStackWidget(
-                      liveStream: widget.liveStream,
-                      heartsCount: _heartsCount,  // Shows total heart reactions (Instagram/TikTok style)
-                      commentsCount: _commentsCount,
-                      onProfileTap: () {
-                        // TODO: Navigate to astrologer profile
+                    child: BlocBuilder<LiveCommentBloc, LiveCommentState>(
+                      bloc: _commentBloc,
+                      builder: (context, commentState) {
+                        final realCommentCount = commentState is LiveCommentLoaded 
+                            ? commentState.allComments.length 
+                            : 0;
+                        return LiveActionStackWidget(
+                          liveStream: widget.liveStream,
+                          heartsCount: _heartsCount,  // Shows total heart reactions (Instagram/TikTok style)
+                          commentsCount: realCommentCount,
+                          onProfileTap: () {
+                            // TODO: Navigate to astrologer profile
+                          },
+                          onLikeTap: _handleLike,
+                          onCommentsTap: _openExpandedComments,
+                          onShareTap: () {
+                            // TODO: Implement share
+                          },
+                          isLiked: _isLiked,
+                        );
                       },
-                      onLikeTap: _handleLike,
-                      onCommentsTap: _openExpandedComments,
-                      onShareTap: () {
-                        // TODO: Implement share
-                      },
-                      isLiked: _isLiked,
                     ),
                   ),
                 

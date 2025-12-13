@@ -1643,12 +1643,18 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
           ),
           const SizedBox(height: 12),
           
-          // Comments
-          _buildActionButton(
-            icon: Icons.chat_bubble_outline,
-            label: _formatCount(_commentsCount),
-            onTap: _openComments,
-            color: Colors.white,
+          // Comments - Real-time count from BLoC
+          BlocBuilder<LiveCommentBloc, LiveCommentState>(
+            bloc: _commentBloc,
+            builder: (context, state) {
+              final count = state is LiveCommentLoaded ? state.allComments.length : 0;
+              return _buildActionButton(
+                icon: Icons.chat_bubble_outline,
+                label: _formatCount(count),
+                onTap: _openComments,
+                color: Colors.white,
+              );
+            },
           ),
           const SizedBox(height: 12),
           
