@@ -1,8 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const LiveStream = require('../models/LiveStream');
 const Astrologer = require('../models/Astrologer');
 const auth = require('../middleware/auth');
+
+// Rate limiters for sensitive endpoints
+const heartbeatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // Max 5 heartbeats per minute (we send every 30s, so 2-3 is normal)
+  message: { success: false, message: 'Too many heartbeat requests' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const tokenRefreshLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute  
+  max: 3, // Max 3 token refreshes per minute (only need 1 per hour normally)
+  message: { success: false, message: 'Too many token refresh requests' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Agora token builder - handle if not installed
 let RtcTokenBuilder, RtcRole;
@@ -99,8 +117,9 @@ router.post('/agora-token', auth, async (req, res) => {
 /**
  * Refresh Agora Token (for long-running streams)
  * POST /api/live/refresh-token
+ * Rate limited: 3 requests per minute
  */
-router.post('/refresh-token', auth, async (req, res) => {
+router.post('/refresh-token', auth, tokenRefreshLimiter, async (req, res) => {
   try {
     const { channelName, uid = 0, role = 'publisher' } = req.body;
     const astrologerId = req.user.astrologerId;
@@ -606,8 +625,9 @@ router.get('/:streamId/viewers', async (req, res) => {
 /**
  * Send heartbeat (keep stream alive)
  * POST /api/live/:streamId/heartbeat
+ * Rate limited: 5 requests per minute
  */
-router.post('/:streamId/heartbeat', auth, async (req, res) => {
+router.post('/:streamId/heartbeat', auth, heartbeatLimiter, async (req, res) => {
   try {
     const { streamId } = req.params;
     const astrologerId = req.user.astrologerId;
