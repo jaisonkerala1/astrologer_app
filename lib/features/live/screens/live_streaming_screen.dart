@@ -1767,6 +1767,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       context,
       streamId: _currentStreamId ?? 'host-stream',
       astrologerName: 'You',
+      commentBloc: _commentBloc,
       onCommentSend: (text) {
         // Send comment via BLoC
         if (_currentStreamId != null) {

@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
-import '../../../core/di/service_locator.dart';
 import '../bloc/live_comment_bloc.dart';
 import '../bloc/live_comment_state.dart';
 import '../models/live_comment_model.dart';
@@ -26,12 +25,14 @@ class LiveCommentsBottomSheet extends StatefulWidget {
   final String astrologerName;
   final Function(String) onCommentSend;
   final CommentSheetHeight initialHeight;
+  final LiveCommentBloc commentBloc;
 
   const LiveCommentsBottomSheet({
     super.key,
     required this.streamId,
     required this.astrologerName,
     required this.onCommentSend,
+    required this.commentBloc,
     this.initialHeight = CommentSheetHeight.half,
   });
 
@@ -43,6 +44,7 @@ class LiveCommentsBottomSheet extends StatefulWidget {
     required String streamId,
     required String astrologerName,
     required Function(String) onCommentSend,
+    required LiveCommentBloc commentBloc,
     CommentSheetHeight initialHeight = CommentSheetHeight.half,
   }) {
     return showModalBottomSheet(
@@ -55,6 +57,7 @@ class LiveCommentsBottomSheet extends StatefulWidget {
         streamId: streamId,
         astrologerName: astrologerName,
         onCommentSend: onCommentSend,
+        commentBloc: commentBloc,
         initialHeight: initialHeight,
       ),
     );
@@ -177,7 +180,7 @@ class _LiveCommentsBottomSheetState extends State<LiveCommentsBottomSheet>
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: BlocProvider.value(
-              value: getIt<LiveCommentBloc>(),
+              value: widget.commentBloc,
               child: Column(
                 children: [
                   _buildDragHandle(),

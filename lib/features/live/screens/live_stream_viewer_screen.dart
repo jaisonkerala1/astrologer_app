@@ -502,6 +502,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       context,
       streamId: widget.liveStream.id,
       astrologerName: widget.liveStream.astrologerName,
+      commentBloc: _commentBloc,
       onCommentSend: (text) {
         // Send comment via BLoC
         _commentBloc.add(LiveCommentSendEvent(

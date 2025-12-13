@@ -36,6 +36,7 @@ import '../../features/communication/bloc/communication_bloc.dart';
 import '../../features/heal/bloc/heal_bloc.dart';
 import '../../features/help_support/bloc/help_support_bloc.dart';
 import '../../features/live/bloc/live_bloc.dart';
+import '../../features/live/bloc/live_comment_bloc.dart';
 import '../../features/notifications/bloc/notifications_bloc.dart';
 import '../../features/clients/bloc/clients_bloc.dart';
 import '../../features/reviews/repository/reviews_repository.dart';
@@ -233,6 +234,14 @@ Future<void> setupServiceLocator() async {
     () => LiveBloc(repository: getIt<LiveRepository>()),
   );
   
+  // Live Comment BLoC
+  getIt.registerFactory<LiveCommentBloc>(
+    () => LiveCommentBloc(
+      socketService: getIt<SocketService>(),
+      liveRepository: getIt<LiveRepository>(),
+    ),
+  );
+  
   // Notifications BLoC
   getIt.registerFactory<NotificationsBloc>(
     () => NotificationsBloc(repository: getIt<NotificationsRepository>()),
@@ -246,7 +255,7 @@ Future<void> setupServiceLocator() async {
   print('✅ Service Locator: All dependencies registered successfully');
   print('   - Core Services: API, Storage, Socket (Real-time)');
   print('   - 13 Repositories: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
-  print('   - 13 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
+  print('   - 14 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients');
 }
 
 /// Reset service locator (useful for testing)
