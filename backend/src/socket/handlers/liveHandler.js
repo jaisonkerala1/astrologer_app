@@ -6,6 +6,46 @@
 const EVENTS = require('../events');
 const roomManager = require('../roomManager');
 
+// Rate limiting: Track user comment timestamps
+const userCommentTimestamps = new Map();
+
+// Constants
+const MAX_COMMENTS_PER_WINDOW = 3; // Max 3 comments
+const RATE_LIMIT_WINDOW = 10000; // Per 10 seconds
+const MAX_MESSAGE_LENGTH = 200; // Max 200 characters
+
+/**
+ * Sanitize comment message
+ */
+function sanitizeMessage(message) {
+  return message
+    .trim()
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[^\w\s\u0080-\uFFFF.,!?@#$%&*()\-+='"]/g, '') // Keep basic punctuation + emojis
+    .substring(0, MAX_MESSAGE_LENGTH);
+}
+
+/**
+ * Check if user is rate limited
+ */
+function isRateLimited(userId) {
+  const now = Date.now();
+  const timestamps = userCommentTimestamps.get(userId) || [];
+  
+  // Remove timestamps older than the rate limit window
+  const recentTimestamps = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW);
+  
+  if (recentTimestamps.length >= MAX_COMMENTS_PER_WINDOW) {
+    return true; // Rate limited
+  }
+  
+  // Add current timestamp and update
+  recentTimestamps.push(now);
+  userCommentTimestamps.set(userId, recentTimestamps);
+  
+  return false; // Not rate limited
+}
+
 /**
  * Initialize live streaming socket handlers
  */
@@ -101,8 +141,20 @@ function initLiveHandler(io, socket) {
     try {
       const { streamId, message } = data;
       
+      // Validate input
       if (!streamId || !message) {
         socket.emit(EVENTS.ERROR, { message: 'Stream ID and message required' });
+        return;
+      }
+      
+      // Check message length
+      if (typeof message !== 'string' || message.trim().length === 0) {
+        socket.emit(EVENTS.ERROR, { message: 'Invalid message' });
+        return;
+      }
+      
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        socket.emit(EVENTS.ERROR, { message: `Message too long (max ${MAX_MESSAGE_LENGTH} characters)` });
         return;
       }
 
@@ -113,21 +165,41 @@ function initLiveHandler(io, socket) {
         socket.emit(EVENTS.ERROR, { message: 'Not in this stream' });
         return;
       }
+      
+      // Rate limiting check
+      if (isRateLimited(user.id)) {
+        socket.emit(EVENTS.ERROR, { 
+          message: 'Slow down! You can send up to 3 comments every 10 seconds.',
+          rateLimited: true 
+        });
+        console.log(`⚠️ [LIVE] Rate limited: ${user.name} in ${streamId}`);
+        return;
+      }
+      
+      // Sanitize message
+      const sanitizedMessage = sanitizeMessage(message);
+      
+      if (sanitizedMessage.length === 0) {
+        socket.emit(EVENTS.ERROR, { message: 'Message contains no valid content' });
+        return;
+      }
 
+      // Create comment object
       const comment = {
         id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         streamId,
         userId: user.id,
         userName: user.name,
         userAvatar: user.profileImage || null,
-        message: message.substring(0, 500), // Limit message length
+        message: sanitizedMessage,
         timestamp: Date.now(),
+        isGift: false, // Distinguish from gift notifications
       };
 
-      // Broadcast to all in room
+      // Broadcast to all in room (including sender)
       io.to(roomId).emit(EVENTS.LIVE.COMMENT, comment);
       
-      console.log(`💬 [LIVE] Comment in ${streamId}: ${user.name}: ${message.substring(0, 50)}...`);
+      console.log(`💬 [LIVE] Comment in ${streamId}: ${user.name}: ${sanitizedMessage.substring(0, 50)}${sanitizedMessage.length > 50 ? '...' : ''}`);
       
     } catch (error) {
       console.error('❌ [LIVE] Comment error:', error);
@@ -240,6 +312,9 @@ function initLiveHandler(io, socket) {
   socket.on('disconnect', () => {
     try {
       const leftRooms = roomManager.leaveAllRooms(socket.id);
+      
+      // Clean up rate limiting data
+      userCommentTimestamps.delete(user.id);
       
       for (const { roomId, room } of leftRooms) {
         if (room.type === 'live') {
