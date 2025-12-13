@@ -9,6 +9,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
 import '../services/live_stream_service.dart';
@@ -99,6 +100,11 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   bool _hasNetworkConnection = true;
   
+  // Socket.IO for real-time viewer count
+  late final SocketService _socketService;
+  StreamSubscription<Map<String, dynamic>>? _viewerCountSubscription;
+  int _realViewerCount = 0;
+  
   // Constants
   static const int _backgroundTimeoutSeconds = 5; // End stream after 5s in background (reduced from 30s)
   static const int _networkLossTimeoutSeconds = 10; // End stream after 10s of no network
@@ -109,12 +115,14 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     WidgetsBinding.instance.addObserver(this);
     _liveService = LiveStreamService(); // Get the singleton instance
     _agoraService = AgoraService(); // Get Agora singleton
+    _socketService = getIt<SocketService>(); // Get socket service
     _initializeAnimations();
     _hideSystemUI();
     _initializeAgora(); // Initialize Agora for live streaming
     _startStream();
     _startCommentSimulation();
     _setupNetworkMonitoring(); // Monitor network connectivity
+    _connectSocket(); // Connect to socket for real-time updates
   }
 
   @override
@@ -125,6 +133,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _networkLossTimer?.cancel();
     _heartbeatTimer?.cancel(); // Cancel heartbeat timer
     _connectivitySubscription?.cancel();
+    _viewerCountSubscription?.cancel(); // Cancel socket subscription
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
     _fadeController.dispose();
@@ -196,6 +205,48 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     }
   }
   
+  /// Connect to Socket.IO for real-time viewer count
+  Future<void> _connectSocket() async {
+    try {
+      // Connect to socket
+      await _socketService.connect();
+      
+      // Listen for viewer count updates
+      _viewerCountSubscription = _socketService.viewerCountStream.listen((data) {
+        if (mounted && data['streamId'] == _currentStreamId) {
+          setState(() {
+            _realViewerCount = data['count'] ?? 0;
+          });
+          debugPrint('👥 [LIVE] Real-time viewer count: $_realViewerCount');
+        }
+      });
+      
+      debugPrint('🔌 [LIVE] Socket connected for broadcaster');
+    } catch (e) {
+      debugPrint('⚠️ [LIVE] Socket connection error: $e');
+    }
+  }
+  
+  /// Join socket room when stream starts
+  void _joinSocketRoom() {
+    if (_currentStreamId != null && _socketService.isConnected) {
+      _socketService.joinLiveStream(
+        streamId: _currentStreamId!,
+        isBroadcaster: true,
+        streamTitle: widget.title ?? 'Live Session',
+      );
+      debugPrint('📺 [LIVE] Joined socket room as broadcaster: $_currentStreamId');
+    }
+  }
+  
+  /// Leave socket room when stream ends
+  void _leaveSocketRoom() {
+    if (_currentStreamId != null && _socketService.isConnected) {
+      _socketService.endLiveStream(_currentStreamId!);
+      debugPrint('👋 [LIVE] Left socket room: $_currentStreamId');
+    }
+  }
+
   /// Setup network connectivity monitoring
   void _setupNetworkMonitoring() {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
@@ -297,6 +348,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     setState(() {
       _isEnding = true;
     });
+    
+    // Leave socket room
+    _leaveSocketRoom();
     
     // Stop Agora broadcast
     await _agoraService.stopBroadcasting();
@@ -426,6 +480,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         _startCountdown();
         // Start heartbeat to keep stream alive
         _startHeartbeat();
+        // Join socket room for real-time updates
+        _joinSocketRoom();
       }
     } catch (e) {
       if (mounted) {
@@ -780,6 +836,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       _isEnding = true;
     });
     debugPrint('🛑 [LIVE_STREAMING] Set _isEnding = true');
+    
+    // Leave socket room
+    _leaveSocketRoom();
     
     // Stop Agora broadcast
     await _agoraService.stopBroadcasting();
@@ -1432,6 +1491,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   }
 
   Widget _buildViewerCount(LiveStreamModel stream) {
+    // Use real-time viewer count if available, otherwise fall back to stream data
+    final displayCount = _realViewerCount > 0 ? _realViewerCount : stream.viewerCount;
+    final formattedCount = _formatViewerCount(displayCount);
+    
     return Positioned(
       top: MediaQuery.of(context).padding.top + 16,
       left: 120,
@@ -1453,7 +1516,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
               ),
               const SizedBox(width: 4),
               Text(
-                stream.formattedViewerCount,
+                formattedCount,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -1465,6 +1528,15 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         ),
       ),
     );
+  }
+  
+  String _formatViewerCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
   }
 
   Widget _buildDuration(LiveStreamModel stream) {

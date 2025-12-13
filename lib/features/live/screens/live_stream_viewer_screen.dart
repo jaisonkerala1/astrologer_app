@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
 import '../widgets/live_stream_info_widget.dart';
@@ -63,8 +64,13 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   
   final LiveStreamService _liveStreamService = LiveStreamService();
   final AgoraService _agoraService = AgoraService();
+  late final SocketService _socketService;
   final ScrollController _commentsScrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
+  
+  // Real-time viewer count from socket
+  StreamSubscription<Map<String, dynamic>>? _viewerCountSubscription;
+  int _realViewerCount = 0;
   
   // Agora state
   bool _isAgoraConnected = false;
@@ -85,12 +91,14 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   @override
   void initState() {
     super.initState();
+    _socketService = getIt<SocketService>();
     _setupAnimations();
     _setupSystemUI();
     _joinLiveStream();
     _startCommentSimulation();
     _startGiftSimulation();
     _initializeLeaderboard();
+    _connectSocket();
   }
   
   void _initializeLeaderboard() {
@@ -132,6 +140,57 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         topGiftEmoji: '🌹',
       ),
     ]);
+  }
+
+  /// Connect to Socket.IO for real-time viewer count
+  Future<void> _connectSocket() async {
+    try {
+      await _socketService.connect();
+      
+      // Listen for viewer count updates
+      _viewerCountSubscription = _socketService.viewerCountStream.listen((data) {
+        if (mounted && data['streamId'] == widget.liveStream.id) {
+          setState(() {
+            _realViewerCount = data['count'] ?? 0;
+          });
+          debugPrint('👥 [VIEWER] Real-time viewer count: $_realViewerCount');
+        }
+      });
+      
+      // Listen for stream end
+      _socketService.liveEndStream.listen((data) {
+        if (mounted && data['streamId'] == widget.liveStream.id) {
+          debugPrint('🛑 [VIEWER] Stream ended via socket');
+          _showStreamEndedDialog();
+        }
+      });
+      
+      // Join the room
+      _joinSocketRoom();
+      
+      debugPrint('🔌 [VIEWER] Socket connected');
+    } catch (e) {
+      debugPrint('⚠️ [VIEWER] Socket connection error: $e');
+    }
+  }
+  
+  /// Join socket room as viewer
+  void _joinSocketRoom() {
+    if (_socketService.isConnected) {
+      _socketService.joinLiveStream(
+        streamId: widget.liveStream.id,
+        isBroadcaster: false,
+      );
+      debugPrint('📺 [VIEWER] Joined socket room: ${widget.liveStream.id}');
+    }
+  }
+  
+  /// Leave socket room
+  void _leaveSocketRoom() {
+    if (_socketService.isConnected) {
+      _socketService.leaveLiveStream(widget.liveStream.id);
+      debugPrint('👋 [VIEWER] Left socket room: ${widget.liveStream.id}');
+    }
   }
 
   void _setupAnimations() {
@@ -352,6 +411,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _giftSimulationTimer?.cancel();
     _comboResetTimer?.cancel();
     _reconnectTimer?.cancel(); // Cancel reconnect timer
+    _viewerCountSubscription?.cancel(); // Cancel socket subscription
+    
+    // Leave socket room
+    _leaveSocketRoom();
     
     // Leave Agora channel
     _agoraService.leaveChannel();
@@ -1343,6 +1406,9 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   }
 
   Widget _buildViewerCount() {
+    // Use real-time viewer count if available
+    final displayCount = _realViewerCount > 0 ? _realViewerCount : widget.liveStream.viewerCount;
+    
     return Positioned(
       top: MediaQuery.of(context).padding.top + 16,
       left: 100,
@@ -1364,7 +1430,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
               ),
               const SizedBox(width: 4),
               Text(
-                '${widget.liveStream.viewerCount}',
+                _formatViewerCount(displayCount),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -1376,6 +1442,15 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         ),
       ),
     );
+  }
+  
+  String _formatViewerCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
   }
 
 
