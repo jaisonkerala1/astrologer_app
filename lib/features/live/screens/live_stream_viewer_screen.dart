@@ -207,12 +207,12 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       // Set up Agora callbacks
       _agoraService.onUserJoined = (uid) {
         debugPrint('📺 [VIEWER] Broadcaster joined: $uid');
-        if (mounted) {
-          setState(() {
+      if (mounted) {
+        setState(() {
             _remoteBroadcasterUid = uid;
-            _isStreamActive = true;
-          });
-        }
+          _isStreamActive = true;
+        });
+      }
       };
       
       _agoraService.onUserOffline = (uid) {
@@ -333,7 +333,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                 widget.onExit!();
               } else {
                 Navigator.of(context).pop();
-              }
+    }
             },
             child: const Text('OK', style: TextStyle(color: Colors.blue)),
           ),
@@ -845,6 +845,9 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                 // Live indicator
                 _buildLiveIndicator(),
                 
+                // Stream info (broadcaster name + topic)
+                _buildStreamInfo(),
+                
                 // Viewer count
                 _buildViewerCount(),
                 
@@ -1235,6 +1238,68 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStreamInfo() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 52, // Below LIVE indicator
+      left: 16,
+      right: 100, // Leave space for close button
+      child: AnimatedOpacity(
+        opacity: _isControlsVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Broadcaster name with glow effect
+            Text(
+              widget.liveStream.astrologerName,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.8),
+                    blurRadius: 8,
+                    offset: const Offset(0, 1),
+                  ),
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 16,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            // Topic/Title with subtle styling
+            Text(
+              widget.liveStream.title,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.95),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.7),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

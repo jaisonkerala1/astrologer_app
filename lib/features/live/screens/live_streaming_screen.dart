@@ -170,7 +170,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
           debugPrint('✅ [LIVE] Background duration: ${duration.inSeconds}s - Stream already stopped, ending now');
           // Stream was stopped when backgrounded, so end it now
           _autoEndStream(reason: 'Stream ended (app was backgrounded)');
-        }
+    }
       }
       _backgroundTime = null;
     } else if (state == AppLifecycleState.detached) {
@@ -202,7 +202,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       final hasConnection = result != ConnectivityResult.none;
       
       if (hasConnection != _hasNetworkConnection) {
-        setState(() {
+      setState(() {
           _hasNetworkConnection = hasConnection;
         });
         
@@ -252,7 +252,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       _autoEndStream(reason: 'Stream ended due to network connection loss');
     });
   }
-  
+
   /// Cancel network loss timer
   void _cancelNetworkLossTimer() {
     _networkLossTimer?.cancel();
@@ -340,7 +340,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   Future<void> _initializeAgora() async {
     if (_isEnding) return; // Don't initialize if ending stream
     
-    setState(() {
+        setState(() {
       _isLoadingAgora = true;
       _agoraError = null;
     });
@@ -351,7 +351,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         if (mounted) {
           setState(() {
             _agoraError = message;
-          });
+        });
         }
       };
       
@@ -383,8 +383,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
           description: widget.description ?? 'Live astrology session',
           category: widget.category ?? LiveStreamCategory.astrology,
           tags: ['live', 'astrology'],
-        );
-        
+      );
+
         channelName = liveStream.channelName;
         token = liveStream.agoraToken ?? '';
         
@@ -878,93 +878,93 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         }
       },
       child: Consumer<ThemeService>(
-        builder: (context, themeService, child) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: ListenableBuilder(
-              listenable: _liveService,
-              builder: (context, child) {
-                final stream = _liveService.currentStream;
-                
-                if (stream == null) {
-                  return _buildLoadingScreen();
-                }
+      builder: (context, themeService, child) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: ListenableBuilder(
+        listenable: _liveService,
+        builder: (context, child) {
+          final stream = _liveService.currentStream;
+          
+          if (stream == null) {
+                return _buildLoadingScreen();
+          }
 
-                return Stack(
-                  children: [
-                    // Camera Preview
-                    _buildCameraPreview(themeService),
-                    
+          return Stack(
+            children: [
+                  // Camera Preview
+                  _buildCameraPreview(themeService),
+                  
                     // Network warning banner
                     if (!_hasNetworkConnection)
                       _buildNetworkWarningBanner(),
                     
-                    // Countdown overlay (shows during countdown)
+                  // Countdown overlay (shows during countdown)
                     if (_isCountingDown && _isAgoraInitialized)
-                      _buildCountdownOverlay(themeService),
+                    _buildCountdownOverlay(themeService),
+                  
+                  // Show live UI only after countdown
+                  if (!_isCountingDown) ...[
+                    // Top gradient overlay
+                    _buildTopGradient(),
                     
-                    // Show live UI only after countdown
-                    if (!_isCountingDown) ...[
-                      // Top gradient overlay
-                      _buildTopGradient(),
-                      
-                      // Bottom gradient overlay
-                      _buildBottomGradient(),
-                      
-                      // Tap to toggle controls (must be before buttons so buttons are on top)
-                      Positioned.fill(
-                        child: GestureDetector(
-                          onTap: _toggleControls,
-                          child: Container(color: Colors.transparent),
-                        ),
+                    // Bottom gradient overlay
+                    _buildBottomGradient(),
+                    
+                    // Tap to toggle controls (must be before buttons so buttons are on top)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: _toggleControls,
+                        child: Container(color: Colors.transparent),
                       ),
-                      
-                      // Live indicator with animation
-                      _buildLiveIndicator(),
-                      
-                      // Stream info
-                      _buildStreamInfo(stream, themeService),
-                      
-                      // Viewer count
-                      _buildViewerCount(stream),
-                      
-                      // Duration
-                      _buildDuration(stream),
-                      
-                      // Floating comments (always visible)
-                      _buildFloatingComments(),
-                      
-                      // Gift animations overlay
-                      ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
-                        gift: GiftAnimation(
-                          name: gift['name'],
-                          emoji: gift['emoji'],
-                          value: gift['value'],
-                          color: gift['color'],
-                          tier: gift['tier'],
-                          senderName: gift['senderName'] ?? 'Anonymous',
-                          combo: gift['combo'] ?? 1,
-                        ),
-                        onComplete: () {
-                          setState(() {
-                            _giftAnimations.remove(gift);
-                          });
-                        },
-                        key: ValueKey(gift['id']),
-                      )),
-                      
-                      // Modern action buttons (right side)
-                      if (_isControlsVisible) _buildModernActionButtons(themeService),
-                    ],
+                    ),
                     
-                    // Ending overlay
-                    if (_isEnding) _buildEndingOverlay(),
+                    // Live indicator with animation
+                    _buildLiveIndicator(),
+                    
+                    // Stream info
+                    _buildStreamInfo(stream, themeService),
+                    
+                    // Viewer count
+                    _buildViewerCount(stream),
+                    
+                    // Duration
+                    _buildDuration(stream),
+                    
+                    // Floating comments (always visible)
+                    _buildFloatingComments(),
+                    
+                    // Gift animations overlay
+                    ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
+                      gift: GiftAnimation(
+                        name: gift['name'],
+                        emoji: gift['emoji'],
+                        value: gift['value'],
+                        color: gift['color'],
+                        tier: gift['tier'],
+                        senderName: gift['senderName'] ?? 'Anonymous',
+                        combo: gift['combo'] ?? 1,
+                      ),
+                      onComplete: () {
+                        setState(() {
+                          _giftAnimations.remove(gift);
+                        });
+                      },
+                      key: ValueKey(gift['id']),
+                    )),
+                    
+                    // Modern action buttons (right side)
+                    if (_isControlsVisible) _buildModernActionButtons(themeService),
                   ],
-                );
-              },
-            ),
+                  
+                  // Ending overlay
+              if (_isEnding) _buildEndingOverlay(),
+            ],
           );
         },
+          ),
+        );
+      },
       ),
     );
   }

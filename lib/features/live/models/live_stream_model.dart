@@ -39,7 +39,7 @@ class LiveStreamModel extends Equatable {
   final int likes;
   final LiveStreamCategory category;
   final int duration;
-  
+
   // Agora-specific fields
   final String? agoraChannelName;
   final String? agoraToken;

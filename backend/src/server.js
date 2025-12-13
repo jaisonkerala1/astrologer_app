@@ -3,19 +3,33 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
 require('dotenv').config();
 
 const app = express();
-const PORT = 7566; // Force port 7566
-console.log('🚀 Server starting - LIVE STREAMING UPDATE 2025-12-12 v3');
+const PORT = process.env.PORT || 7566;
+console.log('🚀 Server starting - SOCKET.IO REALTIME UPDATE 2025-12-13');
+
+// Create HTTP server for Socket.IO
+const httpServer = http.createServer(app);
+
+// Initialize Socket.IO
+let io;
+try {
+  const { initSocketIO } = require('./socket');
+  io = initSocketIO(httpServer);
+  console.log('✅ Socket.IO initialized');
+} catch (error) {
+  console.error('❌ Failed to initialize Socket.IO:', error.message);
+}
 
 // Security middleware
 app.use(helmet());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);
@@ -23,18 +37,13 @@ app.use(limiter);
 // CORS configuration
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    // Allow all localhost/127.0.0.1 origins regardless of port
     if (origin.startsWith('http://localhost') || 
         origin.startsWith('http://127.0.0.1') ||
         origin.startsWith('http://10.0.2.2') ||
         origin === (process.env.CORS_ORIGIN || 'http://localhost:3000')) {
       return callback(null, true);
     }
-    
-    // Reject all other origins
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -44,7 +53,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (uploaded images)
+// Serve static files
 app.use('/uploads', express.static('uploads'));
 
 // Database connection
@@ -72,7 +81,6 @@ const connectDB = async () => {
     console.error('MongoDB connection error:', error.message);
     console.error('Server will retry MongoDB connection in background...');
     
-    // Retry connection every 30 seconds
     setInterval(async () => {
       try {
         if (mongoose.connection.readyState !== 1) {
@@ -91,16 +99,22 @@ const connectDB = async () => {
   }
 };
 
-// Connect to database
 connectDB();
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const { roomManager } = require('./socket');
+  const socketStats = roomManager ? roomManager.getStats() : { error: 'Socket not initialized' };
+  
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    socket: {
+      connected: io ? true : false,
+      ...socketStats,
+    }
   });
 });
 
@@ -121,7 +135,6 @@ try {
   console.log('✅ Live streaming routes loaded');
 } catch (error) {
   console.error('❌ Failed to load live routes:', error.message);
-  // Fallback route to show error
   app.use('/api/live', (req, res) => {
     res.status(500).json({
       success: false,
@@ -130,8 +143,6 @@ try {
     });
   });
 }
-
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -151,20 +162,18 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
+// Start server with HTTP server (for Socket.IO)
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Server accessible at: http://localhost:${PORT}`);
+  console.log(`WebSocket enabled at: ws://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Reviews API enabled at ${new Date().toISOString()}`);
   
-  // Start background job for cleaning up dead streams
   startStreamHealthCheck();
 });
 
 /**
- * Background job: Clean up dead streams (no heartbeat for 60+ seconds)
- * Runs every 60 seconds
+ * Background job: Clean up dead streams
  */
 function startStreamHealthCheck() {
   const LiveStream = require('./models/LiveStream');
@@ -174,9 +183,8 @@ function startStreamHealthCheck() {
   setInterval(async () => {
     try {
       const now = new Date();
-      const deadThreshold = new Date(now.getTime() - 60 * 1000); // 60 seconds ago
+      const deadThreshold = new Date(now.getTime() - 60 * 1000);
       
-      // Find streams that are marked as live but haven't sent heartbeat in 60s
       const deadStreams = await LiveStream.find({
         isLive: true,
         lastHeartbeat: { $lt: deadThreshold }
@@ -192,6 +200,17 @@ function startStreamHealthCheck() {
           stream.isLive = false;
           stream.endedAt = now;
           await stream.save();
+          
+          // Notify viewers via Socket.IO
+          if (io) {
+            const roomId = `live:${stream._id}`;
+            io.to(roomId).emit('live:end', {
+              streamId: stream._id.toString(),
+              message: 'Stream has ended',
+              reason: 'timeout',
+              timestamp: Date.now(),
+            });
+          }
         }
         
         console.log(`✅ Auto-ended ${deadStreams.length} dead stream(s)`);
@@ -200,12 +219,8 @@ function startStreamHealthCheck() {
     } catch (error) {
       console.error('❌ Error in stream health check:', error);
     }
-  }, 60 * 1000); // Run every 60 seconds
+  }, 60 * 1000);
 }
 
-module.exports = app;
-
-
-
-
-
+// Export for testing
+module.exports = { app, io };

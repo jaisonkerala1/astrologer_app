@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/services/socket_service.dart';
 import '../../data/repositories/auth/auth_repository.dart';
 import '../../data/repositories/auth/auth_repository_impl.dart';
 import '../../data/repositories/dashboard/dashboard_repository.dart';
@@ -60,6 +61,10 @@ Future<void> setupServiceLocator() async {
   final apiService = ApiService();
   await apiService.initialize();
   getIt.registerLazySingleton<ApiService>(() => apiService);
+  
+  // Socket Service (Real-time WebSocket)
+  final socketService = SocketService();
+  getIt.registerLazySingleton<SocketService>(() => socketService);
 
   // ============================================================================
   // REPOSITORIES (Singletons)
@@ -239,6 +244,7 @@ Future<void> setupServiceLocator() async {
   );
 
   print('✅ Service Locator: All dependencies registered successfully');
+  print('   - Core Services: API, Storage, Socket (Real-time)');
   print('   - 13 Repositories: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
   print('   - 13 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
 }

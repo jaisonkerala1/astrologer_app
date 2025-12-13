@@ -121,28 +121,28 @@ class _LiveAstrologersStoriesWidgetState extends State<LiveAstrologersStoriesWid
                     ],
                     const Spacer(),
                     if (_liveStreams.isNotEmpty)
-                      GestureDetector(
+                    GestureDetector(
                         onTap: () => _navigateToViewAll(context),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: themeService.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: themeService.primaryColor.withOpacity(0.3),
-                              width: 1,
-                            ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: themeService.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: themeService.primaryColor.withOpacity(0.3),
+                            width: 1,
                           ),
-                          child: Text(
-                            'View All',
-                            style: TextStyle(
-                              color: themeService.primaryColor,
-                              fontSize: buttonFontSize,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        ),
+                        child: Text(
+                          'View All',
+                          style: TextStyle(
+                            color: themeService.primaryColor,
+                            fontSize: buttonFontSize,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),

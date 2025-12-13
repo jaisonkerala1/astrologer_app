@@ -55,12 +55,9 @@ dependencies:
   camera: ^0.10.5+9
   mic_stream: ^0.7.2
   
-  # Agora Live Streaming
-  agora_rtc_engine: ^6.3.0
-  
-  # Video Calling (Mock Implementation)
+  # Video Calling & Real-time
   # flutter_webrtc: ^0.9.44  # Commented out for mock implementation
-  # socket_io_client: ^2.0.3+1  # Commented out for mock implementation
+  socket_io_client: ^2.0.3+1  # Real-time Socket.IO for live streaming, chat, etc.
   
   # Country Code Picker
   country_picker: ^2.0.21
@@ -85,6 +82,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  agora_rtc_engine: ^6.5.3
 
 dev_dependencies:
   flutter_test:
