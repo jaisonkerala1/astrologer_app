@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -12,11 +13,16 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
+import '../models/live_comment_model.dart';
+import '../bloc/live_comment_bloc.dart';
+import '../bloc/live_comment_event.dart';
+import '../bloc/live_comment_state.dart';
 import '../services/live_stream_service.dart';
 import '../services/agora_service.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_gift_animation_overlay.dart';
+import '../widgets/live_floating_comments_widget.dart';
 import '../utils/gift_helper.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
@@ -39,6 +45,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final LiveStreamService _liveService;
   late final AgoraService _agoraService;
+  late final LiveCommentBloc _commentBloc;
   
   // Agora state
   bool _isAgoraInitialized = false;
@@ -116,6 +123,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _liveService = LiveStreamService(); // Get the singleton instance
     _agoraService = AgoraService(); // Get Agora singleton
     _socketService = getIt<SocketService>(); // Get socket service
+    _commentBloc = LiveCommentBloc(socketService: _socketService); // Initialize comment BLoC
     _initializeAnimations();
     _hideSystemUI();
     _initializeAgora(); // Initialize Agora for live streaming
@@ -134,6 +142,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _heartbeatTimer?.cancel(); // Cancel heartbeat timer
     _connectivitySubscription?.cancel();
     _viewerCountSubscription?.cancel(); // Cancel socket subscription
+    _commentBloc.close(); // Close comment BLoC
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
     _fadeController.dispose();
@@ -235,6 +244,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         isBroadcaster: true,
         streamTitle: widget.title ?? 'Live Session',
       );
+      
+      // Subscribe to comments via BLoC
+      _commentBloc.add(LiveCommentSubscribeEvent(_currentStreamId!));
+      
       debugPrint('📺 [LIVE] Joined socket room as broadcaster: $_currentStreamId');
     }
   }
@@ -243,6 +256,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   void _leaveSocketRoom() {
     if (_currentStreamId != null && _socketService.isConnected) {
       _socketService.endLiveStream(_currentStreamId!);
+      _commentBloc.add(const LiveCommentUnsubscribeEvent());
       debugPrint('👋 [LIVE] Left socket room: $_currentStreamId');
     }
   }
@@ -990,8 +1004,19 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     // Duration
                     _buildDuration(stream),
                     
-                    // Floating comments (always visible)
-                    _buildFloatingComments(),
+                    // Floating comments (always visible) - Real-time via BLoC
+                    BlocBuilder<LiveCommentBloc, LiveCommentState>(
+                      bloc: _commentBloc,
+                      builder: (context, commentState) {
+                        if (commentState is LiveCommentLoaded) {
+                          return LiveFloatingCommentsWidget(
+                            comments: commentState.floatingComments,
+                            onTap: () => _openComments(commentState.allComments),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                     
                     // Gift animations overlay
                     ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
@@ -1718,43 +1743,35 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     return count.toString();
   }
   
-  void _openComments() {
+  void _openComments([List<LiveCommentModel>? comments]) {
     HapticFeedback.selectionClick();
+    
+    // Get comments from BLoC if not provided
+    final commentsToShow = comments ?? [];
     
     LiveCommentsBottomSheet.show(
       context,
-      streamId: 'host-stream',
+      streamId: _currentStreamId ?? 'host-stream',
       astrologerName: 'You',
       getComments: () {
-        // Get fresh data in real-time
-        List<LiveComment> allInteractions = [];
-        
-        // Add regular comments
-        for (var comment in _floatingComments) {
-          allInteractions.add(LiveComment(
-            userName: comment['user'] ?? 'Unknown',
-            message: comment['message'] ?? '',
-            timestamp: DateTime.now().subtract(Duration(seconds: _floatingComments.indexOf(comment) * 10)),
-          ));
-        }
-        
-        // Add gift notifications as special comments
-        for (var gift in _giftNotifications) {
-          allInteractions.add(LiveComment(
-            userName: gift['sender'] ?? 'Unknown',
-            message: '${gift['emoji']} sent ${gift['gift']} (₹${gift['value']})',
-            timestamp: gift['timestamp'] ?? DateTime.now(),
-            isGift: true,
-          ));
-        }
-        
-        // Sort by timestamp (newest first)
-        allInteractions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-        
-        return allInteractions;
+        // Convert LiveCommentModel to LiveComment for bottom sheet
+        return commentsToShow.map((comment) {
+          return LiveComment(
+            userName: comment.userName,
+            message: comment.message,
+            timestamp: comment.timestamp,
+            isGift: comment.isGift,
+          );
+        }).toList();
       },
       onCommentSend: (text) {
-        // Handle comment from host (shouldn't happen normally)
+        // Send comment via BLoC
+        if (_currentStreamId != null) {
+          _commentBloc.add(LiveCommentSendEvent(
+            streamId: _currentStreamId!,
+            message: text,
+          ));
+        }
       },
     );
   }

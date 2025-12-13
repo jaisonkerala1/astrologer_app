@@ -1,113 +1,83 @@
 import 'package:equatable/equatable.dart';
-import '../models/live_gift_model.dart';
 
-enum LiveReactionType {
-  heart,
-  fire,
-  clap,
-  laugh,
-  wow,
-  love,
-}
-
+/// Live Comment Model
+/// Represents a comment in a live stream
 class LiveCommentModel extends Equatable {
   final String id;
   final String streamId;
   final String userId;
   final String userName;
-  final String? userProfilePicture;
+  final String? userAvatar;
   final String message;
   final DateTime timestamp;
-  final bool isHost;
-  final LiveReactionType? reaction;
-  final LiveGiftModel? gift;
-
+  final bool isGift;
+  
   const LiveCommentModel({
     required this.id,
     required this.streamId,
     required this.userId,
     required this.userName,
-    this.userProfilePicture,
+    this.userAvatar,
     required this.message,
     required this.timestamp,
-    this.isHost = false,
-    this.reaction,
-    this.gift,
+    this.isGift = false,
   });
-
-  @override
-  List<Object?> get props => [
-    id, streamId, userId, userName, userProfilePicture, message,
-    timestamp, isHost, reaction, gift,
-  ];
-
+  
+  /// Create from JSON (from socket event)
   factory LiveCommentModel.fromJson(Map<String, dynamic> json) {
     return LiveCommentModel(
       id: json['id'] ?? '',
       streamId: json['streamId'] ?? '',
       userId: json['userId'] ?? '',
-      userName: json['userName'] ?? '',
-      userProfilePicture: json['userProfilePicture'],
+      userName: json['userName'] ?? 'Unknown',
+      userAvatar: json['userAvatar'],
       message: json['message'] ?? '',
-      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
-      isHost: json['isHost'] ?? false,
-      reaction: json['reaction'] != null
-          ? LiveReactionType.values.firstWhere(
-              (type) => type.toString() == 'LiveReactionType.${json['reaction']}',
-              orElse: () => LiveReactionType.heart,
-            )
-          : null,
-      gift: json['gift'] != null ? LiveGiftModel.fromJson(json['gift']) : null,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        json['timestamp'] ?? DateTime.now().millisecondsSinceEpoch,
+      ),
+      isGift: json['isGift'] ?? false,
     );
   }
-
+  
+  /// Convert to JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'streamId': streamId,
       'userId': userId,
       'userName': userName,
-      'userProfilePicture': userProfilePicture,
+      'userAvatar': userAvatar,
       'message': message,
-      'timestamp': timestamp.toIso8601String(),
-      'isHost': isHost,
-      'reaction': reaction?.toString().split('.').last,
-      'gift': gift?.toJson(),
+      'timestamp': timestamp.millisecondsSinceEpoch,
+      'isGift': isGift,
     };
   }
-
+  
+  /// Get time ago string (e.g. "2m ago")
   String get timeAgo {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
     
-    if (difference.inMinutes < 1) {
-      return 'now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h';
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
     } else {
-      return '${difference.inDays}d';
+      return 'Just now';
     }
   }
-
-  bool get isFromHost => isHost;
-
-  bool get isComment => reaction == null && gift == null && message.isNotEmpty;
-
-  bool get isReaction => reaction != null;
-
-  bool get isGift => gift != null;
-
-  String get displayText {
-    if (isReaction) {
-      return '$userName reacted';
-    }
-    if (isGift && gift != null) {
-      return '$userName sent ${gift!.giftName}';
-    }
-    return message;
-  }
-
-  String get giftIcon => gift?.giftEmoji ?? '';
+  
+  @override
+  List<Object?> get props => [
+    id,
+    streamId,
+    userId,
+    userName,
+    userAvatar,
+    message,
+    timestamp,
+    isGift,
+  ];
 }

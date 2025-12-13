@@ -1,75 +1,41 @@
 import 'package:flutter/material.dart';
 
-/// Helper class for gift-related utilities
+/// Gift Helper Utilities
+/// Provides helper methods for gift display and interactions
 class GiftHelper {
-  /// Map of gift names to their image assets
-  static const Map<String, String> giftImages = {
-    'rose': 'rose.png',
-    'star': 'assets/images/star.png',
-    'heart': 'assets/images/heart.png',
-    'diamond': 'assets/images/diamond.png',
-    'rainbow': 'assets/images/rainbow.png',
-    'crown': 'assets/images/crown.png',
-  };
-
-  /// Build gift image widget or emoji fallback
-  static Widget buildGiftImage(String name, String emoji, double size) {
-    final giftName = name.toLowerCase();
+  /// Extract gift name from message
+  /// Example: "🌹 sent Rose (₹10)" -> "rose"
+  static String? extractGiftName(String message) {
+    final lowerMessage = message.toLowerCase();
     
-    if (giftImages.containsKey(giftName)) {
-      return Image.asset(
-        giftImages[giftName]!,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-      );
+    final giftNames = ['rose', 'star', 'heart', 'diamond', 'rainbow', 'crown'];
+    
+    for (final name in giftNames) {
+      if (lowerMessage.contains(name)) {
+        return name;
+      }
     }
-    return Text(
-      emoji,
-      style: TextStyle(fontSize: size),
-      textAlign: TextAlign.center,
-    );
+    
+    return null;
   }
-
-  /// Check if gift has a custom image
-  static bool hasCustomImage(String name) {
-    return giftImages.containsKey(name.toLowerCase());
-  }
-
-  /// Get gift image path if exists
-  static String? getGiftImagePath(String name) {
-    return giftImages[name.toLowerCase()];
-  }
-
-  /// Get the color for a specific gift type
+  
+  /// Get gift color based on gift name
   static Color getGiftColor(String giftName) {
     switch (giftName.toLowerCase()) {
       case 'rose':
-        return const Color(0xFFFF4458); // Red
+        return const Color(0xFFFF1744);
       case 'star':
-        return const Color(0xFFFFC107); // Yellow/Gold
+        return const Color(0xFFFFC107);
       case 'heart':
-        return const Color(0xFFE91E63); // Pink
+        return const Color(0xFFE91E63);
       case 'diamond':
-        return const Color(0xFF2196F3); // Blue
+        return const Color(0xFF00BCD4);
       case 'rainbow':
-        return const Color(0xFF4CAF50); // Green (representing rainbow)
+        return const Color(0xFF9C27B0);
       case 'crown':
-        return const Color(0xFF9C27B0); // Purple
+        return const Color(0xFFFFD700);
       default:
-        return const Color(0xFFFFC107); // Default gold
+        return Colors.amber;
     }
-  }
-
-  /// Extract gift name from message like "🌹 sent Rose"
-  static String? extractGiftName(String message) {
-    final patterns = ['rose', 'star', 'heart', 'diamond', 'rainbow', 'crown'];
-    for (final pattern in patterns) {
-      if (message.toLowerCase().contains(pattern)) {
-        return pattern[0].toUpperCase() + pattern.substring(1);
-      }
-    }
-    return null;
   }
 }
-

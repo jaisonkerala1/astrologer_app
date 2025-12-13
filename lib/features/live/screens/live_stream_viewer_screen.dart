@@ -3,12 +3,17 @@ import 'dart:math';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
+import '../models/live_comment_model.dart';
+import '../bloc/live_comment_bloc.dart';
+import '../bloc/live_comment_event.dart';
+import '../bloc/live_comment_state.dart';
 import '../widgets/live_stream_info_widget.dart';
 import '../widgets/live_action_stack_widget.dart';
 import '../widgets/live_bottom_input_bar.dart';
@@ -17,6 +22,7 @@ import '../widgets/live_gift_animation_overlay.dart';
 import '../widgets/live_gift_leaderboard.dart';
 import '../widgets/live_gift_bottom_sheet.dart';
 import '../widgets/live_comments_bottom_sheet.dart';
+import '../widgets/live_floating_comments_widget.dart';
 import '../services/live_stream_service.dart';
 import '../services/agora_service.dart';
 import '../utils/gift_helper.dart';
@@ -65,6 +71,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   final LiveStreamService _liveStreamService = LiveStreamService();
   final AgoraService _agoraService = AgoraService();
   late final SocketService _socketService;
+  late final LiveCommentBloc _commentBloc;
   final ScrollController _commentsScrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
   
@@ -92,6 +99,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   void initState() {
     super.initState();
     _socketService = getIt<SocketService>();
+    _commentBloc = LiveCommentBloc(socketService: _socketService);
     _setupAnimations();
     _setupSystemUI();
     _joinLiveStream();
@@ -181,6 +189,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         streamId: widget.liveStream.id,
         isBroadcaster: false,
       );
+      
+      // Subscribe to comments via BLoC
+      _commentBloc.add(LiveCommentSubscribeEvent(widget.liveStream.id));
+      
       debugPrint('📺 [VIEWER] Joined socket room: ${widget.liveStream.id}');
     }
   }
@@ -189,6 +201,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   void _leaveSocketRoom() {
     if (_socketService.isConnected) {
       _socketService.leaveLiveStream(widget.liveStream.id);
+      _commentBloc.add(const LiveCommentUnsubscribeEvent());
       debugPrint('👋 [VIEWER] Left socket room: ${widget.liveStream.id}');
     }
   }
@@ -412,6 +425,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _comboResetTimer?.cancel();
     _reconnectTimer?.cancel(); // Cancel reconnect timer
     _viewerCountSubscription?.cancel(); // Cancel socket subscription
+    _commentBloc.close(); // Close comment BLoC
     
     // Leave socket room
     _leaveSocketRoom();
@@ -454,23 +468,33 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   void _openExpandedComments() {
     HapticFeedback.selectionClick();
     
+    // Get comments from BLoC
+    List<LiveCommentModel> allComments = [];
+    if (_commentBloc.state is LiveCommentLoaded) {
+      allComments = (_commentBloc.state as LiveCommentLoaded).allComments;
+    }
+    
     LiveCommentsBottomSheet.show(
       context,
       streamId: widget.liveStream.id,
       astrologerName: widget.liveStream.astrologerName,
       getComments: () {
-        // Get ALL comments in real-time (not just the last 4 floating ones)
-        return _allComments.map((comment) {
+        // Convert LiveCommentModel to LiveComment for bottom sheet
+        return allComments.map((comment) {
           return LiveComment(
-            userName: comment['user'] ?? 'Unknown',
-            message: comment['message'] ?? '',
-            timestamp: DateTime.now().subtract(Duration(seconds: _allComments.indexOf(comment) * 10)),
-            isGift: comment['isGift'] == 'true',
+            userName: comment.userName,
+            message: comment.message,
+            timestamp: comment.timestamp,
+            isGift: comment.isGift,
           );
         }).toList();
       },
       onCommentSend: (text) {
-        _handleSendComment();
+        // Send comment via BLoC
+        _commentBloc.add(LiveCommentSendEvent(
+          streamId: widget.liveStream.id,
+          message: text,
+        ));
       },
     );
   }
@@ -550,32 +574,13 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     
     HapticFeedback.selectionClick();
     
-    final newComment = {
-      'user': 'You',
-      'message': text,
-      'emoji': '💬',
-    };
-    
-    // Add to floating comments (only last 4 for display)
-    setState(() {
-      if (_floatingComments.length >= 4) {
-        _floatingComments.removeAt(0);
-      }
-      _floatingComments.add(newComment);
-      
-      // Add to all comments list (for bottom sheet)
-      _allComments.add(newComment);
-      _commentsCount++;
-    });
+    // Send comment via BLoC
+    _commentBloc.add(LiveCommentSendEvent(
+      streamId: widget.liveStream.id,
+      message: text,
+    ));
     
     _commentController.clear();
-    
-    // Send to backend
-    try {
-      _liveStreamService.sendComment(widget.liveStream.id, text);
-    } catch (e) {
-      // Silently fail
-    }
   }
   
   void _handleQuickGiftSend(QuickGift gift) {
@@ -917,8 +922,19 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                 // Close button (top-right)
                 _buildCloseButton(),
                 
-                // Floating comments (left side) - Always visible for engagement
-                _buildFloatingComments(),
+                // Floating comments (left side) - Real-time via BLoC
+                BlocBuilder<LiveCommentBloc, LiveCommentState>(
+                  bloc: _commentBloc,
+                  builder: (context, commentState) {
+                    if (commentState is LiveCommentLoaded) {
+                      return LiveFloatingCommentsWidget(
+                        comments: commentState.floatingComments,
+                        onTap: _openExpandedComments,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
                 
                 // Floating hearts animation
                 ..._floatingHearts.map((heart) => _buildFloatingHeart(heart)),
