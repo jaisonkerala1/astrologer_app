@@ -49,6 +49,12 @@ const liveStreamSchema = new mongoose.Schema({
   },
   endedAt: Date,
   
+  // Heartbeat for detecting dead streams
+  lastHeartbeat: {
+    type: Date,
+    default: Date.now
+  },
+  
   // Metrics
   viewerCount: {
     type: Number,

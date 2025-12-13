@@ -157,7 +157,51 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server accessible at: http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Reviews API enabled at ${new Date().toISOString()}`);
+  
+  // Start background job for cleaning up dead streams
+  startStreamHealthCheck();
 });
+
+/**
+ * Background job: Clean up dead streams (no heartbeat for 60+ seconds)
+ * Runs every 60 seconds
+ */
+function startStreamHealthCheck() {
+  const LiveStream = require('./models/LiveStream');
+  
+  console.log('🩺 Starting stream health check background job');
+  
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const deadThreshold = new Date(now.getTime() - 60 * 1000); // 60 seconds ago
+      
+      // Find streams that are marked as live but haven't sent heartbeat in 60s
+      const deadStreams = await LiveStream.find({
+        isLive: true,
+        lastHeartbeat: { $lt: deadThreshold }
+      });
+      
+      if (deadStreams.length > 0) {
+        console.log(`💀 Found ${deadStreams.length} dead stream(s) - Auto-ending...`);
+        
+        for (const stream of deadStreams) {
+          const timeSinceHeartbeat = Math.floor((now - stream.lastHeartbeat) / 1000);
+          console.log(`  ⚰️  Stream ${stream._id} (${stream.astrologerName}) - Last heartbeat: ${timeSinceHeartbeat}s ago`);
+          
+          stream.isLive = false;
+          stream.endedAt = now;
+          await stream.save();
+        }
+        
+        console.log(`✅ Auto-ended ${deadStreams.length} dead stream(s)`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in stream health check:', error);
+    }
+  }, 60 * 1000); // Run every 60 seconds
+}
 
 module.exports = app;
 

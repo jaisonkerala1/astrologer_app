@@ -604,6 +604,54 @@ router.get('/:streamId/viewers', async (req, res) => {
 });
 
 /**
+ * Send heartbeat (keep stream alive)
+ * POST /api/live/:streamId/heartbeat
+ */
+router.post('/:streamId/heartbeat', auth, async (req, res) => {
+  try {
+    const { streamId } = req.params;
+    const astrologerId = req.user.astrologerId;
+
+    // Update lastHeartbeat timestamp
+    const stream = await LiveStream.findOneAndUpdate(
+      { 
+        _id: streamId,
+        astrologerId: astrologerId,
+        isLive: true
+      },
+      { 
+        lastHeartbeat: new Date()
+      },
+      { new: true }
+    );
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stream not found or not authorized'
+      });
+    }
+
+    // console.log(`💓 Heartbeat received for stream: ${streamId}`);
+
+    res.json({
+      success: true,
+      data: {
+        streamId: stream._id,
+        lastHeartbeat: stream.lastHeartbeat
+      }
+    });
+
+  } catch (error) {
+    console.error('Error processing heartbeat:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process heartbeat'
+    });
+  }
+});
+
+/**
  * Force end a stream (admin/cleanup)
  * POST /api/live/:streamId/force-end
  */
