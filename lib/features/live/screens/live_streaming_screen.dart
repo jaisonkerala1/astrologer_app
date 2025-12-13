@@ -723,22 +723,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     await Future.delayed(const Duration(seconds: 1));
     print('🎥 [LIVE_STREAMING] Current stream: ${_liveService.currentStream}');
     
-    // Initialize with some starting metrics (hearts only - viewers and likes are real-time)
+    // Initialize comments count - no more dummy data!
     setState(() {
-      _heartsCount = 50 + _random.nextInt(100);
       _commentsCount = _floatingComments.length;
-    });
-    
-    // Simulate engagement growth (only hearts, not likes)
-    Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!mounted || _isEnding) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        // Hearts grow
-        _heartsCount += _random.nextInt(10);
-      });
     });
     
     // Simulate receiving gifts

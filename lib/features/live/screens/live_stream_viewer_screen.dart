@@ -56,10 +56,10 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   bool _isStreamActive = true;
   bool _isLiked = false;
   
-  // Engagement metrics (local counts)
-  int _heartsCount = 5432;     // Total heart reactions (can spam)
-  int _commentsCount = 567;
-  int _giftsTotal = 4850;
+  // Engagement metrics (local counts - start at 0, not dummy data)
+  int _heartsCount = 0;     // Total heart reactions (can spam)
+  int _commentsCount = 0;
+  int _giftsTotal = 0;
   
   // Gift combo system
   int _giftComboCount = 0;
