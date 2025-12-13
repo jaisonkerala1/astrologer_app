@@ -397,10 +397,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
         });
         
         if (mounted) {
-          // Push to live streaming screen
+          // Push to live streaming screen with title and category
           await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const LiveStreamingScreen(),
+              builder: (context) => LiveStreamingScreen(
+                title: _titleController.text.trim(),
+                description: null,
+                category: _selectedCategory,
+              ),
             ),
           );
           

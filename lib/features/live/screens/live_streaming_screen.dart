@@ -19,7 +19,16 @@ import '../widgets/live_gift_animation_overlay.dart';
 import '../utils/gift_helper.dart';
 
 class LiveStreamingScreen extends StatefulWidget {
-  const LiveStreamingScreen({super.key});
+  final String? title;
+  final String? description;
+  final LiveStreamCategory? category;
+  
+  const LiveStreamingScreen({
+    super.key,
+    this.title,
+    this.description,
+    this.category,
+  });
 
   @override
   State<LiveStreamingScreen> createState() => _LiveStreamingScreenState();
@@ -370,9 +379,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         
         // Call /api/live/start - registers stream in database
         final liveStream = await liveRepo.startLiveStream(
-          title: 'Live Session',
-          description: 'Live astrology session',
-          category: LiveStreamCategory.astrology,
+          title: widget.title ?? 'Live Session',
+          description: widget.description ?? 'Live astrology session',
+          category: widget.category ?? LiveStreamCategory.astrology,
           tags: ['live', 'astrology'],
         );
         
