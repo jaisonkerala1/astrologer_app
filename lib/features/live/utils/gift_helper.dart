@@ -38,4 +38,15 @@ class GiftHelper {
         return Colors.amber;
     }
   }
+  
+  /// Build gift image widget (emoji display)
+  static Widget buildGiftImage(String giftName, String emoji, double size) {
+    return Text(
+      emoji,
+      style: TextStyle(
+        fontSize: size,
+        height: 1.0,
+      ),
+    );
+  }
 }

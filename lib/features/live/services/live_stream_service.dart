@@ -275,10 +275,9 @@ class LiveStreamService extends ChangeNotifier {
       streamId: streamId,
       userId: 'current_user',
       userName: 'You',
-      userProfilePicture: null,
+      userAvatar: null,
       message: message,
       timestamp: DateTime.now(),
-      isHost: false,
     );
     
     _comments[streamId] = (_comments[streamId] ?? [])..add(comment);
@@ -421,30 +420,27 @@ class LiveStreamService extends ChangeNotifier {
           streamId: streamId,
           userId: 'user_1',
           userName: 'Sarah M.',
-          userProfilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+          userAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
           message: 'Amazing reading! Thank you so much! 🙏',
           timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-          isHost: false,
         ),
         LiveCommentModel(
           id: '2',
           streamId: streamId,
           userId: 'user_2',
           userName: 'Mike R.',
-          userProfilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+          userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
           message: 'Can you read my chart next?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
-          isHost: false,
         ),
         LiveCommentModel(
           id: '3',
           streamId: streamId,
           userId: 'host',
           userName: 'You',
-          userProfilePicture: null,
+          userAvatar: null,
           message: 'Welcome everyone! Let me know your questions.',
           timestamp: DateTime.now().subtract(const Duration(minutes: 1)),
-          isHost: true,
         ),
       ];
     }
