@@ -5,6 +5,7 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/services/storage_service.dart';
@@ -80,6 +81,17 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   Timer? _commentSimulationTimer;
   final List<Map<String, String>> _floatingComments = [];
   final Random _random = Random();
+  
+  // Auto-end stream timers
+  Timer? _backgroundTimer;
+  Timer? _networkLossTimer;
+  DateTime? _backgroundTime;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  bool _hasNetworkConnection = true;
+  
+  // Constants
+  static const int _backgroundTimeoutSeconds = 5; // End stream after 5s in background (reduced from 30s)
+  static const int _networkLossTimeoutSeconds = 10; // End stream after 10s of no network
 
   @override
   void initState() {
@@ -92,12 +104,16 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _initializeAgora(); // Initialize Agora for live streaming
     _startStream();
     _startCommentSimulation();
+    _setupNetworkMonitoring(); // Monitor network connectivity
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _countdownTimer?.cancel();
+    _backgroundTimer?.cancel();
+    _networkLossTimer?.cancel();
+    _connectivitySubscription?.cancel();
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
     _fadeController.dispose();
@@ -114,12 +130,169 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Agora handles lifecycle internally, but we can pause/resume if needed
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      // Agora SDK handles background state internally
-      debugPrint('📱 [LIVE] App paused - Agora continues in background');
-    } else if (state == AppLifecycleState.resumed && !_isEnding) {
-      debugPrint('📱 [LIVE] App resumed');
+    if (_isEnding) return; // Don't handle lifecycle if already ending
+    
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // App went to background or screen locked
+      debugPrint('📱 [LIVE] App went to background/locked - Stopping broadcast immediately');
+      _backgroundTime = DateTime.now();
+      
+      // Immediately stop Agora broadcast to prevent frozen stream
+      _agoraService.stopBroadcasting().then((_) {
+        debugPrint('⏸️ [LIVE] Agora broadcast paused');
+      });
+      
+      // Start timer for auto-end if user doesn't return
+      _startBackgroundTimer();
+    } else if (state == AppLifecycleState.resumed) {
+      // App came to foreground or screen unlocked
+      debugPrint('📱 [LIVE] App resumed from background/unlocked');
+      _cancelBackgroundTimer();
+      
+      // Check if we were in background too long
+      if (_backgroundTime != null) {
+        final duration = DateTime.now().difference(_backgroundTime!);
+        if (duration.inSeconds >= _backgroundTimeoutSeconds) {
+          debugPrint('⚠️ [LIVE] Was in background for ${duration.inSeconds}s - Auto-ending stream');
+          _autoEndStream(reason: 'Stream ended due to inactivity');
+        } else {
+          debugPrint('✅ [LIVE] Background duration: ${duration.inSeconds}s - Stream already stopped, ending now');
+          // Stream was stopped when backgrounded, so end it now
+          _autoEndStream(reason: 'Stream ended (app was backgrounded)');
+        }
+      }
+      _backgroundTime = null;
+    } else if (state == AppLifecycleState.detached) {
+      // App is being killed
+      debugPrint('💀 [LIVE] App is being killed - Ending stream');
+      _handleAppKill();
+    }
+  }
+  
+  /// Handle app force kill or crash
+  void _handleAppKill() {
+    // Try to end stream quickly before app dies
+    if (_currentStreamId != null && !_isEnding) {
+      _isEnding = true;
+      try {
+        final liveRepo = getIt<LiveRepository>();
+        // Fire and forget - app might die before this completes
+        liveRepo.endLiveStream(_currentStreamId!).catchError((_) {});
+        _agoraService.stopBroadcasting().catchError((_) {});
+      } catch (e) {
+        debugPrint('⚠️ [LIVE] Failed to cleanup on app kill: $e');
+      }
+    }
+  }
+  
+  /// Setup network connectivity monitoring
+  void _setupNetworkMonitoring() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      final hasConnection = result != ConnectivityResult.none;
+      
+      if (hasConnection != _hasNetworkConnection) {
+        setState(() {
+          _hasNetworkConnection = hasConnection;
+        });
+        
+        if (hasConnection) {
+          // Network restored
+          debugPrint('✅ [LIVE] Network connection restored');
+          _cancelNetworkLossTimer();
+        } else {
+          // Network lost
+          debugPrint('⚠️ [LIVE] Network connection lost - Starting timeout timer');
+          _startNetworkLossTimer();
+        }
+      }
+    });
+    
+    // Check initial connection status
+    Connectivity().checkConnectivity().then((result) {
+      final hasConnection = result != ConnectivityResult.none;
+      setState(() {
+        _hasNetworkConnection = hasConnection;
+      });
+    });
+  }
+  
+  /// Start timer to auto-end stream if app stays in background too long
+  void _startBackgroundTimer() {
+    _backgroundTimer?.cancel();
+    _backgroundTimer = Timer(Duration(seconds: _backgroundTimeoutSeconds), () {
+      if (!mounted || _isEnding) return;
+      debugPrint('⏰ [LIVE] Background timeout reached - Auto-ending stream');
+      _autoEndStream(reason: 'Stream ended due to app being in background');
+    });
+  }
+  
+  /// Cancel background timer
+  void _cancelBackgroundTimer() {
+    _backgroundTimer?.cancel();
+    _backgroundTimer = null;
+  }
+  
+  /// Start timer to auto-end stream if network is lost too long
+  void _startNetworkLossTimer() {
+    _networkLossTimer?.cancel();
+    _networkLossTimer = Timer(Duration(seconds: _networkLossTimeoutSeconds), () {
+      if (!mounted || _isEnding) return;
+      debugPrint('⏰ [LIVE] Network loss timeout reached - Auto-ending stream');
+      _autoEndStream(reason: 'Stream ended due to network connection loss');
+    });
+  }
+  
+  /// Cancel network loss timer
+  void _cancelNetworkLossTimer() {
+    _networkLossTimer?.cancel();
+    _networkLossTimer = null;
+  }
+  
+  /// Auto-end stream without confirmation
+  Future<void> _autoEndStream({required String reason}) async {
+    if (_isEnding) return; // Already ending
+    
+    debugPrint('🛑 [LIVE] Auto-ending stream: $reason');
+    
+    setState(() {
+      _isEnding = true;
+    });
+    
+    // Stop Agora broadcast
+    await _agoraService.stopBroadcasting();
+    debugPrint('📷 [LIVE] Agora broadcast stopped (auto)');
+    
+    // End stream in backend database
+    if (_currentStreamId != null) {
+      try {
+        final liveRepo = getIt<LiveRepository>();
+        await liveRepo.endLiveStream(_currentStreamId!);
+        debugPrint('✅ [LIVE] Stream ended in backend (auto)');
+      } catch (e) {
+        debugPrint('⚠️ [LIVE] Failed to end stream in backend: $e');
+      }
+    }
+    
+    _liveService.endLiveStream();
+    
+    // Restore SystemUI BEFORE navigation
+    _showSystemUI();
+    
+    // Show reason to user
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(reason),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.red[700],
+        ),
+      );
+    }
+    
+    // Wait a bit then navigate back
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      Navigator.of(context).pop('ended');
     }
   }
 
@@ -654,90 +827,222 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: ListenableBuilder(
-        listenable: _liveService,
-        builder: (context, child) {
-          final stream = _liveService.currentStream;
-          
-          if (stream == null) {
-                return _buildLoadingScreen();
-          }
+    return PopScope(
+      canPop: false, // Prevent default back button behavior
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (!didPop && !_isEnding) {
+          // Show confirmation dialog when back button pressed
+          _showExitConfirmationDialog();
+        }
+      },
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: ListenableBuilder(
+              listenable: _liveService,
+              builder: (context, child) {
+                final stream = _liveService.currentStream;
+                
+                if (stream == null) {
+                  return _buildLoadingScreen();
+                }
 
-          return Stack(
-            children: [
-                  // Camera Preview
-                  _buildCameraPreview(themeService),
-                  
-                  // Countdown overlay (shows during countdown)
-                  if (_isCountingDown && _isAgoraInitialized)
-                    _buildCountdownOverlay(themeService),
-                  
-                  // Show live UI only after countdown
-                  if (!_isCountingDown) ...[
-                    // Top gradient overlay
-                    _buildTopGradient(),
+                return Stack(
+                  children: [
+                    // Camera Preview
+                    _buildCameraPreview(themeService),
                     
-                    // Bottom gradient overlay
-                    _buildBottomGradient(),
+                    // Network warning banner
+                    if (!_hasNetworkConnection)
+                      _buildNetworkWarningBanner(),
                     
-                    // Tap to toggle controls (must be before buttons so buttons are on top)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: _toggleControls,
-                        child: Container(color: Colors.transparent),
+                    // Countdown overlay (shows during countdown)
+                    if (_isCountingDown && _isAgoraInitialized)
+                      _buildCountdownOverlay(themeService),
+                    
+                    // Show live UI only after countdown
+                    if (!_isCountingDown) ...[
+                      // Top gradient overlay
+                      _buildTopGradient(),
+                      
+                      // Bottom gradient overlay
+                      _buildBottomGradient(),
+                      
+                      // Tap to toggle controls (must be before buttons so buttons are on top)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: _toggleControls,
+                          child: Container(color: Colors.transparent),
+                        ),
                       ),
-                    ),
+                      
+                      // Live indicator with animation
+                      _buildLiveIndicator(),
+                      
+                      // Stream info
+                      _buildStreamInfo(stream, themeService),
+                      
+                      // Viewer count
+                      _buildViewerCount(stream),
+                      
+                      // Duration
+                      _buildDuration(stream),
+                      
+                      // Floating comments (always visible)
+                      _buildFloatingComments(),
+                      
+                      // Gift animations overlay
+                      ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
+                        gift: GiftAnimation(
+                          name: gift['name'],
+                          emoji: gift['emoji'],
+                          value: gift['value'],
+                          color: gift['color'],
+                          tier: gift['tier'],
+                          senderName: gift['senderName'] ?? 'Anonymous',
+                          combo: gift['combo'] ?? 1,
+                        ),
+                        onComplete: () {
+                          setState(() {
+                            _giftAnimations.remove(gift);
+                          });
+                        },
+                        key: ValueKey(gift['id']),
+                      )),
+                      
+                      // Modern action buttons (right side)
+                      if (_isControlsVisible) _buildModernActionButtons(themeService),
+                    ],
                     
-                    // Live indicator with animation
-                    _buildLiveIndicator(),
-                    
-                    // Stream info
-                    _buildStreamInfo(stream, themeService),
-                    
-                    // Viewer count
-                    _buildViewerCount(stream),
-                    
-                    // Duration
-                    _buildDuration(stream),
-                    
-                    // Floating comments (always visible)
-                    _buildFloatingComments(),
-                    
-                    // Gift animations overlay
-                    ..._giftAnimations.map((gift) => LiveGiftAnimationOverlay(
-                      gift: GiftAnimation(
-                        name: gift['name'],
-                        emoji: gift['emoji'],
-                        value: gift['value'],
-                        color: gift['color'],
-                        tier: gift['tier'],
-                        senderName: gift['senderName'] ?? 'Anonymous',
-                        combo: gift['combo'] ?? 1,
-                      ),
-                      onComplete: () {
-                        setState(() {
-                          _giftAnimations.remove(gift);
-                        });
-                      },
-                      key: ValueKey(gift['id']),
-                    )),
-                    
-                    // Modern action buttons (right side)
-                    if (_isControlsVisible) _buildModernActionButtons(themeService),
+                    // Ending overlay
+                    if (_isEnding) _buildEndingOverlay(),
                   ],
-                  
-                  // Ending overlay
-              if (_isEnding) _buildEndingOverlay(),
-            ],
+                );
+              },
+            ),
           );
         },
+      ),
+    );
+  }
+  
+  /// Show exit confirmation dialog when back button pressed
+  void _showExitConfirmationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'End Live Stream?',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
-        );
-      },
+        ),
+        content: const Text(
+          'Are you sure you want to exit and end this live stream?',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              debugPrint('🛑 [LIVE] User cancelled exit');
+              Navigator.of(context).pop(); // Close dialog, stay on stream
+            },
+            child: const Text(
+              'No, Continue Streaming',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              debugPrint('🛑 [LIVE] User confirmed exit');
+              Navigator.of(context).pop(); // Close dialog
+              _confirmEndStream(); // End stream and exit
+            },
+            child: const Text(
+              'Yes, End Stream',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// Build network warning banner
+  Widget _buildNetworkWarningBanner() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.red[700],
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.signal_wifi_off,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'No Internet Connection',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Stream will end in ${_networkLossTimeoutSeconds}s if not restored',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

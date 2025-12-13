@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/auth/auth_repository.dart';
 import '../../../core/services/api_service.dart';
@@ -178,6 +179,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     print('');
     
     try {
+      // End any active live streams before logout
+      try {
+        final userData = await repository.getSavedUserData();
+        if (userData != null) {
+          final astrologerId = userData.id;
+          if (astrologerId.isNotEmpty) {
+            print('📺 [AUTH_BLOC] Ending active streams for astrologer: $astrologerId');
+            // Call cleanup endpoint to end all active streams
+            await _apiService.post('/api/live/cleanup/$astrologerId');
+            print('✅ [AUTH_BLOC] Active streams ended');
+          }
+        }
+      } catch (e) {
+        print('⚠️ [AUTH_BLOC] Failed to end active streams on logout: $e');
+        // Continue with logout even if this fails
+      }
+      
       await repository.clearAuthData();
       add(InitializeAuthEvent());
       

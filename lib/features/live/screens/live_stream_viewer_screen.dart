@@ -73,6 +73,8 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   int? _remoteBroadcasterUid;
   Timer? _commentSimulationTimer;
   Timer? _giftSimulationTimer;
+  Timer? _reconnectTimer; // Timer for reconnection attempts
+  bool _isReconnecting = false; // Show reconnecting UI
   final List<Map<String, String>> _floatingComments = []; // Only last 4 for floating display
   final List<Map<String, String>> _allComments = []; // All comments for bottom sheet
   final Random _random = Random();
@@ -219,8 +221,20 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
           setState(() {
             _remoteBroadcasterUid = null;
             _isStreamActive = false;
+            _isReconnecting = true; // Show reconnecting state
           });
-          _showStreamEndedDialog();
+          
+          // Wait 5 seconds before showing "ended" dialog
+          // Give broadcaster time to reconnect
+          _reconnectTimer?.cancel();
+          _reconnectTimer = Timer(const Duration(seconds: 5), () {
+            if (mounted && !_isStreamActive) {
+              setState(() {
+                _isReconnecting = false;
+              });
+              _showStreamEndedDialog();
+            }
+          });
         }
       };
       
@@ -242,7 +256,11 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
             _isAgoraConnected = true;
             _isAgoraLoading = false;
             _isStreamActive = true;
+            _isReconnecting = false; // Cancel reconnecting state
           });
+          
+          // Cancel reconnect timer if broadcaster came back
+          _reconnectTimer?.cancel();
         }
       };
       
@@ -333,6 +351,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _commentSimulationTimer?.cancel();
     _giftSimulationTimer?.cancel();
     _comboResetTimer?.cancel();
+    _reconnectTimer?.cancel(); // Cancel reconnect timer
     
     // Leave Agora channel
     _agoraService.leaveChannel();
@@ -1077,7 +1096,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
           ),
           
           // Stream status overlay
-          if (!_isStreamActive)
+          if (!_isStreamActive && !_isReconnecting)
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
@@ -1093,6 +1112,39 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          
+          // Reconnecting overlay
+          if (_isReconnecting)
+            Container(
+              color: Colors.black.withOpacity(0.8),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Reconnecting...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Stream will resume shortly',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
                     ),
                   ],
