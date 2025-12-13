@@ -1762,7 +1762,12 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     HapticFeedback.selectionClick();
     
     // Get comments from BLoC if not provided
-    final commentsToShow = comments ?? [];
+    List<LiveCommentModel> commentsToShow = comments ?? [];
+    
+    // If no comments passed, get from BLoC state
+    if (commentsToShow.isEmpty && _commentBloc.state is LiveCommentLoaded) {
+      commentsToShow = (_commentBloc.state as LiveCommentLoaded).allComments;
+    }
     
     LiveCommentsBottomSheet.show(
       context,
