@@ -115,6 +115,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     if (_cameraController != null && _isCameraInitialized) {
       _stopAudioStream();
       _cameraController?.dispose();
+      _cameraController = null; // Clear reference to prevent stale state
       setState(() {
         _isCameraInitialized = false;
         _isLoadingCamera = false;
@@ -186,22 +187,22 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _cameraController;
-    
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      return;
-    }
-
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       // Pause camera and stop audio when app goes to background
-      _stopAudioStream();
-      cameraController.dispose();
-      setState(() {
-        _isCameraInitialized = false;
-      });
+      if (_cameraController != null && _isCameraInitialized) {
+        _stopAudioStream();
+        _cameraController?.dispose();
+        _cameraController = null; // Clear reference to prevent stale state
+        setState(() {
+          _isCameraInitialized = false;
+        });
+      }
     } else if (state == AppLifecycleState.resumed) {
-      // Resume camera (and audio) when app comes back to foreground
-      _initializeCamera();
+      // Resume camera ONLY if this page is visible
+      // Prevents camera from starting when user is on dashboard
+      if (widget.isVisible && !_isCameraInitialized && !_isCameraMuted) {
+        _initializeCamera();
+      }
     }
   }
 
