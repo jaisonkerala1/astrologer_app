@@ -77,6 +77,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   // Real-time viewer count from socket
   StreamSubscription<Map<String, dynamic>>? _viewerCountSubscription;
   StreamSubscription<Map<String, dynamic>>? _likesCountSubscription;
+  StreamSubscription<Map<String, dynamic>>? _giftSubscription;
   int _realViewerCount = 0;
   int _realLikesCount = 0;
   
@@ -108,7 +109,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _setupSystemUI();
     _joinLiveStream();
     _startCommentSimulation();
-    _startGiftSimulation();
+    // Gift simulation removed - using real-time socket gifts now
     _initializeLeaderboard();
     _connectSocket();
   }
@@ -189,6 +190,14 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         if (mounted && data['streamId'] == widget.liveStream.id) {
           debugPrint('🛑 [VIEWER] Stream ended via socket');
           _showStreamEndedDialog();
+        }
+      });
+      
+      // Listen for real-time gifts from other viewers
+      _giftSubscription = _socketService.liveGiftStream.listen((data) {
+        if (mounted && data['streamId'] == widget.liveStream.id) {
+          debugPrint('🎁 [VIEWER] Received gift: $data');
+          _handleReceivedGift(data);
         }
       });
       
@@ -455,6 +464,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _reconnectTimer?.cancel(); // Cancel reconnect timer
     _viewerCountSubscription?.cancel(); // Cancel socket subscription
     _likesCountSubscription?.cancel(); // Cancel likes socket subscription
+    _giftSubscription?.cancel(); // Cancel gift socket subscription
     _commentBloc.close(); // Close comment BLoC
     
     // Leave socket room
@@ -660,12 +670,69 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       }
     });
     
-    // Send to backend
-    try {
-      // TODO: Implement actual gift sending
-    } catch (e) {
-      // Silently fail
-    }
+    // Send to backend via socket
+    _socketService.sendLiveGift(
+      streamId: widget.liveStream.id,
+      giftType: name,
+      giftValue: value,
+    );
+    
+    debugPrint('🎁 [VIEWER] Sent gift: $name (₹$value)');
+  }
+  
+  /// Handle gift received from socket (other viewers sending gifts)
+  void _handleReceivedGift(Map<String, dynamic> data) {
+    final senderName = data['senderName'] ?? 'Someone';
+    final giftType = data['giftType'] ?? 'Gift';
+    final int giftValue = (data['giftValue'] ?? 0) as int;
+    
+    // Get gift emoji and color from type
+    final giftInfo = _getGiftInfo(giftType);
+    
+    // Create gift animation
+    final animation = GiftAnimation(
+      name: giftType,
+      emoji: giftInfo['emoji']!,
+      value: giftValue,
+      color: Color(int.parse(giftInfo['color']!)),
+      tier: GiftAnimation.getTierFromValue(giftValue),
+      senderName: senderName,
+      combo: 1,
+    );
+    
+    setState(() {
+      // Add gift animation
+      _giftAnimations.add(animation);
+      
+      // Update gift total
+      _giftsTotal += giftValue;
+    });
+    
+    // Remove animation after completion
+    Future.delayed(Duration(milliseconds: animation.getDuration()), () {
+      if (mounted) {
+        setState(() {
+          _giftAnimations.remove(animation);
+        });
+      }
+    });
+    
+    debugPrint('🎁 [VIEWER] Displayed gift from $senderName: $giftType (₹$giftValue)');
+  }
+  
+  /// Get gift info (emoji and color) from gift type
+  Map<String, String> _getGiftInfo(String giftType) {
+    final giftMap = {
+      'Rose': {'emoji': '🌹', 'color': '0xFFFF4458'},
+      'Star': {'emoji': '⭐', 'color': '0xFFFFD700'},
+      'Heart': {'emoji': '💖', 'color': '0xFFFF1493'},
+      'Crown': {'emoji': '👑', 'color': '0xFFFFC107'},
+      'Diamond': {'emoji': '💎', 'color': '0xFF00BFFF'},
+      'Rainbow': {'emoji': '🌈', 'color': '0xFF9D4EDD'},
+      'Gift Box': {'emoji': '🎁', 'color': '0xFFE91E63'},
+    };
+    
+    return giftMap[giftType] ?? {'emoji': '🎁', 'color': '0xFFE91E63'};
   }
   
   String _formatGiftTotal(int total) {

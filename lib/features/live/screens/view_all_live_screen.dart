@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/services/socket_service.dart';
 import '../../clients/widgets/client_search_bar.dart';
 import '../bloc/live_feed_bloc.dart';
 import '../bloc/live_feed_event.dart';
@@ -25,17 +28,45 @@ class _ViewAllLiveScreenState extends State<ViewAllLiveScreen> {
   String? _selectedCategory;
   bool _isLoadingMore = false;
   String _searchQuery = '';
+  
+  // Socket subscriptions for real-time updates
+  late final SocketService _socketService;
+  StreamSubscription<Map<String, dynamic>>? _streamStartedSub;
+  StreamSubscription<Map<String, dynamic>>? _streamEndedSub;
 
   @override
   void initState() {
     super.initState();
+    _socketService = getIt<SocketService>();
     _scrollController.addListener(_onScroll);
+    _setupSocketListeners();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _streamStartedSub?.cancel();
+    _streamEndedSub?.cancel();
     super.dispose();
+  }
+  
+  /// Setup real-time socket listeners
+  void _setupSocketListeners() {
+    // Listen for new streams
+    _streamStartedSub = _socketService.streamStartedStream.listen((data) {
+      debugPrint('🔴 [VIEW_ALL] New stream started: ${data['astrologerName']}');
+      // Refresh the list
+      context.read<LiveFeedBloc>().add(RefreshLiveFeedEvent(category: _selectedCategory));
+    });
+    
+    // Listen for ended streams
+    _streamEndedSub = _socketService.streamEndedStream.listen((data) {
+      debugPrint('⬛ [VIEW_ALL] Stream ended: ${data['streamId']}');
+      // Refresh the list
+      context.read<LiveFeedBloc>().add(RefreshLiveFeedEvent(category: _selectedCategory));
+    });
+    
+    debugPrint('📡 [VIEW_ALL] Real-time live stream listeners active');
   }
 
   bool _hasReachedEnd = false;

@@ -27,6 +27,9 @@ class LiveSocketEvents {
   static const String end = 'live:end';
   static const String viewerJoined = 'live:viewer_joined';
   static const String viewerLeft = 'live:viewer_left';
+  // Global events (broadcast to ALL connected users)
+  static const String streamStarted = 'live:stream_started';
+  static const String streamEnded = 'live:stream_ended';
 }
 
 /// Socket event types for chat
@@ -77,6 +80,9 @@ class SocketService {
   final _liveEndController = StreamController<Map<String, dynamic>>.broadcast();
   final _viewerJoinedController = StreamController<Map<String, dynamic>>.broadcast();
   final _viewerLeftController = StreamController<Map<String, dynamic>>.broadcast();
+  // Global stream events (for dashboard/list updates)
+  final _streamStartedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _streamEndedController = StreamController<Map<String, dynamic>>.broadcast();
 
   // Expose streams for BLoC subscription
   Stream<Map<String, dynamic>> get viewerCountStream => _viewerCountController.stream;
@@ -87,6 +93,9 @@ class SocketService {
   Stream<Map<String, dynamic>> get liveEndStream => _liveEndController.stream;
   Stream<Map<String, dynamic>> get viewerJoinedStream => _viewerJoinedController.stream;
   Stream<Map<String, dynamic>> get viewerLeftStream => _viewerLeftController.stream;
+  // Global stream events (for dashboard/list updates)
+  Stream<Map<String, dynamic>> get streamStartedStream => _streamStartedController.stream;
+  Stream<Map<String, dynamic>> get streamEndedStream => _streamEndedController.stream;
 
   // Chat event streams
   final _chatMessageController = StreamController<Map<String, dynamic>>.broadcast();
@@ -249,6 +258,17 @@ class SocketService {
     _socket!.on(LiveSocketEvents.viewerLeft, (data) {
       debugPrint('⬅️ [SOCKET] Viewer left: $data');
       _viewerLeftController.add(Map<String, dynamic>.from(data));
+    });
+
+    // Global stream events (for dashboard updates)
+    _socket!.on(LiveSocketEvents.streamStarted, (data) {
+      debugPrint('🔴 [SOCKET] New stream started: $data');
+      _streamStartedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(LiveSocketEvents.streamEnded, (data) {
+      debugPrint('⬛ [SOCKET] Stream ended: $data');
+      _streamEndedController.add(Map<String, dynamic>.from(data));
     });
 
     // Chat events
@@ -518,6 +538,8 @@ class SocketService {
     _liveEndController.close();
     _viewerJoinedController.close();
     _viewerLeftController.close();
+    _streamStartedController.close();
+    _streamEndedController.close();
     _chatMessageController.close();
     _chatTypingController.close();
     _chatReadController.close();

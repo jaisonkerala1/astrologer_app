@@ -18,6 +18,8 @@ let io;
 try {
   const { initSocketIO } = require('./socket');
   io = initSocketIO(httpServer);
+  // Make io accessible to routes via app.get('io')
+  app.set('io', io);
   console.log('✅ Socket.IO initialized');
 } catch (error) {
   console.error('❌ Failed to initialize Socket.IO:', error.message);

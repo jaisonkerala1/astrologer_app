@@ -110,6 +110,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   late final SocketService _socketService;
   StreamSubscription<Map<String, dynamic>>? _viewerCountSubscription;
   StreamSubscription<Map<String, dynamic>>? _likesCountSubscription;
+  StreamSubscription<Map<String, dynamic>>? _giftSubscription;
   int _realViewerCount = 0;
   int _realLikesCount = 0;
   
@@ -147,6 +148,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _connectivitySubscription?.cancel();
     _viewerCountSubscription?.cancel(); // Cancel socket subscription
     _likesCountSubscription?.cancel(); // Cancel likes socket subscription
+    _giftSubscription?.cancel(); // Cancel gift socket subscription
     _commentBloc.close(); // Close comment BLoC
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
@@ -250,6 +252,14 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
           });
         } else {
           debugPrint('👍 [LIVE] Ignoring - streamId mismatch or not mounted');
+        }
+      });
+      
+      // Listen for real-time gifts from viewers
+      _giftSubscription = _socketService.liveGiftStream.listen((data) {
+        debugPrint('🎁 [LIVE] Received gift: $data');
+        if (mounted && data['streamId'] == _currentStreamId) {
+          _handleReceivedGift(data);
         }
       });
       
@@ -728,32 +738,26 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       _commentsCount = _floatingComments.length;
     });
     
-    // Simulate receiving gifts
-    Timer.periodic(const Duration(seconds: 8), (timer) {
-      if (!mounted || _isEnding) {
-        timer.cancel();
-        return;
-      }
-      _receiveGift();
-    });
+    // Gifts are received via socket in real-time (no simulation needed)
+    debugPrint('🎁 [LIVE] Gift receiving enabled via socket');
   }
   
-  void _receiveGift() {
-    final giftNames = ['Rose', 'Heart', 'Star', 'Diamond', 'Crown', 'Gift Box'];
-    final giftEmojis = ['🌹', '💖', '⭐', '💎', '👑', '🎁'];
-    final giftValues = [10, 50, 100, 500, 1000, 2000];
-    final senderNames = ['Priya', 'Rahul', 'Anjali', 'Vikram', 'Neha', 'Amit', 'Kavita', 'Sanjay'];
+  /// Handle gift received from socket (real-time from viewers)
+  void _handleReceivedGift(Map<String, dynamic> data) {
+    final senderName = data['senderName'] ?? 'Someone';
+    final giftType = data['giftType'] ?? 'Gift';
+    final int giftValue = (data['giftValue'] ?? 0) as int;
     
-    final index = _random.nextInt(giftNames.length);
-    final senderIndex = _random.nextInt(senderNames.length);
+    // Get gift emoji and color from type
+    final giftInfo = _getGiftInfo(giftType);
     
     setState(() {
       // Add to gift notifications (for bottom sheet)
       _giftNotifications.add({
-        'sender': senderNames[senderIndex],
-        'gift': giftNames[index],
-        'emoji': giftEmojis[index],
-        'value': giftValues[index],
+        'sender': senderName,
+        'gift': giftType,
+        'emoji': giftInfo['emoji'],
+        'value': giftValue,
         'timestamp': DateTime.now(),
         'id': '${DateTime.now().millisecondsSinceEpoch}',
       });
@@ -763,17 +767,60 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
         _floatingComments.removeAt(0);
       }
       _floatingComments.add({
-        'user': senderNames[senderIndex],
-        'message': '${giftEmojis[index]} sent ${giftNames[index]}',
-        'emoji': giftEmojis[index],
-        'isGift': 'true',  // Mark as gift
-        'value': '₹${giftValues[index]}',
+        'user': senderName,
+        'message': '${giftInfo['emoji']} sent $giftType',
+        'emoji': giftInfo['emoji']!,
+        'isGift': 'true',
+        'value': '₹$giftValue',
       });
       
       // Update total
-      _giftsTotal += giftValues[index];
+      _giftsTotal += giftValue;
       _commentsCount++; // Count gift as interaction
+      
+      // Add gift animation
+      _giftAnimations.add({
+        'id': '${DateTime.now().millisecondsSinceEpoch}',
+        'name': giftType,
+        'emoji': giftInfo['emoji'],
+        'value': giftValue,
+        'color': giftInfo['color'], // Now a Color object
+        'tier': _getGiftTier(giftValue), // Now a GiftTier enum
+        'senderName': senderName,
+        'combo': 1,
+      });
     });
+    
+    // Remove animation after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _giftAnimations.isNotEmpty) {
+        setState(() {
+          _giftAnimations.removeAt(0);
+        });
+      }
+    });
+    
+    debugPrint('🎁 [LIVE] Received gift from $senderName: $giftType (₹$giftValue)');
+  }
+  
+  /// Get gift info (emoji and Color) from gift type
+  Map<String, dynamic> _getGiftInfo(String giftType) {
+    final Map<String, Map<String, dynamic>> giftMap = {
+      'Rose': {'emoji': '🌹', 'color': const Color(0xFFFF4458)},
+      'Star': {'emoji': '⭐', 'color': const Color(0xFFFFD700)},
+      'Heart': {'emoji': '💖', 'color': const Color(0xFFFF1493)},
+      'Crown': {'emoji': '👑', 'color': const Color(0xFFFFC107)},
+      'Diamond': {'emoji': '💎', 'color': const Color(0xFF00BFFF)},
+      'Rainbow': {'emoji': '🌈', 'color': const Color(0xFF9D4EDD)},
+      'Gift Box': {'emoji': '🎁', 'color': const Color(0xFFE91E63)},
+    };
+    
+    return giftMap[giftType] ?? {'emoji': '🎁', 'color': const Color(0xFFE91E63)};
+  }
+  
+  /// Get gift tier from value - uses GiftAnimation's built-in method
+  GiftTier _getGiftTier(int value) {
+    return GiftAnimation.getTierFromValue(value);
   }
 
   void _toggleControls() {

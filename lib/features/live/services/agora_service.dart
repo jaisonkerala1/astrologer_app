@@ -243,7 +243,18 @@ class AgoraService extends ChangeNotifier {
     try {
       debugPrint('🎥 [AGORA] Starting broadcast on channel: $channelName');
       
+      // Reset video/audio state for fresh broadcast
+      _isVideoEnabled = true;
+      _isAudioEnabled = true;
+      
       await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+      
+      // Ensure video and audio are enabled (not muted from previous session)
+      await _engine!.enableVideo();
+      await _engine!.enableAudio();
+      await _engine!.muteLocalVideoStream(false);
+      await _engine!.muteLocalAudioStream(false);
+      
       await _engine!.startPreview();
       
       await _engine!.joinChannel(

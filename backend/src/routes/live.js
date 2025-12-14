@@ -5,6 +5,7 @@ const LiveStream = require('../models/LiveStream');
 const LiveComment = require('../models/LiveComment');
 const Astrologer = require('../models/Astrologer');
 const auth = require('../middleware/auth');
+const EVENTS = require('../socket/events');
 
 // Rate limiters for sensitive endpoints
 const heartbeatLimiter = rateLimit({
@@ -282,6 +283,21 @@ router.post('/start', auth, async (req, res) => {
 
     console.log(`🔴 Live stream started: ${channelName} by ${astrologer.name}`);
 
+    // Broadcast to ALL connected users that a new stream started
+    const io = req.app.get('io');
+    if (io) {
+      io.emit(EVENTS.LIVE.STREAM_STARTED, {
+        streamId: liveStream._id.toString(),
+        astrologerId: astrologerId,
+        astrologerName: astrologer.name,
+        astrologerProfilePicture: astrologer.profilePicture,
+        title: liveStream.title,
+        category: liveStream.category,
+        timestamp: Date.now(),
+      });
+      console.log(`📢 [LIVE] Broadcast stream_started to all users`);
+    }
+
     res.json({
       success: true,
       data: {
@@ -327,6 +343,18 @@ router.post('/:streamId/end', auth, async (req, res) => {
     await liveStream.save();
 
     console.log(`⬛ Live stream ended: ${liveStream.agoraChannelName}`);
+
+    // Broadcast to ALL connected users that stream ended
+    const io = req.app.get('io');
+    if (io) {
+      io.emit(EVENTS.LIVE.STREAM_ENDED, {
+        streamId: streamId,
+        astrologerId: astrologerId,
+        astrologerName: liveStream.astrologerName,
+        timestamp: Date.now(),
+      });
+      console.log(`📢 [LIVE] Broadcast stream_ended to all users`);
+    }
 
     res.json({
       success: true,
