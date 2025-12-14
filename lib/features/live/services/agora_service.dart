@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -37,6 +38,10 @@ class AgoraService extends ChangeNotifier {
   bool _isAudioEnabled = true;
   bool _isFrontCamera = true;
   
+  // Local video state tracking
+  LocalVideoStreamState _localVideoState = LocalVideoStreamState.localVideoStreamStateStopped;
+  bool _isLocalVideoPublishing = false;
+  
   // Callbacks
   Function(String message)? onError;
   Function(int uid)? onUserJoined;
@@ -44,6 +49,7 @@ class AgoraService extends ChangeNotifier {
   Function()? onJoinChannelSuccess;
   Function()? onLeaveChannel;
   Function(int uid)? onFirstRemoteVideoFrame;
+  Function(LocalVideoStreamState state, LocalVideoStreamReason reason)? onLocalVideoStateChanged;
   
   // ============================================
   // GETTERS
@@ -60,15 +66,26 @@ class AgoraService extends ChangeNotifier {
   bool get isFrontCamera => _isFrontCamera;
   Set<int> get remoteUsers => _remoteUsers;
   int? get broadcasterUid => _broadcasterUid;
+  LocalVideoStreamState get localVideoState => _localVideoState;
+  bool get isLocalVideoPublishing => _isLocalVideoPublishing;
   
   // ============================================
   // INITIALIZATION
   // ============================================
   
   Future<bool> initialize({bool forBroadcasting = true}) async {
+    // Health Check: If already initialized, verify engine is healthy
     if (_isInitialized && _engine != null) {
-      debugPrint('🎥 [AGORA] Already initialized');
-      return true;
+      try {
+        // Test if engine is actually responsive
+        await _engine!.getConnectionState();
+        debugPrint('🎥 [AGORA] Engine healthy, reusing');
+        return true;
+      } catch (e) {
+        // Engine is broken, need to reinitialize
+        debugPrint('⚠️ [AGORA] Engine unhealthy ($e), reinitializing...');
+        await disposeEngine();
+      }
     }
     
     try {
@@ -124,6 +141,7 @@ class AgoraService extends ChangeNotifier {
           _currentChannel = null;
           _remoteUsers.clear();
           _broadcasterUid = null;
+          _isLocalVideoPublishing = false;
           notifyListeners();
           onLeaveChannel?.call();
         },
@@ -132,6 +150,27 @@ class AgoraService extends ChangeNotifier {
           _broadcasterUid = remoteUid;
           notifyListeners();
           onFirstRemoteVideoFrame?.call(remoteUid);
+        },
+        // Camera State Verification - Track local video state
+        onLocalVideoStateChanged: (VideoSourceType source, LocalVideoStreamState state, LocalVideoStreamReason reason) {
+          debugPrint('📹 [AGORA] Local video state: $state, reason: $reason, source: $source');
+          _localVideoState = state;
+          
+          // Track if video is actually publishing
+          if (state == LocalVideoStreamState.localVideoStreamStateCapturing ||
+              state == LocalVideoStreamState.localVideoStreamStateEncoding) {
+            _isLocalVideoPublishing = true;
+            debugPrint('✅ [AGORA] Local video is publishing');
+          } else if (state == LocalVideoStreamState.localVideoStreamStateFailed) {
+            _isLocalVideoPublishing = false;
+            debugPrint('❌ [AGORA] Local video FAILED: $reason');
+            onError?.call('Camera failed: $reason');
+          } else if (state == LocalVideoStreamState.localVideoStreamStateStopped) {
+            _isLocalVideoPublishing = false;
+          }
+          
+          notifyListeners();
+          onLocalVideoStateChanged?.call(state, reason);
         },
         onError: (ErrorCodeType err, String msg) {
           debugPrint('❌ [AGORA] Error: $err - $msg');
@@ -229,59 +268,117 @@ class AgoraService extends ChangeNotifier {
     required String channelName,
     required String token,
     int uid = 0,
+    int maxRetries = 2,
   }) async {
-    if (!_isInitialized || _engine == null) {
-      final initialized = await initialize(forBroadcasting: true);
-      if (!initialized) return false;
-    }
+    debugPrint('🎥 [AGORA] Starting broadcast on channel: $channelName');
     
+    // Force Dispose Before New Stream - Always ensure clean state
     if (_isJoined) {
-      debugPrint('⚠️ [AGORA] Already in a channel');
-      return true;
+      debugPrint('⚠️ [AGORA] Already in a channel, leaving first...');
+      await leaveChannel();
+      await Future.delayed(const Duration(milliseconds: 300));
     }
     
-    try {
-      debugPrint('🎥 [AGORA] Starting broadcast on channel: $channelName');
-      
-      // Reset video/audio state for fresh broadcast
-      _isVideoEnabled = true;
-      _isAudioEnabled = true;
-      
-      await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-      
-      // Ensure video and audio are enabled (not muted from previous session)
-      await _engine!.enableVideo();
-      await _engine!.enableAudio();
-      await _engine!.muteLocalVideoStream(false);
-      await _engine!.muteLocalAudioStream(false);
-      
-      await _engine!.startPreview();
-      
-      await _engine!.joinChannel(
-        token: token,
-        channelId: channelName,
-        uid: uid,
-        options: const ChannelMediaOptions(
-          clientRoleType: ClientRoleType.clientRoleBroadcaster,
-          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
-          publishCameraTrack: true,
-          publishMicrophoneTrack: true,
-          autoSubscribeVideo: true,
-          autoSubscribeAudio: true,
-        ),
-      );
-      
-      _isBroadcaster = true;
-      _currentChannel = channelName;
-      debugPrint('✅ [AGORA] Broadcast started');
-      notifyListeners();
-      return true;
-      
-    } catch (e) {
-      debugPrint('❌ [AGORA] Failed to start broadcasting: $e');
-      onError?.call('Failed to start broadcast: $e');
-      return false;
+    // Force reinitialize to ensure fresh camera/engine state
+    if (_isInitialized) {
+      debugPrint('🔄 [AGORA] Force disposing engine for fresh start...');
+      await disposeEngine();
+      await Future.delayed(const Duration(milliseconds: 300));
     }
+    
+    // Initialize fresh
+    final initialized = await initialize(forBroadcasting: true);
+    if (!initialized) return false;
+    
+    // Attempt broadcast with retry logic
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          debugPrint('🔄 [AGORA] Retry attempt $attempt of $maxRetries');
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+        
+        // Reset video/audio state
+        _isVideoEnabled = true;
+        _isAudioEnabled = true;
+        _isLocalVideoPublishing = false;
+        _localVideoState = LocalVideoStreamState.localVideoStreamStateStopped;
+        
+        await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+        
+        // Ensure video and audio are enabled
+        await _engine!.enableVideo();
+        await _engine!.enableAudio();
+        await _engine!.muteLocalVideoStream(false);
+        await _engine!.muteLocalAudioStream(false);
+        
+        // Start preview first
+        await _engine!.startPreview();
+        
+        // Wait for camera to be ready
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Check if local video failed
+        if (_localVideoState == LocalVideoStreamState.localVideoStreamStateFailed) {
+          debugPrint('❌ [AGORA] Camera failed to start, retrying...');
+          if (attempt < maxRetries) continue;
+          onError?.call('Camera failed to start. Please check permissions.');
+          return false;
+        }
+        
+        // Join channel
+        await _engine!.joinChannel(
+          token: token,
+          channelId: channelName,
+          uid: uid,
+          options: const ChannelMediaOptions(
+            clientRoleType: ClientRoleType.clientRoleBroadcaster,
+            channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+            publishCameraTrack: true,
+            publishMicrophoneTrack: true,
+            autoSubscribeVideo: true,
+            autoSubscribeAudio: true,
+          ),
+        );
+        
+        // Wait and verify video is publishing
+        await Future.delayed(const Duration(milliseconds: 800));
+        
+        if (!_isLocalVideoPublishing && 
+            _localVideoState != LocalVideoStreamState.localVideoStreamStateCapturing &&
+            _localVideoState != LocalVideoStreamState.localVideoStreamStateEncoding) {
+          debugPrint('⚠️ [AGORA] Video not publishing, state: $_localVideoState');
+          
+          // One more attempt to enable video
+          await _engine!.enableLocalVideo(true);
+          await _engine!.muteLocalVideoStream(false);
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          if (_localVideoState == LocalVideoStreamState.localVideoStreamStateFailed) {
+            debugPrint('❌ [AGORA] Video failed after retry');
+            if (attempt < maxRetries) {
+              await leaveChannel();
+              continue;
+            }
+          }
+        }
+        
+        _isBroadcaster = true;
+        _currentChannel = channelName;
+        debugPrint('✅ [AGORA] Broadcast started successfully');
+        notifyListeners();
+        return true;
+        
+      } catch (e) {
+        debugPrint('❌ [AGORA] Failed to start broadcasting (attempt $attempt): $e');
+        if (attempt >= maxRetries) {
+          onError?.call('Failed to start broadcast: $e');
+          return false;
+        }
+      }
+    }
+    
+    return false;
   }
   
   // ============================================
@@ -360,6 +457,7 @@ class AgoraService extends ChangeNotifier {
       _currentChannel = null;
       _remoteUsers.clear();
       _broadcasterUid = null;
+      _isLocalVideoPublishing = false;
       
       debugPrint('✅ [AGORA] Left channel');
       notifyListeners();
@@ -413,6 +511,9 @@ class AgoraService extends ChangeNotifier {
     }
     
     if (_engine != null) {
+      try {
+        await _engine!.stopPreview();
+      } catch (_) {}
       await _engine!.release();
       _engine = null;
     }
@@ -424,6 +525,10 @@ class AgoraService extends ChangeNotifier {
     _localUid = null;
     _remoteUsers.clear();
     _broadcasterUid = null;
+    _isLocalVideoPublishing = false;
+    _localVideoState = LocalVideoStreamState.localVideoStreamStateStopped;
+    _isVideoEnabled = true;
+    _isAudioEnabled = true;
     
     debugPrint('✅ [AGORA] Disposed');
   }

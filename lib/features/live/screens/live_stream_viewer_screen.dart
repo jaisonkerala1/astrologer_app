@@ -1039,19 +1039,19 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
                             ? commentState.allComments.length 
                             : 0;
                         return LiveActionStackWidget(
-                          liveStream: widget.liveStream,
+                      liveStream: widget.liveStream,
                           likesCount: _realLikesCount,  // Real-time unique likes count
-                          heartsCount: _heartsCount,  // Shows total heart reactions (Instagram/TikTok style)
+                      heartsCount: _heartsCount,  // Shows total heart reactions (Instagram/TikTok style)
                           commentsCount: realCommentCount,
-                          onProfileTap: () {
-                            // TODO: Navigate to astrologer profile
-                          },
-                          onLikeTap: _handleLike,
-                          onCommentsTap: _openExpandedComments,
-                          onShareTap: () {
-                            // TODO: Implement share
-                          },
-                          isLiked: _isLiked,
+                      onProfileTap: () {
+                        // TODO: Navigate to astrologer profile
+                      },
+                      onLikeTap: _handleLike,
+                      onCommentsTap: _openExpandedComments,
+                      onShareTap: () {
+                        // TODO: Implement share
+                      },
+                      isLiked: _isLiked,
                         );
                       },
                     ),

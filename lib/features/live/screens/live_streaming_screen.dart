@@ -233,7 +233,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       // Listen for viewer count updates
       _viewerCountSubscription = _socketService.viewerCountStream.listen((data) {
         if (mounted && data['streamId'] == _currentStreamId) {
-          setState(() {
+      setState(() {
             _realViewerCount = data['count'] ?? 0;
           });
           debugPrint('👥 [LIVE] Real-time viewer count: $_realViewerCount');
@@ -312,7 +312,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       final hasConnection = result != ConnectivityResult.none;
       
       if (hasConnection != _hasNetworkConnection) {
-      setState(() {
+    setState(() {
           _hasNetworkConnection = hasConnection;
         });
         
@@ -404,7 +404,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     
     debugPrint('🛑 [LIVE] Auto-ending stream: $reason');
     
-    setState(() {
+        setState(() {
       _isEnding = true;
     });
     
@@ -1029,7 +1029,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
                     // Network warning banner
                     if (!_hasNetworkConnection)
                       _buildNetworkWarningBanner(),
-                    
+                  
                   // Countdown overlay (shows during countdown)
                     if (_isCountingDown && _isAgoraInitialized)
                     _buildCountdownOverlay(themeService),
@@ -1692,10 +1692,10 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
             builder: (context, state) {
               final count = state is LiveCommentLoaded ? state.allComments.length : 0;
               return _buildActionButton(
-                icon: Icons.chat_bubble_outline,
+            icon: Icons.chat_bubble_outline,
                 label: _formatCount(count),
-                onTap: _openComments,
-                color: Colors.white,
+            onTap: _openComments,
+            color: Colors.white,
               );
             },
           ),
