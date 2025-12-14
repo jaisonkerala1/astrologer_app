@@ -45,6 +45,8 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   bool _isLoadingCamera = true;
   String? _cameraError;
   bool _isCameraMuted = false; // User manually turned off camera
+  bool _isCameraInitializing = false; // Track if init is in progress
+  int _initializationId = 0; // To cancel stale initializations
   
   // Audio
   StreamSubscription<List<int>>? _audioSubscription;
@@ -61,6 +63,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   bool _isPublic = true;
   bool _isHDQuality = true;
   bool _commentsEnabled = true;
+  
+  // Bottom sheet state
+  bool _isBottomSheetOpen = false;
 
   // Animation
   late AnimationController _shakeController;
@@ -112,15 +117,30 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   }
 
   void _pauseCamera() {
-    if (_cameraController != null && _isCameraInitialized) {
-      _stopAudioStream();
+    debugPrint('📷 [CAMERA] _pauseCamera called - initialized: $_isCameraInitialized, initializing: $_isCameraInitializing');
+    
+    // Increment ID to cancel any in-progress initialization
+    _initializationId++;
+    
+    // Stop audio stream regardless of camera state
+    _stopAudioStream();
+    
+    // Dispose camera if it exists (whether fully initialized or not)
+    if (_cameraController != null) {
       _cameraController?.dispose();
-      _cameraController = null; // Clear reference to prevent stale state
+      _cameraController = null;
+    }
+    
+    // Reset all camera state
+    if (mounted) {
       setState(() {
         _isCameraInitialized = false;
+        _isCameraInitializing = false;
         _isLoadingCamera = false;
       });
     }
+    
+    debugPrint('📷 [CAMERA] Camera paused and disposed');
   }
 
   void _startAudioStream() {
@@ -189,26 +209,26 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       // Pause camera and stop audio when app goes to background
-      if (_cameraController != null && _isCameraInitialized) {
-        _stopAudioStream();
-        _cameraController?.dispose();
-        _cameraController = null; // Clear reference to prevent stale state
-        setState(() {
-          _isCameraInitialized = false;
-        });
-      }
+      // This also cancels any in-progress initialization
+      _pauseCamera();
     } else if (state == AppLifecycleState.resumed) {
       // Resume camera ONLY if this page is visible
       // Prevents camera from starting when user is on dashboard
-      if (widget.isVisible && !_isCameraInitialized && !_isCameraMuted) {
+      if (widget.isVisible && !_isCameraInitialized && !_isCameraInitializing && !_isCameraMuted) {
         _initializeCamera();
       }
     }
   }
 
   Future<void> _initializeCamera() async {
+    // Capture current initialization ID to detect cancellation
+    final currentInitId = ++_initializationId;
+    
+    debugPrint('📷 [CAMERA] _initializeCamera started (id: $currentInitId)');
+    
     setState(() {
       _isLoadingCamera = true;
+      _isCameraInitializing = true;
       _cameraError = null;
     });
 
@@ -217,10 +237,17 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       final cameraStatus = await Permission.camera.request();
       final microphoneStatus = await Permission.microphone.request();
       
+      // Check if cancelled during permission request
+      if (currentInitId != _initializationId || !mounted) {
+        debugPrint('📷 [CAMERA] Init cancelled after permissions (id: $currentInitId)');
+        return;
+      }
+      
       if (!cameraStatus.isGranted || !microphoneStatus.isGranted) {
         setState(() {
           _cameraError = 'Camera and microphone permissions are required';
           _isLoadingCamera = false;
+          _isCameraInitializing = false;
         });
         return;
       }
@@ -228,10 +255,17 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       // Get available cameras
       _cameras = await availableCameras();
       
+      // Check if cancelled during camera enumeration
+      if (currentInitId != _initializationId || !mounted) {
+        debugPrint('📷 [CAMERA] Init cancelled after getting cameras (id: $currentInitId)');
+        return;
+      }
+      
       if (_cameras == null || _cameras!.isEmpty) {
         setState(() {
           _cameraError = 'No camera found on this device';
           _isLoadingCamera = false;
+          _isCameraInitializing = false;
         });
         return;
       }
@@ -252,6 +286,15 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
       await _cameraController!.initialize();
       
+      // Check if cancelled during camera initialization
+      if (currentInitId != _initializationId || !mounted) {
+        debugPrint('📷 [CAMERA] Init cancelled after controller init (id: $currentInitId)');
+        // Dispose the controller we just initialized since it's no longer needed
+        _cameraController?.dispose();
+        _cameraController = null;
+        return;
+      }
+      
       // Start audio stream only if mic is not muted
       if (!_isMicMuted) {
         _startAudioStream();
@@ -260,16 +303,20 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       if (mounted) {
         setState(() {
           _isCameraInitialized = true;
+          _isCameraInitializing = false;
           _isLoadingCamera = false;
           _isFrontCamera = camera.lensDirection == CameraLensDirection.front;
           _isCameraMuted = false; // Reset muted flag on successful init
         });
+        debugPrint('📷 [CAMERA] Init completed successfully (id: $currentInitId)');
       }
     } catch (e) {
-      if (mounted) {
+      debugPrint('📷 [CAMERA] Init error: $e');
+      if (mounted && currentInitId == _initializationId) {
         setState(() {
           _cameraError = 'Failed to initialize camera: ${e.toString()}';
           _isLoadingCamera = false;
+          _isCameraInitializing = false;
         });
       }
     }
@@ -464,6 +511,17 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
                     children: [
                 // Layer 1: Camera Preview (Full Screen)
                 _buildCameraPreview(),
+                
+                // Layer 1.5: Blur overlay when bottom sheet is open (performance optimization)
+                if (_isBottomSheetOpen)
+                  Positioned.fill(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Container(
+                        color: Colors.black.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
                 
                 // Layer 2: Gradient Overlays
                 _buildGradientOverlays(),
@@ -1416,12 +1474,19 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   Future<void> _showTitleBottomSheet() async {
     HapticFeedback.lightImpact();
     
-    return showModalBottomSheet(
+    // Set bottom sheet state - triggers blur overlay
+    setState(() => _isBottomSheetOpen = true);
+    
+    // Small delay to let blur render before sheet animates
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       isDismissible: true,
       enableDrag: true,
+      useRootNavigator: true, // Better performance - uses root overlay
       builder: (context) => _TitleBottomSheet(
         controller: _titleController,
         selectedCategory: _selectedCategory,
@@ -1433,6 +1498,11 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
         },
       ),
     );
+    
+    // Remove blur overlay after bottom sheet closes
+    if (mounted) {
+      setState(() => _isBottomSheetOpen = false);
+    }
   }
 
   String _getCategoryDisplayName(LiveStreamCategory category) {
@@ -1477,15 +1547,19 @@ class _TitleBottomSheet extends StatefulWidget {
 
 class _TitleBottomSheetState extends State<_TitleBottomSheet> {
   late FocusNode _focusNode;
+  late LiveStreamCategory _localSelectedCategory; // Local state for immediate UI updates
   
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+    _localSelectedCategory = widget.selectedCategory; // Initialize from parent
     
-    // Auto-focus when sheet opens
+    // Auto-focus when sheet opens (delay to let sheet animation complete first)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _focusNode.requestFocus();
+      });
     });
   }
 
@@ -1493,6 +1567,14 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _selectCategory(LiveStreamCategory category) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _localSelectedCategory = category; // Update local state immediately
+    });
+    widget.onCategoryChanged(category); // Notify parent
   }
 
   void _handleDone() {
@@ -1648,51 +1730,53 @@ class _TitleBottomSheetState extends State<_TitleBottomSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: LiveStreamCategory.values.map((category) {
-                final isSelected = widget.selectedCategory == category;
+                final isSelected = _localSelectedCategory == category;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      widget.onCategoryChanged(category);
-                    },
-                    child: Container(
+                    onTap: () => _selectCategory(category),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOutCubic,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                        horizontal: 16,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withOpacity(0.15)
-                            : Colors.white.withOpacity(0.05),
+                            ? const Color(0xFF4A9FFF)
+                            : Colors.white.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.white.withOpacity(0.4)
-                              : Colors.white.withOpacity(0.1),
-                          width: 1,
+                              ? const Color(0xFF4A9FFF)
+                              : Colors.white.withOpacity(0.15),
+                          width: isSelected ? 2 : 1,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _getCategoryEmoji(category),
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
                             _getCategoryDisplayName(category),
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : Colors.white.withOpacity(0.8),
-                              fontSize: 13,
+                                  : Colors.white.withOpacity(0.7),
+                              fontSize: 14,
                               fontWeight: isSelected
-                                  ? FontWeight.w600
+                                  ? FontWeight.w700
                                   : FontWeight.w500,
                             ),
                           ),
+                          if (isSelected) ...[
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ],
                         ],
                       ),
               ),

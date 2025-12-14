@@ -1258,107 +1258,132 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Build Go Live button
+  // Build Go Live button - Premium glassmorphic design with pulsing indicator
   Widget _buildGoLiveButton() {
-    return Tooltip(
-      message: 'Go Live',
-      child: GestureDetector(
-        onTap: _goLive,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF4444), Color(0xFFCC0000)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF4444).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Broadcast icon
-              const Icon(
-                Icons.sensors,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              // LIVE text
-              const Text(
-                'LIVE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Tooltip(
+          message: 'Go Live',
+          child: GestureDetector(
+            onTap: _goLive,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                // Glassmorphic background
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.25),
+                  width: 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Pulsing live indicator dot
+                  _PulsingDot(),
+                  const SizedBox(width: 8),
+                  // LIVE text with modern typography
+                  const Text(
+                    'LIVE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  // Build header button
+  // Build header button - Premium glassmorphic design with rounded shape
   Widget _buildHeaderButton({
     required IconData icon,
     required VoidCallback onTap,
     required String tooltip,
     int? badge,
   }) {
+    final hasBadge = badge != null && badge > 0;
+    
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
+            // Glassmorphic background - rounded circle
+            color: Colors.white.withOpacity(0.15),
+            shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withOpacity(0.25),
               width: 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               Center(
                 child: Icon(
                   icon,
                   color: Colors.white,
-                  size: 20,
+                  size: 22,
                 ),
               ),
-              if (badge != null && badge > 0)
+              // Badge with original live button red color
+              if (hasBadge)
                 Positioned(
-                  right: 6,
-                  top: 6,
+                  right: -2,
+                  top: -2,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF4444), Color(0xFFCC0000)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF4444).withOpacity(0.4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
+                      minWidth: 18,
+                      minHeight: 18,
                     ),
                     child: Text(
-                      badge.toString(),
+                      badge! > 99 ? '99+' : badge.toString(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1755,6 +1780,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Pulsing dot indicator for the Live button
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.8).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _opacityAnimation = Tween<double>(begin: 0.6, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 14,
+      height: 14,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Pulsing ring
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFF4757).withOpacity(_opacityAnimation.value),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Static center dot
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF4757),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF4757).withOpacity(0.5),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

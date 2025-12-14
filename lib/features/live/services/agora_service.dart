@@ -396,13 +396,19 @@ class AgoraService extends ChangeNotifier {
     }
     
     if (_isJoined) {
-      debugPrint('⚠️ [AGORA] Already in a channel');
-      // Leave current channel first
-      await leaveChannel();
+      debugPrint('⚠️ [AGORA] Already in a channel, leaving first...');
+      await leaveAsViewer();
+      await Future.delayed(const Duration(milliseconds: 300));
     }
     
     try {
       debugPrint('👀 [AGORA] Joining as audience on channel: $channelName');
+      
+      // Ensure audio/video are enabled before joining
+      await _engine!.enableAudio();
+      await _engine!.enableVideo();
+      await _engine!.muteAllRemoteAudioStreams(false);
+      await _engine!.muteAllRemoteVideoStreams(false);
       
       // Set role to AUDIENCE
       await _engine!.setClientRole(role: ClientRoleType.clientRoleAudience);
@@ -441,17 +447,28 @@ class AgoraService extends ChangeNotifier {
   
   Future<void> leaveChannel() async {
     if (!_isJoined || _engine == null) {
+      debugPrint('🛑 [AGORA] leaveChannel: not joined or no engine');
       return;
     }
     
     try {
       debugPrint('🛑 [AGORA] Leaving channel...');
       
+      // Stop all audio/video FIRST before leaving (prevents lingering audio)
+      await _engine!.muteAllRemoteAudioStreams(true);
+      await _engine!.muteAllRemoteVideoStreams(true);
+      
+      // Stop local streams if broadcasting
       if (_isBroadcaster) {
         await _engine!.stopPreview();
+        await _engine!.muteLocalAudioStream(true);
+        await _engine!.muteLocalVideoStream(true);
       }
+      
+      // Leave the channel
       await _engine!.leaveChannel();
       
+      // Reset state
       _isBroadcaster = false;
       _isJoined = false;
       _currentChannel = null;
@@ -459,11 +476,54 @@ class AgoraService extends ChangeNotifier {
       _broadcasterUid = null;
       _isLocalVideoPublishing = false;
       
-      debugPrint('✅ [AGORA] Left channel');
+      debugPrint('✅ [AGORA] Left channel - audio/video stopped');
       notifyListeners();
       
     } catch (e) {
       debugPrint('❌ [AGORA] Failed to leave channel: $e');
+    }
+  }
+  
+  /// Leave channel as viewer - fully cleans up to stop all audio/video
+  Future<void> leaveAsViewer() async {
+    debugPrint('🛑 [AGORA] leaveAsViewer called, isJoined: $_isJoined');
+    
+    if (_engine == null) {
+      debugPrint('🛑 [AGORA] No engine to leave');
+      return;
+    }
+    
+    try {
+      // Mute ALL remote streams immediately to stop audio/video
+      await _engine!.muteAllRemoteAudioStreams(true);
+      await _engine!.muteAllRemoteVideoStreams(true);
+      
+      // Leave channel (this will trigger onLeaveChannel callback)
+      if (_isJoined) {
+        await _engine!.leaveChannel();
+        
+        // Wait for leave to complete
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+      
+      // Reset state
+      _isBroadcaster = false;
+      _isJoined = false;
+      _currentChannel = null;
+      _remoteUsers.clear();
+      _broadcasterUid = null;
+      
+      // Re-enable audio/video for next join (don't leave them disabled!)
+      await _engine!.enableAudio();
+      await _engine!.enableVideo();
+      await _engine!.muteAllRemoteAudioStreams(false);
+      await _engine!.muteAllRemoteVideoStreams(false);
+      
+      debugPrint('✅ [AGORA] Viewer left - streams stopped, engine ready for next join');
+      notifyListeners();
+      
+    } catch (e) {
+      debugPrint('❌ [AGORA] leaveAsViewer error: $e');
     }
   }
   

@@ -421,10 +421,13 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   }
   
   void _showStreamEndedDialog() {
+    // Stop audio immediately when stream ends
+    _agoraService.leaveAsViewer();
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.black.withOpacity(0.9),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
@@ -437,13 +440,14 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
+            onPressed: () async {
+              Navigator.of(dialogContext).pop(); // Close dialog
+              await _exitViewer(); // Clean up
               if (widget.onExit != null) {
                 widget.onExit!();
-              } else {
-                Navigator.of(context).pop();
-    }
+              } else if (context.mounted) {
+                Navigator.of(context).pop(); // Close viewer screen
+              }
             },
             child: const Text('OK', style: TextStyle(color: Colors.blue)),
           ),
@@ -470,14 +474,33 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     // Leave socket room
     _leaveSocketRoom();
     
-    // Leave Agora channel
-    _agoraService.leaveChannel();
+    // Leave Agora channel as viewer - stops all audio/video
+    _agoraService.leaveAsViewer();
     
     _liveStreamService.leaveLiveStream(widget.liveStream.id);
     // SystemUI is restored in PopScope before navigation to prevent flickering
     // Keeping this as a safety fallback
     _restoreSystemUI();
     super.dispose();
+  }
+  
+  /// Clean exit handler - ensures all streams are stopped before navigation
+  Future<void> _exitViewer() async {
+    debugPrint('🚪 [VIEWER] Exiting viewer screen...');
+    
+    // Leave socket room first
+    _leaveSocketRoom();
+    
+    // Stop Agora (this is critical to stop audio)
+    await _agoraService.leaveAsViewer();
+    
+    // Leave via API
+    _liveStreamService.leaveLiveStream(widget.liveStream.id);
+    
+    // Restore system UI
+    _restoreSystemUI();
+    
+    debugPrint('✅ [VIEWER] Cleanup complete');
   }
 
   void _restoreSystemUI() {
@@ -1100,8 +1123,8 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
         canPop: false,
         onPopInvokedWithResult: (bool didPop, dynamic result) async {
           if (!didPop) {
-            // Restore SystemUI BEFORE popping to prevent flickering
-            _restoreSystemUI();
+            // Clean up Agora BEFORE popping to stop audio immediately
+            await _exitViewer();
             await Future.delayed(const Duration(milliseconds: 100));
             if (context.mounted) {
               Navigator.of(context).pop();
@@ -1478,12 +1501,15 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
       top: MediaQuery.of(context).padding.top + 16,
       right: 16,
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           HapticFeedback.selectionClick();
+          
+          // Clean up Agora BEFORE navigation
+          await _exitViewer();
+          
           if (widget.onExit != null) {
             widget.onExit!(); // Use custom exit handler for feed
-          } else {
-            _restoreSystemUI();
+          } else if (context.mounted) {
             Navigator.pop(context); // Default behavior
           }
         },
