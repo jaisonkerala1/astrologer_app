@@ -28,11 +28,18 @@ try {
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
+// Rate limiting - Increased limits for mobile app usage
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Too many requests from this IP, please try again later.'
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 200, // 200 requests per minute (much more lenient for mobile apps)
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for certain paths that are called frequently
+  skip: (req) => {
+    const skipPaths = ['/api/live/active', '/health', '/api/dashboard/stats'];
+    return skipPaths.some(path => req.path.startsWith(path));
+  }
 });
 app.use(limiter);
 

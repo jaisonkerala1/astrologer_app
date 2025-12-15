@@ -176,9 +176,14 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     _audioUpdateTimer = null;
     _lastAudioLevel = 0.0;
     
-    // Reset audio level to 0
+    // Reset audio level to 0 - use try-catch since context may be unavailable during dispose
     if (mounted) {
-      context.read<LiveBloc>().add(const AudioLevelUpdatedEvent(0.0));
+      try {
+        context.read<LiveBloc>().add(const AudioLevelUpdatedEvent(0.0));
+      } catch (e) {
+        // Context may be unavailable during dispose or logout - this is expected
+        debugPrint('📷 [CAMERA] Could not reset audio level: $e');
+      }
     }
   }
 
