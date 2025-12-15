@@ -17,6 +17,7 @@ abstract class HealRepository {
   // Service Requests Management
   Future<List<ServiceRequest>> getServiceRequests({RequestStatus? status});
   Future<ServiceRequest> getServiceRequestById(String id);
+  Future<ServiceRequest> createServiceRequest(ServiceRequest request);
   Future<ServiceRequest> updateRequestStatus(String id, RequestStatus status);
   Future<ServiceRequest> addRequestNotes(String id, String notes);
   Future<void> cancelRequest(String id);

@@ -15,6 +15,7 @@ class HealBloc extends Bloc<HealEvent, HealState> {
     on<DeleteServiceEvent>(_onDeleteService);
     on<ToggleServiceStatusEvent>(_onToggleServiceStatus);
     on<LoadServiceRequestsEvent>(_onLoadServiceRequests);
+    on<CreateServiceRequestEvent>(_onCreateServiceRequest);
     on<UpdateRequestStatusEvent>(_onUpdateRequestStatus);
     on<AddRequestNotesEvent>(_onAddRequestNotes);
     on<CancelRequestEvent>(_onCancelRequest);
@@ -149,6 +150,35 @@ class HealBloc extends Bloc<HealEvent, HealState> {
       }
     } catch (e) {
       emit(HealErrorState(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onCreateServiceRequest(CreateServiceRequestEvent event, Emitter<HealState> emit) async {
+    print('📘 [HealBloc] Creating service request for: ${event.request.customerName}');
+    
+    final previousState = state is HealLoadedState ? state as HealLoadedState : null;
+    
+    if (previousState == null) {
+      print('⚠️ [HealBloc] Cannot create request - no loaded state');
+      return;
+    }
+    
+    try {
+      final newRequest = await repository.createServiceRequest(event.request);
+      
+      final updatedRequests = [newRequest, ...previousState.serviceRequests];
+      
+      print('✅ [HealBloc] Service request created: ${newRequest.id}');
+      
+      emit(previousState.copyWith(
+        serviceRequests: updatedRequests,
+        successMessage: 'Service request created successfully',
+      ));
+    } catch (e) {
+      print('❌ [HealBloc] Error creating service request: $e');
+      emit(previousState.copyWith(
+        errorMessage: 'Failed to create service request. Please try again.',
+      ));
     }
   }
 

@@ -80,15 +80,22 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   Future<List<ServiceModel>> getServices({String? category}) async {
     print('🔍 [HealRepo] Loading services, category: ${category ?? "all"}');
     try {
-      final astrologerId = await _getAstrologerId();
+      final queryParams = <String, dynamic>{};
+      if (category != null) queryParams['category'] = category;
+      
       final response = await apiService.get(
-        '/api/services/$astrologerId',
-        queryParameters: category != null ? {'category': category} : null,
+        '/api/services',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       if (response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        final services = data.map((json) => ServiceModel.fromJson(json)).toList();
+        final data = response.data['data'];
+        final List<dynamic> servicesList = data['services'] ?? data ?? [];
+        final services = servicesList.map((json) => ServiceModel.fromJson(_transformServiceJson(json))).toList();
+        
+        // Update local cache
+        _localServices.clear();
+        _localServices.addAll(services);
         
         // Save to persistent storage
         await _cacheServices(services);
@@ -121,16 +128,37 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       return allServices;
     }
   }
+  
+  /// Transform backend JSON to match frontend model
+  Map<String, dynamic> _transformServiceJson(Map<String, dynamic> json) {
+    return {
+      'id': json['id'] ?? json['_id']?.toString() ?? '',
+      'name': json['name'] ?? '',
+      'description': json['description'] ?? '',
+      'category': json['category'] ?? '',
+      'price': json['price'] ?? 0.0,
+      'duration': json['duration'] ?? '',
+      'requirements': json['requirements'] ?? '',
+      'benefits': json['benefits'] ?? [],
+      'isActive': json['isActive'] ?? true,
+      'imageUrl': json['imageUrl'] ?? '',
+      'createdAt': json['createdAt'] ?? DateTime.now().toIso8601String(),
+      'updatedAt': json['updatedAt'] ?? DateTime.now().toIso8601String(),
+    };
+  }
 
   @override
   Future<ServiceModel> getServiceById(String id) async {
     try {
-      final response = await apiService.get('/api/services/detail/$id');
+      final response = await apiService.get('/api/services/$id');
       if (response.data['success'] == true) {
-        return ServiceModel.fromJson(response.data['data']);
+        return ServiceModel.fromJson(_transformServiceJson(response.data['data']));
       }
       throw Exception('Failed to load service');
     } catch (e) {
+      // Try local cache
+      final localService = _localServices.where((s) => s.id == id).firstOrNull;
+      if (localService != null) return localService;
       throw Exception(handleError(e));
     }
   }
@@ -139,14 +167,15 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   Future<ServiceModel> createService(ServiceModel service) async {
     print('🔍 [HealRepo] Creating service: ${service.name}');
     try {
-      final astrologerId = await _getAstrologerId();
       final response = await apiService.post(
         '/api/services',
-        data: {...service.toJson(), 'astrologerId': astrologerId},
+        data: service.toJson(),
       );
       if (response.data['success'] == true) {
         print('✅ [HealRepo] Service created via API');
-        return ServiceModel.fromJson(response.data['data']);
+        final newService = ServiceModel.fromJson(_transformServiceJson(response.data['data']));
+        _localServices.insert(0, newService);
+        return newService;
       }
       throw Exception('Failed to create service');
     } catch (e) {
@@ -174,7 +203,11 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       final response = await apiService.put('/api/services/$id', data: service.toJson());
       if (response.data['success'] == true) {
         print('✅ [HealRepo] Service updated via API');
-        return ServiceModel.fromJson(response.data['data']);
+        final updatedService = ServiceModel.fromJson(_transformServiceJson(response.data['data']));
+        // Update local cache
+        final index = _localServices.indexWhere((s) => s.id == id);
+        if (index != -1) _localServices[index] = updatedService;
+        return updatedService;
       }
       throw Exception('Failed to update service');
     } catch (e) {
@@ -207,6 +240,8 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
         throw Exception('Failed to delete service');
       }
       print('✅ [HealRepo] Service deleted via API');
+      // Remove from local cache
+      _localServices.removeWhere((s) => s.id == id);
     } catch (e) {
       print('! [HealRepo] API not available, deleting service locally: ${handleError(e)}');
       
@@ -221,10 +256,14 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   Future<ServiceModel> toggleServiceStatus(String id, bool isActive) async {
     print('🔍 [HealRepo] Toggling service status: $id to $isActive');
     try {
-      final response = await apiService.patch('/api/services/$id/status', data: {'isActive': isActive});
+      final response = await apiService.patch('/api/services/$id/toggle');
       if (response.data['success'] == true) {
         print('✅ [HealRepo] Service status toggled via API');
-        return ServiceModel.fromJson(response.data['data']);
+        final updatedService = ServiceModel.fromJson(_transformServiceJson(response.data['data']));
+        // Update local cache
+        final index = _localServices.indexWhere((s) => s.id == id);
+        if (index != -1) _localServices[index] = updatedService;
+        return updatedService;
       }
       throw Exception('Failed to toggle service status');
     } catch (e) {
@@ -250,15 +289,22 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   Future<List<ServiceRequest>> getServiceRequests({RequestStatus? status}) async {
     print('🔍 [HealRepo] Loading service requests, status: ${status?.name ?? "all"}');
     try {
-      final astrologerId = await _getAstrologerId();
+      final queryParams = <String, dynamic>{};
+      if (status != null) queryParams['status'] = status.name;
+      
       final response = await apiService.get(
-        '/api/service-requests/$astrologerId',
-        queryParameters: status != null ? {'status': status.name} : null,
+        '/api/service-requests',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       if (response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        final requests = data.map((json) => ServiceRequest.fromJson(json)).toList();
+        final data = response.data['data'];
+        final List<dynamic> requestsList = data['requests'] ?? data ?? [];
+        final requests = requestsList.map((json) => ServiceRequest.fromJson(_transformRequestJson(json))).toList();
+        
+        // Update local cache
+        _localRequests.clear();
+        _localRequests.addAll(requests);
         
         // Save to persistent storage
         await _cacheRequests(requests);
@@ -303,17 +349,82 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       return allRequests;
     }
   }
+  
+  /// Transform backend JSON to match frontend model
+  Map<String, dynamic> _transformRequestJson(Map<String, dynamic> json) {
+    return {
+      'id': json['id'] ?? json['_id']?.toString() ?? '',
+      'customerName': json['customerName'] ?? '',
+      'customerPhone': json['customerPhone'] ?? '',
+      'serviceName': json['serviceName'] ?? '',
+      'serviceCategory': json['serviceCategory'] ?? '',
+      'requestedDate': json['requestedDate'] ?? DateTime.now().toIso8601String(),
+      'requestedTime': json['requestedTime'] ?? '',
+      'status': json['status'] ?? 'pending',
+      'price': json['price'] ?? 0.0,
+      'specialInstructions': json['specialInstructions'] ?? '',
+      'notes': json['notes'],
+      'createdAt': json['createdAt'] ?? DateTime.now().toIso8601String(),
+      'startedAt': json['startedAt'],
+      'completedAt': json['completedAt'],
+      'cancelledAt': json['cancelledAt'],
+    };
+  }
 
   @override
   Future<ServiceRequest> getServiceRequestById(String id) async {
     try {
-      final response = await apiService.get('/api/service-requests/detail/$id');
+      final response = await apiService.get('/api/service-requests/$id');
       if (response.data['success'] == true) {
-        return ServiceRequest.fromJson(response.data['data']);
+        return ServiceRequest.fromJson(_transformRequestJson(response.data['data']));
       }
       throw Exception('Failed to load service request');
     } catch (e) {
+      // Try local cache
+      final localRequest = _localRequests.where((r) => r.id == id).firstOrNull;
+      if (localRequest != null) return localRequest;
       throw Exception(handleError(e));
+    }
+  }
+  
+  @override
+  Future<ServiceRequest> createServiceRequest(ServiceRequest request) async {
+    print('🔍 [HealRepo] Creating service request for: ${request.customerName}');
+    try {
+      final response = await apiService.post(
+        '/api/service-requests',
+        data: {
+          'customerName': request.customerName,
+          'customerPhone': request.customerPhone,
+          'serviceName': request.serviceName,
+          'serviceCategory': request.serviceCategory,
+          'requestedDate': request.requestedDate.toIso8601String(),
+          'requestedTime': request.requestedTime,
+          'price': request.price,
+          'specialInstructions': request.specialInstructions,
+          'notes': request.notes,
+        },
+      );
+      if (response.data['success'] == true) {
+        print('✅ [HealRepo] Service request created via API');
+        final newRequest = ServiceRequest.fromJson(_transformRequestJson(response.data['data']));
+        _localRequests.insert(0, newRequest);
+        return newRequest;
+      }
+      throw Exception('Failed to create service request');
+    } catch (e) {
+      print('! [HealRepo] API not available, creating request locally: ${handleError(e)}');
+      
+      // Create request with unique ID and add to local storage
+      final newRequest = request.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        createdAt: DateTime.now(),
+      );
+      
+      _localRequests.insert(0, newRequest);
+      print('✅ [HealRepo] Service request created locally: ${newRequest.id}');
+      
+      return newRequest;
     }
   }
 
@@ -321,10 +432,17 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   Future<ServiceRequest> updateRequestStatus(String id, RequestStatus status) async {
     print('🔍 [HealRepo] Updating request status: $id to ${status.name}');
     try {
-      final response = await apiService.patch('/api/service-requests/$id/status', data: {'status': status.name});
+      final response = await apiService.put(
+        '/api/service-requests/$id/status',
+        data: {'status': status.name},
+      );
       if (response.data['success'] == true) {
         print('✅ [HealRepo] Request status updated via API');
-        return ServiceRequest.fromJson(response.data['data']);
+        final updatedRequest = ServiceRequest.fromJson(_transformRequestJson(response.data['data']));
+        // Update local cache
+        final index = _localRequests.indexWhere((r) => r.id == id);
+        if (index != -1) _localRequests[index] = updatedRequest;
+        return updatedRequest;
       }
       throw Exception('Failed to update request status');
     } catch (e) {
@@ -339,6 +457,8 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
           startedAt: status == RequestStatus.inProgress 
               ? (_localRequests[index].startedAt ?? DateTime.now())
               : _localRequests[index].startedAt,
+          completedAt: status == RequestStatus.completed ? DateTime.now() : _localRequests[index].completedAt,
+          cancelledAt: status == RequestStatus.cancelled ? DateTime.now() : _localRequests[index].cancelledAt,
         );
         _localRequests[index] = updatedRequest;
         print('✅ [HealRepo] Request status updated locally: $id → ${status.name}');
@@ -375,12 +495,26 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   @override
   Future<ServiceRequest> addRequestNotes(String id, String notes) async {
     try {
-      final response = await apiService.patch('/api/service-requests/$id/notes', data: {'notes': notes});
+      final response = await apiService.put(
+        '/api/service-requests/$id/notes',
+        data: {'notes': notes},
+      );
       if (response.data['success'] == true) {
-        return ServiceRequest.fromJson(response.data['data']);
+        final updatedRequest = ServiceRequest.fromJson(_transformRequestJson(response.data['data']));
+        // Update local cache
+        final index = _localRequests.indexWhere((r) => r.id == id);
+        if (index != -1) _localRequests[index] = updatedRequest;
+        return updatedRequest;
       }
       throw Exception('Failed to add notes');
     } catch (e) {
+      // Update locally
+      final index = _localRequests.indexWhere((r) => r.id == id);
+      if (index != -1) {
+        final updatedRequest = _localRequests[index].copyWith(notes: notes);
+        _localRequests[index] = updatedRequest;
+        return updatedRequest;
+      }
       throw Exception(handleError(e));
     }
   }
@@ -388,26 +522,44 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
   @override
   Future<void> cancelRequest(String id) async {
     try {
-      final response = await apiService.patch('/api/service-requests/$id/cancel');
+      final response = await apiService.delete('/api/service-requests/$id');
       if (response.data['success'] != true) {
         throw Exception('Failed to cancel request');
       }
+      // Remove from local cache
+      _localRequests.removeWhere((r) => r.id == id);
     } catch (e) {
-      throw Exception(handleError(e));
+      // Remove locally
+      _localRequests.removeWhere((r) => r.id == id);
     }
   }
 
   @override
   Future<Map<String, dynamic>> getServiceStatistics() async {
     try {
-      final astrologerId = await _getAstrologerId();
-      final response = await apiService.get('/api/services/$astrologerId/statistics');
+      final response = await apiService.get('/api/service-requests/stats/summary');
       if (response.data['success'] == true) {
         return response.data['data'];
       }
       throw Exception('Failed to load statistics');
     } catch (e) {
-      throw Exception(handleError(e));
+      // Return local statistics
+      final stats = {
+        'statusBreakdown': {
+          'pending': _localRequests.where((r) => r.status == RequestStatus.pending).length,
+          'confirmed': _localRequests.where((r) => r.status == RequestStatus.confirmed).length,
+          'inProgress': _localRequests.where((r) => r.status == RequestStatus.inProgress).length,
+          'completed': _localRequests.where((r) => r.status == RequestStatus.completed).length,
+          'cancelled': _localRequests.where((r) => r.status == RequestStatus.cancelled).length,
+          'total': _localRequests.length,
+        },
+        'todaysCount': 0,
+        'totalEarnings': _localRequests
+            .where((r) => r.status == RequestStatus.completed)
+            .fold<double>(0.0, (sum, r) => sum + r.price),
+        'completedCount': _localRequests.where((r) => r.status == RequestStatus.completed).length,
+      };
+      return stats;
     }
   }
 

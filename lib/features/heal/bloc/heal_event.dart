@@ -55,6 +55,13 @@ class LoadServiceRequestsEvent extends HealEvent {
   List<Object?> get props => [status];
 }
 
+class CreateServiceRequestEvent extends HealEvent {
+  final ServiceRequest request;
+  const CreateServiceRequestEvent(this.request);
+  @override
+  List<Object?> get props => [request];
+}
+
 class UpdateRequestStatusEvent extends HealEvent {
   final String id;
   final RequestStatus status;
