@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/service_request_model.dart';
 import '../screens/service_request_detail_screen.dart';
+import '../bloc/heal_bloc.dart';
 
 /// World-class Service Request Card with "One Primary Action" design
 /// Matches dashboard card aesthetic with clean, minimal, deliberate interactions
@@ -148,6 +150,21 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
     _scaleController.reverse();
   }
 
+  void _navigateToDetail(ServiceRequest request) {
+    final healBloc = context.read<HealBloc>();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => BlocProvider.value(
+          value: healBloc,
+          child: ServiceRequestDetailScreen(
+            request: request,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -213,14 +230,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
                   if (widget.onTap != null) {
                     widget.onTap!();
                   } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ServiceRequestDetailScreen(
-                          request: request,
-                        ),
-                      ),
-                    );
+                    _navigateToDetail(request);
                   }
                 },
                 splashColor: _getStatusColor().withOpacity(0.1),
@@ -641,14 +651,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
             color: _getStatusColor(),
             onTap: () {
               HapticFeedback.selectionClick();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ServiceRequestDetailScreen(
-                    request: widget.request,
-                  ),
-                ),
-              );
+              _navigateToDetail(widget.request);
             },
           ),
         );
@@ -690,14 +693,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
             color: AppTheme.textColor.withOpacity(0.4),
             onTap: () {
               HapticFeedback.selectionClick();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ServiceRequestDetailScreen(
-                    request: widget.request,
-                  ),
-                ),
-              );
+              _navigateToDetail(widget.request);
             },
           ),
         );
@@ -711,14 +707,7 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
             color: AppTheme.textColor.withOpacity(0.4),
             onTap: () {
               HapticFeedback.selectionClick();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ServiceRequestDetailScreen(
-                    request: widget.request,
-                  ),
-                ),
-              );
+              _navigateToDetail(widget.request);
             },
           ),
         );

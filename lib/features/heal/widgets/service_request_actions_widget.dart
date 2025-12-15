@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../models/service_request_model.dart';
+import '../bloc/heal_bloc.dart';
+import '../bloc/heal_event.dart';
 import 'complete_service_bottom_sheet.dart';
 
 class ServiceRequestActionsWidget extends StatelessWidget {
@@ -275,23 +278,19 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   }
 
   void _acceptRequest(BuildContext context) {
-    // TODO: Implement accept request functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Request accepted successfully'),
-        backgroundColor: Color(0xFF10B981),
-      ),
-    );
+    // Dispatch event to update request status to confirmed
+    context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.confirmed));
+    
+    // Pop back to list after action
+    Navigator.pop(context, true);
   }
 
   void _startService(BuildContext context) {
-    // TODO: Implement start service functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Service started successfully'),
-        backgroundColor: Color(0xFF10B981),
-      ),
-    );
+    // Dispatch event to update request status to inProgress
+    context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.inProgress));
+    
+    // Pop back to list after action
+    Navigator.pop(context, true);
   }
 
   void _completeService(BuildContext context) async {
@@ -303,24 +302,20 @@ class ServiceRequestActionsWidget extends StatelessWidget {
     );
     
     if (result != null && context.mounted) {
-      // TODO: Store notes, review, and rating along with status update
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Service completed successfully'),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
+      // Dispatch event to update request status to completed
+      context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.completed));
+      
+      // Pop back to list after action
+      Navigator.pop(context, true);
     }
   }
 
   void _pauseService(BuildContext context) {
-    // TODO: Implement pause functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pause functionality coming soon'),
-        backgroundColor: Color(0xFFF59E0B),
-      ),
-    );
+    // Pause = back to confirmed state
+    context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.confirmed));
+    
+    // Pop back to list after action
+    Navigator.pop(context, true);
   }
 
   void _callCustomer(BuildContext context) {
@@ -364,9 +359,10 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   }
 
   void _confirmReject(BuildContext context, ThemeService themeService) {
+    final parentContext = context; // Save parent context for BLoC access
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: themeService.surfaceColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -390,7 +386,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           TextButton(
             onPressed: () {
               HapticFeedback.selectionClick();
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: Text(
               'Cancel',
@@ -403,14 +399,15 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           TextButton(
             onPressed: () {
               HapticFeedback.selectionClick();
-              Navigator.pop(context);
-              // TODO: Implement reject functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Service request rejected'),
-                  backgroundColor: Color(0xFFEF4444),
-                ),
+              Navigator.pop(dialogContext);
+              
+              // Dispatch event to update request status to cancelled
+              parentContext.read<HealBloc>().add(
+                UpdateRequestStatusEvent(request.id, RequestStatus.cancelled),
               );
+              
+              // Pop back to list after action
+              Navigator.pop(parentContext, true);
             },
             child: Text(
               'Reject',
@@ -426,9 +423,10 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   }
 
   void _confirmCancel(BuildContext context, ThemeService themeService) {
+    final parentContext = context; // Save parent context for BLoC access
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: themeService.surfaceColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -452,7 +450,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           TextButton(
             onPressed: () {
               HapticFeedback.selectionClick();
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: Text(
               'No',
@@ -465,14 +463,15 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           TextButton(
             onPressed: () {
               HapticFeedback.selectionClick();
-              Navigator.pop(context);
-              // TODO: Implement cancel functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Service cancelled'),
-                  backgroundColor: Color(0xFFEF4444),
-                ),
+              Navigator.pop(dialogContext);
+              
+              // Dispatch event to update request status to cancelled
+              parentContext.read<HealBloc>().add(
+                UpdateRequestStatusEvent(request.id, RequestStatus.cancelled),
               );
+              
+              // Pop back to list after action
+              Navigator.pop(parentContext, true);
             },
             child: Text(
               'Yes, Cancel',

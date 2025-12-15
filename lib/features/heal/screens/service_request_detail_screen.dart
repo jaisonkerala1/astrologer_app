@@ -270,10 +270,14 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
+        final healBloc = context.read<HealBloc>();
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ServiceRequestDetailScreen(request: nextRequest),
+            builder: (ctx) => BlocProvider.value(
+              value: healBloc,
+              child: ServiceRequestDetailScreen(request: nextRequest),
+            ),
           ),
         );
       },
