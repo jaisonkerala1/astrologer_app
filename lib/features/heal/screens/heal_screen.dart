@@ -10,6 +10,8 @@ import '../screens/service_management_screen.dart';
 import '../screens/service_requests_screen.dart';
 import '../bloc/heal_bloc.dart';
 import '../bloc/heal_event.dart';
+import '../bloc/heal_state.dart';
+import '../widgets/add_service_request_form.dart';
 
 class HealScreen extends StatefulWidget {
   const HealScreen({super.key});
@@ -205,9 +207,35 @@ class _HealScreenState extends State<HealScreen> with TickerProviderStateMixin, 
             ],
           ),
           body: ServiceRequestsScreen(searchQuery: _searchController.text),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showAddServiceRequestDialog(context),
+            backgroundColor: themeService.primaryColor,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
         );
       },
     ),
+    );
+  }
+
+  void _showAddServiceRequestDialog(BuildContext context) {
+    final healBloc = context.read<HealBloc>();
+    final state = healBloc.state;
+    final services = state is HealLoadedState ? state.services : null;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) => AddServiceRequestForm(
+        availableServices: services,
+        onSubmit: (request) {
+          Navigator.pop(bottomSheetContext);
+          healBloc.add(CreateServiceRequestEvent(request));
+        },
+        onCancel: () => Navigator.pop(bottomSheetContext),
+      ),
     );
   }
 }
