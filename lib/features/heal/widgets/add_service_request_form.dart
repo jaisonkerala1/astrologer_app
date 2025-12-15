@@ -343,12 +343,11 @@ class _AddServiceRequestFormState extends State<AddServiceRequestForm> {
             children: [
               CountryCodeSelector(
                 selectedCountry: _selectedCountry,
-                onCountrySelected: (country) {
+                onCountryChanged: (country) {
                   setState(() {
                     _selectedCountry = country;
                   });
                 },
-                themeService: themeService,
               ),
               const SizedBox(width: 12),
               Expanded(
