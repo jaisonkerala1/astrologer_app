@@ -280,17 +280,13 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   void _acceptRequest(BuildContext context) {
     // Dispatch event to update request status to confirmed
     context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.confirmed));
-    
-    // Pop back to list after action
-    Navigator.pop(context, true);
+    // Stay on detail page - BlocListener will update the UI with new actions
   }
 
   void _startService(BuildContext context) {
     // Dispatch event to update request status to inProgress
     context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.inProgress));
-    
-    // Pop back to list after action
-    Navigator.pop(context, true);
+    // Stay on detail page - BlocListener will update the UI with timer and complete option
   }
 
   void _completeService(BuildContext context) async {
@@ -305,7 +301,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
       // Dispatch event to update request status to completed
       context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.completed));
       
-      // Pop back to list after action
+      // Pop back to list after completing - this is a terminal action
       Navigator.pop(context, true);
     }
   }
@@ -313,9 +309,7 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   void _pauseService(BuildContext context) {
     // Pause = back to confirmed state
     context.read<HealBloc>().add(UpdateRequestStatusEvent(request.id, RequestStatus.confirmed));
-    
-    // Pop back to list after action
-    Navigator.pop(context, true);
+    // Stay on detail page - BlocListener will update the UI
   }
 
   void _callCustomer(BuildContext context) {

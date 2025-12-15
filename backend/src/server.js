@@ -169,6 +169,38 @@ try {
   });
 }
 
+// Heal/Services routes
+try {
+  const servicesRoutes = require('./routes/services');
+  app.use('/api/services', servicesRoutes);
+  console.log('✅ Services routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load services routes:', error.message);
+  app.use('/api/services', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Services routes failed to load',
+      error: error.message
+    });
+  });
+}
+
+// Service Requests routes
+try {
+  const serviceRequestsRoutes = require('./routes/serviceRequests');
+  app.use('/api/service-requests', serviceRequestsRoutes);
+  console.log('✅ Service Requests routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load service requests routes:', error.message);
+  app.use('/api/service-requests', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Service Requests routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
