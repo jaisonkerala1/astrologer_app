@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
@@ -14,7 +16,11 @@ import '../../../shared/widgets/skeleton_loader.dart';
 import 'discussion_detail_screen.dart';
 import 'favorites_screen.dart';
 import '../services/discussion_service.dart';
+import '../services/discussion_api_service.dart';
 import '../models/discussion_models.dart';
+import '../bloc/discussion_bloc.dart';
+import '../bloc/discussion_event.dart';
+import '../bloc/discussion_state.dart';
 import '../widgets/simple_create_discussion_bottom_sheet.dart';
 import '../../auth/models/astrologer_model.dart';
 import '../../clients/widgets/client_search_bar.dart';
@@ -31,6 +37,10 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   final List<DiscussionPost> _posts = [];
   String _searchQuery = '';
   bool _isLoading = true; // Loading state for shimmer
+  bool _useApiData = false; // Flag to track if API data is available
+  
+  // BLoC instance
+  late DiscussionBloc _discussionBloc;
   
   // Current user info
   String _currentUserName = 'You';
@@ -40,8 +50,15 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   @override
   void initState() {
     super.initState();
+    _discussionBloc = getIt<DiscussionBloc>();
     _loadCurrentUser();
     _loadPosts();
+  }
+  
+  @override
+  void dispose() {
+    _discussionBloc.close();
+    super.dispose();
   }
   
   /// Load current user's profile information
@@ -71,11 +88,41 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   Future<void> _loadPosts() async {
     setState(() => _isLoading = true);
     
+    // Try to load from API first
+    try {
+      _discussionBloc.add(const LoadDiscussionsEvent());
+      
+      // Wait for the BLoC to respond
+      await for (final state in _discussionBloc.stream) {
+        if (state is DiscussionLoaded) {
+          setState(() {
+            _posts.clear();
+            _posts.addAll(state.discussions);
+            _useApiData = true;
+            _isLoading = false;
+          });
+          break;
+        } else if (state is DiscussionError) {
+          print('API Error: ${state.message}');
+          // Fall back to local storage
+          await _loadLocalPosts();
+          break;
+        }
+      }
+    } catch (e) {
+      print('Error loading from API: $e');
+      // Fall back to local storage
+      await _loadLocalPosts();
+    }
+  }
+  
+  Future<void> _loadLocalPosts() async {
     final posts = await DiscussionService.getDiscussions();
     if (posts.isEmpty) {
       _loadSamplePosts();
     } else {
       setState(() {
+        _posts.clear();
         _posts.addAll(posts);
       });
     }
@@ -171,33 +218,43 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // Simulate fetching new posts from database
-      await Future.delayed(const Duration(milliseconds: 1500));
-      
-      // In real implementation, this would fetch from database
-      final newPosts = await DiscussionService.getDiscussions();
-      
       final oldPostCount = _posts.length;
       
-      setState(() {
-        // Clear and reload posts
-        _posts.clear();
-        if (newPosts.isNotEmpty) {
-          _posts.addAll(newPosts);
-        } else {
-          // If no posts from database, reload sample posts
-          _loadSamplePosts();
+      if (_useApiData) {
+        // Use API to refresh
+        _discussionBloc.add(const LoadDiscussionsEvent(refresh: true));
+        
+        await for (final state in _discussionBloc.stream) {
+          if (state is DiscussionLoaded) {
+            setState(() {
+              _posts.clear();
+              _posts.addAll(state.discussions);
+              _isLoading = false;
+            });
+            break;
+          } else if (state is DiscussionError) {
+            setState(() => _isLoading = false);
+            break;
+          }
         }
-      });
+      } else {
+        // Fall back to local storage
+        await Future.delayed(const Duration(milliseconds: 1500));
+        final newPosts = await DiscussionService.getDiscussions();
+        
+        setState(() {
+          _posts.clear();
+          if (newPosts.isNotEmpty) {
+            _posts.addAll(newPosts);
+          } else {
+            _loadSamplePosts();
+          }
+          _isLoading = false;
+        });
+      }
       
       // Calculate new posts count
       final newPostsCount = _posts.length - oldPostCount;
-      
-      // Small delay for smooth transition
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // Hide shimmer
-      setState(() => _isLoading = false);
       
       // Show feedback with haptic
       HapticFeedback.selectionClick();
@@ -789,7 +846,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   void _createPost(String title, String content, String category) async {
     if (title.trim().isEmpty || content.trim().isEmpty) return;
 
-    final newPost = DiscussionPost(
+    // Create optimistic post for immediate UI update
+    final optimisticPost = DiscussionPost(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title.trim(),
       content: content.trim(),
@@ -802,56 +860,100 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
       createdAt: DateTime.now(),
     );
 
+    // Optimistically add to UI
     setState(() {
-      _posts.insert(0, newPost);
+      _posts.insert(0, optimisticPost);
     });
     
-    // Save to database
-    await DiscussionService.saveDiscussion(newPost);
-    
-    // Save astrologer activity
-    await DiscussionService.saveAstrologerActivity(
-      AstrologerActivity(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: 'post_created',
-        discussionId: newPost.id,
-        content: 'Created post: ${newPost.title}',
-        timestamp: DateTime.now(),
-      ),
-    );
+    if (_useApiData) {
+      // Create via API
+      _discussionBloc.add(CreateDiscussionEvent(
+        title: title.trim(),
+        content: content.trim(),
+        category: category,
+      ));
+      
+      // Listen for result
+      _discussionBloc.stream.firstWhere((state) => 
+        state is DiscussionCreated || state is ActionError
+      ).then((state) {
+        if (state is DiscussionCreated) {
+          // Replace optimistic post with real one
+          setState(() {
+            final index = _posts.indexWhere((p) => p.id == optimisticPost.id);
+            if (index != -1) {
+              _posts[index] = state.discussion;
+            }
+          });
+        } else if (state is ActionError) {
+          // Remove optimistic post on error
+          setState(() {
+            _posts.removeWhere((p) => p.id == optimisticPost.id);
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to create post: ${state.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      });
+    } else {
+      // Fallback: Save to local storage
+      await DiscussionService.saveDiscussion(optimisticPost);
+      
+      // Save astrologer activity
+      await DiscussionService.saveAstrologerActivity(
+        AstrologerActivity(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: 'post_created',
+          discussionId: optimisticPost.id,
+          content: 'Created post: ${optimisticPost.title}',
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
   }
 
   void _toggleLike(String postId) async {
     final postIndex = _posts.indexWhere((post) => post.id == postId);
     if (postIndex != -1) {
       final post = _posts[postIndex];
-      final newLikeStatus = !post.isLiked;
+      final wasLiked = post.isLiked;
       
+      // Optimistic update
       setState(() {
-        post.isLiked = newLikeStatus;
-        post.likes += newLikeStatus ? 1 : -1;
+        post.isLiked = !wasLiked;
+        post.likes += wasLiked ? -1 : 1;
       });
       
-      // Save to database
-      await DiscussionService.toggleLike(postId, newLikeStatus);
-      
-      // Add to favorites if liked
-      if (newLikeStatus) {
-        await DiscussionService.addToFavorites(postId);
+      if (_useApiData) {
+        // Use API
+        _discussionBloc.add(ToggleDiscussionLikeEvent(postId));
       } else {
-        await DiscussionService.removeFromFavorites(postId);
+        // Fallback: Save to local storage
+        await DiscussionService.toggleLike(postId, !wasLiked);
+        
+        // Add to favorites if liked
+        if (!wasLiked) {
+          await DiscussionService.addToFavorites(postId);
+        } else {
+          await DiscussionService.removeFromFavorites(postId);
+        }
+        
+        // Save astrologer activity
+        await DiscussionService.saveAstrologerActivity(
+          AstrologerActivity(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            type: 'post_liked',
+            discussionId: postId,
+            content: !wasLiked ? 'Liked post: ${post.title}' : 'Unliked post: ${post.title}',
+            timestamp: DateTime.now(),
+          ),
+        );
       }
-      
-      // Save astrologer activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'post_liked',
-          discussionId: postId,
-          content: newLikeStatus ? 'Liked post: ${post.title}' : 'Unliked post: ${post.title}',
-          timestamp: DateTime.now(),
-        ),
-      );
     }
   }
 }

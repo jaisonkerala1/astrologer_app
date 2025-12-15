@@ -41,6 +41,8 @@ import '../../features/notifications/bloc/notifications_bloc.dart';
 import '../../features/clients/bloc/clients_bloc.dart';
 import '../../features/reviews/repository/reviews_repository.dart';
 import '../../features/reviews/bloc/reviews_bloc.dart';
+import '../../features/heal/bloc/discussion_bloc.dart';
+import '../../features/heal/services/discussion_api_service.dart';
 
 /// Service Locator for Dependency Injection
 /// Using GetIt for service registration and retrieval
@@ -251,11 +253,24 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<ClientsBloc>(
     () => ClientsBloc(repository: getIt<ClientsRepository>()),
   );
+  
+  // Discussion API Service
+  getIt.registerLazySingleton<DiscussionApiService>(
+    () => DiscussionApiService(apiService: getIt<ApiService>()),
+  );
+  
+  // Discussion BLoC
+  getIt.registerFactory<DiscussionBloc>(
+    () => DiscussionBloc(
+      apiService: getIt<DiscussionApiService>(),
+      socketService: getIt<SocketService>(),
+    ),
+  );
 
   print('✅ Service Locator: All dependencies registered successfully');
   print('   - Core Services: API, Storage, Socket (Real-time)');
-  print('   - 13 Repositories: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients');
-  print('   - 14 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients');
+  print('   - 14 Repositories/Services: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients, Discussion');
+  print('   - 15 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients, Discussion');
 }
 
 /// Reset service locator (useful for testing)

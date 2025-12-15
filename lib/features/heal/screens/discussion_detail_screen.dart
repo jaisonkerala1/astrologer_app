@@ -1,16 +1,24 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../services/discussion_service.dart';
+import '../services/discussion_api_service.dart';
 import '../models/discussion_models.dart';
+import '../bloc/discussion_bloc.dart';
+import '../bloc/discussion_event.dart';
+import '../bloc/discussion_state.dart';
 import '../../auth/models/astrologer_model.dart';
 
 class DiscussionDetailScreen extends StatefulWidget {
@@ -32,6 +40,13 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   bool _isComposing = false;
   bool _isNotificationSubscribed = false; // Track notification subscription
   DiscussionComment? _replyingTo; // Track which comment we're replying to
+  bool _useApiData = false; // Flag to track if API data is available
+  
+  // BLoC and socket
+  late DiscussionBloc _discussionBloc;
+  late SocketService _socketService;
+  StreamSubscription? _commentSubscription;
+  StreamSubscription? _likeSubscription;
   
   // Current user info
   String _currentUserName = 'You';
@@ -41,6 +56,8 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _discussionBloc = getIt<DiscussionBloc>();
+    _socketService = getIt<SocketService>();
     _isLiked = widget.post.isLiked;
     _likeCount = widget.post.likes;
     _isSaved = false; // Will be loaded from saved posts
@@ -50,6 +67,93 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     _loadComments();
     _checkIfSaved();
     _checkNotificationStatus();
+    _setupSocketListeners();
+    
+    // Join discussion room for real-time updates
+    _socketService.joinDiscussionRoom(widget.post.id);
+  }
+  
+  void _setupSocketListeners() {
+    // Listen for new comments via socket
+    _commentSubscription = _socketService.discussionCommentStream.listen((data) {
+      final discussionId = data['discussionId'] as String?;
+      if (discussionId == widget.post.id) {
+        _handleRealtimeComment(data);
+      }
+    });
+    
+    // Listen for like updates via socket
+    _likeSubscription = _socketService.discussionLikeStream.listen((data) {
+      _handleRealtimeLike(data);
+    });
+  }
+  
+  void _handleRealtimeComment(Map<String, dynamic> data) {
+    try {
+      final comment = DiscussionComment.fromApiJson(data);
+      final parentCommentId = data['parentCommentId'] as String?;
+      
+      setState(() {
+        if (parentCommentId != null) {
+          // Add as reply
+          final parentIndex = _comments.indexWhere((c) => c.id == parentCommentId);
+          if (parentIndex != -1) {
+            // Avoid duplicates
+            if (!_comments[parentIndex].replies.any((r) => r.id == comment.id)) {
+              _comments[parentIndex].replies.insert(0, comment);
+            }
+          }
+        } else {
+          // Add as top-level comment (avoid duplicates)
+          if (!_comments.any((c) => c.id == comment.id)) {
+            _comments.insert(0, comment);
+          }
+        }
+      });
+      
+      print('📥 [DISCUSSION DETAIL] Real-time comment received');
+    } catch (e) {
+      print('Error handling real-time comment: $e');
+    }
+  }
+  
+  void _handleRealtimeLike(Map<String, dynamic> data) {
+    try {
+      final type = data['type'] as String?;
+      final likesCount = data['likesCount'] as int?;
+      
+      if (likesCount == null) return;
+      
+      if (type == 'comment') {
+        final commentId = data['commentId'] as String?;
+        if (commentId != null) {
+          setState(() {
+            for (int i = 0; i < _comments.length; i++) {
+              if (_comments[i].id == commentId) {
+                _comments[i].likes = likesCount;
+                break;
+              }
+              for (int j = 0; j < _comments[i].replies.length; j++) {
+                if (_comments[i].replies[j].id == commentId) {
+                  _comments[i].replies[j].likes = likesCount;
+                  break;
+                }
+              }
+            }
+          });
+        }
+      } else {
+        // Discussion like update
+        final discussionId = data['discussionId'] as String?;
+        if (discussionId == widget.post.id) {
+          setState(() {
+            _likeCount = likesCount;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error handling real-time like: $e');
+    }
   }
   
   /// Load current user's profile information
@@ -78,6 +182,11 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   
   @override
   void dispose() {
+    // Leave discussion room
+    _socketService.leaveDiscussionRoom(widget.post.id);
+    _commentSubscription?.cancel();
+    _likeSubscription?.cancel();
+    _discussionBloc.close();
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
@@ -177,6 +286,25 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   Future<void> _loadComments() async {
+    // Try API first
+    try {
+      final apiService = DiscussionApiService();
+      final response = await apiService.getComments(widget.post.id);
+      
+      if (response.comments.isNotEmpty) {
+        setState(() {
+          _comments.clear();
+          _comments.addAll(response.comments);
+          _useApiData = true;
+        });
+        print('📥 [DISCUSSION DETAIL] Loaded ${response.comments.length} comments from API');
+        return;
+      }
+    } catch (e) {
+      print('Error loading comments from API: $e');
+    }
+    
+    // Fallback to local storage
     final allComments = await DiscussionService.getComments(widget.post.id);
     if (allComments.isEmpty) {
       _loadSampleComments();
@@ -1052,26 +1180,46 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   void _toggleLike() async {
-    final newLikeStatus = !_isLiked;
+    final wasLiked = _isLiked;
     
+    // Optimistic update
     setState(() {
-      _isLiked = newLikeStatus;
-      _likeCount += newLikeStatus ? 1 : -1;
+      _isLiked = !wasLiked;
+      _likeCount += wasLiked ? -1 : 1;
     });
     
-    // Save to database
-    await DiscussionService.toggleLike(widget.post.id, newLikeStatus);
-    
-    // Save astrologer activity
-    await DiscussionService.saveAstrologerActivity(
-      AstrologerActivity(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: 'post_liked',
-        discussionId: widget.post.id,
-        content: newLikeStatus ? 'Liked post: ${widget.post.title}' : 'Unliked post: ${widget.post.title}',
-        timestamp: DateTime.now(),
-      ),
-    );
+    if (_useApiData) {
+      // Use API
+      try {
+        final apiService = DiscussionApiService();
+        final response = await apiService.toggleDiscussionLike(widget.post.id);
+        setState(() {
+          _isLiked = response.isLiked;
+          _likeCount = response.likesCount;
+        });
+      } catch (e) {
+        print('Error toggling like via API: $e');
+        // Revert on error
+        setState(() {
+          _isLiked = wasLiked;
+          _likeCount += wasLiked ? 1 : -1;
+        });
+      }
+    } else {
+      // Fallback: Save to local storage
+      await DiscussionService.toggleLike(widget.post.id, !wasLiked);
+      
+      // Save astrologer activity
+      await DiscussionService.saveAstrologerActivity(
+        AstrologerActivity(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: 'post_liked',
+          discussionId: widget.post.id,
+          content: !wasLiked ? 'Liked post: ${widget.post.title}' : 'Unliked post: ${widget.post.title}',
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
   }
   
   void _toggleSave() async {
@@ -1128,27 +1276,47 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     }
     
     if (targetComment != null) {
-      final newLikeStatus = !targetComment.isLiked;
+      final wasLiked = targetComment.isLiked;
       
+      // Optimistic update
       setState(() {
-        targetComment!.isLiked = newLikeStatus;
-        targetComment.likes += newLikeStatus ? 1 : -1;
+        targetComment!.isLiked = !wasLiked;
+        targetComment.likes += wasLiked ? -1 : 1;
       });
       
-      // Save to database
-      await DiscussionService.toggleCommentLike(widget.post.id, commentId, newLikeStatus);
-      
-      // Save astrologer activity
-      await DiscussionService.saveAstrologerActivity(
-        AstrologerActivity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'comment_liked',
-          discussionId: widget.post.id,
-          commentId: commentId,
-          content: newLikeStatus ? 'Liked comment' : 'Unliked comment',
-          timestamp: DateTime.now(),
-        ),
-      );
+      if (_useApiData) {
+        // Use API
+        try {
+          final apiService = DiscussionApiService();
+          final response = await apiService.toggleCommentLike(commentId);
+          setState(() {
+            targetComment!.isLiked = response.isLiked;
+            targetComment.likes = response.likesCount;
+          });
+        } catch (e) {
+          print('Error toggling comment like via API: $e');
+          // Revert on error
+          setState(() {
+            targetComment!.isLiked = wasLiked;
+            targetComment.likes += wasLiked ? 1 : -1;
+          });
+        }
+      } else {
+        // Fallback: Save to local storage
+        await DiscussionService.toggleCommentLike(widget.post.id, commentId, !wasLiked);
+        
+        // Save astrologer activity
+        await DiscussionService.saveAstrologerActivity(
+          AstrologerActivity(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            type: 'comment_liked',
+            discussionId: widget.post.id,
+            commentId: commentId,
+            content: !wasLiked ? 'Liked comment' : 'Unliked comment',
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
     }
   }
 
@@ -1157,13 +1325,15 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
 
     // For 1-level structure: if replying to a reply, reply to its parent instead
     final actualParentId = _replyingTo?.parentCommentId ?? _replyingTo?.id;
+    final content = _commentController.text.trim();
 
-    final newComment = DiscussionComment(
+    // Optimistic comment for immediate UI update
+    final optimisticComment = DiscussionComment(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       discussionId: widget.post.id,
       author: _currentUserName,
       authorInitial: _currentUserInitial,
-      content: _commentController.text.trim(),
+      content: content,
       timeAgo: 'Just now',
       likes: 0,
       isLiked: false,
@@ -1176,33 +1346,68 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
         // Find the parent comment and add reply to it
         final parentIndex = _comments.indexWhere((c) => c.id == actualParentId);
         if (parentIndex != -1) {
-          _comments[parentIndex].replies.insert(0, newComment);
+          _comments[parentIndex].replies.insert(0, optimisticComment);
         }
       } else {
         // Add as a top-level comment
-        _comments.insert(0, newComment);
+        _comments.insert(0, optimisticComment);
       }
       _commentController.clear();
       _isComposing = false;
       _replyingTo = null; // Clear reply mode
     });
     
-    // Save to database
-    await DiscussionService.saveComment(widget.post.id, newComment);
+    if (_useApiData) {
+      // Use API to save comment
+      try {
+        final apiService = DiscussionApiService();
+        final savedComment = await apiService.addComment(
+          discussionId: widget.post.id,
+          content: content,
+          parentCommentId: actualParentId,
+        );
+        
+        // Replace optimistic comment with server response
+        setState(() {
+          if (actualParentId != null) {
+            final parentIndex = _comments.indexWhere((c) => c.id == actualParentId);
+            if (parentIndex != -1) {
+              final replyIndex = _comments[parentIndex].replies.indexWhere((r) => r.id == optimisticComment.id);
+              if (replyIndex != -1) {
+                _comments[parentIndex].replies[replyIndex] = savedComment;
+              }
+            }
+          } else {
+            final index = _comments.indexWhere((c) => c.id == optimisticComment.id);
+            if (index != -1) {
+              _comments[index] = savedComment;
+            }
+          }
+        });
+        
+        print('✅ [DISCUSSION DETAIL] Comment saved via API');
+      } catch (e) {
+        print('❌ Error saving comment via API: $e');
+        // Comment is already shown, keep it
+      }
+    } else {
+      // Fallback: Save to local storage
+      await DiscussionService.saveComment(widget.post.id, optimisticComment);
     
-    // Save astrologer activity
-    await DiscussionService.saveAstrologerActivity(
-      AstrologerActivity(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: actualParentId != null ? 'reply_added' : 'comment_added',
-        discussionId: widget.post.id,
-        commentId: newComment.id,
-        content: actualParentId != null 
-            ? 'Replied to ${_replyingTo!.author}: ${newComment.content}'
-            : 'Added comment: ${newComment.content}',
-        timestamp: DateTime.now(),
-      ),
-    );
+      // Save astrologer activity
+      await DiscussionService.saveAstrologerActivity(
+        AstrologerActivity(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: actualParentId != null ? 'reply_added' : 'comment_added',
+          discussionId: widget.post.id,
+          commentId: optimisticComment.id,
+          content: actualParentId != null 
+              ? 'Replied: ${optimisticComment.content}'
+              : 'Added comment: ${optimisticComment.content}',
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
   }
 
   void _sharePost() {

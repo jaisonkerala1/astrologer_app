@@ -146,6 +146,22 @@ try {
   });
 }
 
+// Discussion routes
+try {
+  const discussionRoutes = require('./routes/discussion');
+  app.use('/api/discussion', discussionRoutes);
+  console.log('✅ Discussion routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load discussion routes:', error.message);
+  app.use('/api/discussion', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Discussion routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -52,6 +52,7 @@ class DiscussionSocketEvents {
   static const String reply = 'discussion:reply';
   static const String like = 'discussion:like';
   static const String update = 'discussion:update';
+  static const String delete = 'discussion:delete';
 }
 
 /// Core Socket Service - Singleton
@@ -295,8 +296,19 @@ class SocketService {
       _discussionCommentController.add(Map<String, dynamic>.from(data));
     });
 
+    _socket!.on(DiscussionSocketEvents.reply, (data) {
+      debugPrint('↩️ [SOCKET] Discussion reply: $data');
+      _discussionCommentController.add(Map<String, dynamic>.from(data));
+    });
+
     _socket!.on(DiscussionSocketEvents.like, (data) {
+      debugPrint('❤️ [SOCKET] Discussion like: $data');
       _discussionLikeController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(DiscussionSocketEvents.update, (data) {
+      debugPrint('🔄 [SOCKET] Discussion update: $data');
+      // Discussion updates (new posts, comment count changes) - can be handled by UI
     });
   }
 
@@ -479,21 +491,61 @@ class SocketService {
 
   // ==================== DISCUSSION METHODS ====================
 
-  /// Join a discussion thread
+  /// Join a discussion thread room
   void joinDiscussion(String discussionId) {
     if (!isConnected) return;
 
     _socket!.emit(DiscussionSocketEvents.join, {
       'discussionId': discussionId,
     });
+    
+    debugPrint('📥 [SOCKET] Joining discussion room: $discussionId');
   }
 
-  /// Leave a discussion thread
+  /// Alias for joinDiscussion (for BLoC compatibility)
+  void joinDiscussionRoom(String discussionId) => joinDiscussion(discussionId);
+
+  /// Leave a discussion thread room
   void leaveDiscussion(String discussionId) {
     if (!isConnected) return;
 
     _socket!.emit(DiscussionSocketEvents.leave, {
       'discussionId': discussionId,
+    });
+    
+    debugPrint('📤 [SOCKET] Leaving discussion room: $discussionId');
+  }
+
+  /// Alias for leaveDiscussion (for BLoC compatibility)
+  void leaveDiscussionRoom(String discussionId) => leaveDiscussion(discussionId);
+
+  /// Send a comment in discussion (via socket for real-time)
+  void sendDiscussionComment({
+    required String discussionId,
+    required String content,
+    String? parentCommentId,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DiscussionSocketEvents.comment, {
+      'discussionId': discussionId,
+      'content': content,
+      if (parentCommentId != null) 'parentCommentId': parentCommentId,
+    });
+    
+    debugPrint('💬 [SOCKET] Sending discussion comment');
+  }
+
+  /// Toggle like on discussion or comment via socket
+  void sendDiscussionLike({
+    required String discussionId,
+    String? commentId,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DiscussionSocketEvents.like, {
+      'discussionId': discussionId,
+      if (commentId != null) 'commentId': commentId,
     });
   }
 
