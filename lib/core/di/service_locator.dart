@@ -221,8 +221,8 @@ Future<void> setupServiceLocator() async {
     () => CommunicationBloc(repository: getIt<CommunicationRepository>()),
   );
   
-  // Heal BLoC
-  getIt.registerFactory<HealBloc>(
+  // Heal BLoC (Singleton to preserve state across navigation)
+  getIt.registerLazySingleton<HealBloc>(
     () => HealBloc(repository: getIt<HealRepository>()),
   );
   

@@ -356,6 +356,7 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       'id': json['id'] ?? json['_id']?.toString() ?? '',
       'customerName': json['customerName'] ?? '',
       'customerPhone': json['customerPhone'] ?? '',
+      'customerEmail': json['customerEmail'] ?? '',
       'serviceName': json['serviceName'] ?? '',
       'serviceCategory': json['serviceCategory'] ?? '',
       'requestedDate': json['requestedDate'] ?? DateTime.now().toIso8601String(),
@@ -369,6 +370,23 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       'completedAt': json['completedAt'],
       'cancelledAt': json['cancelledAt'],
     };
+  }
+
+  /// Merge sparse API responses (like status/notes updates) with existing cached request data.
+  Map<String, dynamic> _mergeWithExisting(String id, Map<String, dynamic> apiData) {
+    final index = _localRequests.indexWhere((r) => r.id == id);
+    final existing = index != -1 ? _localRequests[index] : null;
+
+    if (existing == null) {
+      return apiData;
+    }
+
+    final merged = Map<String, dynamic>.from(existing.toJson());
+    // API may return snake/camel mixed keys; just override matching fields.
+    apiData.forEach((key, value) {
+      merged[key] = value;
+    });
+    return merged;
   }
 
   @override
@@ -438,7 +456,8 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
       );
       if (response.data['success'] == true) {
         print('✅ [HealRepo] Request status updated via API');
-        final updatedRequest = ServiceRequest.fromJson(_transformRequestJson(response.data['data']));
+        final mergedJson = _mergeWithExisting(id, response.data['data']);
+        final updatedRequest = ServiceRequest.fromJson(_transformRequestJson(mergedJson));
         // Update local cache
         final index = _localRequests.indexWhere((r) => r.id == id);
         if (index != -1) _localRequests[index] = updatedRequest;
@@ -500,7 +519,8 @@ class HealRepositoryImpl extends BaseRepository implements HealRepository {
         data: {'notes': notes},
       );
       if (response.data['success'] == true) {
-        final updatedRequest = ServiceRequest.fromJson(_transformRequestJson(response.data['data']));
+        final mergedJson = _mergeWithExisting(id, response.data['data']);
+        final updatedRequest = ServiceRequest.fromJson(_transformRequestJson(mergedJson));
         // Update local cache
         final index = _localRequests.indexWhere((r) => r.id == id);
         if (index != -1) _localRequests[index] = updatedRequest;

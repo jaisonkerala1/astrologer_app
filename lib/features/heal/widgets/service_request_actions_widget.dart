@@ -17,184 +17,34 @@ class ServiceRequestActionsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
+        final primary = _primaryAction(context, themeService);
+        final secondary = _secondaryActions(context, themeService);
+
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: themeService.surfaceColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: themeService.borderColor,
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: themeService.borderColor, width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: themeService.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Quick Actions',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: themeService.textPrimary,
-                    ),
-                  ),
-                ],
+              Text(
+                'Actions',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: themeService.textPrimary,
+                ),
               ),
-              const SizedBox(height: 20),
-              
-              // Action buttons based on status
-              if (request.status == RequestStatus.pending) ...[
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.check_circle,
-                  label: 'Accept Request',
-                  description: 'Confirm and schedule',
-                  color: const Color(0xFF10B981),
-                  onTap: () => _acceptRequest(context),
-                  themeService: themeService,
-                ),
+              const SizedBox(height: 12),
+              if (primary != null) ...[
+                SizedBox(width: double.infinity, child: primary),
+              ],
+              if (secondary.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.phone,
-                  label: 'Call Customer',
-                  description: 'Make a voice call',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () => _callCustomer(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.cancel_outlined,
-                  label: 'Reject',
-                  description: 'Decline this request',
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _confirmReject(context, themeService),
-                  themeService: themeService,
-                ),
-              ] else if (request.status == RequestStatus.confirmed) ...[
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.play_arrow,
-                  label: 'Start Service',
-                  description: 'Begin the session',
-                  color: const Color(0xFF10B981),
-                  onTap: () => _startService(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.phone,
-                  label: 'Call Customer',
-                  description: 'Make a voice call',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () => _callCustomer(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.schedule,
-                  label: 'Reschedule',
-                  description: 'Change the service time',
-                  color: const Color(0xFF8B5CF6),
-                  onTap: () => _rescheduleService(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.cancel_outlined,
-                  label: 'Cancel',
-                  description: 'Cancel this service',
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _confirmCancel(context, themeService),
-                  themeService: themeService,
-                ),
-              ] else if (request.status == RequestStatus.inProgress) ...[
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.stop,
-                  label: 'Complete Service',
-                  description: 'Mark as completed',
-                  color: const Color(0xFF10B981),
-                  onTap: () => _completeService(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.pause,
-                  label: 'Pause Service',
-                  description: 'Temporarily pause',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => _pauseService(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.phone,
-                  label: 'Call Customer',
-                  description: 'Make a voice call',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () => _callCustomer(context),
-                  themeService: themeService,
-                ),
-              ] else if (request.status == RequestStatus.completed) ...[
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.star_outline,
-                  label: 'Rate Service',
-                  description: 'Rate this service',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => _rateService(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.share,
-                  label: 'Share Details',
-                  description: 'Share service info',
-                  color: const Color(0xFF8B5CF6),
-                  onTap: () => _shareService(context),
-                  themeService: themeService,
-                ),
-              ] else if (request.status == RequestStatus.cancelled) ...[
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.replay,
-                  label: 'Reschedule',
-                  description: 'Schedule a new service',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () => _rescheduleService(context),
-                  themeService: themeService,
-                ),
-                const SizedBox(height: 12),
-                _buildActionButton(
-                  context: context,
-                  icon: Icons.phone,
-                  label: 'Call Customer',
-                  description: 'Make a voice call',
-                  color: const Color(0xFF10B981),
-                  onTap: () => _callCustomer(context),
-                  themeService: themeService,
-                ),
+                Wrap(spacing: 8, runSpacing: 8, children: secondary),
               ],
             ],
           ),
@@ -203,75 +53,184 @@ class ServiceRequestActionsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required String description,
-    required Color color,
-    required VoidCallback onTap,
-    required ThemeService themeService,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ),
+  Widget? _primaryAction(BuildContext context, ThemeService themeService) {
+    switch (request.status) {
+      case RequestStatus.pending:
+        return _primaryButton(
+          context: context,
+          themeService: themeService,
+          label: 'Accept',
+          icon: Icons.check_rounded,
+          onPressed: () => _acceptRequest(context),
+        );
+      case RequestStatus.confirmed:
+        return _primaryButton(
+          context: context,
+          themeService: themeService,
+          label: 'Start',
+          icon: Icons.play_arrow_rounded,
+          onPressed: () => _startService(context),
+        );
+      case RequestStatus.inProgress:
+        return _primaryButton(
+          context: context,
+          themeService: themeService,
+          label: 'Complete',
+          icon: Icons.check_circle_outline_rounded,
+          onPressed: () => _completeService(context),
+        );
+      case RequestStatus.completed:
+        // No primary action for completed (keep it minimal)
+        return null;
+      case RequestStatus.cancelled:
+        return _primaryButton(
+          context: context,
+          themeService: themeService,
+          label: 'Reschedule',
+          icon: Icons.replay_rounded,
+          onPressed: () => _rescheduleService(context),
+        );
+    }
+  }
+
+  List<Widget> _secondaryActions(BuildContext context, ThemeService themeService) {
+    final buttons = <Widget>[];
+
+    Widget outlined({
+      required String label,
+      required IconData icon,
+      required VoidCallback onPressed,
+    }) {
+      return OutlinedButton.icon(
+        onPressed: () {
+          HapticFeedback.selectionClick();
+          onPressed();
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: themeService.textSecondary,
+          side: BorderSide(color: themeService.borderColor),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          visualDensity: VisualDensity.compact,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: color.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: color.withOpacity(0.5),
-            ),
-          ],
+        icon: Icon(icon, size: 18, color: themeService.textSecondary),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      );
+    }
+
+    Widget destructive({
+      required String label,
+      required IconData icon,
+      required VoidCallback onPressed,
+    }) {
+      return OutlinedButton.icon(
+        onPressed: () {
+          HapticFeedback.selectionClick();
+          onPressed();
+        },
+        style: OutlinedButton.styleFrom(
+          // Keep destructive actions visually minimal too (no red/green/blue)
+          foregroundColor: themeService.textSecondary,
+          side: BorderSide(color: themeService.borderColor),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: Icon(icon, size: 18, color: themeService.textSecondary),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      );
+    }
+
+    switch (request.status) {
+      case RequestStatus.pending:
+        buttons.add(outlined(
+          label: 'Call',
+          icon: Icons.phone_rounded,
+          onPressed: () => _callCustomer(context),
+        ));
+        buttons.add(destructive(
+          label: 'Reject',
+          icon: Icons.close_rounded,
+          onPressed: () => _confirmReject(context, themeService),
+        ));
+        break;
+      case RequestStatus.confirmed:
+        buttons.add(outlined(
+          label: 'Call',
+          icon: Icons.phone_rounded,
+          onPressed: () => _callCustomer(context),
+        ));
+        buttons.add(outlined(
+          label: 'Reschedule',
+          icon: Icons.schedule_rounded,
+          onPressed: () => _rescheduleService(context),
+        ));
+        buttons.add(destructive(
+          label: 'Cancel',
+          icon: Icons.cancel_outlined,
+          onPressed: () => _confirmCancel(context, themeService),
+        ));
+        break;
+      case RequestStatus.inProgress:
+        buttons.add(outlined(
+          label: 'Pause',
+          icon: Icons.pause_rounded,
+          onPressed: () => _pauseService(context),
+        ));
+        buttons.add(outlined(
+          label: 'Call',
+          icon: Icons.phone_rounded,
+          onPressed: () => _callCustomer(context),
+        ));
+        break;
+      case RequestStatus.completed:
+        buttons.add(outlined(
+          label: 'Share',
+          icon: Icons.share_rounded,
+          onPressed: () => _shareService(context),
+        ));
+        buttons.add(outlined(
+          label: 'Rate',
+          icon: Icons.star_outline_rounded,
+          onPressed: () => _rateService(context),
+        ));
+        break;
+      case RequestStatus.cancelled:
+        buttons.add(outlined(
+          label: 'Call',
+          icon: Icons.phone_rounded,
+          onPressed: () => _callCustomer(context),
+        ));
+        break;
+    }
+
+    return buttons;
+  }
+
+  Widget _primaryButton({
+    required BuildContext context,
+    required ThemeService themeService,
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      height: 44,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          HapticFeedback.selectionClick();
+          onPressed();
+        },
+        icon: Icon(icon, size: 18, color: Colors.white),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: themeService.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );

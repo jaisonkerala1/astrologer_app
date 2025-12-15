@@ -70,8 +70,14 @@ class _HealScreenState extends State<HealScreen> with TickerProviderStateMixin, 
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final l10n = AppLocalizations.of(context)!;
     
-    return BlocProvider(
-      create: (context) => getIt<HealBloc>()..add(const LoadServicesEvent()),
+    // Get the singleton HealBloc and load data if needed
+    final healBloc = getIt<HealBloc>();
+    if (healBloc.state is HealInitial) {
+      healBloc.add(const LoadServicesEvent());
+    }
+    
+    return BlocProvider.value(
+      value: healBloc,
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
           return Scaffold(

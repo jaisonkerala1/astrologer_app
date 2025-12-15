@@ -289,7 +289,9 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
                 radius: 22,
                 backgroundColor: _getStatusColor().withOpacity(0.2),
                 child: Text(
-                  request.customerName[0].toUpperCase(),
+                  request.customerName.isNotEmpty 
+                      ? request.customerName[0].toUpperCase() 
+                      : '?',
                   style: TextStyle(
                     color: _getStatusColor(),
                     fontWeight: FontWeight.bold,
