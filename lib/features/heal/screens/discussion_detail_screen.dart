@@ -69,8 +69,23 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
     _checkNotificationStatus();
     _setupSocketListeners();
     
-    // Join discussion room for real-time updates
-    _socketService.joinDiscussionRoom(widget.post.id);
+    // Connect socket with auth and join discussion room for real-time updates
+    _connectSocketAndJoinRoom();
+  }
+  
+  Future<void> _connectSocketAndJoinRoom() async {
+    // Ensure socket is connected with auth token
+    await _socketService.connect();
+    
+    // Wait a moment for connection to establish
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (_socketService.isConnected) {
+      _socketService.joinDiscussionRoom(widget.post.id);
+      print('📥 [DISCUSSION DETAIL] Joined socket room: ${widget.post.id}');
+    } else {
+      print('⚠️ [DISCUSSION DETAIL] Socket not connected, cannot join room');
+    }
   }
   
   void _setupSocketListeners() {
@@ -291,20 +306,20 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
       final apiService = DiscussionApiService();
       final response = await apiService.getComments(widget.post.id);
       
-      if (response.comments.isNotEmpty) {
-        setState(() {
-          _comments.clear();
-          _comments.addAll(response.comments);
-          _useApiData = true;
-        });
-        print('📥 [DISCUSSION DETAIL] Loaded ${response.comments.length} comments from API');
-        return;
-      }
+      // API succeeded - use API data even if empty
+      setState(() {
+        _comments.clear();
+        _comments.addAll(response.comments);
+        _useApiData = true;
+      });
+      print('📥 [DISCUSSION DETAIL] Loaded ${response.comments.length} comments from API');
+      return;
     } catch (e) {
       print('Error loading comments from API: $e');
     }
     
-    // Fallback to local storage
+    // Fallback to local storage only if API failed
+    print('⚠️ [DISCUSSION DETAIL] API failed, falling back to local storage');
     final allComments = await DiscussionService.getComments(widget.post.id);
     if (allComments.isEmpty) {
       _loadSampleComments();

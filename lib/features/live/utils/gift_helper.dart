@@ -18,7 +18,7 @@ class GiftHelper {
     
     return null;
   }
-  
+
   /// Get gift color based on gift name
   static Color getGiftColor(String giftName) {
     switch (giftName.toLowerCase()) {
@@ -38,7 +38,7 @@ class GiftHelper {
         return Colors.amber;
     }
   }
-  
+
   /// Build gift image widget (emoji display)
   static Widget buildGiftImage(String giftName, String emoji, double size) {
     return Text(

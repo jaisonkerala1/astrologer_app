@@ -26,19 +26,22 @@ class _SimpleCreateDiscussionBottomSheetState extends State<SimpleCreateDiscussi
   final TextEditingController _topicController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  String _selectedCategory = 'General';
+  String _selectedCategory = 'General Discussion';
   bool _isPosting = false;
   AstrologerModel? _currentUser;
 
+  // Must match backend enum in Discussion.js
   final List<String> _categories = [
-    'General',
-    'Astrology',
-    'Vedic',
-    'Tarot',
-    'Numerology',
-    'Healing',
-    'Meditation',
-    'Other',
+    'General Discussion',
+    'Astrology & Horoscopes',
+    'Yoga, Meditation & Mindfulness',
+    'Healing & Wellness',
+    'Spiritual Growth & Practices',
+    'Vedic Rituals & Puja',
+    'Vastu & Feng Shui',
+    'Tarot & Divination',
+    'Numerology & Palmistry',
+    'Community Support & Life Talk',
   ];
 
   @override

@@ -37,7 +37,7 @@ class DiscussionApiService {
       }
 
       final response = await _apiService.get(
-        '/discussion',
+        '/api/discussion',
         queryParameters: queryParams,
       );
 
@@ -71,7 +71,7 @@ class DiscussionApiService {
   }) async {
     try {
       final response = await _apiService.get(
-        '/discussion/my-posts',
+        '/api/discussion/my-posts',
         queryParameters: {'page': page, 'limit': limit},
       );
 
@@ -101,7 +101,7 @@ class DiscussionApiService {
   /// Get single discussion by ID
   Future<DiscussionPost> getDiscussion(String id) async {
     try {
-      final response = await _apiService.get('/discussion/$id');
+      final response = await _apiService.get('/api/discussion/$id');
 
       if (response.data['success'] == true) {
         return DiscussionPost.fromApiJson(response.data['data']);
@@ -124,7 +124,7 @@ class DiscussionApiService {
   }) async {
     try {
       final response = await _apiService.post(
-        '/discussion',
+        '/api/discussion',
         data: {
           'title': title,
           'content': content,
@@ -160,7 +160,7 @@ class DiscussionApiService {
       if (category != null) data['category'] = category;
       if (visibility != null) data['visibility'] = visibility;
 
-      final response = await _apiService.put('/discussion/$id', data: data);
+      final response = await _apiService.put('/api/discussion/$id', data: data);
 
       if (response.data['success'] == true) {
         return DiscussionPost.fromApiJson(response.data['data']);
@@ -176,7 +176,7 @@ class DiscussionApiService {
   /// Delete discussion (soft delete)
   Future<void> deleteDiscussion(String id) async {
     try {
-      final response = await _apiService.delete('/discussion/$id');
+      final response = await _apiService.delete('/api/discussion/$id');
 
       if (response.data['success'] != true) {
         throw Exception(response.data['message'] ?? 'Failed to delete discussion');
@@ -190,7 +190,7 @@ class DiscussionApiService {
   /// Toggle like on discussion
   Future<LikeResponse> toggleDiscussionLike(String id) async {
     try {
-      final response = await _apiService.post('/discussion/$id/like');
+      final response = await _apiService.post('/api/discussion/$id/like');
 
       if (response.data['success'] == true) {
         return LikeResponse.fromJson(response.data['data']);
@@ -215,7 +215,7 @@ class DiscussionApiService {
   }) async {
     try {
       final response = await _apiService.get(
-        '/discussion/$discussionId/comments',
+        '/api/discussion/$discussionId/comments',
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -254,7 +254,7 @@ class DiscussionApiService {
   }) async {
     try {
       final response = await _apiService.post(
-        '/discussion/$discussionId/comments',
+        '/api/discussion/$discussionId/comments',
         data: {
           'content': content,
           if (parentCommentId != null) 'parentCommentId': parentCommentId,
@@ -275,7 +275,7 @@ class DiscussionApiService {
   /// Toggle like on comment
   Future<LikeResponse> toggleCommentLike(String commentId) async {
     try {
-      final response = await _apiService.post('/discussion/comment/$commentId/like');
+      final response = await _apiService.post('/api/discussion/comment/$commentId/like');
 
       if (response.data['success'] == true) {
         return LikeResponse.fromJson(response.data['data']);
@@ -291,7 +291,7 @@ class DiscussionApiService {
   /// Delete comment
   Future<void> deleteComment(String commentId) async {
     try {
-      final response = await _apiService.delete('/discussion/comment/$commentId');
+      final response = await _apiService.delete('/api/discussion/comment/$commentId');
 
       if (response.data['success'] != true) {
         throw Exception(response.data['message'] ?? 'Failed to delete comment');
@@ -307,7 +307,7 @@ class DiscussionApiService {
   /// Get available discussion categories
   Future<List<String>> getCategories() async {
     try {
-      final response = await _apiService.get('/discussion/meta/categories');
+      final response = await _apiService.get('/api/discussion/meta/categories');
 
       if (response.data['success'] == true) {
         final List<dynamic> categories = response.data['data'] ?? [];

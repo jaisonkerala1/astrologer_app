@@ -123,7 +123,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     _initializationId++;
     
     // Stop audio stream regardless of camera state
-    _stopAudioStream();
+      _stopAudioStream();
     
     // Dispose camera if it exists (whether fully initialized or not)
     if (_cameraController != null) {
@@ -179,7 +179,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     // Reset audio level to 0 - use try-catch since context may be unavailable during dispose
     if (mounted) {
       try {
-        context.read<LiveBloc>().add(const AudioLevelUpdatedEvent(0.0));
+      context.read<LiveBloc>().add(const AudioLevelUpdatedEvent(0.0));
       } catch (e) {
         // Context may be unavailable during dispose or logout - this is expected
         debugPrint('📷 [CAMERA] Could not reset audio level: $e');
@@ -220,7 +220,7 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
       // Resume camera ONLY if this page is visible
       // Prevents camera from starting when user is on dashboard
       if (widget.isVisible && !_isCameraInitialized && !_isCameraInitializing && !_isCameraMuted) {
-        _initializeCamera();
+      _initializeCamera();
       }
     }
   }
