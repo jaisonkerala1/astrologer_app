@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ServiceRequest = require('../models/ServiceRequest');
 const Service = require('../models/Service');
-const { auth } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 
 // Rate limiting
