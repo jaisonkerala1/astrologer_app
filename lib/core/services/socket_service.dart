@@ -112,9 +112,13 @@ class SocketService {
   // Discussion event streams
   final _discussionCommentController = StreamController<Map<String, dynamic>>.broadcast();
   final _discussionLikeController = StreamController<Map<String, dynamic>>.broadcast();
+  final _discussionUpdateController = StreamController<Map<String, dynamic>>.broadcast();
+  final _discussionDeleteController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<Map<String, dynamic>> get discussionCommentStream => _discussionCommentController.stream;
   Stream<Map<String, dynamic>> get discussionLikeStream => _discussionLikeController.stream;
+  Stream<Map<String, dynamic>> get discussionUpdateStream => _discussionUpdateController.stream;
+  Stream<Map<String, dynamic>> get discussionDeleteStream => _discussionDeleteController.stream;
 
   // Error stream
   final _errorController = StreamController<String>.broadcast();
@@ -308,7 +312,12 @@ class SocketService {
 
     _socket!.on(DiscussionSocketEvents.update, (data) {
       debugPrint('🔄 [SOCKET] Discussion update: $data');
-      // Discussion updates (new posts, comment count changes) - can be handled by UI
+      _discussionUpdateController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(DiscussionSocketEvents.delete, (data) {
+      debugPrint('🗑️ [SOCKET] Discussion delete: $data');
+      _discussionDeleteController.add(Map<String, dynamic>.from(data));
     });
   }
 
@@ -598,6 +607,8 @@ class SocketService {
     _chatOnlineController.close();
     _discussionCommentController.close();
     _discussionLikeController.close();
+    _discussionUpdateController.close();
+    _discussionDeleteController.close();
     _errorController.close();
   }
 }

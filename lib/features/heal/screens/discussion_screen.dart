@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../shared/widgets/simple_touch_feedback.dart';
@@ -42,10 +44,16 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   // BLoC instance
   late DiscussionBloc _discussionBloc;
   
+  // Socket service for real-time updates
+  final SocketService _socketService = SocketService();
+  StreamSubscription<Map<String, dynamic>>? _updateSubscription;
+  StreamSubscription<Map<String, dynamic>>? _deleteSubscription;
+  
   // Current user info
   String _currentUserName = 'You';
   String _currentUserInitial = 'Y';
   String? _currentUserPhoto;
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -53,12 +61,90 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     _discussionBloc = getIt<DiscussionBloc>();
     _loadCurrentUser();
     _loadPosts();
+    _connectSocketAndListen();
   }
   
   @override
   void dispose() {
+    _updateSubscription?.cancel();
+    _deleteSubscription?.cancel();
     _discussionBloc.close();
     super.dispose();
+  }
+  
+  /// Connect to socket and listen for real-time discussion updates
+  Future<void> _connectSocketAndListen() async {
+    await _socketService.connect();
+    
+    // Listen for discussion updates (new posts, like/comment count changes)
+    _updateSubscription = _socketService.discussionUpdateStream.listen((data) {
+      if (!mounted) return;
+      
+      final type = data['type'] as String?;
+      final discussionId = data['discussionId'] as String?;
+      
+      debugPrint('📥 [DISCUSSION] Update received: $type for $discussionId');
+      
+      if (type == 'new_post') {
+        // New discussion created by another user
+        final discussion = data['discussion'] as Map<String, dynamic>?;
+        if (discussion != null) {
+          final authorId = discussion['authorId'] as String?;
+          // Don't add if it's our own post (already added optimistically)
+          if (authorId != _currentUserId) {
+            final newPost = DiscussionPost.fromApiJson(discussion);
+            setState(() {
+              // Check if post already exists
+              final exists = _posts.any((p) => p.id == newPost.id);
+              if (!exists) {
+                _posts.insert(0, newPost);
+              }
+            });
+          }
+        }
+      } else if (type == 'like_updated' && discussionId != null) {
+        // Like count changed
+        final likesCount = data['likesCount'] as int? ?? 0;
+        final userId = data['userId'] as String?;
+        final isLiked = data['isLiked'] as bool? ?? false;
+        
+        setState(() {
+          final postIndex = _posts.indexWhere((p) => p.id == discussionId);
+          if (postIndex != -1) {
+            final post = _posts[postIndex];
+            post.likes = likesCount;
+            // Only update isLiked if it's for another user
+            if (userId != _currentUserId) {
+              // Don't change our own like state from socket
+            } else {
+              post.isLiked = isLiked;
+            }
+          }
+        });
+      } else if (type == 'comment_added' && discussionId != null) {
+        // Comment count changed
+        final commentsCount = data['commentsCount'] as int? ?? 0;
+        
+        setState(() {
+          final postIndex = _posts.indexWhere((p) => p.id == discussionId);
+          if (postIndex != -1) {
+            _posts[postIndex].commentsCount = commentsCount;
+          }
+        });
+      }
+    });
+    
+    // Listen for discussion deletions
+    _deleteSubscription = _socketService.discussionDeleteStream.listen((data) {
+      if (!mounted) return;
+      
+      final discussionId = data['discussionId'] as String?;
+      if (discussionId != null) {
+        setState(() {
+          _posts.removeWhere((p) => p.id == discussionId);
+        });
+      }
+    });
   }
   
   /// Load current user's profile information
@@ -77,10 +163,11 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
               ? astrologer.name[0].toUpperCase() 
               : 'Y';
           _currentUserPhoto = astrologer.profilePicture;
+          _currentUserId = astrologer.id;
         });
       }
     } catch (e) {
-      print('Error loading current user: $e');
+      debugPrint('Error loading current user: $e');
       // Keep default values if error
     }
   }
@@ -563,7 +650,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
                   // Comment Button
                   _buildActionButton(
                     icon: Icons.chat_bubble_outline,
-                    label: 'Comment',
+                    label: post.commentsCount > 0 ? '${post.commentsCount}' : 'Comment',
                     color: const Color(0xFF6B6B8D),
                     onTap: () => _showPostDetail(post),
                   ),
@@ -834,13 +921,18 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
     );
   }
 
-  void _showPostDetail(DiscussionPost post) {
-    Navigator.push(
+  void _showPostDetail(DiscussionPost post) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => DiscussionDetailScreen(post: post),
       ),
     );
+    // Refresh the post data after returning (in case comments/likes were added)
+    // This is a fallback in case socket updates weren't received
+    if (mounted && _useApiData) {
+      _discussionBloc.add(const LoadDiscussionsEvent(refresh: true));
+    }
   }
 
   void _createPost(String title, String content, String category) async {

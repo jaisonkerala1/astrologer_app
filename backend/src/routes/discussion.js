@@ -403,7 +403,19 @@ router.post('/:id/like', auth, likeLimiter, async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       const roomId = `discussion:${discussion._id.toString()}`;
+      
+      // Emit to discussion room (for people viewing the post)
       io.to(roomId).emit(EVENTS.DISCUSSION.LIKE, {
+        type: 'discussion',
+        discussionId: discussion._id.toString(),
+        likesCount: discussion.likesCount,
+        userId: req.user.astrologerId,
+        isLiked: isNowLiked
+      });
+      
+      // Also emit globally for dashboard/list updates
+      io.emit(EVENTS.DISCUSSION.UPDATE, {
+        type: 'like_updated',
         discussionId: discussion._id.toString(),
         likesCount: discussion.likesCount,
         userId: req.user.astrologerId,
