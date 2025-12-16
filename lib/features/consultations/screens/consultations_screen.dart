@@ -87,7 +87,7 @@ class _ConsultationsScreenState extends State<ConsultationsScreen>
         return Scaffold(
           backgroundColor: themeService.currentTheme.type == AppThemeType.dark 
               ? themeService.backgroundColor 
-              : const Color(0xFFF5F5F7), // Matching profile screen background
+              : const Color(0xFFF5F5F7),
           appBar: AppBar(
             backgroundColor: themeService.primaryColor,
             elevation: 0,

@@ -214,6 +214,9 @@ class ServiceRequestActionsWidget extends StatelessWidget {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
+    // Get dynamic color based on status (matching card widget behavior)
+    final statusColor = _getStatusColor();
+    
     return SizedBox(
       height: 44,
       child: ElevatedButton.icon(
@@ -227,13 +230,18 @@ class ServiceRequestActionsWidget extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: themeService.primaryColor,
+          backgroundColor: statusColor,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );
+  }
+  
+  /// Get status-based color (matching card widget behavior)
+  Color _getStatusColor() {
+    return Color(int.parse(request.statusColor.replaceFirst('#', '0xFF')));
   }
 
   void _acceptRequest(BuildContext context) {
