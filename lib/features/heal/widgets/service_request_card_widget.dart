@@ -398,18 +398,17 @@ class _ServiceRequestCardWidgetState extends State<ServiceRequestCardWidget>
   }
 
   IconData _getDurationIcon(RequestStatus status) {
-    // Bold minimal icons matching bottom nav bar style
     switch (status) {
       case RequestStatus.pending:
-        return Icons.pending;
+        return Icons.schedule_outlined;
       case RequestStatus.confirmed:
-        return Icons.event_available;
+        return Icons.event_available_outlined;
       case RequestStatus.inProgress:
-        return Icons.play_circle;
+        return Icons.access_time;
       case RequestStatus.completed:
-        return Icons.check_circle;
+        return Icons.check_circle_outline;
       case RequestStatus.cancelled:
-        return Icons.cancel;
+        return Icons.cancel_outlined;
     }
   }
 

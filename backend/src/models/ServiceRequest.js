@@ -222,7 +222,7 @@ serviceRequestSchema.virtual('statusDisplay').get(function() {
 // Virtual for status color
 serviceRequestSchema.virtual('statusColor').get(function() {
   const colorMap = {
-    'pending': '#E67E22', // Vedic Orange (primary color)
+    'pending': '#FFA500',
     'confirmed': '#4CAF50',
     'inProgress': '#2196F3',
     'completed': '#9C27B0',

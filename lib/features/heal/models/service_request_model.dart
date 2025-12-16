@@ -147,7 +147,7 @@ class ServiceRequest extends Equatable {
   String get statusColor {
     switch (status) {
       case RequestStatus.pending:
-        return '#E67E22'; // Vedic Orange (primary color)
+        return '#FFA500'; // Orange
       case RequestStatus.confirmed:
         return '#4CAF50'; // Green
       case RequestStatus.inProgress:
