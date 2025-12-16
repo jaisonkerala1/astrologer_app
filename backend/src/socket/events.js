@@ -51,6 +51,17 @@ module.exports = {
     DELETE: 'discussion:delete',
   },
 
+  // Service Request Events (Heal Tab)
+  SERVICE_REQUEST: {
+    JOIN: 'service-request:join',        // Join astrologer's request room
+    LEAVE: 'service-request:leave',      // Leave astrologer's request room
+    NEW: 'service-request:new',          // New request created
+    STATUS: 'service-request:status',    // Status updated
+    NOTES: 'service-request:notes',      // Notes updated
+    DELETE: 'service-request:delete',    // Request deleted
+    UPDATE: 'service-request:update',    // General update
+  },
+
   // Notification Events
   NOTIFICATION: {
     NEW: 'notification:new',
@@ -62,6 +73,7 @@ module.exports = {
     LIVE: 'live:',
     CHAT: 'chat:',
     DISCUSSION: 'discussion:',
+    ASTROLOGER: 'astrologer:',           // For astrologer-specific updates
     USER: 'user:',
   },
 };

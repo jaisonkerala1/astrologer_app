@@ -4,6 +4,12 @@ const ServiceRequest = require('../models/ServiceRequest');
 const Service = require('../models/Service');
 const auth = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
+const {
+  broadcastNewServiceRequest,
+  broadcastServiceRequestStatus,
+  broadcastServiceRequestNotes,
+  broadcastServiceRequestDelete,
+} = require('../socket/handlers/serviceRequestHandler');
 
 // Rate limiting
 const requestLimiter = rateLimit({
@@ -249,15 +255,10 @@ router.post('/', auth, requestLimiter, async (req, res) => {
       });
     }
     
-    // Emit socket event for real-time updates
+    // Broadcast real-time update via Socket.IO
     const io = req.app.get('io');
     if (io) {
-      io.to(`astrologer:${req.user.astrologerId}`).emit('service-request:new', {
-        requestId: request._id.toString(),
-        customerName: request.customerName,
-        serviceName: request.serviceName,
-        status: request.status
-      });
+      broadcastNewServiceRequest(io, req.user.astrologerId, request);
     }
     
     res.status(201).json({
@@ -315,14 +316,10 @@ router.put('/:id/status', auth, async (req, res) => {
     
     await request.updateStatus(status, { notes, cancelledBy, cancellationReason });
     
-    // Emit socket event for real-time updates
+    // Broadcast real-time update via Socket.IO
     const io = req.app.get('io');
     if (io) {
-      io.to(`astrologer:${req.user.astrologerId}`).emit('service-request:status', {
-        requestId: request._id.toString(),
-        status: request.status,
-        statusDisplay: request.statusDisplay
-      });
+      broadcastServiceRequestStatus(io, req.user.astrologerId, request);
       
       // If user is connected, notify them too
       if (request.userId) {
@@ -380,6 +377,12 @@ router.put('/:id/notes', auth, async (req, res) => {
     
     await request.addNotes(notes);
     
+    // Broadcast real-time update via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      broadcastServiceRequestNotes(io, req.user.astrologerId, request);
+    }
+    
     res.json({
       success: true,
       message: 'Notes updated successfully',
@@ -418,6 +421,12 @@ router.delete('/:id', auth, async (req, res) => {
     }
     
     await request.softDelete();
+    
+    // Broadcast real-time update via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      broadcastServiceRequestDelete(io, req.user.astrologerId, request._id.toString());
+    }
     
     res.json({
       success: true,
@@ -556,16 +565,10 @@ router.post('/user/book', requestLimiter, async (req, res) => {
     // Update service booking count
     await service.incrementBookings();
     
-    // Notify astrologer via socket
+    // Broadcast real-time update via Socket.IO
     const io = req.app.get('io');
     if (io) {
-      io.to(`astrologer:${service.astrologerId}`).emit('service-request:new', {
-        requestId: request._id.toString(),
-        customerName: request.customerName,
-        serviceName: request.serviceName,
-        status: request.status,
-        isUserBooking: true
-      });
+      broadcastNewServiceRequest(io, service.astrologerId.toString(), request);
     }
     
     res.status(201).json({

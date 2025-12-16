@@ -223,7 +223,10 @@ Future<void> setupServiceLocator() async {
   
   // Heal BLoC (Singleton to preserve state across navigation)
   getIt.registerLazySingleton<HealBloc>(
-    () => HealBloc(repository: getIt<HealRepository>()),
+    () => HealBloc(
+      repository: getIt<HealRepository>(),
+      socketService: getIt<SocketService>(),
+    ),
   );
   
   // Help & Support BLoC

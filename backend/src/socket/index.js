@@ -7,6 +7,7 @@ const { Server } = require('socket.io');
 const { socketAuth, optionalSocketAuth } = require('./socketAuth');
 const initLiveHandler = require('./handlers/liveHandler');
 const { initDiscussionHandler } = require('./handlers/discussionHandler');
+const { initServiceRequestHandler } = require('./handlers/serviceRequestHandler');
 const roomManager = require('./roomManager');
 const EVENTS = require('./events');
 
@@ -40,6 +41,7 @@ function initSocketIO(httpServer) {
     // Initialize feature handlers
     initLiveHandler(io, socket);
     initDiscussionHandler(socket, io, roomManager);
+    initServiceRequestHandler(socket, io, roomManager);
 
     // Send connection success
     socket.emit('connected', {

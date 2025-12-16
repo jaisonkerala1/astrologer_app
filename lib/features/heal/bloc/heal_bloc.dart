@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/heal/heal_repository.dart';
+import '../../../core/services/socket_service.dart';
 import '../models/service_model.dart';
 import '../models/service_request_model.dart';
 import 'heal_event.dart';
@@ -7,8 +9,20 @@ import 'heal_state.dart';
 
 class HealBloc extends Bloc<HealEvent, HealState> {
   final HealRepository repository;
+  final SocketService _socketService;
+  
+  // Socket stream subscriptions
+  StreamSubscription? _serviceRequestNewSubscription;
+  StreamSubscription? _serviceRequestStatusSubscription;
+  StreamSubscription? _serviceRequestNotesSubscription;
+  StreamSubscription? _serviceRequestDeleteSubscription;
+  StreamSubscription? _serviceRequestUpdateSubscription;
 
-  HealBloc({required this.repository}) : super(const HealInitial()) {
+  HealBloc({
+    required this.repository,
+    SocketService? socketService,
+  })  : _socketService = socketService ?? SocketService(),
+        super(const HealInitial()) {
     on<LoadServicesEvent>(_onLoadServices);
     on<CreateServiceEvent>(_onCreateService);
     on<UpdateServiceEvent>(_onUpdateService);
@@ -21,6 +35,9 @@ class HealBloc extends Bloc<HealEvent, HealState> {
     on<CancelRequestEvent>(_onCancelRequest);
     on<LoadServiceStatisticsEvent>(_onLoadStatistics);
     on<RefreshHealEvent>(_onRefresh);
+    
+    // Subscribe to socket events for real-time updates
+    _subscribeToSocketEvents();
   }
 
   Future<void> _onLoadServices(LoadServicesEvent event, Emitter<HealState> emit) async {
@@ -334,6 +351,120 @@ class HealBloc extends Bloc<HealEvent, HealState> {
         ));
       }
     }
+  }
+
+  // ============================================================================
+  // REAL-TIME SOCKET SUBSCRIPTIONS
+  // ============================================================================
+
+  void _subscribeToSocketEvents() {
+    print('🔌 [HealBloc] Subscribing to service request socket events');
+
+    // Listen for new service requests
+    _serviceRequestNewSubscription = _socketService.serviceRequestNewStream.listen((data) {
+      print('🆕 [HealBloc] Real-time: New service request received: ${data['requestId']}');
+      
+      if (state is HealLoadedState) {
+        // Refresh the list to show the new request
+        add(const LoadServiceRequestsEvent());
+      }
+    });
+
+    // Listen for status updates
+    _serviceRequestStatusSubscription = _socketService.serviceRequestStatusStream.listen((data) {
+      print('🔄 [HealBloc] Real-time: Status update for ${data['requestId']}: ${data['status']}');
+      
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        
+        // Find and update the specific request
+        final updatedRequests = currentState.serviceRequests.map((request) {
+          if (request.id == data['requestId']) {
+            // Parse status from string to enum
+            RequestStatus? newStatus;
+            try {
+              final statusStr = data['status'] as String;
+              newStatus = RequestStatus.values.firstWhere(
+                (e) => e.name == statusStr,
+                orElse: () => request.status,
+              );
+            } catch (e) {
+              newStatus = request.status;
+            }
+            
+            return request.copyWith(
+              status: newStatus,
+              startedAt: data['startedAt'] != null ? DateTime.parse(data['startedAt']) : request.startedAt,
+              completedAt: data['completedAt'] != null ? DateTime.parse(data['completedAt']) : request.completedAt,
+              cancelledAt: data['cancelledAt'] != null ? DateTime.parse(data['cancelledAt']) : request.cancelledAt,
+              confirmedAt: data['confirmedAt'] != null ? DateTime.parse(data['confirmedAt']) : request.confirmedAt,
+            );
+          }
+          return request;
+        }).toList();
+        
+        emit(currentState.copyWith(serviceRequests: updatedRequests));
+        print('✅ [HealBloc] Real-time: Request status updated in state');
+      }
+    });
+
+    // Listen for notes updates
+    _serviceRequestNotesSubscription = _socketService.serviceRequestNotesStream.listen((data) {
+      print('📝 [HealBloc] Real-time: Notes update for ${data['requestId']}');
+      
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        
+        final updatedRequests = currentState.serviceRequests.map((request) {
+          if (request.id == data['requestId']) {
+            return request.copyWith(notes: data['notes'] as String?);
+          }
+          return request;
+        }).toList();
+        
+        emit(currentState.copyWith(serviceRequests: updatedRequests));
+      }
+    });
+
+    // Listen for deletions
+    _serviceRequestDeleteSubscription = _socketService.serviceRequestDeleteStream.listen((data) {
+      print('🗑️ [HealBloc] Real-time: Request deleted: ${data['requestId']}');
+      
+      if (state is HealLoadedState) {
+        final currentState = state as HealLoadedState;
+        
+        final updatedRequests = currentState.serviceRequests
+            .where((request) => request.id != data['requestId'])
+            .toList();
+        
+        emit(currentState.copyWith(serviceRequests: updatedRequests));
+      }
+    });
+
+    // Listen for general updates
+    _serviceRequestUpdateSubscription = _socketService.serviceRequestUpdateStream.listen((data) {
+      print('🔄 [HealBloc] Real-time: General update for ${data['requestId']}');
+      
+      // For general updates, we could refresh the entire list or update specific fields
+      // For now, just refresh the list
+      if (state is HealLoadedState) {
+        add(const LoadServiceRequestsEvent());
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    // Cancel all socket subscriptions
+    _serviceRequestNewSubscription?.cancel();
+    _serviceRequestStatusSubscription?.cancel();
+    _serviceRequestNotesSubscription?.cancel();
+    _serviceRequestDeleteSubscription?.cancel();
+    _serviceRequestUpdateSubscription?.cancel();
+    
+    print('🔌 [HealBloc] Unsubscribed from service request socket events');
+    
+    return super.close();
   }
 }
 

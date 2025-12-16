@@ -55,6 +55,17 @@ class DiscussionSocketEvents {
   static const String delete = 'discussion:delete';
 }
 
+/// Socket event types for service requests (Heal tab)
+class ServiceRequestSocketEvents {
+  static const String join = 'service-request:join';
+  static const String leave = 'service-request:leave';
+  static const String new_ = 'service-request:new';
+  static const String status = 'service-request:status';
+  static const String notes = 'service-request:notes';
+  static const String delete = 'service-request:delete';
+  static const String update = 'service-request:update';
+}
+
 /// Core Socket Service - Singleton
 /// Manages WebSocket connection with authentication
 /// Provides streams for BLoC integration
@@ -119,6 +130,19 @@ class SocketService {
   Stream<Map<String, dynamic>> get discussionLikeStream => _discussionLikeController.stream;
   Stream<Map<String, dynamic>> get discussionUpdateStream => _discussionUpdateController.stream;
   Stream<Map<String, dynamic>> get discussionDeleteStream => _discussionDeleteController.stream;
+
+  // Service Request event streams (Heal tab)
+  final _serviceRequestNewController = StreamController<Map<String, dynamic>>.broadcast();
+  final _serviceRequestStatusController = StreamController<Map<String, dynamic>>.broadcast();
+  final _serviceRequestNotesController = StreamController<Map<String, dynamic>>.broadcast();
+  final _serviceRequestDeleteController = StreamController<Map<String, dynamic>>.broadcast();
+  final _serviceRequestUpdateController = StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get serviceRequestNewStream => _serviceRequestNewController.stream;
+  Stream<Map<String, dynamic>> get serviceRequestStatusStream => _serviceRequestStatusController.stream;
+  Stream<Map<String, dynamic>> get serviceRequestNotesStream => _serviceRequestNotesController.stream;
+  Stream<Map<String, dynamic>> get serviceRequestDeleteStream => _serviceRequestDeleteController.stream;
+  Stream<Map<String, dynamic>> get serviceRequestUpdateStream => _serviceRequestUpdateController.stream;
 
   // Error stream
   final _errorController = StreamController<String>.broadcast();
@@ -318,6 +342,32 @@ class SocketService {
     _socket!.on(DiscussionSocketEvents.delete, (data) {
       debugPrint('🗑️ [SOCKET] Discussion delete: $data');
       _discussionDeleteController.add(Map<String, dynamic>.from(data));
+    });
+
+    // Service Request events (Heal tab)
+    _socket!.on(ServiceRequestSocketEvents.new_, (data) {
+      debugPrint('🆕 [SOCKET] New service request: $data');
+      _serviceRequestNewController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(ServiceRequestSocketEvents.status, (data) {
+      debugPrint('🔄 [SOCKET] Service request status update: $data');
+      _serviceRequestStatusController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(ServiceRequestSocketEvents.notes, (data) {
+      debugPrint('📝 [SOCKET] Service request notes update: $data');
+      _serviceRequestNotesController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(ServiceRequestSocketEvents.delete, (data) {
+      debugPrint('🗑️ [SOCKET] Service request deleted: $data');
+      _serviceRequestDeleteController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(ServiceRequestSocketEvents.update, (data) {
+      debugPrint('🔄 [SOCKET] Service request update: $data');
+      _serviceRequestUpdateController.add(Map<String, dynamic>.from(data));
     });
   }
 
@@ -558,6 +608,32 @@ class SocketService {
     });
   }
 
+  // ==================== SERVICE REQUEST METHODS ====================
+
+  /// Join astrologer's service request room (for real-time updates)
+  /// Note: The backend auto-joins the astrologer room on connection,
+  /// but this method can be used for explicit joins if needed
+  void joinServiceRequestRoom(String astrologerId) {
+    if (!isConnected) return;
+
+    _socket!.emit(ServiceRequestSocketEvents.join, {
+      'astrologerId': astrologerId,
+    });
+    
+    debugPrint('📥 [SOCKET] Joining service request room for astrologer: $astrologerId');
+  }
+
+  /// Leave astrologer's service request room
+  void leaveServiceRequestRoom(String astrologerId) {
+    if (!isConnected) return;
+
+    _socket!.emit(ServiceRequestSocketEvents.leave, {
+      'astrologerId': astrologerId,
+    });
+    
+    debugPrint('📤 [SOCKET] Leaving service request room for astrologer: $astrologerId');
+  }
+
   // ==================== CONNECTION MANAGEMENT ====================
 
   /// Disconnect socket
@@ -609,6 +685,11 @@ class SocketService {
     _discussionLikeController.close();
     _discussionUpdateController.close();
     _discussionDeleteController.close();
+    _serviceRequestNewController.close();
+    _serviceRequestStatusController.close();
+    _serviceRequestNotesController.close();
+    _serviceRequestDeleteController.close();
+    _serviceRequestUpdateController.close();
     _errorController.close();
   }
 }
