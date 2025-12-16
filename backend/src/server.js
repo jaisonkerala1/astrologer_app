@@ -46,13 +46,32 @@ app.use(limiter);
 // CORS configuration
 app.use(cors({
   origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    if (origin.startsWith('http://localhost') || 
-        origin.startsWith('http://127.0.0.1') ||
-        origin.startsWith('http://10.0.2.2') ||
-        origin === (process.env.CORS_ORIGIN || 'http://localhost:3000')) {
+    
+    // If CORS_ORIGIN is '*', allow all origins
+    if (process.env.CORS_ORIGIN === '*') {
       return callback(null, true);
     }
+    
+    // Allow localhost origins
+    if (origin.startsWith('http://localhost') || 
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://10.0.2.2')) {
+      return callback(null, true);
+    }
+    
+    // Check if origin matches CORS_ORIGIN (supports comma-separated list)
+    const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(o => o.trim());
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow vercel.app domains
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
