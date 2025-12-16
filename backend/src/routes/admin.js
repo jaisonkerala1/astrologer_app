@@ -10,7 +10,7 @@ const Review = require('../models/Review');
 const LiveStream = require('../models/LiveStream');
 const Discussion = require('../models/Discussion');
 const DiscussionComment = require('../models/DiscussionComment');
-const { generateAgoraToken, Role } = require('../services/agoraService');
+const { RtcTokenBuilder, RtcRole } = require('agora-token');
 
 // ============================================
 // ADMIN AUTHENTICATION
@@ -1435,14 +1435,20 @@ router.get('/live-streams/:id/token', async (req, res) => {
       });
     }
 
-    // Generate token as viewer (subscriber role)
-    const token = generateAgoraToken(
+    // Generate token using official Agora library
+    const uid = 0; // 0 means auto-assign
+    const role = RtcRole.SUBSCRIBER; // Admin joins as viewer
+    const expirationTimeInSeconds = 86400; // 24 hours
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+
+    const token = RtcTokenBuilder.buildTokenWithUid(
       appId,
       appCertificate,
       stream.agoraChannelName,
-      0, // UID 0 = auto-assign
-      Role.SUBSCRIBER, // Admin joins as viewer
-      86400 // 24 hours expiry
+      uid,
+      role,
+      privilegeExpiredTs
     );
 
     res.json({
@@ -1451,7 +1457,7 @@ router.get('/live-streams/:id/token', async (req, res) => {
         token,
         channelName: stream.agoraChannelName,
         appId: appId,
-        uid: 0
+        uid: uid
       }
     });
   } catch (error) {

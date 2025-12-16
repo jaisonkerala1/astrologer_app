@@ -29,6 +29,13 @@ const normalizeAstrologer = (astrologerDoc) => {
     lastSeen: astro.lastSeen || null,
     createdAt: astro.createdAt || null,
     updatedAt: astro.updatedAt || null,
+    // Admin approval fields
+    isApproved: astro.isApproved ?? false,
+    approvedAt: astro.approvedAt || null,
+    approvedBy: astro.approvedBy || null,
+    isSuspended: astro.isSuspended ?? false,
+    suspendedAt: astro.suspendedAt || null,
+    suspensionReason: astro.suspensionReason || null,
     sessionId: astro.activeSession?.sessionId || astro.sessionId || null,
     activeSession: astro.activeSession
       ? {
@@ -73,6 +80,13 @@ const sanitizeAstrologer = (astrologer) => {
     lastSeen: astroObj.lastSeen || null,
     createdAt: astroObj.createdAt || null,
     updatedAt: astroObj.updatedAt || null,
+    // Admin approval fields
+    isApproved: astroObj.isApproved ?? false,
+    approvedAt: astroObj.approvedAt || null,
+    approvedBy: astroObj.approvedBy || null,
+    isSuspended: astroObj.isSuspended ?? false,
+    suspendedAt: astroObj.suspendedAt || null,
+    suspensionReason: astroObj.suspensionReason || null,
     sessionId: astroObj.activeSession?.sessionId || null,
     activeSession: astroObj.activeSession
       ? {
@@ -85,5 +99,7 @@ const sanitizeAstrologer = (astrologer) => {
   };
 };
 
-module.exports = sanitizeAstrologer;
+// Export both functions
+module.exports = normalizeAstrologer;
+module.exports.sanitizeAstrologer = sanitizeAstrologer;
 
