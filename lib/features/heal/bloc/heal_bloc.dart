@@ -378,30 +378,31 @@ class HealBloc extends Bloc<HealEvent, HealState> {
         final currentState = state as HealLoadedState;
         
         // Find and update the specific request
-        final updatedRequests = currentState.serviceRequests.map((request) {
-          if (request.id == data['requestId']) {
-            // Parse status from string to enum
-            RequestStatus? newStatus;
-            try {
-              final statusStr = data['status'] as String;
-              newStatus = RequestStatus.values.firstWhere(
-                (e) => e.name == statusStr,
-                orElse: () => request.status,
+        final updatedRequests = List<ServiceRequest>.from(
+          currentState.serviceRequests.map((request) {
+            if (request.id == data['requestId']) {
+              // Parse status from string to enum
+              RequestStatus? newStatus;
+              try {
+                final statusStr = data['status'] as String;
+                newStatus = RequestStatus.values.firstWhere(
+                  (e) => e.name == statusStr,
+                  orElse: () => request.status,
+                );
+              } catch (e) {
+                newStatus = request.status;
+              }
+              
+              return request.copyWith(
+                status: newStatus,
+                startedAt: data['startedAt'] != null ? DateTime.parse(data['startedAt']) : request.startedAt,
+                completedAt: data['completedAt'] != null ? DateTime.parse(data['completedAt']) : request.completedAt,
+                cancelledAt: data['cancelledAt'] != null ? DateTime.parse(data['cancelledAt']) : request.cancelledAt,
               );
-            } catch (e) {
-              newStatus = request.status;
             }
-            
-            return request.copyWith(
-              status: newStatus,
-              startedAt: data['startedAt'] != null ? DateTime.parse(data['startedAt']) : request.startedAt,
-              completedAt: data['completedAt'] != null ? DateTime.parse(data['completedAt']) : request.completedAt,
-              cancelledAt: data['cancelledAt'] != null ? DateTime.parse(data['cancelledAt']) : request.cancelledAt,
-              confirmedAt: data['confirmedAt'] != null ? DateTime.parse(data['confirmedAt']) : request.confirmedAt,
-            );
-          }
-          return request;
-        }).toList();
+            return request;
+          }),
+        );
         
         emit(currentState.copyWith(serviceRequests: updatedRequests));
         print('✅ [HealBloc] Real-time: Request status updated in state');
