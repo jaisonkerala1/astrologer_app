@@ -1756,6 +1756,370 @@ router.get('/analytics/growth', async (req, res) => {
   }
 });
 
+/**
+ * Get Complete Analytics Dashboard
+ * GET /api/admin/analytics
+ */
+router.get('/analytics', async (req, res) => {
+  try {
+    const { period = 'monthly' } = req.query;
+    
+    // Date range helpers
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const last3Months = new Date(today);
+    last3Months.setMonth(last3Months.getMonth() - 3);
+
+    // Group by configuration
+    let groupBy;
+    switch (period) {
+      case 'daily':
+        groupBy = { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } };
+        break;
+      case 'weekly':
+        groupBy = { $dateToString: { format: '%Y-W%V', date: '$createdAt' } };
+        break;
+      case 'monthly':
+      default:
+        groupBy = { $dateToString: { format: '%Y-%m', date: '$createdAt' } };
+        break;
+    }
+
+    // ============================================
+    // 1. OVERVIEW STATS
+    // ============================================
+    const [
+      totalRevenue,
+      todayRevenue,
+      yesterdayRevenue,
+      weekRevenue,
+      monthRevenue,
+      totalConsultations,
+      todayConsultations,
+      completedConsultations,
+      totalAstrologers,
+      activeAstrologers,
+      totalUsers,
+      activeUsers,
+      totalReviews,
+      avgRating,
+      totalServices,
+      totalLiveStreams,
+      activeLiveStreams
+    ] = await Promise.all([
+      // Revenue stats
+      Consultation.aggregate([
+        { $match: { status: 'completed', amount: { $exists: true } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]).then(r => r[0]?.total || 0),
+      
+      Consultation.aggregate([
+        { $match: { status: 'completed', createdAt: { $gte: today }, amount: { $exists: true } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]).then(r => r[0]?.total || 0),
+      
+      Consultation.aggregate([
+        { $match: { status: 'completed', createdAt: { $gte: yesterday, $lt: today }, amount: { $exists: true } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]).then(r => r[0]?.total || 0),
+      
+      Consultation.aggregate([
+        { $match: { status: 'completed', createdAt: { $gte: lastWeek }, amount: { $exists: true } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]).then(r => r[0]?.total || 0),
+      
+      Consultation.aggregate([
+        { $match: { status: 'completed', createdAt: { $gte: lastMonth }, amount: { $exists: true } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]).then(r => r[0]?.total || 0),
+
+      // Consultation stats
+      Consultation.countDocuments(),
+      Consultation.countDocuments({ createdAt: { $gte: today } }),
+      Consultation.countDocuments({ status: 'completed' }),
+
+      // User stats
+      Astrologer.countDocuments(),
+      Astrologer.countDocuments({ approvalStatus: 'approved' }),
+      User.countDocuments(),
+      User.countDocuments({ status: 'active' }),
+
+      // Review stats
+      Review.countDocuments(),
+      Review.aggregate([
+        { $group: { _id: null, avgRating: { $avg: '$rating' } } }
+      ]).then(r => r[0]?.avgRating || 0),
+
+      // Service stats
+      Service.countDocuments(),
+      
+      // Live stream stats
+      LiveStream.countDocuments(),
+      LiveStream.countDocuments({ isLive: true })
+    ]);
+
+    // Calculate growth percentages
+    const revenueGrowth = yesterdayRevenue > 0 
+      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100).toFixed(1)
+      : 0;
+
+    // ============================================
+    // 2. REVENUE TREND
+    // ============================================
+    const revenueTrend = await Consultation.aggregate([
+      {
+        $match: {
+          status: 'completed',
+          amount: { $exists: true },
+          createdAt: { $gte: last3Months }
+        }
+      },
+      {
+        $group: {
+          _id: groupBy,
+          revenue: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // ============================================
+    // 3. TOP PERFORMING ASTROLOGERS
+    // ============================================
+    const topAstrologers = await Consultation.aggregate([
+      {
+        $match: {
+          status: 'completed',
+          amount: { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$astrologerId',
+          totalEarnings: { $sum: '$amount' },
+          totalConsultations: { $sum: 1 }
+        }
+      },
+      { $sort: { totalEarnings: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'astrologers',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'astrologer'
+        }
+      },
+      { $unwind: '$astrologer' },
+      {
+        $project: {
+          name: '$astrologer.name',
+          email: '$astrologer.email',
+          profilePicture: '$astrologer.profilePicture',
+          specialty: '$astrologer.specialty',
+          totalEarnings: 1,
+          totalConsultations: 1
+        }
+      }
+    ]);
+
+    // ============================================
+    // 4. USER GROWTH TREND
+    // ============================================
+    const userGrowthTrend = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last3Months }
+        }
+      },
+      {
+        $group: {
+          _id: groupBy,
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // ============================================
+    // 5. ASTROLOGER GROWTH TREND
+    // ============================================
+    const astrologerGrowthTrend = await Astrologer.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last3Months }
+        }
+      },
+      {
+        $group: {
+          _id: groupBy,
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // ============================================
+    // 6. CONSULTATION TREND
+    // ============================================
+    const consultationTrend = await Consultation.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last3Months }
+        }
+      },
+      {
+        $group: {
+          _id: groupBy,
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // ============================================
+    // 7. SERVICE POPULARITY
+    // ============================================
+    const servicePopularity = await ServiceRequest.aggregate([
+      {
+        $group: {
+          _id: '$serviceName',
+          bookings: { $sum: 1 },
+          revenue: { $sum: '$price' }
+        }
+      },
+      { $sort: { bookings: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // ============================================
+    // 8. CONSULTATION STATUS DISTRIBUTION
+    // ============================================
+    const consultationStatusDistribution = await Consultation.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // ============================================
+    // 9. REVIEW RATING DISTRIBUTION
+    // ============================================
+    const reviewRatingDistribution = await Review.aggregate([
+      {
+        $group: {
+          _id: '$rating',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // ============================================
+    // 10. LIVE STREAM STATS
+    // ============================================
+    const liveStreamStats = await LiveStream.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalViewers: { $sum: '$viewerCount' },
+          totalViews: { $sum: '$totalViews' },
+          avgViewers: { $avg: '$viewerCount' },
+          totalLikes: { $sum: '$likes' }
+        }
+      }
+    ]);
+
+    // ============================================
+    // RESPONSE
+    // ============================================
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          revenue: {
+            total: totalRevenue,
+            today: todayRevenue,
+            yesterday: yesterdayRevenue,
+            week: weekRevenue,
+            month: monthRevenue,
+            growth: parseFloat(revenueGrowth)
+          },
+          consultations: {
+            total: totalConsultations,
+            today: todayConsultations,
+            completed: completedConsultations,
+            completionRate: totalConsultations > 0 
+              ? ((completedConsultations / totalConsultations) * 100).toFixed(1)
+              : 0
+          },
+          users: {
+            total: totalUsers,
+            active: activeUsers,
+            activeRate: totalUsers > 0 
+              ? ((activeUsers / totalUsers) * 100).toFixed(1)
+              : 0
+          },
+          astrologers: {
+            total: totalAstrologers,
+            active: activeAstrologers,
+            activeRate: totalAstrologers > 0 
+              ? ((activeAstrologers / totalAstrologers) * 100).toFixed(1)
+              : 0
+          },
+          reviews: {
+            total: totalReviews,
+            averageRating: avgRating.toFixed(1)
+          },
+          services: {
+            total: totalServices
+          },
+          liveStreams: {
+            total: totalLiveStreams,
+            active: activeLiveStreams
+          }
+        },
+        trends: {
+          revenue: revenueTrend,
+          users: userGrowthTrend,
+          astrologers: astrologerGrowthTrend,
+          consultations: consultationTrend
+        },
+        topPerformers: {
+          astrologers: topAstrologers,
+          services: servicePopularity
+        },
+        distributions: {
+          consultationStatus: consultationStatusDistribution,
+          reviewRatings: reviewRatingDistribution
+        },
+        liveStreamStats: liveStreamStats[0] || {
+          totalViewers: 0,
+          totalViews: 0,
+          avgViewers: 0,
+          totalLikes: 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch analytics data',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
 
 
