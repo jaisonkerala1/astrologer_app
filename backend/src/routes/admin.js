@@ -10,6 +10,7 @@ const Review = require('../models/Review');
 const LiveStream = require('../models/LiveStream');
 const Discussion = require('../models/Discussion');
 const DiscussionComment = require('../models/DiscussionComment');
+const { generateAgoraToken, Role } = require('../services/agoraService');
 
 // ============================================
 // ADMIN AUTHENTICATION
@@ -1398,6 +1399,66 @@ router.get('/live-streams', async (req, res) => {
       success: false,
       message: 'Failed to fetch live streams',
       error: error.message
+    });
+  }
+});
+
+/**
+ * Get Agora Token for Live Stream (Admin Viewer)
+ * GET /api/admin/live-streams/:id/token
+ */
+router.get('/live-streams/:id/token', async (req, res) => {
+  try {
+    const stream = await LiveStream.findById(req.params.id);
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live stream not found'
+      });
+    }
+
+    if (!stream.isLive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stream is not currently live'
+      });
+    }
+
+    const appId = process.env.AGORA_APP_ID;
+    const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+
+    if (!appId || !appCertificate) {
+      return res.status(500).json({
+        success: false,
+        message: 'Agora credentials not configured'
+      });
+    }
+
+    // Generate token as viewer (subscriber role)
+    const token = generateAgoraToken(
+      appId,
+      appCertificate,
+      stream.agoraChannelName,
+      0, // UID 0 = auto-assign
+      Role.SUBSCRIBER, // Admin joins as viewer
+      86400 // 24 hours expiry
+    );
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        channelName: stream.agoraChannelName,
+        appId: appId,
+        uid: 0
+      }
+    });
+  } catch (error) {
+    console.error('Token generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate token'
     });
   }
 });
