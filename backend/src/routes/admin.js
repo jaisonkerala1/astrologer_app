@@ -1528,6 +1528,7 @@ router.get('/discussions', async (req, res) => {
       page = 1, 
       limit = 20, 
       category = '',
+      authorId = '',
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
@@ -1535,6 +1536,7 @@ router.get('/discussions', async (req, res) => {
     const query = { isDeleted: false };
     
     if (category) query.category = category;
+    if (authorId) query.authorId = authorId;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
