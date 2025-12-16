@@ -222,7 +222,7 @@ serviceRequestSchema.virtual('statusDisplay').get(function() {
 // Virtual for status color
 serviceRequestSchema.virtual('statusColor').get(function() {
   const colorMap = {
-    'pending': '#FFA500',
+    'pending': '#8B5CF6', // Primary Purple (matches theme)
     'confirmed': '#4CAF50',
     'inProgress': '#2196F3',
     'completed': '#9C27B0',
