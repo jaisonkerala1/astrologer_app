@@ -137,6 +137,22 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/seed', require('./routes/seed'));
 app.use('/api/migration', require('./routes/migration'));
 
+// Admin routes
+try {
+  const adminRoutes = require('./routes/admin');
+  app.use('/api/admin', adminRoutes);
+  console.log('✅ Admin routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load admin routes:', error.message);
+  app.use('/api/admin', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Admin routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Live streaming routes
 try {
   const liveRoutes = require('./routes/live');

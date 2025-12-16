@@ -53,6 +53,31 @@ const astrologerSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Admin approval fields
+  isApproved: {
+    type: Boolean,
+    default: false
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  },
+  approvedBy: {
+    type: String,
+    default: null
+  },
+  suspendedAt: {
+    type: Date,
+    default: null
+  },
+  suspensionReason: {
+    type: String,
+    default: null
+  },
+  isSuspended: {
+    type: Boolean,
+    default: false
+  },
   activeSession: {
     sessionId: {
       type: String,
