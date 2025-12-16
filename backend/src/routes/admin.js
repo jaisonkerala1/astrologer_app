@@ -1529,6 +1529,7 @@ router.get('/discussions', async (req, res) => {
       limit = 20, 
       category = '',
       authorId = '',
+      authorName = '',
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
@@ -1536,7 +1537,18 @@ router.get('/discussions', async (req, res) => {
     const query = { isDeleted: false };
     
     if (category) query.category = category;
-    if (authorId) query.authorId = authorId;
+    
+    // Filter by authorId or authorName (for backward compatibility)
+    if (authorId && authorName) {
+      query.$or = [
+        { authorId: authorId },
+        { authorName: authorName }
+      ];
+    } else if (authorId) {
+      query.authorId = authorId;
+    } else if (authorName) {
+      query.authorName = authorName;
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
