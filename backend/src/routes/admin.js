@@ -286,6 +286,35 @@ router.get('/astrologers', async (req, res) => {
 });
 
 /**
+ * Get Currently Online Astrologers
+ * GET /api/admin/astrologers/online/list
+ */
+router.get('/astrologers/online/list', async (req, res) => {
+  try {
+    const onlineAstrologers = await Astrologer.find({ 
+      isOnline: true,
+      approvalStatus: 'approved'
+    })
+      .select('name email profilePicture specialties languages rating totalConsultations lastSeen activeSession')
+      .sort({ lastSeen: -1 })
+      .limit(50);
+
+    res.json({
+      success: true,
+      data: onlineAstrologers,
+      count: onlineAstrologers.length
+    });
+  } catch (error) {
+    console.error('Get online astrologers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch online astrologers',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get Single Astrologer
  * GET /api/admin/astrologers/:id
  */
