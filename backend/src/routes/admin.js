@@ -1248,6 +1248,78 @@ router.put('/service-requests/:id', async (req, res) => {
   }
 });
 
+/**
+ * Update Service Request Status
+ * PATCH /api/admin/service-requests/:id/status
+ */
+router.patch('/service-requests/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status is required'
+      });
+    }
+
+    const validStatuses = ['pending', 'confirmed', 'inProgress', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value'
+      });
+    }
+
+    const request = await ServiceRequest.findById(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service request not found'
+      });
+    }
+
+    // Update status and add to history
+    request.status = status;
+    
+    if (status === 'confirmed' && !request.confirmedAt) {
+      request.confirmedAt = new Date();
+    }
+    if (status === 'inProgress' && !request.startedAt) {
+      request.startedAt = new Date();
+    }
+    if (status === 'completed' && !request.completedAt) {
+      request.completedAt = new Date();
+    }
+    if (status === 'cancelled' && !request.cancelledAt) {
+      request.cancelledAt = new Date();
+    }
+
+    // Add to status history
+    request.statusHistory.push({
+      status,
+      timestamp: new Date(),
+      notes: `Status updated to ${status}`
+    });
+
+    await request.save();
+
+    res.json({
+      success: true,
+      data: request,
+      message: `Service request ${status} successfully`
+    });
+  } catch (error) {
+    console.error('Update service request status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update status',
+      error: error.message
+    });
+  }
+});
+
 // ============================================
 // REVIEW MODERATION
 // ============================================
