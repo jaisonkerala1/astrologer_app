@@ -653,7 +653,11 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(contactName: contactName),
+        builder: (context) => ChatScreen(
+          contactId: contactName.hashCode.toString(),
+          contactName: contactName,
+          contactType: ContactType.user,
+        ),
       ),
     );
   }
@@ -668,7 +672,9 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
       context,
       MaterialPageRoute(
         builder: (context) => VideoCallScreen(
+          contactId: contactName.hashCode.toString(),
           contactName: contactName,
+          contactType: ContactType.user,
           isIncoming: false,
         ),
       ),

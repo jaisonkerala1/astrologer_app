@@ -68,6 +68,29 @@ module.exports = {
     READ: 'notification:read',
   },
 
+  // Direct Message Events (Admin-to-Astrologer, User-to-Astrologer)
+  DIRECT_MESSAGE: {
+    JOIN: 'dm:join_conversation',        // Join a conversation room
+    LEAVE: 'dm:leave_conversation',      // Leave a conversation room
+    SEND: 'dm:send_message',             // Send a message
+    RECEIVED: 'dm:message_received',     // Receive a message (broadcast)
+    TYPING_START: 'dm:typing_start',     // User is typing
+    TYPING_STOP: 'dm:typing_stop',       // User stopped typing
+    MARK_READ: 'dm:mark_read',           // Mark messages as read
+    HISTORY: 'dm:history',               // Request message history
+  },
+
+  // Call Events (Voice & Video)
+  CALL: {
+    INITIATE: 'call:initiate',           // Initiate a call
+    INCOMING: 'call:incoming',           // Incoming call notification
+    ACCEPT: 'call:accept',               // Accept call
+    REJECT: 'call:reject',               // Reject call
+    CONNECTED: 'call:connected',         // Call connected
+    END: 'call:end',                     // End call
+    TOKEN: 'call:token',                 // Request/receive Agora token
+  },
+
   // Room prefixes
   ROOM_PREFIX: {
     LIVE: 'live:',
@@ -75,6 +98,8 @@ module.exports = {
     DISCUSSION: 'discussion:',
     ASTROLOGER: 'astrologer:',           // For astrologer-specific updates
     USER: 'user:',
+    CONVERSATION: 'conversation:',       // For direct message conversations
+    ADMIN: 'admin:',                     // For admin-specific room
   },
 };
 

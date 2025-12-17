@@ -8,6 +8,8 @@ const { socketAuth, optionalSocketAuth } = require('./socketAuth');
 const initLiveHandler = require('./handlers/liveHandler');
 const { initDiscussionHandler } = require('./handlers/discussionHandler');
 const { initServiceRequestHandler } = require('./handlers/serviceRequestHandler');
+const directMessageHandler = require('./handlers/directMessageHandler');
+const callHandler = require('./handlers/callHandler');
 const roomManager = require('./roomManager');
 const EVENTS = require('./events');
 
@@ -42,6 +44,8 @@ function initSocketIO(httpServer) {
     initLiveHandler(io, socket);
     initDiscussionHandler(socket, io, roomManager);
     initServiceRequestHandler(socket, io, roomManager);
+    directMessageHandler(io, socket);
+    callHandler(io, socket);
 
     // Send connection success
     socket.emit('connected', {

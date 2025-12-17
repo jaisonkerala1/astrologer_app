@@ -114,6 +114,16 @@ class CommunicationService extends ChangeNotifier {
 
     _messages = [
       {
+        'name': 'Admin Support',
+        'preview': 'Your account has been verified successfully!',
+        'time': '5m',
+        'unread': 1,
+        'avatar': '',  // Will use admin icon
+        'isOnline': true,
+        'contactId': 'admin',
+        'contactType': 'admin',  // Mark as admin
+      },
+      {
         'name': 'Sarah Miller',
         'preview': 'Thank you for the reading! When is the best time to...',
         'time': '2m',

@@ -44,6 +44,29 @@ class ChatSocketEvents {
   static const String offline = 'chat:offline';
 }
 
+/// Socket event types for Direct Messages (Admin/User to Astrologer)
+class DirectMessageSocketEvents {
+  static const String join = 'dm:join_conversation';
+  static const String leave = 'dm:leave_conversation';
+  static const String send = 'dm:send_message';
+  static const String received = 'dm:message_received';
+  static const String typingStart = 'dm:typing_start';
+  static const String typingStop = 'dm:typing_stop';
+  static const String markRead = 'dm:mark_read';
+  static const String history = 'dm:history';
+}
+
+/// Socket event types for Calls (Voice & Video)
+class CallSocketEvents {
+  static const String initiate = 'call:initiate';
+  static const String incoming = 'call:incoming';
+  static const String accept = 'call:accept';
+  static const String reject = 'call:reject';
+  static const String connected = 'call:connected';
+  static const String end = 'call:end';
+  static const String token = 'call:token';
+}
+
 /// Socket event types for discussions
 class DiscussionSocketEvents {
   static const String join = 'discussion:join';
@@ -143,6 +166,30 @@ class SocketService {
   Stream<Map<String, dynamic>> get serviceRequestNotesStream => _serviceRequestNotesController.stream;
   Stream<Map<String, dynamic>> get serviceRequestDeleteStream => _serviceRequestDeleteController.stream;
   Stream<Map<String, dynamic>> get serviceRequestUpdateStream => _serviceRequestUpdateController.stream;
+
+  // Direct Message event streams
+  final _dmMessageReceivedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _dmTypingController = StreamController<Map<String, dynamic>>.broadcast();
+  final _dmHistoryController = StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get dmMessageReceivedStream => _dmMessageReceivedController.stream;
+  Stream<Map<String, dynamic>> get dmTypingStream => _dmTypingController.stream;
+  Stream<Map<String, dynamic>> get dmHistoryStream => _dmHistoryController.stream;
+
+  // Call event streams
+  final _callIncomingController = StreamController<Map<String, dynamic>>.broadcast();
+  final _callAcceptedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _callRejectedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _callConnectedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _callEndedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _callTokenController = StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get callIncomingStream => _callIncomingController.stream;
+  Stream<Map<String, dynamic>> get callAcceptedStream => _callAcceptedController.stream;
+  Stream<Map<String, dynamic>> get callRejectedStream => _callRejectedController.stream;
+  Stream<Map<String, dynamic>> get callConnectedStream => _callConnectedController.stream;
+  Stream<Map<String, dynamic>> get callEndedStream => _callEndedController.stream;
+  Stream<Map<String, dynamic>> get callTokenStream => _callTokenController.stream;
 
   // Error stream
   final _errorController = StreamController<String>.broadcast();
@@ -368,6 +415,53 @@ class SocketService {
     _socket!.on(ServiceRequestSocketEvents.update, (data) {
       debugPrint('🔄 [SOCKET] Service request update: $data');
       _serviceRequestUpdateController.add(Map<String, dynamic>.from(data));
+    });
+
+    // Direct Message events
+    _socket!.on(DirectMessageSocketEvents.received, (data) {
+      debugPrint('💬 [SOCKET] Direct message received: $data');
+      _dmMessageReceivedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(DirectMessageSocketEvents.typingStart, (data) {
+      debugPrint('✍️ [SOCKET] User typing: $data');
+      _dmTypingController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(DirectMessageSocketEvents.history, (data) {
+      debugPrint('📜 [SOCKET] Message history received: $data');
+      _dmHistoryController.add(Map<String, dynamic>.from(data));
+    });
+
+    // Call events
+    _socket!.on(CallSocketEvents.incoming, (data) {
+      debugPrint('📞 [SOCKET] Incoming call: $data');
+      _callIncomingController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(CallSocketEvents.accept, (data) {
+      debugPrint('✅ [SOCKET] Call accepted: $data');
+      _callAcceptedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(CallSocketEvents.reject, (data) {
+      debugPrint('❌ [SOCKET] Call rejected: $data');
+      _callRejectedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(CallSocketEvents.connected, (data) {
+      debugPrint('🔗 [SOCKET] Call connected: $data');
+      _callConnectedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(CallSocketEvents.end, (data) {
+      debugPrint('📴 [SOCKET] Call ended: $data');
+      _callEndedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on(CallSocketEvents.token, (data) {
+      debugPrint('🔑 [SOCKET] Agora token received: $data');
+      _callTokenController.add(Map<String, dynamic>.from(data));
     });
   }
 
@@ -634,6 +728,223 @@ class SocketService {
     debugPrint('📤 [SOCKET] Leaving service request room for astrologer: $astrologerId');
   }
 
+  // ==================== DIRECT MESSAGE METHODS ====================
+
+  /// Join a direct message conversation
+  void joinDirectConversation({
+    required String conversationId,
+    required String userId,
+    required String userType, // 'admin', 'astrologer', 'user'
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DirectMessageSocketEvents.join, {
+      'conversationId': conversationId,
+      'userId': userId,
+      'userType': userType,
+    });
+
+    debugPrint('💬 [SOCKET] Joining conversation: $conversationId as $userType');
+  }
+
+  /// Leave a direct message conversation
+  void leaveDirectConversation(String conversationId) {
+    if (!isConnected) return;
+
+    _socket!.emit(DirectMessageSocketEvents.leave, {
+      'conversationId': conversationId,
+    });
+
+    debugPrint('👋 [SOCKET] Leaving conversation: $conversationId');
+  }
+
+  /// Send a direct message
+  void sendDirectMessage({
+    required String conversationId,
+    required String recipientId,
+    required String recipientType, // 'admin', 'astrologer', 'user'
+    required String content,
+    String messageType = 'text',
+    String? mediaUrl,
+  }) {
+    if (!isConnected) {
+      debugPrint('⚠️ [SOCKET] Cannot send message - not connected');
+      return;
+    }
+
+    _socket!.emit(DirectMessageSocketEvents.send, {
+      'conversationId': conversationId,
+      'recipientId': recipientId,
+      'recipientType': recipientType,
+      'content': content,
+      'messageType': messageType,
+      if (mediaUrl != null) 'mediaUrl': mediaUrl,
+    });
+
+    debugPrint('📤 [SOCKET] Sending message to $recipientType ($recipientId)');
+  }
+
+  /// Send typing indicator for direct message
+  void sendDirectMessageTyping({
+    required String conversationId,
+    required String userId,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DirectMessageSocketEvents.typingStart, {
+      'conversationId': conversationId,
+      'userId': userId,
+    });
+  }
+
+  /// Stop typing indicator for direct message
+  void sendDirectMessageStopTyping({
+    required String conversationId,
+    required String userId,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DirectMessageSocketEvents.typingStop, {
+      'conversationId': conversationId,
+      'userId': userId,
+    });
+  }
+
+  /// Mark messages as read
+  void markDirectMessagesAsRead({
+    required String conversationId,
+    required List<String> messageIds,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DirectMessageSocketEvents.markRead, {
+      'conversationId': conversationId,
+      'messageIds': messageIds,
+    });
+
+    debugPrint('✅ [SOCKET] Marking ${messageIds.length} messages as read');
+  }
+
+  /// Request message history
+  void requestDirectMessageHistory({
+    required String conversationId,
+    int page = 1,
+    int limit = 50,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(DirectMessageSocketEvents.history, {
+      'conversationId': conversationId,
+      'page': page,
+      'limit': limit,
+    });
+
+    debugPrint('📜 [SOCKET] Requesting message history for: $conversationId');
+  }
+
+  // ==================== CALL METHODS ====================
+
+  /// Initiate a call (voice or video)
+  void initiateCall({
+    required String recipientId,
+    required String recipientType, // 'admin', 'astrologer', 'user'
+    required String callType, // 'voice' or 'video'
+    String? channelName,
+  }) {
+    if (!isConnected) {
+      debugPrint('⚠️ [SOCKET] Cannot initiate call - not connected');
+      return;
+    }
+
+    _socket!.emit(CallSocketEvents.initiate, {
+      'recipientId': recipientId,
+      'recipientType': recipientType,
+      'callType': callType,
+      if (channelName != null) 'channelName': channelName,
+    });
+
+    debugPrint('📞 [SOCKET] Initiating $callType call to $recipientType ($recipientId)');
+  }
+
+  /// Accept an incoming call
+  void acceptCall({
+    required String callId,
+    required String contactId,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(CallSocketEvents.accept, {
+      'callId': callId,
+      'contactId': contactId,
+    });
+
+    debugPrint('✅ [SOCKET] Accepting call: $callId');
+  }
+
+  /// Reject an incoming call
+  void rejectCall({
+    required String callId,
+    required String contactId,
+    String reason = 'declined',
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(CallSocketEvents.reject, {
+      'callId': callId,
+      'contactId': contactId,
+      'reason': reason,
+    });
+
+    debugPrint('❌ [SOCKET] Rejecting call: $callId');
+  }
+
+  /// Notify call connected
+  void notifyCallConnected({
+    required String callId,
+    required String contactId,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(CallSocketEvents.connected, {
+      'callId': callId,
+      'contactId': contactId,
+    });
+
+    debugPrint('🔗 [SOCKET] Call connected: $callId');
+  }
+
+  /// End a call
+  void endCall({
+    required String callId,
+    required String contactId,
+    int? duration,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(CallSocketEvents.end, {
+      'callId': callId,
+      'contactId': contactId,
+      if (duration != null) 'duration': duration,
+    });
+
+    debugPrint('📴 [SOCKET] Ending call: $callId');
+  }
+
+  /// Request Agora token for a call
+  void requestCallToken({
+    required String callId,
+    required String channelName,
+  }) {
+    if (!isConnected) return;
+
+    _socket!.emit(CallSocketEvents.token, {
+      'callId': callId,
+      'channelName': channelName,
+    });
+
+    debugPrint('🔑 [SOCKET] Requesting Agora token for call: $callId');
+  }
+
   // ==================== CONNECTION MANAGEMENT ====================
 
   /// Disconnect socket
@@ -690,6 +1001,15 @@ class SocketService {
     _serviceRequestNotesController.close();
     _serviceRequestDeleteController.close();
     _serviceRequestUpdateController.close();
+    _dmMessageReceivedController.close();
+    _dmTypingController.close();
+    _dmHistoryController.close();
+    _callIncomingController.close();
+    _callAcceptedController.close();
+    _callRejectedController.close();
+    _callConnectedController.close();
+    _callEndedController.close();
+    _callTokenController.close();
     _errorController.close();
   }
 }

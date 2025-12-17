@@ -5,6 +5,8 @@ class CommunicationItem extends Equatable {
   final String id;
   final CommunicationType type;
   final String contactName;
+  final String contactId;          // Generic contact ID (userId, astrologerId, or 'admin')
+  final ContactType contactType;   // Distinguish admin vs user vs astrologer
   final String avatar;
   final DateTime timestamp;
   final String preview;
@@ -14,11 +16,14 @@ class CommunicationItem extends Equatable {
   final String? duration; // For calls (formatted duration)
   final double? chargedAmount; // For billing display
   final String? sessionId; // Link to backend Session
+  final String? conversationId;    // Link to DirectConversation
 
   const CommunicationItem({
     required this.id,
     required this.type,
     required this.contactName,
+    this.contactId = '',  // Made optional with default for backward compatibility
+    this.contactType = ContactType.user,  // Made optional with default
     required this.avatar,
     required this.timestamp,
     required this.preview,
@@ -28,6 +33,7 @@ class CommunicationItem extends Equatable {
     this.duration,
     this.chargedAmount,
     this.sessionId,
+    this.conversationId,
   });
 
   @override
@@ -35,6 +41,8 @@ class CommunicationItem extends Equatable {
     id,
     type,
     contactName,
+    contactId,
+    contactType,
     avatar,
     timestamp,
     preview,
@@ -44,6 +52,7 @@ class CommunicationItem extends Equatable {
     duration,
     chargedAmount,
     sessionId,
+    conversationId,
   ];
 
   /// Get display icon based on type (IconData for Material Icons)
@@ -93,6 +102,8 @@ class CommunicationItem extends Equatable {
       id: json['_id'] ?? json['id'] ?? '',
       type: _parseType(json['type']),
       contactName: json['contactName'] ?? '',
+      contactId: json['contactId'] ?? '',
+      contactType: _parseContactType(json['contactType']),
       avatar: json['avatar'] ?? '',
       timestamp: json['timestamp'] != null 
           ? DateTime.parse(json['timestamp'])
@@ -106,6 +117,7 @@ class CommunicationItem extends Equatable {
           ? (json['chargedAmount'] as num).toDouble()
           : null,
       sessionId: json['sessionId'],
+      conversationId: json['conversationId'],
     );
   }
 
@@ -115,6 +127,8 @@ class CommunicationItem extends Equatable {
       'id': id,
       'type': type.name,
       'contactName': contactName,
+      'contactId': contactId,
+      'contactType': contactType.name,
       'avatar': avatar,
       'timestamp': timestamp.toIso8601String(),
       'preview': preview,
@@ -124,6 +138,7 @@ class CommunicationItem extends Equatable {
       'duration': duration,
       'chargedAmount': chargedAmount,
       'sessionId': sessionId,
+      'conversationId': conversationId,
     };
   }
 
@@ -133,6 +148,8 @@ class CommunicationItem extends Equatable {
       id: call['name'] + DateTime.now().millisecondsSinceEpoch.toString(),
       type: CommunicationType.voiceCall,
       contactName: call['name'],
+      contactId: call['contactId'] ?? call['name'],
+      contactType: _parseContactType(call['contactType']),
       avatar: call['avatar'],
       timestamp: _parseTime(call['time']),
       preview: call['type'],
@@ -147,6 +164,8 @@ class CommunicationItem extends Equatable {
       id: message['name'] + DateTime.now().millisecondsSinceEpoch.toString(),
       type: CommunicationType.message,
       contactName: message['name'],
+      contactId: message['contactId'] ?? message['name'],
+      contactType: _parseContactType(message['contactType']),
       avatar: message['avatar'],
       timestamp: _parseTime(message['time']),
       preview: message['preview'],
@@ -170,6 +189,19 @@ class CommunicationItem extends Equatable {
         return CommunicationType.videoCall;
       default:
         return CommunicationType.message;
+    }
+  }
+
+  static ContactType _parseContactType(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'admin':
+        return ContactType.admin;
+      case 'user':
+        return ContactType.user;
+      case 'astrologer':
+        return ContactType.astrologer;
+      default:
+        return ContactType.user;
     }
   }
 
@@ -259,6 +291,52 @@ extension CommunicationFilterExtension on CommunicationFilter {
         return 'Messages';
       case CommunicationFilter.video:
         return 'Video';
+    }
+  }
+}
+
+/// Type of contact (NEW: for generic communication)
+enum ContactType {
+  user,        // Regular end-user/client
+  admin,       // Admin/Support team
+  astrologer,  // Another astrologer (future use)
+}
+
+/// Extension for contact type
+extension ContactTypeExtension on ContactType {
+  String get displayName {
+    switch (this) {
+      case ContactType.user:
+        return 'User';
+      case ContactType.admin:
+        return 'Admin Support';
+      case ContactType.astrologer:
+        return 'Astrologer';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case ContactType.user:
+        return 'Client';
+      case ContactType.admin:
+        return 'Support Team';
+      case ContactType.astrologer:
+        return 'Fellow Astrologer';
+    }
+  }
+
+  /// Parse from string
+  static ContactType fromString(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'admin':
+        return ContactType.admin;
+      case 'user':
+        return ContactType.user;
+      case 'astrologer':
+        return ContactType.astrologer;
+      default:
+        return ContactType.user;
     }
   }
 }

@@ -388,8 +388,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => const IncomingCallScreen(
+          callId: 'demo_call_123',
+          contactId: 'user_demo',
           phoneNumber: '+91 98765 43210',
           contactName: 'Sarah Miller',
+          contactType: ContactType.user,
+          callType: 'voice',
         ),
       ),
     );

@@ -3,18 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/services/socket_service.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../models/communication_item.dart';
 import '../services/video_call_service.dart';
 
+/// Generic VideoCallScreen that works for:
+/// - Admin ↔ Astrologer video calls
+/// - User ↔ Astrologer video calls (future)
 class VideoCallScreen extends StatefulWidget {
+  final String contactId;          // Generic contact ID
   final String contactName;
+  final ContactType contactType;   // 'admin', 'user', or 'astrologer'
   final bool isIncoming;
   final String? callId;
+  final String? channelName;       // Agora channel name
+  final String? token;             // Agora token
+  final String? avatarUrl;
 
   const VideoCallScreen({
     super.key,
+    required this.contactId,
     required this.contactName,
+    required this.contactType,
     this.isIncoming = false,
     this.callId,
+    this.channelName,
+    this.token,
+    this.avatarUrl,
   });
 
   @override
@@ -25,6 +42,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   // Video call service
   final VideoCallService _videoCallService = VideoCallService();
   
+  // Services
+  late final SocketService _socketService;
+  late final ApiService _apiService;
+  
   // Call state
   bool _isCallConnected = false;
   bool _isVideoEnabled = true;
@@ -33,6 +54,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   bool _isCallEnded = false;
   String _callStatus = 'Connecting...';
   
+  // Agora credentials
+  String? _agoraToken;
+  String? _agoraChannel;
+  
   // Timer for call duration
   int _callDuration = 0;
   Timer? _durationTimer;
@@ -40,7 +65,12 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   @override
   void initState() {
     super.initState();
-    print('🎥 VideoCallScreen initialized for: ${widget.contactName}');
+    print('🎥 VideoCallScreen initialized for: ${widget.contactName} (${widget.contactType.name})');
+    
+    // Initialize services
+    _socketService = getIt<SocketService>();
+    _apiService = getIt<ApiService>();
+    
     _setupSystemUI();
     _initializeVideoCall();
   }
@@ -84,7 +114,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     );
   }
 
-  void _initializeVideoCall() {
+  void _initializeVideoCall() async {
     print('🎥 Initializing video call service...');
     
     // Set up callbacks
@@ -96,6 +126,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           if (status == 'Connected') {
             _isCallConnected = true;
             _startCallDurationTimer();
+            _notifyCallConnected();
           }
         });
       }
@@ -111,17 +142,100 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
     _videoCallService.onCallEnded = () {
       if (mounted) {
-        Navigator.pop(context);
+        _endCall();
       }
     };
 
-    // Start the call
+    // Get or use Agora credentials
     if (widget.isIncoming) {
-      // For incoming calls, you might want to show accept/reject buttons
-      _videoCallService.acceptCall(widget.callId ?? 'mock-call-id');
+      // Use provided credentials for incoming calls
+      _agoraToken = widget.token;
+      _agoraChannel = widget.channelName;
+      print('✅ Using provided Agora credentials');
+      _startAgoraCall();
     } else {
-      // For outgoing calls
+      // Generate credentials for outgoing calls
+      await _generateAgoraToken();
+    }
+  }
+
+  /// Generate Agora token for outgoing call via Socket.IO
+  Future<void> _generateAgoraToken() async {
+    try {
+      print('🔑 Generating Agora token via Socket.IO...');
+      
+      // Initiate call via Socket.IO (backend will generate token and send back)
+      _socketService.initiateCall(
+        recipientId: widget.contactId,
+        recipientType: widget.contactType.name,
+        callType: 'video',
+        channelName: 'video_${widget.contactId}_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      
+      // Listen for token response
+      final tokenSubscription = _socketService.callTokenStream.listen((data) {
+        try {
+          setState(() {
+            _agoraToken = data['agoraToken'];
+            _agoraChannel = data['channelName'];
+          });
+          
+          print('✅ Agora token received: $_agoraChannel');
+          _startAgoraCall();
+        } catch (e) {
+          print('❌ Error parsing token: $e');
+          setState(() {
+            _callStatus = 'Failed to connect';
+          });
+        }
+      });
+      
+      // Cancel subscription after timeout
+      Future.delayed(const Duration(seconds: 10), () {
+        tokenSubscription.cancel();
+      });
+      
+    } catch (e) {
+      print('❌ Error generating token: $e');
+      setState(() {
+        _callStatus = 'Failed to connect';
+      });
+    }
+  }
+
+  String _getTokenEndpoint() {
+    switch (widget.contactType) {
+      case ContactType.admin:
+        return '/api/calls/admin/token';
+      case ContactType.user:
+      case ContactType.astrologer:
+        return '/api/calls/initiate';
+    }
+  }
+
+  /// Start Agora video call
+  void _startAgoraCall() {
+    if (_agoraToken != null && _agoraChannel != null) {
+      print('🎥 Starting Agora call with channel: $_agoraChannel');
+      // Start the call with Agora SDK
       _videoCallService.startCall(widget.contactName);
+    } else {
+      print('❌ Cannot start call - missing token or channel');
+    }
+  }
+
+  /// Notify backend that call is connected
+  void _notifyCallConnected() {
+    try {
+      if (widget.callId != null) {
+        _socketService.notifyCallConnected(
+          callId: widget.callId!,
+          contactId: widget.contactId,
+        );
+        print('📞 Call connected - notified backend');
+      }
+    } catch (e) {
+      print('❌ Error notifying call connected: $e');
     }
   }
 
@@ -164,10 +278,26 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   void _endCall() {
+    if (_isCallEnded) return;
+    
     setState(() {
       _isCallEnded = true;
       _callStatus = 'Call ended';
     });
+    
+    // Notify via Socket.IO
+    if (widget.callId != null) {
+      try {
+        _socketService.endCall(
+          callId: widget.callId!,
+          contactId: widget.contactId,
+          duration: _callDuration,
+        );
+        print('📞 Call ended - notified backend (duration: $_callDuration seconds)');
+      } catch (e) {
+        print('❌ Error notifying call end: $e');
+      }
+    }
     
     _videoCallService.endCall();
     Navigator.pop(context);
@@ -190,20 +320,42 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: themeService.primaryColor,
-                            child: Text(
-                              widget.contactName.isNotEmpty 
-                                  ? widget.contactName[0].toUpperCase()
-                                  : 'U',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                          // Show admin icon or contact avatar
+                          if (widget.contactType == ContactType.admin)
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.blue, width: 3),
                               ),
+                              child: const Icon(
+                                Icons.support_agent,
+                                size: 60,
+                                color: Colors.blue,
+                              ),
+                            )
+                          else
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: themeService.primaryColor,
+                              backgroundImage: widget.avatarUrl != null
+                                  ? NetworkImage(widget.avatarUrl!)
+                                  : null,
+                              child: widget.avatarUrl == null
+                                  ? Text(
+                                      widget.contactName.isNotEmpty 
+                                          ? widget.contactName[0].toUpperCase()
+                                          : 'U',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : null,
                             ),
-                          ),
                           const SizedBox(height: 16),
                           Text(
                             widget.contactName,
@@ -214,6 +366,16 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
+                          if (widget.contactType == ContactType.admin)
+                            const Text(
+                              'Admin Support Team',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          const SizedBox(height: 4),
                           Text(
                             _callStatus,
                             style: TextStyle(

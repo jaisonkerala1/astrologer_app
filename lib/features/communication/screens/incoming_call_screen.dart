@@ -3,15 +3,36 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/services/socket_service.dart';
+import '../../../core/di/service_locator.dart';
+import '../models/communication_item.dart';
+import 'video_call_screen.dart';
 
+/// Generic IncomingCallScreen that works for:
+/// - Admin calling Astrologer
+/// - User calling Astrologer (future)
 class IncomingCallScreen extends StatefulWidget {
-  final String phoneNumber;
+  final String callId;             // Call ID from backend
+  final String contactId;          // Caller ID
   final String contactName;
+  final ContactType contactType;   // Type of caller
+  final String phoneNumber;
+  final String callType;           // 'voice' or 'video'
+  final String? agoraToken;        // Agora token for call
+  final String? channelName;       // Agora channel
+  final String? avatarUrl;
 
   const IncomingCallScreen({
     super.key,
-    required this.phoneNumber,
+    required this.callId,
+    required this.contactId,
     required this.contactName,
+    required this.contactType,
+    required this.phoneNumber,
+    required this.callType,
+    this.agoraToken,
+    this.channelName,
+    this.avatarUrl,
   });
 
   @override
@@ -27,6 +48,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   late Animation<double> _pulseAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Services
+  late final SocketService _socketService;
+
   bool _isRinging = true;
   bool _isConnected = false;
   bool _isEnded = false;
@@ -40,7 +64,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   @override
   void initState() {
     super.initState();
-    print('📞 [INCOMING CALL] Screen initialized for ${widget.contactName}');
+    print('📞 [INCOMING CALL] Screen initialized for ${widget.contactName} (${widget.contactType.name})');
+    
+    // Initialize services
+    _socketService = getIt<SocketService>();
+    
     _setupAnimations();
   }
 
@@ -144,7 +172,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Contact avatar
+                    // Contact avatar - Show admin icon or user avatar
                     AnimatedBuilder(
                       animation: _pulseAnimation,
                       builder: (context, child) {
@@ -154,21 +182,48 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                             width: 200,
                             height: 200,
                             decoration: BoxDecoration(
-                              color: themeService.primaryColor,
+                              color: widget.contactType == ContactType.admin
+                                  ? Colors.blue
+                                  : themeService.primaryColor,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: themeService.primaryColor.withOpacity(0.3),
+                                  color: (widget.contactType == ContactType.admin
+                                          ? Colors.blue
+                                          : themeService.primaryColor)
+                                      .withOpacity(0.3),
                                   blurRadius: 30,
                                   spreadRadius: 10,
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.person,
-                              size: 100,
-                              color: Colors.white,
-                            ),
+                            child: widget.contactType == ContactType.admin
+                                ? const Icon(
+                                    Icons.support_agent,
+                                    size: 100,
+                                    color: Colors.white,
+                                  )
+                                : widget.avatarUrl != null
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          widget.avatarUrl!,
+                                          width: 200,
+                                          height: 200,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.person,
+                                              size: 100,
+                                              color: Colors.white,
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        size: 100,
+                                        color: Colors.white,
+                                      ),
                           ),
                         );
                       },
@@ -188,27 +243,50 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                     
                     const SizedBox(height: 8),
                     
-                    Text(
-                      widget.phoneNumber,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 18,
+                    // Show badge for admin
+                    if (widget.contactType == ContactType.admin)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.blue),
+                        ),
+                        child: const Text(
+                          'Admin Support Team',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        widget.phoneNumber,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
                     
                     const SizedBox(height: 20),
                     
                     // Call status
                     if (_isRinging) ...[
-                      const Icon(
-                        Icons.phone_callback,
+                      Icon(
+                        widget.callType == 'video'
+                            ? Icons.videocam
+                            : Icons.phone_callback,
                         color: Colors.white,
                         size: 32,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Incoming call...',
-                        style: TextStyle(
+                      Text(
+                        widget.callType == 'video'
+                            ? 'Incoming video call...'
+                            : 'Incoming call...',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                         ),
@@ -525,19 +603,64 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   }
 
   void _acceptCall() {
-    setState(() {
-      _isRinging = false;
-      _isConnected = true;
-    });
-    _pulseController.stop();
-    _startCallTimer();
+    print('✅ [INCOMING CALL] Call accepted');
+    
+    // Notify backend via Socket.IO
+    try {
+      _socketService.acceptCall(
+        callId: widget.callId,
+        contactId: widget.contactId,
+      );
+      print('📞 Call acceptance sent to backend');
+    } catch (e) {
+      print('❌ Error notifying call accept: $e');
+    }
+    
+    // Navigate to appropriate screen
+    if (widget.callType == 'video') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VideoCallScreen(
+            contactId: widget.contactId,
+            contactName: widget.contactName,
+            contactType: widget.contactType,
+            isIncoming: true,
+            callId: widget.callId,
+            channelName: widget.channelName,
+            token: widget.agoraToken,
+            avatarUrl: widget.avatarUrl,
+          ),
+        ),
+      );
+    } else {
+      // Handle voice call - similar pattern
+      setState(() {
+        _isRinging = false;
+        _isConnected = true;
+      });
+      _pulseController.stop();
+      _startCallTimer();
+    }
   }
 
   void _declineCall() {
-    print('📞 [INCOMING CALL] Decline button pressed');
+    print('❌ [INCOMING CALL] Call declined');
     if (_isEnded) {
       print('📞 [INCOMING CALL] Call already ended, ignoring');
       return;
+    }
+    
+    // Notify backend via Socket.IO
+    try {
+      _socketService.rejectCall(
+        callId: widget.callId,
+        contactId: widget.contactId,
+        reason: 'declined',
+      );
+      print('📞 Call rejection sent to backend');
+    } catch (e) {
+      print('❌ Error notifying call decline: $e');
     }
     
     setState(() {
