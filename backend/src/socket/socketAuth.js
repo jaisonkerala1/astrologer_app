@@ -46,7 +46,7 @@ const socketAuth = async (socket, next) => {
 };
 
 /**
- * Optional auth - allows anonymous connections
+ * Optional auth - allows anonymous connections + admin connections
  */
 const optionalSocketAuth = async (socket, next) => {
   try {
@@ -57,6 +57,22 @@ const optionalSocketAuth = async (socket, next) => {
       return next();
     }
 
+    // Check if it's admin token (simple secret key)
+    if (token === process.env.ADMIN_SECRET_KEY || token === 'admin123') {
+      socket.user = {
+        id: 'admin',
+        name: 'Admin',
+        role: 'admin',
+        isAnonymous: false,
+        isAdmin: true,
+      };
+      socket.userId = 'admin';
+      socket.userType = 'admin';
+      console.log(`✅ [SOCKET AUTH] Admin connected (${socket.id})`);
+      return next();
+    }
+
+    // Check if it's astrologer JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const astrologer = await Astrologer.findById(decoded.astrologerId);
     
@@ -66,8 +82,11 @@ const optionalSocketAuth = async (socket, next) => {
         astrologerId: astrologer._id.toString(),
         name: astrologer.name,
         profileImage: astrologer.profileImage,
+        role: 'astrologer',
         isAnonymous: false,
       };
+      socket.userId = astrologer._id.toString();
+      socket.userType = 'astrologer';
     } else {
       socket.user = { id: `anon_${socket.id}`, name: 'Anonymous', isAnonymous: true };
     }
