@@ -293,9 +293,9 @@ router.get('/astrologers/online/list', async (req, res) => {
   try {
     const onlineAstrologers = await Astrologer.find({ 
       isOnline: true,
-      approvalStatus: 'approved'
+      isActive: true
     })
-      .select('name email profilePicture specialties languages rating totalConsultations lastSeen activeSession')
+      .select('name email profilePicture specializations languages experience rating totalConsultations totalEarnings lastSeen activeSession bio')
       .sort({ lastSeen: -1 })
       .limit(50);
 
