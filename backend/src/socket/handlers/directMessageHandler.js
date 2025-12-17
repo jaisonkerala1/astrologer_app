@@ -132,7 +132,7 @@ module.exports = (io, socket) => {
       // Broadcast to everyone in the conversation room
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
       io.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
-        id: message._id,
+        _id: message._id,
         conversationId,
         senderId,
         senderType,
@@ -264,7 +264,7 @@ module.exports = (io, socket) => {
       });
       
       // Send history back to requesting client
-      socket.emit(DIRECT_MESSAGE.HISTORY, {
+      socket.emit('dm:history_response', {
         conversationId,
         messages: messages.reverse(), // Oldest first
         total,
@@ -281,4 +281,5 @@ module.exports = (io, socket) => {
     }
   });
 };
+
 
