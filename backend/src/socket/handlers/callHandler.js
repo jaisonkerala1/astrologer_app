@@ -44,8 +44,7 @@ module.exports = (io, socket) => {
       const {
         recipientId,
         recipientType,
-        callType,
-        channelName
+        callType
       } = data;
       
       const callerId = socket.userId || socket.user?._id || socket.user?.id || 'admin';
@@ -54,6 +53,9 @@ module.exports = (io, socket) => {
       const callerAvatar = socket.user?.profilePicture || socket.user?.avatar || socket.userAvatar || '';
       
       console.log(`📞 [CALL] ${callerType}(${callerId}) initiating ${callType} call to ${recipientType}(${recipientId})`);
+      
+      // Auto-generate channel name if not provided
+      const channelName = data.channelName || `call_${callerId}_${recipientId}_${Date.now()}`;
       
       // Generate Agora token
       const uid = 0; // 0 for auto-generated
