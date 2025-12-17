@@ -76,6 +76,26 @@ const liveStreamSchema = new mongoose.Schema({
   // Stream quality
   thumbnailUrl: String,
   
+  // Admin controls & moderation
+  isBanned: {
+    type: Boolean,
+    default: false
+  },
+  bannedReason: String,
+  bannedAt: Date,
+  warnings: [{
+    message: String,
+    timestamp: Date
+  }],
+  bannedViewers: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    reason: String,
+    bannedAt: Date
+  }]
+  
 }, {
   timestamps: true
 });

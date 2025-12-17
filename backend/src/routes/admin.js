@@ -1514,6 +1514,221 @@ router.post('/live-streams/:id/end', async (req, res) => {
   }
 });
 
+/**
+ * End All Active Live Streams
+ * POST /api/admin/live-streams/end-all
+ */
+router.post('/live-streams/end-all', async (req, res) => {
+  try {
+    const activeStreams = await LiveStream.find({ isLive: true });
+
+    if (activeStreams.length === 0) {
+      return res.json({
+        success: true,
+        data: { endedCount: 0 },
+        message: 'No active streams to end'
+      });
+    }
+
+    const endedAt = new Date();
+    const updateResult = await LiveStream.updateMany(
+      { isLive: true },
+      { 
+        $set: { 
+          isLive: false, 
+          endedAt: endedAt 
+        } 
+      }
+    );
+
+    // Notify via Socket.IO if available
+    const io = req.app.get('io');
+    if (io) {
+      activeStreams.forEach(stream => {
+        const roomId = `live:${stream._id}`;
+        io.to(roomId).emit('live:ended', {
+          streamId: stream._id.toString(),
+          message: 'All streams ended by admin',
+          timestamp: Date.now()
+        });
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        endedCount: updateResult.modifiedCount,
+        streamIds: activeStreams.map(s => s._id.toString())
+      },
+      message: `Ended ${updateResult.modifiedCount} live stream(s)`
+    });
+  } catch (error) {
+    console.error('End all streams error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to end all streams',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Ban Stream (Make Invisible/Blocked)
+ * POST /api/admin/live-streams/:id/ban
+ */
+router.post('/live-streams/:id/ban', async (req, res) => {
+  try {
+    const { reason = 'Violation of terms of service' } = req.body;
+    const stream = await LiveStream.findById(req.params.id);
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live stream not found'
+      });
+    }
+
+    // End the stream and mark as banned
+    stream.isLive = false;
+    stream.endedAt = new Date();
+    stream.isBanned = true;
+    stream.bannedReason = reason;
+    stream.bannedAt = new Date();
+    await stream.save();
+
+    // Notify via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      const roomId = `live:${stream._id}`;
+      io.to(roomId).emit('live:banned', {
+        streamId: stream._id.toString(),
+        message: `Stream banned: ${reason}`,
+        timestamp: Date.now()
+      });
+    }
+
+    res.json({
+      success: true,
+      data: stream,
+      message: 'Live stream banned successfully'
+    });
+  } catch (error) {
+    console.error('Ban stream error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to ban stream',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Send Warning to Broadcaster
+ * POST /api/admin/live-streams/:id/warn
+ */
+router.post('/live-streams/:id/warn', async (req, res) => {
+  try {
+    const { message = 'Please follow community guidelines' } = req.body;
+    const stream = await LiveStream.findById(req.params.id);
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live stream not found'
+      });
+    }
+
+    // Add warning to stream metadata
+    if (!stream.warnings) stream.warnings = [];
+    stream.warnings.push({
+      message,
+      timestamp: new Date()
+    });
+    await stream.save();
+
+    // Notify via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      const roomId = `live:${stream._id}`;
+      io.to(roomId).emit('live:warning', {
+        streamId: stream._id.toString(),
+        message: message,
+        timestamp: Date.now()
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { warningCount: stream.warnings.length },
+      message: 'Warning sent successfully'
+    });
+  } catch (error) {
+    console.error('Send warning error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send warning',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Ban Viewer from Stream
+ * POST /api/admin/live-streams/:id/ban-viewer
+ */
+router.post('/live-streams/:id/ban-viewer', async (req, res) => {
+  try {
+    const { viewerId, reason = 'Inappropriate behavior' } = req.body;
+    const stream = await LiveStream.findById(req.params.id);
+
+    if (!stream) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live stream not found'
+      });
+    }
+
+    if (!viewerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Viewer ID is required'
+      });
+    }
+
+    // Add viewer to banned list
+    if (!stream.bannedViewers) stream.bannedViewers = [];
+    stream.bannedViewers.push({
+      userId: viewerId,
+      reason,
+      bannedAt: new Date()
+    });
+    await stream.save();
+
+    // Kick viewer via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${viewerId}`).emit('live:kicked', {
+        streamId: stream._id.toString(),
+        message: `You have been removed: ${reason}`,
+        timestamp: Date.now()
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { bannedViewerCount: stream.bannedViewers.length },
+      message: 'Viewer banned successfully'
+    });
+  } catch (error) {
+    console.error('Ban viewer error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to ban viewer',
+      error: error.message
+    });
+  }
+});
+
 // ============================================
 // DISCUSSION MODERATION
 // ============================================
