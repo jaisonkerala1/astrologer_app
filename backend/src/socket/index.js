@@ -40,6 +40,16 @@ function initSocketIO(httpServer) {
   io.on(EVENTS.CONNECTION, (socket) => {
     console.log(`🔌 [SOCKET] New connection: ${socket.user.name} (${socket.id})`);
 
+    // Auto-join user to their personal room for notifications
+    const userId = socket.userId || socket.user?._id || socket.user?.id;
+    const userType = socket.userType || socket.user?.role || 'astrologer';
+    
+    if (userId && userId !== 'admin') {
+      const personalRoom = `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
+      socket.join(personalRoom);
+      console.log(`✅ [SOCKET] Auto-joined ${userType} to personal room: ${personalRoom}`);
+    }
+
     // Initialize feature handlers
     initLiveHandler(io, socket);
     initDiscussionHandler(socket, io, roomManager);
