@@ -1183,6 +1183,84 @@ router.get('/service-requests', async (req, res) => {
 });
 
 /**
+ * Create Service Request (Manual)
+ * POST /api/admin/service-requests
+ */
+router.post('/service-requests', async (req, res) => {
+  try {
+    const {
+      customerName,
+      customerPhone,
+      astrologerId,
+      serviceId,
+      serviceName,
+      serviceCategory,
+      requestedDate,
+      requestedTime,
+      price,
+      currency,
+      specialInstructions,
+      source,
+      isManual
+    } = req.body;
+
+    // Validation
+    if (!customerName || !customerPhone || !astrologerId || !requestedDate || !requestedTime || !price) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields: customerName, customerPhone, astrologerId, requestedDate, requestedTime, price'
+      });
+    }
+
+    // Create service request
+    const serviceRequest = new ServiceRequest({
+      customerName,
+      customerPhone,
+      astrologerId,
+      serviceId: serviceId || null,
+      serviceName: serviceName || 'Custom Service',
+      serviceCategory: serviceCategory || 'other',
+      requestedDate,
+      requestedTime,
+      price,
+      currency: currency || 'INR',
+      specialInstructions,
+      status: 'pending',
+      paymentStatus: 'pending',
+      source: source || 'admin',
+      isManual: isManual !== undefined ? isManual : true,
+      isDeleted: false,
+      statusHistory: [{
+        status: 'pending',
+        timestamp: new Date(),
+        notes: 'Request created by admin'
+      }]
+    });
+
+    await serviceRequest.save();
+
+    // Populate references
+    await serviceRequest.populate('astrologerId', 'name email phone profilePicture');
+    if (serviceId) {
+      await serviceRequest.populate('serviceId', 'name price description');
+    }
+
+    res.status(201).json({
+      success: true,
+      data: serviceRequest,
+      message: 'Service request created successfully'
+    });
+  } catch (error) {
+    console.error('Create service request error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create service request',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get Single Service Request
  * GET /api/admin/service-requests/:id
  */
