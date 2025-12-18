@@ -269,6 +269,32 @@ class SocketService {
     }
   }
 
+  /// Wait for socket to be ready (connected + authenticated).
+  /// Use this before emitting important events (join room, request history)
+  /// to prevent race conditions on first load or after phone lock/unlock.
+  Future<void> waitUntilReady({Duration timeout = const Duration(seconds: 5)}) async {
+    final deadline = DateTime.now().add(timeout);
+    
+    while (DateTime.now().isBefore(deadline)) {
+      // Success: authenticated connection
+      if (isConnected && isAuthenticated) {
+        print('✅ [SOCKET] Ready! (connected + authenticated)');
+        return;
+      }
+      
+      // Give up if we've maxed auth retries and are stuck anonymous
+      // (proceeding will allow chat to work, but calls won't be received)
+      if (isConnected && !isAuthenticated && _authReconnectAttempts >= _maxAuthReconnectAttempts) {
+        print('⚠️ [SOCKET] Connected but anonymous (auth failed after $_authReconnectAttempts retries). Proceeding anyway...');
+        return;
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    
+    print('⚠️ [SOCKET] Timeout waiting for ready state (connected: $isConnected, auth: $isAuthenticated)');
+  }
+
   /// Setup all socket event listeners
   void _setupEventListeners() {
     if (_socket == null) return;

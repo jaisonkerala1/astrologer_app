@@ -167,15 +167,17 @@ class _ChatScreenState extends State<ChatScreen> {
         return;
       }
       
-      // Request message history via Socket.IO
-      _socketService.requestDirectMessageHistory(
-        conversationId: conversationId,
-        page: 1,
-        limit: 50,
-      );
+      // Wait for socket to be connected (simple check, no auth needed for history)
+      int attempts = 0;
+      while (!_socketService.isConnected && attempts < 30) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        attempts++;
+      }
       
-      // Listen for history response (one-time)
-      final historySubscription = _socketService.dmHistoryStream.listen((data) {
+      // Listen for history response FIRST (before emitting request)
+      // This prevents missing the response if server replies fast
+      StreamSubscription? historySubscription;
+      historySubscription = _socketService.dmHistoryStream.listen((data) {
         try {
           if (data['conversationId'] == conversationId) {
             final messages = (data['messages'] as List?)
@@ -190,18 +192,29 @@ class _ChatScreenState extends State<ChatScreen> {
               
               _scrollToBottom();
             }
+            
+            // One-time listener - cancel after receiving our history
+            historySubscription?.cancel();
           }
         } catch (e) {
           print('❌ Error parsing message history: $e');
           if (mounted) {
             setState(() => _isLoading = false);
           }
+          historySubscription?.cancel();
         }
       });
       
+      // NOW request message history (after listener is ready)
+      _socketService.requestDirectMessageHistory(
+        conversationId: conversationId,
+        page: 1,
+        limit: 50,
+      );
+      
       // Cancel subscription after timeout
       Future.delayed(const Duration(seconds: 5), () {
-        historySubscription.cancel();
+        historySubscription?.cancel();
         if (mounted && _isLoading) {
           setState(() {
             _isLoading = false;
@@ -233,8 +246,12 @@ class _ChatScreenState extends State<ChatScreen> {
       print('🔌 [CHAT] Connecting to Socket.IO...');
       await _socketService.connect();
       
-      // Wait for connection to be established
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Wait for socket to be connected (chat works even without auth)
+      int attempts = 0;
+      while (!_socketService.isConnected && attempts < 30) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        attempts++;
+      }
       
       final conversationId = _resolveConversationId();
       if (conversationId == null) {
