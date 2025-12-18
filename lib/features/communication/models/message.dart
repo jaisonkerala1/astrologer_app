@@ -49,18 +49,20 @@ class Message extends Equatable {
   /// From JSON
   factory Message.fromJson(Map<String, dynamic> json, {String? currentUserId}) {
     final senderId = json['senderId'] ?? '';
+    final senderType = json['senderType'] ?? 'user';
     return Message(
       id: json['_id'] ?? json['id'] ?? '',
       conversationId: json['conversationId'] ?? '',
       senderId: senderId,
-      senderType: json['senderType'] ?? 'user',
+      senderType: senderType,
       content: json['content'] ?? '',
       messageType: json['messageType'] ?? 'text',
       mediaUrl: json['mediaUrl'],
       timestamp: json['timestamp'] != null
           ? DateTime.parse(json['timestamp'])
           : DateTime.now(),
-      isMe: currentUserId != null ? senderId == currentUserId : false,
+      // Only count as "me" if it's my senderId and I'm an astrologer (avoid admin/user showing as me)
+      isMe: currentUserId != null ? (senderId == currentUserId && senderType == 'astrologer') : false,
       status: json['status'] ?? 'sent',
       readAt: json['readAt'] != null ? DateTime.parse(json['readAt']) : null,
       replyToId: json['replyToId'],
