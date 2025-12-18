@@ -428,7 +428,8 @@ class SocketService {
       _dmTypingController.add(Map<String, dynamic>.from(data));
     });
 
-    _socket!.on(DirectMessageSocketEvents.history, (data) {
+    // Listen for message history response (backend emits 'dm:history_response')
+    _socket!.on('dm:history_response', (data) {
       debugPrint('📜 [SOCKET] Message history received: $data');
       _dmHistoryController.add(Map<String, dynamic>.from(data));
     });
