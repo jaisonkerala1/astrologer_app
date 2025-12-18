@@ -33,6 +33,7 @@ import '../../features/profile/bloc/profile_bloc.dart';
 import '../../features/calendar/bloc/calendar_bloc.dart';
 import '../../features/earnings/bloc/earnings_bloc.dart';
 import '../../features/communication/bloc/communication_bloc.dart';
+import '../../features/communication/bloc/call_bloc.dart';
 import '../../features/heal/bloc/heal_bloc.dart';
 import '../../features/help_support/bloc/help_support_bloc.dart';
 import '../../features/live/bloc/live_bloc.dart';

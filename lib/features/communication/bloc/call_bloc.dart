@@ -174,12 +174,13 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     print('📴 [CallBloc] Ending call: ${event.callId}');
 
     // Emit end via Socket.IO
-    socketService.endCall(
-      callId: event.callId,
-      contactId: event.contactId,
-      duration: event.duration,
-      reason: event.reason,
-    );
+    if (event.contactId != null) {
+      socketService.endCall(
+        callId: event.callId,
+        contactId: event.contactId!,
+        duration: event.duration,
+      );
+    }
 
     // Emit ended state
     emit(CallEnded(
