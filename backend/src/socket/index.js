@@ -44,8 +44,11 @@ function initSocketIO(httpServer) {
     const userId = socket.userId || socket.user?._id || socket.user?.id;
     const userType = socket.userType || socket.user?.role || 'astrologer';
     
-    if (userId && userId !== 'admin') {
-      const personalRoom = `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
+    if (userId) {
+      // For admin, join to admin: room (no ID suffix needed)
+      const personalRoom = userId === 'admin' 
+        ? EVENTS.ROOM_PREFIX.ADMIN 
+        : `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
       socket.join(personalRoom);
       console.log(`✅ [SOCKET] Auto-joined ${userType} to personal room: ${personalRoom}`);
     }
