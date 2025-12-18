@@ -10,9 +10,13 @@ const { DIRECT_MESSAGE, ROOM_PREFIX } = require('../events');
 // Helpers
 function getUserContext(socket, fallback = {}) {
   const user = socket.user || {};
+  const isAnon = user.isAnonymous || user.role === 'guest';
+  const role = isAnon ? 'admin' : (socket.userType || user.role || fallback.type || 'admin');
+  const id = isAnon ? 'admin' : (socket.userId || user._id || user.id || fallback.id || 'admin');
+
   return {
-    id: socket.userId || user._id || user.id || fallback.id || 'admin',
-    type: socket.userType || user.role || fallback.type || 'admin',
+    id,
+    type: role,
     name: user.name || fallback.name || 'Admin',
     avatar: user.profilePicture || user.avatar || fallback.avatar,
   };
