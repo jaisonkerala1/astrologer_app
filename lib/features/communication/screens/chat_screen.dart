@@ -257,6 +257,10 @@ class _ChatScreenState extends State<ChatScreen> {
         try {
           final message = Message.fromJson(data, currentUserId: _currentUserId);
           
+          // Ignore duplicates or own echo
+          if (message.senderId == _currentUserId) return;
+          if (_messages.any((m) => m.id == message.id)) return;
+
           // Only add if from this conversation
           if (message.conversationId == conversationId) {
             setState(() {

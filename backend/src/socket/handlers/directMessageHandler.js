@@ -7,47 +7,72 @@ const DirectConversation = require('../../models/DirectConversation');
 const DirectMessage = require('../../models/DirectMessage');
 const { DIRECT_MESSAGE, ROOM_PREFIX } = require('../events');
 
+// Helpers
+function getUserContext(socket, fallback = {}) {
+  const user = socket.user || {};
+  return {
+    id: socket.userId || user._id || user.id || fallback.id || 'admin',
+    type: socket.userType || user.role || fallback.type || 'admin',
+    name: user.name || fallback.name || 'Admin',
+    avatar: user.profilePicture || user.avatar || fallback.avatar,
+  };
+}
+
+async function ensureConversation(conversationId, participants = []) {
+  if (!conversationId) return null;
+
+  const unique = [];
+  for (const p of participants) {
+    if (!p?.id) continue;
+    if (!unique.some((u) => u.id === p.id)) unique.push(p);
+  }
+
+  let convo = await DirectConversation.findOne({ conversationId });
+  if (!convo) {
+    convo = await DirectConversation.create({
+      conversationId,
+      participants: unique,
+      lastMessageAt: new Date(),
+    });
+  } else {
+    let updated = false;
+    unique.forEach((p) => {
+      if (!convo.participants.some((x) => x.id === p.id)) {
+        convo.participants.push(p);
+        updated = true;
+      }
+    });
+    if (updated) {
+      convo.updatedAt = new Date();
+      await convo.save();
+    }
+  }
+  return convo;
+}
+
 module.exports = (io, socket) => {
   // Join a conversation room
   socket.on(DIRECT_MESSAGE.JOIN, async (data) => {
     try {
-      const { conversationId, userId, userType } = data;
+      const { conversationId } = data;
+      const ctx = getUserContext(socket, { id: data.userId, type: data.userType });
+      if (!conversationId) throw new Error('conversationId is required');
       
       // Join the room
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
       socket.join(roomName);
       
-      console.log(`✅ [DM] ${userType} ${userId} joined conversation: ${conversationId}`);
+      console.log(`✅ [DM] ${ctx.type} ${ctx.id} joined conversation: ${conversationId}`);
       
-      // Find or create conversation
-      let conversation = await DirectConversation.findOne({ conversationId });
-      
-      if (!conversation) {
-        // Create new conversation
-        conversation = await DirectConversation.create({
-          conversationId,
-          participants: [{
-            id: userId,
-            type: userType,
-            name: socket.user?.name || userId,
-            avatar: socket.user?.profilePicture || socket.user?.avatar
-          }],
-          lastMessageAt: new Date()
-        });
-        console.log(`✨ [DM] Created new conversation: ${conversationId}`);
-      } else {
-        // Add participant if not exists
-        const participantExists = conversation.participants.some(p => p.id === userId);
-        if (!participantExists) {
-          conversation.participants.push({
-            id: userId,
-            type: userType,
-            name: socket.user?.name || userId,
-            avatar: socket.user?.profilePicture || socket.user?.avatar
-          });
-          await conversation.save();
-        }
-      }
+      // Ensure conversation exists and includes this participant
+      await ensureConversation(conversationId, [
+        {
+          id: ctx.id,
+          type: ctx.type,
+          name: ctx.name,
+          avatar: ctx.avatar,
+        },
+      ]);
       
       // Emit success
       socket.emit('dm:joined', { conversationId, success: true });
@@ -88,21 +113,28 @@ module.exports = (io, socket) => {
         thumbnailUrl,
         replyToId
       } = data;
+      if (!conversationId) throw new Error('conversationId is required');
+      if (!recipientId || !recipientType) throw new Error('recipientId and recipientType are required');
+
+      const senderCtx = getUserContext(socket, { id: data.userId, type: data.userType });
       
-      const senderId = socket.userId || socket.user?._id || socket.user?.id || 'admin';
-      const senderType = socket.userType || socket.user?.role || 'astrologer';
-      const senderName = socket.user?.name || socket.userName || 'Admin';
-      const senderAvatar = socket.user?.profilePicture || socket.user?.avatar || socket.userAvatar;
-      
-      console.log(`📤 [DM] Message from ${senderType}(${senderId}) to ${recipientType}(${recipientId}): ${content?.substring(0, 50)}`);
+      console.log(
+        `📤 [DM] Message from ${senderCtx.type}(${senderCtx.id}) to ${recipientType}(${recipientId}): ${content?.substring(0, 50)}`
+      );
+
+      // Ensure conversation exists with both participants
+      await ensureConversation(conversationId, [
+        { id: senderCtx.id, type: senderCtx.type, name: senderCtx.name, avatar: senderCtx.avatar },
+        { id: recipientId, type: recipientType },
+      ]);
       
       // Create message in database
       const message = await DirectMessage.create({
         conversationId,
-        senderId,
-        senderType,
-        senderName,
-        senderAvatar,
+        senderId: senderCtx.id,
+        senderType: senderCtx.type,
+        senderName: senderCtx.name,
+        senderAvatar: senderCtx.avatar,
         recipientId,
         recipientType,
         content,
@@ -122,8 +154,8 @@ module.exports = (io, socket) => {
         {
           lastMessage: content,
           lastMessageAt: new Date(),
-          lastMessageSenderId: senderId,
-          lastMessageSenderType: senderType,
+          lastMessageSenderId: senderCtx.id,
+          lastMessageSenderType: senderCtx.type,
           updatedAt: new Date()
         },
         { upsert: true }
@@ -134,10 +166,10 @@ module.exports = (io, socket) => {
       io.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
         conversationId,
-        senderId,
-        senderType,
-        senderName,
-        senderAvatar,
+        senderId: senderCtx.id,
+        senderType: senderCtx.type,
+        senderName: senderCtx.name,
+        senderAvatar: senderCtx.avatar,
         recipientId,
         recipientType,
         content,
@@ -155,10 +187,10 @@ module.exports = (io, socket) => {
       const recipientRoom = `${ROOM_PREFIX[recipientType.toUpperCase()]}${recipientId}`;
       io.to(recipientRoom).emit('dm:new_message', {
         conversationId,
-        senderId,
-        senderType,
-        senderName,
-        senderAvatar,
+        senderId: senderCtx.id,
+        senderType: senderCtx.type,
+        senderName: senderCtx.name,
+        senderAvatar: senderCtx.avatar,
         content: content.substring(0, 100), // Preview
         timestamp: message.timestamp
       });
@@ -245,6 +277,7 @@ module.exports = (io, socket) => {
   socket.on(DIRECT_MESSAGE.HISTORY, async (data) => {
     try {
       const { conversationId, page = 1, limit = 50 } = data;
+      if (!conversationId) throw new Error('conversationId is required');
       
       const skip = (page - 1) * limit;
       
@@ -264,7 +297,7 @@ module.exports = (io, socket) => {
       });
       
       // Send history back to requesting client
-      socket.emit('dm:history_response', {
+      socket.emit(DIRECT_MESSAGE.HISTORY, {
         conversationId,
         messages: messages.reverse(), // Oldest first
         total,
