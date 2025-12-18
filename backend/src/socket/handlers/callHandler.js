@@ -11,6 +11,27 @@ const { CALL, ROOM_PREFIX } = require('../events');
 const AGORA_APP_ID = process.env.AGORA_APP_ID || '';
 const AGORA_APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE || '';
 
+// Helpers
+function getUserContext(socket, fallback = {}) {
+  const user = socket.user || {};
+  const isAnon = user.isAnonymous || user.role === 'guest';
+  const type = isAnon ? 'admin' : (socket.userType || user.role || fallback.type || 'admin');
+  const id = isAnon ? 'admin' : (socket.userId || user._id || user.id || fallback.id || 'admin');
+  return {
+    id,
+    type,
+    name: user.name || fallback.name || 'Admin',
+    avatar: user.profilePicture || user.avatar || fallback.avatar || '',
+  };
+}
+
+function roomFor(type, id) {
+  if (!type || !id) return null;
+  const prefix = ROOM_PREFIX[type.toUpperCase()];
+  if (!prefix) return null;
+  return `${prefix}${id}`;
+}
+
 /**
  * Generate Agora RTC token
  */
@@ -47,10 +68,11 @@ module.exports = (io, socket) => {
         callType
       } = data;
       
-      const callerId = socket.userId || socket.user?._id || socket.user?.id || 'admin';
-      const callerType = socket.userType || socket.user?.role || 'astrologer';
-      const callerName = socket.user?.name || socket.userName || 'Admin';
-      const callerAvatar = socket.user?.profilePicture || socket.user?.avatar || socket.userAvatar || '';
+      const callerCtx = getUserContext(socket);
+      const callerId = callerCtx.id;
+      const callerType = callerCtx.type;
+      const callerName = callerCtx.name;
+      const callerAvatar = callerCtx.avatar;
       
       console.log(`📞 [CALL] ${callerType}(${callerId}) initiating ${callType} call to ${recipientType}(${recipientId})`);
       
@@ -148,7 +170,7 @@ module.exports = (io, socket) => {
     try {
       const { callId, contactId } = data;
       
-      console.log(`✅ [CALL] Call ${callId} accepted by ${socket.userId}`);
+      console.log(`✅ [CALL] Call ${callId} accepted by ${socket.userId || socket.user?._id}`);
       
       // Update call status
       const call = await Call.findByIdAndUpdate(callId, {
@@ -162,9 +184,10 @@ module.exports = (io, socket) => {
       }
       
       // Notify caller
-      const callerRoom = contactId.startsWith('admin') 
-        ? ROOM_PREFIX.ADMIN 
-        : `${ROOM_PREFIX.ASTROLOGER}${contactId}`;
+      const callerRoom = roomFor(
+        call.callerType === 'admin' ? 'admin' : 'astrologer',
+        call.callerId
+      );
       
       io.to(callerRoom).emit(CALL.ACCEPT, {
         callId: call._id.toString(),
@@ -187,7 +210,7 @@ module.exports = (io, socket) => {
     try {
       const { callId, contactId, reason = 'declined' } = data;
       
-      console.log(`❌ [CALL] Call ${callId} rejected by ${socket.userId}`);
+      console.log(`❌ [CALL] Call ${callId} rejected by ${socket.userId || socket.user?._id}`);
       
       // Update call status
       await Call.findByIdAndUpdate(callId, {
@@ -199,9 +222,10 @@ module.exports = (io, socket) => {
       });
       
       // Notify caller
-      const callerRoom = contactId.startsWith('admin') 
-        ? ROOM_PREFIX.ADMIN 
-        : `${ROOM_PREFIX.ASTROLOGER}${contactId}`;
+      const callerRoom = roomFor(
+        contactId && contactId.startsWith('admin') ? 'admin' : 'astrologer',
+        contactId
+      );
       
       io.to(callerRoom).emit(CALL.REJECT, {
         callId,
@@ -231,9 +255,10 @@ module.exports = (io, socket) => {
       console.log(`🔗 [CALL] Call ${callId} connected`);
       
       // Notify other party
-      const contactRoom = contactId.startsWith('admin') 
-        ? ROOM_PREFIX.ADMIN 
-        : `${ROOM_PREFIX.ASTROLOGER}${contactId}`;
+      const contactRoom = roomFor(
+        contactId && contactId.startsWith('admin') ? 'admin' : 'astrologer',
+        contactId
+      );
       
       io.to(contactRoom).emit(CALL.CONNECTED, {
         callId,
@@ -264,9 +289,10 @@ module.exports = (io, socket) => {
       
       // Notify other party
       if (contactId) {
-        const contactRoom = contactId.startsWith('admin') 
-          ? ROOM_PREFIX.ADMIN 
-          : `${ROOM_PREFIX.ASTROLOGER}${contactId}`;
+        const contactRoom = roomFor(
+          contactId && contactId.startsWith('admin') ? 'admin' : 'astrologer',
+          contactId
+        );
         
         io.to(contactRoom).emit(CALL.END, {
           callId,
