@@ -143,13 +143,31 @@ class _AstrologerAppState extends State<AstrologerApp> {
             create: (context) => getIt<ReviewsBloc>(),
           ),
         ],
-        child: Builder(
-          builder: (context) {
+        child: MaterialApp(
+          // Removed key to prevent full app restart on language change
+          // The locale property alone is sufficient for l10n updates
+          title: 'Astrologer App',
+          theme: AppTheme.lightTheme,
+          debugShowCheckedModeBanner: false,
+          locale: widget.languageService.currentLocale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', ''), // English
+            Locale('hi', ''), // Hindi
+          ],
+          initialRoute: AppRoutes.splash,
+          onGenerateRoute: AppRoutes.generateRoute,
+          builder: (context, child) {
+            // Listen inside MaterialApp so Navigator exists in context
             return BlocListener<CallBloc, CallState>(
               listener: (context, state) {
                 if (state is CallIncoming) {
-                  // Show incoming call screen as a full-screen overlay
-                  Navigator.of(context).push(
+                  Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(
                       fullscreenDialog: true,
                       builder: (context) => IncomingCallScreen(
@@ -167,29 +185,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
                   );
                 }
               },
-              child: MaterialApp(
-                // Removed key to prevent full app restart on language change
-                // The locale property alone is sufficient for l10n updates
-                title: 'Astrologer App',
-                theme: AppTheme.lightTheme,
-                debugShowCheckedModeBanner: false,
-                locale: widget.languageService.currentLocale,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: const [
-                  Locale('en', ''), // English
-                  Locale('hi', ''), // Hindi
-                ],
-                initialRoute: AppRoutes.splash,
-                onGenerateRoute: AppRoutes.generateRoute,
-                builder: (context, child) {
-                  return OfflineIndicator(child: child!);
-                },
-              ),
+              child: OfflineIndicator(child: child!),
             );
           },
         ),
