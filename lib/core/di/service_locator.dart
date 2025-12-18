@@ -223,6 +223,11 @@ Future<void> setupServiceLocator() async {
       socketService: getIt<SocketService>(),
     ),
   );
+
+  // Call BLoC (Singleton - global call state)
+  getIt.registerLazySingleton<CallBloc>(
+    () => CallBloc(socketService: getIt<SocketService>()),
+  );
   
   // Heal BLoC (Singleton to preserve state across navigation)
   getIt.registerLazySingleton<HealBloc>(

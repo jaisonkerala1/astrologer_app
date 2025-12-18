@@ -18,6 +18,10 @@ import '../features/consultations/bloc/consultations_bloc.dart';
 import '../features/calendar/bloc/calendar_bloc.dart';
 import '../features/earnings/bloc/earnings_bloc.dart';
 import '../features/communication/bloc/communication_bloc.dart';
+import '../features/communication/bloc/call_bloc.dart';
+import '../features/communication/bloc/call_state.dart';
+import '../features/communication/screens/incoming_call_screen.dart';
+import '../features/communication/models/communication_item.dart';
 import '../features/heal/bloc/heal_bloc.dart';
 import '../features/help_support/bloc/help_support_bloc.dart';
 import '../features/live/bloc/live_bloc.dart';
@@ -120,6 +124,9 @@ class _AstrologerAppState extends State<AstrologerApp> {
           BlocProvider<CommunicationBloc>(
             create: (context) => getIt<CommunicationBloc>(),
           ),
+          BlocProvider<CallBloc>(
+            create: (context) => getIt<CallBloc>(),
+          ),
           BlocProvider<HealBloc>(
             create: (context) => getIt<HealBloc>(),
           ),
@@ -136,27 +143,54 @@ class _AstrologerAppState extends State<AstrologerApp> {
             create: (context) => getIt<ReviewsBloc>(),
           ),
         ],
-        child: MaterialApp(
-          // Removed key to prevent full app restart on language change
-          // The locale property alone is sufficient for l10n updates
-          title: 'Astrologer App',
-          theme: AppTheme.lightTheme,
-          debugShowCheckedModeBanner: false,
-          locale: widget.languageService.currentLocale,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en', ''), // English
-            Locale('hi', ''), // Hindi
-          ],
-          initialRoute: AppRoutes.splash,
-          onGenerateRoute: AppRoutes.generateRoute,
-          builder: (context, child) {
-            return OfflineIndicator(child: child!);
+        child: Builder(
+          builder: (context) {
+            return BlocListener<CallBloc, CallState>(
+              listener: (context, state) {
+                if (state is CallIncoming) {
+                  // Show incoming call screen as a full-screen overlay
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      fullscreenDialog: true,
+                      builder: (context) => IncomingCallScreen(
+                        callId: state.callId,
+                        contactId: state.callerId,
+                        contactName: state.callerName,
+                        contactType: state.contactType,
+                        phoneNumber: '', // Not provided in call event
+                        callType: state.callType,
+                        agoraToken: state.agoraToken,
+                        channelName: state.channelName,
+                        avatarUrl: state.callerAvatar,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: MaterialApp(
+                // Removed key to prevent full app restart on language change
+                // The locale property alone is sufficient for l10n updates
+                title: 'Astrologer App',
+                theme: AppTheme.lightTheme,
+                debugShowCheckedModeBanner: false,
+                locale: widget.languageService.currentLocale,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                  Locale('en', ''), // English
+                  Locale('hi', ''), // Hindi
+                ],
+                initialRoute: AppRoutes.splash,
+                onGenerateRoute: AppRoutes.generateRoute,
+                builder: (context, child) {
+                  return OfflineIndicator(child: child!);
+                },
+              ),
+            );
           },
         ),
       ),

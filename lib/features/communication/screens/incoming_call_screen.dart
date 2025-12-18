@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../models/communication_item.dart';
+import '../bloc/call_bloc.dart';
+import '../bloc/call_event.dart';
 import 'video_call_screen.dart';
 
 /// Generic IncomingCallScreen that works for:
@@ -604,17 +607,12 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   void _acceptCall() {
     print('✅ [INCOMING CALL] Call accepted');
-    
-    // Notify backend via Socket.IO
-    try {
-      _socketService.acceptCall(
-        callId: widget.callId,
-        contactId: widget.contactId,
-      );
-      print('📞 Call acceptance sent to backend');
-    } catch (e) {
-      print('❌ Error notifying call accept: $e');
-    }
+
+    // Notify backend via BLoC
+    context.read<CallBloc>().add(AcceptCallEvent(
+      callId: widget.callId,
+      contactId: widget.contactId,
+    ));
     
     // Navigate to appropriate screen
     if (widget.callType == 'video') {
@@ -651,17 +649,12 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
       return;
     }
     
-    // Notify backend via Socket.IO
-    try {
-      _socketService.rejectCall(
-        callId: widget.callId,
-        contactId: widget.contactId,
-        reason: 'declined',
-      );
-      print('📞 Call rejection sent to backend');
-    } catch (e) {
-      print('❌ Error notifying call decline: $e');
-    }
+    // Notify backend via BLoC
+    context.read<CallBloc>().add(RejectCallEvent(
+      callId: widget.callId,
+      contactId: widget.contactId,
+      reason: 'declined',
+    ));
     
     setState(() {
       _isRinging = false;
