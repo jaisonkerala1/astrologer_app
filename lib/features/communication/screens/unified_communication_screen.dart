@@ -632,31 +632,32 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     
     if (state.activeFilter == CommunicationFilter.all) {
       // Always go to chat in unified "All" view
-      _openChat(item.contactName);
+      _openChat(item);
     } else {
       // In filtered view, do specific action based on type
       switch (item.type) {
         case CommunicationType.message:
-          _openChat(item.contactName);
+          _openChat(item);
           break;
         case CommunicationType.voiceCall:
           _makeCall(item.contactName);
           break;
         case CommunicationType.videoCall:
-          _startVideoCall(item.contactName);
+          _startVideoCall(item);
           break;
       }
     }
   }
   
-  void _openChat(String contactName) {
+  void _openChat(CommunicationItem item) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ChatScreen(
-          contactId: contactName.hashCode.toString(),
-          contactName: contactName,
-          contactType: ContactType.user,
+          contactId: item.contactId.isNotEmpty ? item.contactId : item.contactName.hashCode.toString(),
+          contactName: item.contactName,
+          contactType: item.contactType,
+          conversationId: item.conversationId,
         ),
       ),
     );
@@ -667,14 +668,14 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
     // TODO: Implement actual voice call
   }
   
-  void _startVideoCall(String contactName) {
+  void _startVideoCall(CommunicationItem item) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => VideoCallScreen(
-          contactId: contactName.hashCode.toString(),
-          contactName: contactName,
-          contactType: ContactType.user,
+          contactId: item.contactId.isNotEmpty ? item.contactId : item.contactName.hashCode.toString(),
+          contactName: item.contactName,
+          contactType: item.contactType,
           isIncoming: false,
         ),
       ),

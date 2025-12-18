@@ -76,3 +76,5 @@ directMessageSchema.index({ senderId: 1, recipientId: 1 });
 
 module.exports = mongoose.model('DirectMessage', directMessageSchema);
 
+
+

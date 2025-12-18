@@ -5,11 +5,13 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../models/communication_item.dart';
 import '../models/message.dart';
 import 'video_call_screen.dart';
 import 'dart:async';
+import 'dart:convert';
 
 /// Generic ChatScreen that works for:
 /// - Admin ↔ Astrologer communication
@@ -54,18 +56,19 @@ class _ChatScreenState extends State<ChatScreen> {
   StreamSubscription? _messageSubscription;
   StreamSubscription? _typingSubscription;
   String? _currentUserId;
+  String? _activeConversationId;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize services
     _socketService = getIt<SocketService>();
     _apiService = getIt<ApiService>();
-    
-    // Load messages and setup real-time
-    _loadMessages();
-    _setupRealtimeMessaging();
+
+    // Initialize chat (load current user id, connect socket, join room, load history)
+    // ignore: discarded_futures
+    _initializeChat();
     
     _messageController.addListener(() {
       final hasText = _messageController.text.trim().isNotEmpty;
@@ -97,8 +100,9 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingSubscription?.cancel();
     
     // Leave conversation room
-    if (widget.conversationId != null) {
-      _socketService.leaveDirectConversation(widget.conversationId!);
+    final convoId = widget.conversationId ?? _activeConversationId;
+    if (convoId != null) {
+      _socketService.leaveDirectConversation(convoId);
     }
     
     _messageController.dispose();
@@ -107,12 +111,61 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  Future<void> _initializeChat() async {
+    try {
+      await _loadCurrentUserId();
+      await _setupRealtimeMessaging();
+      await _loadMessages();
+    } catch (e) {
+      print('❌ Error initializing chat: $e');
+    }
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    try {
+      final storage = StorageService();
+      final userDataString = await storage.getUserData();
+      if (userDataString == null || userDataString.isEmpty) return;
+
+      final Map<String, dynamic> json = jsonDecode(userDataString);
+      final id = (json['id'] ?? json['_id'])?.toString();
+      if (id == null || id.isEmpty) return;
+
+      _currentUserId = id;
+      print('✅ [CHAT] Current user id: $_currentUserId');
+    } catch (e) {
+      print('⚠️ [CHAT] Failed to load current user id: $e');
+    }
+  }
+
+  String? _resolveConversationId() {
+    if (widget.conversationId != null && widget.conversationId!.isNotEmpty) {
+      return widget.conversationId!;
+    }
+
+    // Admin Support conversation must match admin dashboard format:
+    // admin_<astrologerId>
+    if (widget.contactType == ContactType.admin) {
+      if (_currentUserId != null && _currentUserId!.isNotEmpty) {
+        return 'admin_$_currentUserId';
+      }
+      return null; // can't resolve yet
+    }
+
+    // Default (existing behavior): admin_<contactId>
+    return 'admin_${widget.contactId}';
+  }
+
   /// Load messages from backend via Socket.IO
   Future<void> _loadMessages() async {
     try {
       setState(() => _isLoading = true);
       
-      final conversationId = widget.conversationId ?? 'admin_${widget.contactId}';
+      final conversationId = _resolveConversationId();
+      if (conversationId == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
       
       // Request message history via Socket.IO
       _socketService.requestDirectMessageHistory(
@@ -174,9 +227,23 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   /// Setup Socket.IO for real-time messages
-  void _setupRealtimeMessaging() {
+  Future<void> _setupRealtimeMessaging() async {
     try {
-      final conversationId = widget.conversationId ?? 'admin_${widget.contactId}';
+      // 🔌 CONNECT TO SOCKET.IO FIRST!
+      print('🔌 [CHAT] Connecting to Socket.IO...');
+      await _socketService.connect();
+      
+      // Wait for connection to be established
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      final conversationId = _resolveConversationId();
+      if (conversationId == null) {
+        print('⚠️ [CHAT] Cannot join yet - conversationId unresolved');
+        return;
+      }
+      _activeConversationId = conversationId;
+      
+      print('✅ [CHAT] Socket connected! Joining conversation: $conversationId');
       
       // Join conversation room
       _socketService.joinDirectConversation(
@@ -234,7 +301,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendTypingIndicator() {
     try {
       _socketService.sendDirectMessageTyping(
-        conversationId: widget.conversationId ?? 'admin_${widget.contactId}',
+        conversationId: _resolveConversationId() ?? (widget.conversationId ?? 'admin_${widget.contactId}'),
         userId: _currentUserId ?? '',
       );
     } catch (e) {
@@ -817,13 +884,16 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     
     try {
-      final conversationId = widget.conversationId ?? 'admin_${widget.contactId}';
+      final conversationId = _resolveConversationId() ?? (widget.conversationId ?? 'admin_${widget.contactId}');
+
+      final recipientId = widget.contactType == ContactType.admin ? 'admin' : widget.contactId;
+      final recipientType = widget.contactType == ContactType.admin ? 'admin' : widget.contactType.name;
       
       // Send via Socket.IO for real-time delivery & persistence
       _socketService.sendDirectMessage(
         conversationId: conversationId,
-        recipientId: widget.contactId,
-        recipientType: widget.contactType.name,
+        recipientId: recipientId,
+        recipientType: recipientType,
         content: text,
         messageType: 'text',
       );

@@ -58,3 +58,5 @@ directConversationSchema.index({ lastMessageAt: -1 });
 
 module.exports = mongoose.model('DirectConversation', directConversationSchema);
 
+
+
