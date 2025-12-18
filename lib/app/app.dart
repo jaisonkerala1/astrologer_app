@@ -57,12 +57,22 @@ class AstrologerApp extends StatefulWidget {
 class _AstrologerAppState extends State<AstrologerApp> {
   // Root navigator key so we can present incoming call UI from anywhere
   final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+  
+  // Hold reference to CallBloc to keep it alive
+  late final CallBloc _callBloc;
 
   @override
   void initState() {
     super.initState();
     // Listen to language changes
     widget.languageService.addListener(_onLanguageChanged);
+    
+    // CRITICAL: Initialize CallBloc immediately so it subscribes to call events
+    print('🚀 [APP] Initializing CallBloc...');
+    _callBloc = getIt<CallBloc>();
+    print('✅ [APP] CallBloc initialized: ${_callBloc.runtimeType}');
+    print('✅ [APP] Socket service: ${_callBloc.socketService}');
+    print('✅ [APP] Socket connected: ${_callBloc.socketService.isConnected}');
   }
 
   @override
@@ -127,8 +137,8 @@ class _AstrologerAppState extends State<AstrologerApp> {
           BlocProvider<CommunicationBloc>(
             create: (context) => getIt<CommunicationBloc>(),
           ),
-          BlocProvider<CallBloc>(
-            create: (context) => getIt<CallBloc>(),
+          BlocProvider<CallBloc>.value(
+            value: _callBloc, // Use the instance we created in initState
           ),
           BlocProvider<HealBloc>(
             create: (context) => getIt<HealBloc>(),
@@ -182,6 +192,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
                         phoneNumber: '', // Not provided in call event
                         callType: state.callType,
                         agoraToken: state.agoraToken,
+                        agoraAppId: state.agoraAppId,
                         channelName: state.channelName,
                         avatarUrl: state.callerAvatar,
                       ),

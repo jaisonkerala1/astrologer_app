@@ -1032,6 +1032,9 @@ class _ChatScreenState extends State<ChatScreen> {
             contactName: widget.contactName,
             contactType: widget.contactType,
             isIncoming: false,
+            callId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+            channelName: 'temp_channel',
+            token: '', // TODO: Get token from backend for outgoing calls
             avatarUrl: widget.avatarUrl,
           ),
         ),

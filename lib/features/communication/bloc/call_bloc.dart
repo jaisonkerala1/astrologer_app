@@ -12,6 +12,8 @@ class CallBloc extends Bloc<CallEvent, CallState> {
   StreamSubscription? _callAcceptedSubscription;
   StreamSubscription? _callRejectedSubscription;
   StreamSubscription? _callEndedSubscription;
+  Timer? _connectRetryTimer;
+  int _connectRetries = 0;
 
   CallBloc({required this.socketService}) : super(const CallIdle()) {
     on<IncomingCallEvent>(_onIncomingCall);
@@ -21,8 +23,35 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     on<EndCallEvent>(_onEndCall);
     on<DismissCallEvent>(_onDismissCall);
 
+    // Ensure socket is connected on app startup so incoming calls/messages
+    // arrive even before opening the chat screen.
+    _ensureSocketConnected();
+
     // Subscribe to global call events from Socket.IO
     _subscribeToCallEvents();
+  }
+
+  void _ensureSocketConnected() {
+    if (socketService.isConnected) return;
+
+    // Try to connect immediately
+    socketService.connect();
+
+    // If token wasn't ready yet, retry a few times with backoff
+    _connectRetryTimer?.cancel();
+    _connectRetries = 0;
+    _connectRetryTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (socketService.isConnected) {
+        timer.cancel();
+        return;
+      }
+      if (_connectRetries >= 5) {
+        timer.cancel();
+        return;
+      }
+      _connectRetries += 1;
+      socketService.connect();
+    });
   }
 
   void _subscribeToCallEvents() {
@@ -207,6 +236,7 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     _callAcceptedSubscription?.cancel();
     _callRejectedSubscription?.cancel();
     _callEndedSubscription?.cancel();
+    _connectRetryTimer?.cancel();
     return super.close();
   }
 }

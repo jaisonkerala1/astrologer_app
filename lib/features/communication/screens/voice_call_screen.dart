@@ -18,6 +18,7 @@ class VoiceCallScreen extends StatefulWidget {
   final ContactType contactType;
   final String channelName;
   final String token;
+  final String agoraAppId;
   final String? avatarUrl;
 
   const VoiceCallScreen({
@@ -28,6 +29,7 @@ class VoiceCallScreen extends StatefulWidget {
     required this.contactType,
     required this.channelName,
     required this.token,
+    required this.agoraAppId,
     this.avatarUrl,
   });
 
@@ -92,22 +94,33 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         return;
       }
       
-      print('📞 [VOICE] Creating Agora engine...');
+      print('📞 [VOICE] Creating Agora engine with APP_ID: ${widget.agoraAppId}');
       
       // Create Agora engine
       _agoraEngine = createAgoraRtcEngine();
-      await _agoraEngine!.initialize(const RtcEngineContext(
-        appId: '6358473261094f98be1fea84042b1fcf', // Should come from config
-        channelProfile: ChannelProfileType.channelProfileCommunication,
+      
+      print('📞 [VOICE] Initializing RTC engine...');
+      await _agoraEngine!.initialize(RtcEngineContext(
+        appId: widget.agoraAppId,
       ));
       
+      print('📞 [VOICE] ✅ Engine initialized successfully');
       print('📞 [VOICE] Setting up event handlers...');
       
       // Register event handlers
       _agoraEngine!.registerEventHandler(
         RtcEngineEventHandler(
-          onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          onJoinChannelSuccess: (RtcConnection connection, int elapsed) async {
             print('📞 [VOICE] Joined channel: ${connection.channelId}');
+            
+            // Enable speaker AFTER joining channel
+            try {
+              await _agoraEngine!.setEnableSpeakerphone(true);
+              print('📞 [VOICE] ✅ Speaker enabled');
+            } catch (e) {
+              print('⚠️ [VOICE] Could not enable speaker: $e');
+            }
+            
             setState(() {
               _isCallConnected = true;
               _callStatus = 'Connected';
@@ -133,19 +146,19 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         ),
       );
       
-      // Enable audio
+      // Small delay to ensure engine is ready
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      print('📞 [VOICE] Enabling audio...');
       await _agoraEngine!.enableAudio();
       
-      // Set audio profile for voice call
+      print('📞 [VOICE] Setting audio profile...');
       await _agoraEngine!.setAudioProfile(
         profile: AudioProfileType.audioProfileDefault,
         scenario: AudioScenarioType.audioScenarioChatroom,
       );
       
-      // Enable speaker by default
-      await _agoraEngine!.setEnableSpeakerphone(_isSpeakerEnabled);
-      
-      print('📞 [VOICE] Joining channel: ${widget.channelName}');
+      print('📞 [VOICE] Joining channel: ${widget.channelName} with token');
       
       // Join channel
       await _agoraEngine!.joinChannel(
@@ -156,8 +169,11 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
           channelProfile: ChannelProfileType.channelProfileCommunication,
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           autoSubscribeAudio: true,
+          publishMicrophoneTrack: true,
         ),
       );
+      
+      print('📞 [VOICE] ✅ Join channel request sent');
       
     } catch (e) {
       print('❌ [VOICE] Error initializing Agora: $e');

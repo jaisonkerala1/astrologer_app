@@ -23,6 +23,7 @@ class IncomingCallScreen extends StatefulWidget {
   final String phoneNumber;
   final String callType;           // 'voice' or 'video'
   final String? agoraToken;        // Agora token for call
+  final String? agoraAppId;        // Agora APP_ID
   final String? channelName;       // Agora channel
   final String? avatarUrl;
 
@@ -35,6 +36,7 @@ class IncomingCallScreen extends StatefulWidget {
     required this.phoneNumber,
     required this.callType,
     this.agoraToken,
+    this.agoraAppId,
     this.channelName,
     this.avatarUrl,
   });
@@ -626,8 +628,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             contactType: widget.contactType,
             isIncoming: true,
             callId: widget.callId,
-            channelName: widget.channelName,
-            token: widget.agoraToken,
+            channelName: widget.channelName ?? '',
+            token: widget.agoraToken ?? '',
             avatarUrl: widget.avatarUrl,
           ),
         ),
@@ -644,6 +646,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             contactType: widget.contactType,
             channelName: widget.channelName ?? '',
             token: widget.agoraToken ?? '',
+            agoraAppId: widget.agoraAppId ?? '6358473261094f98be1fea84042b1fcf',
             avatarUrl: widget.avatarUrl,
           ),
         ),

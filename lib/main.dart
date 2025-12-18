@@ -9,6 +9,7 @@ import 'core/services/app_restart_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/live/services/live_stream_service.dart';
+import 'features/communication/bloc/call_bloc.dart';
 import 'shared/theme/services/theme_service.dart';
 import 'app/app.dart';
 import 'shared/theme/app_theme.dart';
@@ -18,6 +19,17 @@ void main() async {
   
   // Initialize dependency injection
   await setupServiceLocator();
+  
+  // Eagerly initialize CallBloc so socket connects immediately
+  // This ensures incoming calls/messages work even before opening chat
+  try {
+    final callBloc = getIt<CallBloc>();
+    debugPrint('✅ [MAIN] CallBloc initialized eagerly: ${callBloc.runtimeType}');
+    debugPrint('✅ [MAIN] Socket connected: ${callBloc.socketService.isConnected}');
+  } catch (e, stackTrace) {
+    debugPrint('❌ [MAIN] Failed to initialize CallBloc: $e');
+    debugPrint('❌ [MAIN] StackTrace: $stackTrace');
+  }
   
   // Set system UI overlay style for transparent status bar
   SystemChrome.setSystemUIOverlayStyle(

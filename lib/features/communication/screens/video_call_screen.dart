@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/services/socket_service.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../models/communication_item.dart';
-import '../services/video_call_service.dart';
+import '../bloc/call_bloc.dart';
+import '../bloc/call_event.dart';
 
 /// Generic VideoCallScreen that works for:
 /// - Admin ↔ Astrologer video calls
@@ -17,9 +20,9 @@ class VideoCallScreen extends StatefulWidget {
   final String contactName;
   final ContactType contactType;   // 'admin', 'user', or 'astrologer'
   final bool isIncoming;
-  final String? callId;
-  final String? channelName;       // Agora channel name
-  final String? token;             // Agora token
+  final String callId;
+  final String channelName;        // Agora channel name
+  final String token;              // Agora token
   final String? avatarUrl;
 
   const VideoCallScreen({
@@ -28,9 +31,9 @@ class VideoCallScreen extends StatefulWidget {
     required this.contactName,
     required this.contactType,
     this.isIncoming = false,
-    this.callId,
-    this.channelName,
-    this.token,
+    required this.callId,
+    required this.channelName,
+    required this.token,
     this.avatarUrl,
   });
 
@@ -39,24 +42,22 @@ class VideoCallScreen extends StatefulWidget {
 }
 
 class _VideoCallScreenState extends State<VideoCallScreen> {
-  // Video call service
-  final VideoCallService _videoCallService = VideoCallService();
-  
   // Services
   late final SocketService _socketService;
-  late final ApiService _apiService;
+  
+  // Agora engine
+  RtcEngine? _agoraEngine;
+  int? _remoteUid;
+  bool _isJoined = false;
   
   // Call state
   bool _isCallConnected = false;
   bool _isVideoEnabled = true;
   bool _isAudioEnabled = true;
-  bool _isSpeakerEnabled = false;
+  bool _isSpeakerEnabled = true;
   bool _isCallEnded = false;
+  bool _isFrontCamera = true;
   String _callStatus = 'Connecting...';
-  
-  // Agora credentials
-  String? _agoraToken;
-  String? _agoraChannel;
   
   // Timer for call duration
   int _callDuration = 0;
@@ -65,20 +66,17 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   @override
   void initState() {
     super.initState();
-    print('🎥 VideoCallScreen initialized for: ${widget.contactName} (${widget.contactType.name})');
+    print('🎥 [VIDEO] VideoCallScreen initialized for: ${widget.contactName}');
     
-    // Initialize services
     _socketService = getIt<SocketService>();
-    _apiService = getIt<ApiService>();
-    
     _setupSystemUI();
-    _initializeVideoCall();
+    _initializeAgora();
   }
 
   @override
   void dispose() {
     _durationTimer?.cancel();
-    _videoCallService.dispose();
+    _leaveChannel();
     _restoreSystemUI();
     super.dispose();
   }
@@ -114,128 +112,119 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     );
   }
 
-  void _initializeVideoCall() async {
-    print('🎥 Initializing video call service...');
-    
-    // Set up callbacks
-    _videoCallService.onCallStatusChanged = (status) {
-      print('📞 Call status changed: $status');
-      if (mounted) {
-        setState(() {
-          _callStatus = status;
-          if (status == 'Connected') {
-            _isCallConnected = true;
+  Future<void> _initializeAgora() async {
+    try {
+      print('🎥 [VIDEO] Requesting permissions...');
+      
+      // Request camera and microphone permissions
+      await [Permission.camera, Permission.microphone].request();
+      
+      print('🎥 [VIDEO] Creating Agora engine with APP_ID: 6358473261094f98be1fea84042b1fcf');
+      
+      // Create Agora engine
+      _agoraEngine = createAgoraRtcEngine();
+      
+      print('🎥 [VIDEO] Initializing RTC engine...');
+      await _agoraEngine!.initialize(const RtcEngineContext(
+        appId: '6358473261094f98be1fea84042b1fcf',
+      ));
+      
+      print('🎥 [VIDEO] ✅ Engine initialized successfully');
+      
+      // Register event handlers
+      _agoraEngine!.registerEventHandler(
+        RtcEngineEventHandler(
+          onJoinChannelSuccess: (RtcConnection connection, int elapsed) async {
+            print('🎥 [VIDEO] Joined channel: ${connection.channelId}');
+            
+            // Enable speaker AFTER joining
+            try {
+              await _agoraEngine!.setEnableSpeakerphone(true);
+              print('🎥 [VIDEO] ✅ Speaker enabled');
+            } catch (e) {
+              print('⚠️ [VIDEO] Could not enable speaker: $e');
+            }
+            
+            setState(() {
+              _isJoined = true;
+              _isCallConnected = true;
+              _callStatus = 'Connected';
+            });
             _startCallDurationTimer();
             _notifyCallConnected();
-          }
-        });
-      }
-    };
-
-    _videoCallService.onError = (error) {
-      if (mounted) {
-        setState(() {
-          _callStatus = 'Error: $error';
-        });
-      }
-    };
-
-    _videoCallService.onCallEnded = () {
-      if (mounted) {
-        _endCall();
-      }
-    };
-
-    // Get or use Agora credentials
-    if (widget.isIncoming) {
-      // Use provided credentials for incoming calls
-      _agoraToken = widget.token;
-      _agoraChannel = widget.channelName;
-      print('✅ Using provided Agora credentials');
-      _startAgoraCall();
-    } else {
-      // Generate credentials for outgoing calls
-      await _generateAgoraToken();
-    }
-  }
-
-  /// Generate Agora token for outgoing call via Socket.IO
-  Future<void> _generateAgoraToken() async {
-    try {
-      print('🔑 Generating Agora token via Socket.IO...');
-      
-      // Initiate call via Socket.IO (backend will generate token and send back)
-      _socketService.initiateCall(
-        recipientId: widget.contactId,
-        recipientType: widget.contactType.name,
-        callType: 'video',
-        channelName: 'video_${widget.contactId}_${DateTime.now().millisecondsSinceEpoch}',
+          },
+          onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+            print('🎥 [VIDEO] Remote user joined: $remoteUid');
+            setState(() {
+              _remoteUid = remoteUid;
+            });
+          },
+          onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+            print('🎥 [VIDEO] Remote user left: $remoteUid');
+            setState(() {
+              _remoteUid = null;
+            });
+          },
+          onError: (ErrorCodeType err, String msg) {
+            print('❌ [VIDEO] Agora error: $err - $msg');
+          },
+        ),
       );
       
-      // Listen for token response
-      final tokenSubscription = _socketService.callTokenStream.listen((data) {
-        try {
-          setState(() {
-            _agoraToken = data['agoraToken'];
-            _agoraChannel = data['channelName'];
-          });
-          
-          print('✅ Agora token received: $_agoraChannel');
-          _startAgoraCall();
-        } catch (e) {
-          print('❌ Error parsing token: $e');
-          setState(() {
-            _callStatus = 'Failed to connect';
-          });
-        }
-      });
+      // Enable video
+      await _agoraEngine!.enableVideo();
       
-      // Cancel subscription after timeout
-      Future.delayed(const Duration(seconds: 10), () {
-        tokenSubscription.cancel();
-      });
+      // Start local preview
+      await _agoraEngine!.startPreview();
+      
+      print('🎥 [VIDEO] Joining channel: ${widget.channelName}');
+      
+      // Join channel
+      await _agoraEngine!.joinChannel(
+        token: widget.token,
+        channelId: widget.channelName,
+        uid: 0,
+        options: const ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          autoSubscribeVideo: true,
+          autoSubscribeAudio: true,
+          publishCameraTrack: true,
+          publishMicrophoneTrack: true,
+        ),
+      );
+      
+      print('🎥 [VIDEO] ✅ Join channel request sent');
       
     } catch (e) {
-      print('❌ Error generating token: $e');
+      print('❌ [VIDEO] Error initializing Agora: $e');
       setState(() {
         _callStatus = 'Failed to connect';
       });
     }
   }
 
-  String _getTokenEndpoint() {
-    switch (widget.contactType) {
-      case ContactType.admin:
-        return '/api/calls/admin/token';
-      case ContactType.user:
-      case ContactType.astrologer:
-        return '/api/calls/initiate';
-    }
-  }
-
-  /// Start Agora video call
-  void _startAgoraCall() {
-    if (_agoraToken != null && _agoraChannel != null) {
-      print('🎥 Starting Agora call with channel: $_agoraChannel');
-      // Start the call with Agora SDK
-      _videoCallService.startCall(widget.contactName);
-    } else {
-      print('❌ Cannot start call - missing token or channel');
-    }
-  }
-
-  /// Notify backend that call is connected
-  void _notifyCallConnected() {
+  Future<void> _leaveChannel() async {
     try {
-      if (widget.callId != null) {
-        _socketService.notifyCallConnected(
-          callId: widget.callId!,
-          contactId: widget.contactId,
-        );
-        print('📞 Call connected - notified backend');
+      if (_agoraEngine != null) {
+        await _agoraEngine!.leaveChannel();
+        await _agoraEngine!.release();
+        _agoraEngine = null;
       }
     } catch (e) {
-      print('❌ Error notifying call connected: $e');
+      print('❌ [VIDEO] Error leaving channel: $e');
+    }
+  }
+
+  void _notifyCallConnected() {
+    try {
+      _socketService.notifyCallConnected(
+        callId: widget.callId,
+        contactId: widget.contactId,
+      );
+      print('✅ [VIDEO] Call connected notification sent');
+    } catch (e) {
+      print('❌ [VIDEO] Error notifying call connected: $e');
     }
   }
 
@@ -254,53 +243,59 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     setState(() {
       _isVideoEnabled = !_isVideoEnabled;
     });
-    
-    // Toggle video stream via service
-    _videoCallService.toggleVideo();
+    _agoraEngine?.muteLocalVideoStream(!_isVideoEnabled);
+    print('📹 [VIDEO] Camera ${_isVideoEnabled ? "enabled" : "disabled"}');
   }
 
   void _toggleAudio() {
     setState(() {
       _isAudioEnabled = !_isAudioEnabled;
     });
-    
-    // Toggle audio stream via service
-    _videoCallService.toggleAudio();
+    _agoraEngine?.muteLocalAudioStream(!_isAudioEnabled);
+    print('🎙️ [VIDEO] Audio ${_isAudioEnabled ? "enabled" : "muted"}');
   }
 
   void _toggleSpeaker() {
     setState(() {
       _isSpeakerEnabled = !_isSpeakerEnabled;
     });
-    
-    // Toggle speaker output
-    // This would require platform-specific implementation
+    _agoraEngine?.setEnableSpeakerphone(_isSpeakerEnabled);
+    print('🔊 [VIDEO] Speaker ${_isSpeakerEnabled ? "enabled" : "disabled"}');
+  }
+
+  void _switchCamera() {
+    _agoraEngine?.switchCamera();
+    setState(() {
+      _isFrontCamera = !_isFrontCamera;
+    });
+    print('📷 [VIDEO] Switched to ${_isFrontCamera ? "front" : "back"} camera');
   }
 
   void _endCall() {
     if (_isCallEnded) return;
-    
+
     setState(() {
       _isCallEnded = true;
       _callStatus = 'Call ended';
     });
-    
-    // Notify via Socket.IO
-    if (widget.callId != null) {
-      try {
-        _socketService.endCall(
-          callId: widget.callId!,
-          contactId: widget.contactId,
-          duration: _callDuration,
-        );
-        print('📞 Call ended - notified backend (duration: $_callDuration seconds)');
-      } catch (e) {
-        print('❌ Error notifying call end: $e');
+
+    // Notify backend via BLoC
+    context.read<CallBloc>().add(EndCallEvent(
+      callId: widget.callId,
+      contactId: widget.contactId,
+      duration: _callDuration,
+      reason: 'completed',
+    ));
+
+    // Clean up and close
+    _durationTimer?.cancel();
+    _leaveChannel();
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        Navigator.of(context).pop();
       }
-    }
-    
-    _videoCallService.endCall();
-    Navigator.pop(context);
+    });
   }
 
   @override
@@ -312,152 +307,89 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           body: SafeArea(
             child: Stack(
               children: [
-                // Remote video (full screen) - Mock implementation
+                // Remote video (full screen) - Real Agora view
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.grey[900],
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Show admin icon or contact avatar
-                          if (widget.contactType == ContactType.admin)
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.blue, width: 3),
-                              ),
-                              child: const Icon(
-                                Icons.support_agent,
-                                size: 60,
-                                color: Colors.blue,
-                              ),
-                            )
-                          else
-                            CircleAvatar(
-                              radius: 60,
-                              backgroundColor: themeService.primaryColor,
-                              backgroundImage: widget.avatarUrl != null
-                                  ? NetworkImage(widget.avatarUrl!)
-                                  : null,
-                              child: widget.avatarUrl == null
-                                  ? Text(
-                                      widget.contactName.isNotEmpty 
-                                          ? widget.contactName[0].toUpperCase()
-                                          : 'U',
-                                      style: const TextStyle(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                          const SizedBox(height: 16),
-                          Text(
-                            widget.contactName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                  child: _remoteUid != null
+                      ? AgoraVideoView(
+                          controller: VideoViewController.remote(
+                            rtcEngine: _agoraEngine!,
+                            canvas: VideoCanvas(uid: _remoteUid),
+                            connection: RtcConnection(channelId: widget.channelName),
                           ),
-                          const SizedBox(height: 8),
-                          if (widget.contactType == ContactType.admin)
-                            const Text(
-                              'Admin Support Team',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _callStatus,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                          ),
-                          if (_isCallConnected) ...[
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.green),
-                              ),
-                              child: const Text(
-                                'Mock Video Call Active',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Local video (picture-in-picture) - Mock implementation
-                if (_isVideoEnabled && _isCallConnected)
-                  Positioned(
-                    top: 60,
-                    right: 20,
-                    child: Container(
-                      width: 120,
-                      height: 160,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white, width: 2),
-                        color: Colors.grey[800],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          color: Colors.grey[800],
+                        )
+                      : Container(
+                          color: Colors.grey[900],
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'You',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                if (widget.contactType == ContactType.admin)
+                                  const Icon(
+                                    Icons.support_agent,
+                                    size: 80,
+                                    color: Colors.white54,
+                                  )
+                                else
+                                  const Icon(
+                                    Icons.person,
+                                    size: 80,
+                                    color: Colors.white54,
                                   ),
-                                ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 16),
                                 Text(
-                                  'Mock Video',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 10,
+                                  _isJoined ? 'Waiting for ${widget.contactName}...' : _callStatus,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 18,
                                   ),
                                 ),
+                                if (_isCallConnected) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _formatDuration(_callDuration),
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                         ),
-                      ),
+                ),
+
+                // Local video (picture-in-picture) - Real camera preview
+                Positioned(
+                  top: 60,
+                  right: 20,
+                  child: Container(
+                    width: 120,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white, width: 2),
+                      color: Colors.grey[800],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: _isJoined && _isVideoEnabled
+                          ? AgoraVideoView(
+                              controller: VideoViewController(
+                                rtcEngine: _agoraEngine!,
+                                canvas: const VideoCanvas(uid: 0),
+                              ),
+                            )
+                          : const Center(
+                              child: Icon(
+                                Icons.videocam_off,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            ),
                     ),
                   ),
+                ),
 
                 // Top bar with call info
                 Positioned(
@@ -546,6 +478,13 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                           icon: _isSpeakerEnabled ? Icons.volume_up : Icons.volume_down,
                           isActive: _isSpeakerEnabled,
                           onTap: _toggleSpeaker,
+                        ),
+                        
+                        // Switch Camera
+                        _buildControlButton(
+                          icon: Icons.cameraswitch,
+                          isActive: true,
+                          onTap: _switchCamera,
                         ),
                         
                         // End Call

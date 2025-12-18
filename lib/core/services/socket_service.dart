@@ -99,6 +99,9 @@ class SocketService {
 
   IO.Socket? _socket;
   String? _authToken;
+  Map<String, dynamic>? _serverUser; // from server 'connected' ack
+  int _authReconnectAttempts = 0;
+  static const int _maxAuthReconnectAttempts = 2;
   
   // Connection state stream
   final _connectionStateController = StreamController<SocketConnectionState>.broadcast();
@@ -211,14 +214,7 @@ class SocketService {
 
   /// Initialize socket connection with auth token
   Future<void> connect({String? token}) async {
-    if (_socket != null && _socket!.connected) {
-      debugPrint('🔌 [SOCKET] Already connected');
-      return;
-    }
-
-    _updateState(SocketConnectionState.connecting);
-
-    // Get token from storage if not provided
+    // Always load the latest token so we can decide whether to reconnect.
     if (token == null) {
       final storage = StorageService();
       _authToken = await storage.getAuthToken();
@@ -232,8 +228,24 @@ class SocketService {
       return;
     }
 
+    // If we're already connected but server treated us as anonymous (bad/expired token at connect time),
+    // force a reconnect using the fresh token so we join the correct personal room (astrologer:<id>).
+    if (_socket != null && _socket!.connected) {
+      if (!isAuthenticated && _authReconnectAttempts < _maxAuthReconnectAttempts) {
+        _authReconnectAttempts += 1;
+        print('🔐 [SOCKET] Connected but unauthenticated. Forcing reconnect ($_authReconnectAttempts/$_maxAuthReconnectAttempts)');
+        disconnect();
+      } else {
+        debugPrint('🔌 [SOCKET] Already connected');
+        return;
+      }
+    }
+
+    _updateState(SocketConnectionState.connecting);
+
     try {
       debugPrint('🔌 [SOCKET] Connecting to $_socketUrl');
+      _serverUser = null; // reset until server ack arrives
 
       _socket = IO.io(
         _socketUrl,
@@ -265,6 +277,9 @@ class SocketService {
     _socket!.onConnect((_) {
       debugPrint('✅ [SOCKET] Connected');
       _updateState(SocketConnectionState.connected);
+      // Ask server for ack/user immediately; this also helps detect anonymous sockets.
+      // (Server emits 'connected' automatically, but this helps in case of timing issues.)
+      _socket!.emit('get_stats');
     });
 
     _socket!.onDisconnect((_) {
@@ -289,7 +304,32 @@ class SocketService {
     });
 
     _socket!.on('connected', (data) {
-      debugPrint('✅ [SOCKET] Server acknowledged connection: $data');
+      try {
+        final map = Map<String, dynamic>.from(data as dynamic);
+        final user = map['user'];
+        _serverUser = user is Map ? Map<String, dynamic>.from(user) : null;
+      } catch (_) {
+        _serverUser = null;
+      }
+
+      // Use print (not debugPrint) so it always shows in logs
+      print('✅ [SOCKET] Server acknowledged connection: $data');
+      print('🔐 [SOCKET] Authenticated: $isAuthenticated, user: $_serverUser');
+
+      // If server treated us as anonymous, reconnect with fresh token
+      if (!isAuthenticated && _authReconnectAttempts < _maxAuthReconnectAttempts) {
+        _authReconnectAttempts += 1;
+        print('🔐 [SOCKET] Server says anonymous. Reconnecting ($_authReconnectAttempts/$_maxAuthReconnectAttempts)');
+        // ignore: discarded_futures
+        Future<void>.delayed(const Duration(milliseconds: 250), () async {
+          disconnect();
+          await connect();
+        });
+      }
+    });
+
+    _socket!.on('stats', (data) {
+      print('📊 [SOCKET] Stats: $data');
     });
 
     _socket!.on('error', (error) {
@@ -449,32 +489,32 @@ class SocketService {
 
     // Call events
     _socket!.on(CallSocketEvents.incoming, (data) {
-      debugPrint('📞 [SOCKET] Incoming call: $data');
+      print('📞 [SOCKET] Incoming call: $data');
       _callIncomingController.add(Map<String, dynamic>.from(data));
     });
 
     _socket!.on(CallSocketEvents.accept, (data) {
-      debugPrint('✅ [SOCKET] Call accepted: $data');
+      print('✅ [SOCKET] Call accepted: $data');
       _callAcceptedController.add(Map<String, dynamic>.from(data));
     });
 
     _socket!.on(CallSocketEvents.reject, (data) {
-      debugPrint('❌ [SOCKET] Call rejected: $data');
+      print('❌ [SOCKET] Call rejected: $data');
       _callRejectedController.add(Map<String, dynamic>.from(data));
     });
 
     _socket!.on(CallSocketEvents.connected, (data) {
-      debugPrint('🔗 [SOCKET] Call connected: $data');
+      print('🔗 [SOCKET] Call connected: $data');
       _callConnectedController.add(Map<String, dynamic>.from(data));
     });
 
     _socket!.on(CallSocketEvents.end, (data) {
-      debugPrint('📴 [SOCKET] Call ended: $data');
+      print('📴 [SOCKET] Call ended: $data');
       _callEndedController.add(Map<String, dynamic>.from(data));
     });
 
     _socket!.on(CallSocketEvents.token, (data) {
-      debugPrint('🔑 [SOCKET] Agora token received: $data');
+      print('🔑 [SOCKET] Agora token received: $data');
       _callTokenController.add(Map<String, dynamic>.from(data));
     });
   }
@@ -486,6 +526,16 @@ class SocketService {
 
   /// Check if socket is connected
   bool get isConnected => _socket?.connected ?? false;
+
+  /// True if server acknowledges a non-anonymous user for this socket.
+  bool get isAuthenticated {
+    final user = _serverUser;
+    if (user == null) return false;
+    final isAnon = user['isAnonymous'] == true;
+    if (isAnon) return false;
+    // Backends may mark role or isAdmin; for astrologers role='astrologer'
+    return true;
+  }
 
   // ==================== LIVE STREAMING METHODS ====================
 

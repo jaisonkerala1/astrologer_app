@@ -677,6 +677,9 @@ class _UnifiedCommunicationScreenState extends State<UnifiedCommunicationScreen>
           contactName: item.contactName,
           contactType: item.contactType,
           isIncoming: false,
+          callId: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+          channelName: 'temp_channel',
+          token: '', // TODO: Get token from backend for outgoing calls
         ),
       ),
     );
