@@ -218,7 +218,10 @@ Future<void> setupServiceLocator() async {
   
   // Communication BLoC
   getIt.registerFactory<CommunicationBloc>(
-    () => CommunicationBloc(repository: getIt<CommunicationRepository>()),
+    () => CommunicationBloc(
+      repository: getIt<CommunicationRepository>(),
+      socketService: getIt<SocketService>(),
+    ),
   );
   
   // Heal BLoC (Singleton to preserve state across navigation)

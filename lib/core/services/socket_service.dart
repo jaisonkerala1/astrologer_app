@@ -171,10 +171,12 @@ class SocketService {
   final _dmMessageReceivedController = StreamController<Map<String, dynamic>>.broadcast();
   final _dmTypingController = StreamController<Map<String, dynamic>>.broadcast();
   final _dmHistoryController = StreamController<Map<String, dynamic>>.broadcast();
+  final _dmGlobalController = StreamController<Map<String, dynamic>>.broadcast(); // global DM events (new/personal)
 
   Stream<Map<String, dynamic>> get dmMessageReceivedStream => _dmMessageReceivedController.stream;
   Stream<Map<String, dynamic>> get dmTypingStream => _dmTypingController.stream;
   Stream<Map<String, dynamic>> get dmHistoryStream => _dmHistoryController.stream;
+  Stream<Map<String, dynamic>> get dmGlobalStream => _dmGlobalController.stream;
 
   // Call event streams
   final _callIncomingController = StreamController<Map<String, dynamic>>.broadcast();
@@ -421,6 +423,7 @@ class SocketService {
     _socket!.on(DirectMessageSocketEvents.received, (data) {
       debugPrint('💬 [SOCKET] Direct message received: $data');
       _dmMessageReceivedController.add(Map<String, dynamic>.from(data));
+      _dmGlobalController.add(Map<String, dynamic>.from(data));
     });
 
     _socket!.on(DirectMessageSocketEvents.typingStart, (data) {
@@ -428,10 +431,20 @@ class SocketService {
       _dmTypingController.add(Map<String, dynamic>.from(data));
     });
 
-    // Listen for message history response (backend emits 'dm:history_response')
+    // Listen for message history (support both legacy and new)
     _socket!.on('dm:history_response', (data) {
+      debugPrint('📜 [SOCKET] Message history (legacy) received: $data');
+      _dmHistoryController.add(Map<String, dynamic>.from(data));
+    });
+    _socket!.on(DirectMessageSocketEvents.history, (data) {
       debugPrint('📜 [SOCKET] Message history received: $data');
       _dmHistoryController.add(Map<String, dynamic>.from(data));
+    });
+
+    // Personal-room new message notification
+    _socket!.on('dm:new_message', (data) {
+      debugPrint('🆕 [SOCKET] New message notification: $data');
+      _dmGlobalController.add(Map<String, dynamic>.from(data));
     });
 
     // Call events
@@ -1005,6 +1018,7 @@ class SocketService {
     _dmMessageReceivedController.close();
     _dmTypingController.close();
     _dmHistoryController.close();
+    _dmGlobalController.close();
     _callIncomingController.close();
     _callAcceptedController.close();
     _callRejectedController.close();
