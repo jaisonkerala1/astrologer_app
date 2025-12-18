@@ -55,6 +55,9 @@ class AstrologerApp extends StatefulWidget {
 }
 
 class _AstrologerAppState extends State<AstrologerApp> {
+  // Root navigator key so we can present incoming call UI from anywhere
+  final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -144,6 +147,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
           ),
         ],
         child: MaterialApp(
+          navigatorKey: _rootNavigatorKey,
           // Removed key to prevent full app restart on language change
           // The locale property alone is sufficient for l10n updates
           title: 'Astrologer App',
@@ -167,7 +171,7 @@ class _AstrologerAppState extends State<AstrologerApp> {
             return BlocListener<CallBloc, CallState>(
               listener: (context, state) {
                 if (state is CallIncoming) {
-                  Navigator.of(context, rootNavigator: true).push(
+                  _rootNavigatorKey.currentState?.push(
                     MaterialPageRoute(
                       fullscreenDialog: true,
                       builder: (context) => IncomingCallScreen(
