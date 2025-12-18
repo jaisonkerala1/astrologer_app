@@ -6,6 +6,7 @@
 const DirectConversation = require('../../models/DirectConversation');
 const DirectMessage = require('../../models/DirectMessage');
 const { DIRECT_MESSAGE, ROOM_PREFIX } = require('../events');
+const FcmService = require('../../services/fcmService');
 
 // Helpers
 function getUserContext(socket, fallback = {}) {
@@ -187,7 +188,7 @@ module.exports = (io, socket) => {
         replyToId
       });
       
-      // Also emit to recipient's personal room (for push notifications)
+      // Also emit to recipient's personal room (Socket.IO for foreground)
       const recipientRoom = `${ROOM_PREFIX[recipientType.toUpperCase()]}${recipientId}`;
       io.to(recipientRoom).emit('dm:new_message', {
         conversationId,
@@ -200,6 +201,17 @@ module.exports = (io, socket) => {
       });
       
       console.log(`✅ [DM] Message delivered to room: ${conversationId}`);
+      
+      // Send FCM push notification (background/locked)
+      FcmService.sendMessageNotification(recipientId, recipientType, {
+        conversationId,
+        senderId: senderCtx.id,
+        senderName: senderCtx.name,
+        senderType: senderCtx.type,
+        content: content || ''
+      }).catch(err => {
+        console.error('⚠️ [FCM] Failed to send message notification:', err.message);
+      });
       
     } catch (error) {
       console.error('❌ [DM] Error sending message:', error);

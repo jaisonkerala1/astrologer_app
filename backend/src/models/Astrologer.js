@@ -147,7 +147,13 @@ const astrologerSchema = new mongoose.Schema({
       },
       message: 'Certificates description must be 500 characters or less'
     }
-  }
+  },
+  // FCM tokens for push notifications (multiple devices support)
+  fcmTokens: [{
+    token: String,
+    platform: { type: String, enum: ['android', 'ios', 'web'] },
+    lastUpdated: { type: Date, default: Date.now },
+  }]
 }, {
   timestamps: true
 });

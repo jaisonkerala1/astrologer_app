@@ -243,6 +243,22 @@ try {
   });
 }
 
+// FCM routes (push notifications)
+try {
+  const fcmRoutes = require('./routes/fcm');
+  app.use('/api/fcm', fcmRoutes);
+  console.log('✅ FCM routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load FCM routes:', error.message);
+  app.use('/api/fcm', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'FCM routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

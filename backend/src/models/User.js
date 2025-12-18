@@ -66,11 +66,12 @@ const userSchema = new mongoose.Schema({
     default: 'en'
   },
   
-  // Device info (for push notifications)
-  fcmToken: {
-    type: String,
-    default: null
-  },
+  // FCM tokens for push notifications (multiple devices support)
+  fcmTokens: [{
+    token: String,
+    platform: { type: String, enum: ['android', 'ios', 'web'] },
+    lastUpdated: { type: Date, default: Date.now },
+  }],
   deviceInfo: {
     platform: String,
     appVersion: String

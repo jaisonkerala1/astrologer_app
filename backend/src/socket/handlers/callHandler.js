@@ -6,6 +6,7 @@
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 const Call = require('../../models/Call');
 const { CALL, ROOM_PREFIX } = require('../events');
+const FcmService = require('../../services/fcmService');
 
 // Agora config (from .env)
 const AGORA_APP_ID = process.env.AGORA_APP_ID || '';
@@ -121,7 +122,7 @@ module.exports = (io, socket) => {
         ringingAt: new Date()
       });
       
-      // Notify recipient
+      // Notify recipient via Socket.IO (foreground)
       const recipientRoom = `${ROOM_PREFIX[recipientType.toUpperCase()]}${recipientId}`;
       io.to(recipientRoom).emit(CALL.INCOMING, {
         callId: call._id.toString(),
@@ -137,6 +138,19 @@ module.exports = (io, socket) => {
       });
       
       console.log(`🔔 [CALL] Incoming call notification sent to ${recipientType} room: ${recipientRoom}`);
+      
+      // Send FCM push notification (background/locked)
+      FcmService.sendCallNotification(recipientId, recipientType, {
+        callId: call._id.toString(),
+        callerId,
+        callerName,
+        callerType,
+        callType,
+        token: agoraToken,
+        channelName
+      }).catch(err => {
+        console.error('⚠️ [FCM] Failed to send call notification:', err.message);
+      });
       
       // Auto-cancel if not answered in 60 seconds
       setTimeout(async () => {
