@@ -10,6 +10,7 @@ import '../models/communication_item.dart';
 import '../bloc/call_bloc.dart';
 import '../bloc/call_event.dart';
 import 'video_call_screen.dart';
+import 'voice_call_screen.dart';
 
 /// Generic IncomingCallScreen that works for:
 /// - Admin calling Astrologer
@@ -632,13 +633,21 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
         ),
       );
     } else {
-      // Handle voice call - similar pattern
-      setState(() {
-        _isRinging = false;
-        _isConnected = true;
-      });
-      _pulseController.stop();
-      _startCallTimer();
+      // Handle voice call
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VoiceCallScreen(
+            callId: widget.callId,
+            contactId: widget.contactId,
+            contactName: widget.contactName,
+            contactType: widget.contactType,
+            channelName: widget.channelName ?? '',
+            token: widget.agoraToken ?? '',
+            avatarUrl: widget.avatarUrl,
+          ),
+        ),
+      );
     }
   }
 
@@ -696,6 +705,13 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
       return;
     }
     
+    // Notify backend via BLoC
+    context.read<CallBloc>().add(RejectCallEvent(
+      callId: widget.callId,
+      contactId: widget.contactId,
+      reason: 'rejected',
+    ));
+    
     setState(() {
       _isConnected = false;
       _isEnded = true;
@@ -703,7 +719,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     print('📞 [INCOMING CALL] State updated - connected: $_isConnected, ended: $_isEnded');
     
     // Close screen after a delay
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 800), () {
       print('📞 [INCOMING CALL] Delayed navigation starting for end call, mounted: $mounted');
       if (mounted && Navigator.canPop(context)) {
         print('📞 [INCOMING CALL] Navigating back from end call');
