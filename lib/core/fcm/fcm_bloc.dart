@@ -93,29 +93,100 @@ class FcmBloc extends Bloc<FcmEvent, FcmState> {
   ) async {
     final type = event.data['type'] as String?;
     final timestamp = DateTime.now();
+    final isTapped = event.data['tapped'] == true;
+    final action = event.data['action'] as String?;
 
-    print('🔔 [FcmBloc] Processing notification type: $type');
+    print('🔔 [FcmBloc] Processing notification type: $type (action: $action, tapped: $isTapped)');
 
     switch (type) {
       case 'call':
       case 'voice_call':
-        emit(FcmIncomingCallNotification(
-          callData: event.data,
-          isVideo: false,
-          timestamp: timestamp,
-        ));
+        final isVideo = type == 'video_call';
+        
+        // Check if user performed an action on the notification
+        switch (action) {
+          case 'accept':
+            print('✅ [FcmBloc] Call accepted from notification');
+            emit(FcmCallAccepted(
+              callData: event.data,
+              isVideo: isVideo,
+              timestamp: timestamp,
+            ));
+            break;
+            
+          case 'decline':
+            print('❌ [FcmBloc] Call declined from notification');
+            emit(FcmCallDeclined(
+              callData: event.data,
+              isVideo: isVideo,
+              timestamp: timestamp,
+            ));
+            break;
+            
+          default:
+            // Regular incoming call or tapped notification
+            emit(FcmIncomingCallNotification(
+              callData: event.data,
+              isVideo: isVideo,
+              timestamp: timestamp,
+            ));
+            break;
+        }
         break;
 
       case 'video_call':
-        emit(FcmIncomingCallNotification(
-          callData: event.data,
-          isVideo: true,
-          timestamp: timestamp,
-        ));
+        // Check if user performed an action on the notification
+        switch (action) {
+          case 'accept':
+            print('✅ [FcmBloc] Video call accepted from notification');
+            emit(FcmCallAccepted(
+              callData: event.data,
+              isVideo: true,
+              timestamp: timestamp,
+            ));
+            break;
+            
+          case 'decline':
+            print('❌ [FcmBloc] Video call declined from notification');
+            emit(FcmCallDeclined(
+              callData: event.data,
+              isVideo: true,
+              timestamp: timestamp,
+            ));
+            break;
+            
+          default:
+            // Regular incoming call or tapped notification
+            emit(FcmIncomingCallNotification(
+              callData: event.data,
+              isVideo: true,
+              timestamp: timestamp,
+            ));
+            break;
+        }
         break;
 
       case 'message':
       case 'chat':
+        // If user tapped notification, navigate to the exact chat
+        if (isTapped) {
+          final conversationId = event.data['conversationId'] as String? ?? '';
+          final senderId = event.data['senderId'] as String? ?? '';
+          final senderType = event.data['senderType'] as String? ?? 'admin';
+          final senderName = event.data['senderName'] as String? ?? 'User';
+
+          if (conversationId.isNotEmpty) {
+            emit(FcmNavigateToChat(
+              conversationId: conversationId,
+              senderId: senderId,
+              senderType: senderType,
+              senderName: senderName,
+            ));
+            break;
+          }
+        }
+
+        // Otherwise, just expose it as a "new message" notification state
         emit(FcmIncomingMessageNotification(
           messageData: event.data,
           timestamp: timestamp,

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/di/service_locator.dart';
 import 'core/services/language_service.dart';
 import 'core/services/status_service.dart';
 import 'core/services/app_restart_service.dart';
 import 'core/services/connectivity_service.dart';
+import 'core/fcm/fcm_bloc.dart';
+import 'core/fcm/fcm_event.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'features/live/services/live_stream_service.dart';
 import 'features/communication/bloc/call_bloc.dart';
@@ -17,17 +20,29 @@ import 'shared/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Firebase (MUST be before everything else)
+  try {
+    await Firebase.initializeApp();
+    debugPrint('✅ [MAIN] Firebase initialized');
+  } catch (e) {
+    debugPrint('❌ [MAIN] Firebase initialization failed: $e');
+  }
+  
   // Initialize dependency injection
   await setupServiceLocator();
   
-  // Eagerly initialize CallBloc so socket connects immediately
+  // Eagerly initialize FcmBloc and CallBloc
   // This ensures incoming calls/messages work even before opening chat
   try {
+    final fcmBloc = getIt<FcmBloc>();
+    fcmBloc.add(const InitializeFcmEvent());
+    debugPrint('✅ [MAIN] FcmBloc initialized eagerly');
+    
     final callBloc = getIt<CallBloc>();
     debugPrint('✅ [MAIN] CallBloc initialized eagerly: ${callBloc.runtimeType}');
     debugPrint('✅ [MAIN] Socket connected: ${callBloc.socketService.isConnected}');
   } catch (e, stackTrace) {
-    debugPrint('❌ [MAIN] Failed to initialize CallBloc: $e');
+    debugPrint('❌ [MAIN] Failed to initialize BLoCs: $e');
     debugPrint('❌ [MAIN] StackTrace: $stackTrace');
   }
   

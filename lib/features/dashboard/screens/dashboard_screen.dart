@@ -19,6 +19,9 @@ import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_state.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/fcm/fcm_bloc.dart';
+import '../../../core/fcm/fcm_event.dart';
 import '../models/dashboard_stats_model.dart';
 import '../widgets/status_toggle_widget.dart';
 import '../widgets/analytics_earnings_card/analytics_earnings_card.dart';
@@ -169,6 +172,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
 
         print('✅ [DASHBOARD] User loaded: ${_currentUser?.name} (ID: ${_currentUser?.id})');
+        
+        // Register FCM token with backend after user is loaded
+        if (_currentUser?.id != null) {
+          try {
+            final fcmBloc = getIt<FcmBloc>();
+            fcmBloc.add(RegisterFcmTokenEvent(
+              userId: _currentUser!.id,
+              userType: 'astrologer',
+            ));
+            print('📱 [DASHBOARD] Triggered FCM token registration');
+          } catch (e) {
+            print('❌ [DASHBOARD] Failed to trigger FCM registration: $e');
+          }
+        }
 
         if (_currentStats?.astrologer != null) {
           _currentUser = _currentStats!.astrologer;

@@ -46,20 +46,14 @@ class FcmService {
       const tokens = user.fcmTokens.map(t => t.token);
       
       // Construct FCM message
+      // For calls, send data-only (no notification payload) to avoid duplicate notifications
+      const isCallNotification = notification.channelId === 'calls';
+      
       const message = {
-        notification: {
-          title: notification.title,
-          body: notification.body,
-        },
         data: notification.data || {},
         tokens: tokens,
         android: {
           priority: 'high',
-          notification: {
-            sound: 'default',
-            channelId: notification.channelId || 'default',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-          },
         },
         apns: {
           payload: {
@@ -71,6 +65,22 @@ class FcmService {
           },
         },
       };
+      
+      // Only add notification payload for non-call notifications (messages)
+      if (!isCallNotification) {
+        message.notification = {
+          title: notification.title,
+          body: notification.body,
+        };
+        message.android.notification = {
+          sound: 'default',
+          channelId: notification.channelId || 'default',
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+        };
+      } else {
+        // For calls, just send high-priority data (Flutter will show custom notification)
+        console.log(`📞 [FCM] Sending data-only call notification (no auto-notification)`);
+      }
       
       // Send to multiple devices
       const response = await messaging.sendEachForMulticast(message);
@@ -153,6 +163,7 @@ class FcmService {
 }
 
 module.exports = FcmService;
+
 
 
 

@@ -59,6 +59,10 @@ dependencies:
   # flutter_webrtc: ^0.9.44  # Commented out for mock implementation
   socket_io_client: ^2.0.3+1  # Real-time Socket.IO for live streaming, chat, etc.
   
+  # Firebase Cloud Messaging (for background notifications)
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.5
+  
   # Country Code Picker
   country_picker: ^2.0.21
   

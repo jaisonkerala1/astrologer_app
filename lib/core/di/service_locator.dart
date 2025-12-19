@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/socket_service.dart';
+import '../../core/services/fcm_service.dart';
+import '../../core/fcm/fcm_bloc.dart';
 import '../../data/repositories/auth/auth_repository.dart';
 import '../../data/repositories/auth/auth_repository_impl.dart';
 import '../../data/repositories/dashboard/dashboard_repository.dart';
@@ -69,6 +71,10 @@ Future<void> setupServiceLocator() async {
   // Socket Service (Real-time WebSocket)
   final socketService = SocketService();
   getIt.registerLazySingleton<SocketService>(() => socketService);
+
+  // FCM Service (Firebase Cloud Messaging for background notifications)
+  final fcmService = FcmService();
+  getIt.registerLazySingleton<FcmService>(() => fcmService);
 
   // ============================================================================
   // REPOSITORIES (Singletons)
@@ -225,6 +231,11 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
+  // FCM BLoC (Singleton - global notification state)
+  getIt.registerLazySingleton<FcmBloc>(
+    () => FcmBloc(getIt<FcmService>()),
+  );
+
   // Call BLoC (Singleton - global call state)
   getIt.registerLazySingleton<CallBloc>(
     () => CallBloc(socketService: getIt<SocketService>()),
@@ -280,9 +291,9 @@ Future<void> setupServiceLocator() async {
   );
 
   print('✅ Service Locator: All dependencies registered successfully');
-  print('   - Core Services: API, Storage, Socket (Real-time)');
+  print('   - Core Services: API, Storage, Socket (Real-time), FCM (Push Notifications)');
   print('   - 14 Repositories/Services: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients, Discussion');
-  print('   - 15 BLoCs: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients, Discussion');
+  print('   - 16 BLoCs: FCM, Call, Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients, Discussion');
 }
 
 /// Reset service locator (useful for testing)

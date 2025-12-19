@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../core/services/fcm_service.dart';
+import '../../../core/di/service_locator.dart';
 import 'call_event.dart';
 import 'call_state.dart';
 
@@ -19,6 +21,7 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     on<IncomingCallEvent>(_onIncomingCall);
     on<AcceptCallEvent>(_onAcceptCall);
     on<RejectCallEvent>(_onRejectCall);
+    on<DeclineCallEvent>(_onDeclineCall);
     on<CallConnectedEvent>(_onCallConnected);
     on<EndCallEvent>(_onEndCall);
     on<DismissCallEvent>(_onDismissCall);
@@ -111,6 +114,15 @@ class CallBloc extends Bloc<CallEvent, CallState> {
   ) async {
     print('📞 [CallBloc] Processing incoming call from ${event.callerName}');
     
+    // Deduplicate: if already showing this exact call, ignore duplicate
+    if (state is CallIncoming) {
+      final currentCall = state as CallIncoming;
+      if (currentCall.callId == event.callId) {
+        print('⚠️ [CallBloc] Ignoring duplicate call: ${event.callId}');
+        return;
+      }
+    }
+    
     emit(CallIncoming(
       callId: event.callId,
       callerId: event.callerId,
@@ -130,6 +142,14 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     Emitter<CallState> emit,
   ) async {
     print('✅ [CallBloc] Accepting call: ${event.callId}');
+
+    // Cancel notification
+    try {
+      final fcmService = getIt<FcmService>();
+      await fcmService.cancelCallNotification(event.callId);
+    } catch (e) {
+      print('⚠️ [CallBloc] Failed to cancel notification: $e');
+    }
 
     if (state is CallIncoming) {
       final incomingState = state as CallIncoming;
@@ -161,6 +181,14 @@ class CallBloc extends Bloc<CallEvent, CallState> {
   ) async {
     print('❌ [CallBloc] Rejecting call: ${event.callId}');
 
+    // Cancel notification
+    try {
+      final fcmService = getIt<FcmService>();
+      await fcmService.cancelCallNotification(event.callId);
+    } catch (e) {
+      print('⚠️ [CallBloc] Failed to cancel notification: $e');
+    }
+
     // Emit reject via Socket.IO
     socketService.rejectCall(
       callId: event.callId,
@@ -174,6 +202,35 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     // Auto-dismiss after 2 seconds
     await Future.delayed(const Duration(seconds: 2));
     emit(const CallIdle());
+  }
+
+  Future<void> _onDeclineCall(
+    DeclineCallEvent event,
+    Emitter<CallState> emit,
+  ) async {
+    print('❌ [CallBloc] Declining call from notification: ${event.callId}');
+
+    // Cancel notification
+    try {
+      final fcmService = getIt<FcmService>();
+      await fcmService.cancelCallNotification(event.callId);
+    } catch (e) {
+      print('⚠️ [CallBloc] Failed to cancel notification: $e');
+    }
+
+    // Emit reject via Socket.IO (no contactId needed - server can figure it out from callId)
+    socketService.rejectCall(
+      callId: event.callId,
+      contactId: '', // Server will derive from callId
+      reason: 'declined',
+    );
+
+    // If we're in incoming state, end it; otherwise just stay idle
+    if (state is CallIncoming) {
+      emit(const CallEnded(reason: 'declined'));
+      await Future.delayed(const Duration(seconds: 1));
+      emit(const CallIdle());
+    }
   }
 
   Future<void> _onCallConnected(
@@ -201,6 +258,14 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     Emitter<CallState> emit,
   ) async {
     print('📴 [CallBloc] Ending call: ${event.callId}');
+
+    // Cancel notification
+    try {
+      final fcmService = getIt<FcmService>();
+      await fcmService.cancelCallNotification(event.callId);
+    } catch (e) {
+      print('⚠️ [CallBloc] Failed to cancel notification: $e');
+    }
 
     // Emit end via Socket.IO
     if (event.contactId != null) {

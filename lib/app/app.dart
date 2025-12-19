@@ -20,13 +20,18 @@ import '../features/earnings/bloc/earnings_bloc.dart';
 import '../features/communication/bloc/communication_bloc.dart';
 import '../features/communication/bloc/call_bloc.dart';
 import '../features/communication/bloc/call_state.dart';
+import '../features/communication/bloc/call_event.dart';
 import '../features/communication/screens/incoming_call_screen.dart';
+import '../features/communication/screens/chat_screen.dart';
 import '../features/communication/models/communication_item.dart';
+import '../core/services/fcm_service.dart';
 import '../features/heal/bloc/heal_bloc.dart';
 import '../features/help_support/bloc/help_support_bloc.dart';
 import '../features/live/bloc/live_bloc.dart';
 import '../features/notifications/bloc/notifications_bloc.dart';
 import '../features/reviews/bloc/reviews_bloc.dart';
+import '../core/fcm/fcm_bloc.dart';
+import '../core/fcm/fcm_state.dart';
 import '../shared/theme/app_theme.dart';
 import 'routes.dart';
 import '../features/auth/bloc/auth_event.dart';
@@ -58,7 +63,8 @@ class _AstrologerAppState extends State<AstrologerApp> {
   // Root navigator key so we can present incoming call UI from anywhere
   final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
   
-  // Hold reference to CallBloc to keep it alive
+  // Hold references to singletons to keep them alive
+  late final FcmBloc _fcmBloc;
   late final CallBloc _callBloc;
 
   @override
@@ -67,7 +73,12 @@ class _AstrologerAppState extends State<AstrologerApp> {
     // Listen to language changes
     widget.languageService.addListener(_onLanguageChanged);
     
-    // CRITICAL: Initialize CallBloc immediately so it subscribes to call events
+    // CRITICAL: Initialize FcmBloc (for background notifications)
+    print('🚀 [APP] Initializing FcmBloc...');
+    _fcmBloc = getIt<FcmBloc>();
+    print('✅ [APP] FcmBloc initialized');
+    
+    // CRITICAL: Initialize CallBloc (for foreground Socket.IO calls)
     print('🚀 [APP] Initializing CallBloc...');
     _callBloc = getIt<CallBloc>();
     print('✅ [APP] CallBloc initialized: ${_callBloc.runtimeType}');
@@ -137,8 +148,11 @@ class _AstrologerAppState extends State<AstrologerApp> {
           BlocProvider<CommunicationBloc>(
             create: (context) => getIt<CommunicationBloc>(),
           ),
+          BlocProvider<FcmBloc>.value(
+            value: _fcmBloc, // FCM for background notifications
+          ),
           BlocProvider<CallBloc>.value(
-            value: _callBloc, // Use the instance we created in initState
+            value: _callBloc, // CallBloc for call management
           ),
           BlocProvider<HealBloc>(
             create: (context) => getIt<HealBloc>(),
@@ -177,29 +191,124 @@ class _AstrologerAppState extends State<AstrologerApp> {
           initialRoute: AppRoutes.splash,
           onGenerateRoute: AppRoutes.generateRoute,
           builder: (context, child) {
-            // Listen inside MaterialApp so Navigator exists in context
-            return BlocListener<CallBloc, CallState>(
-              listener: (context, state) {
-                if (state is CallIncoming) {
-                  _rootNavigatorKey.currentState?.push(
-                    MaterialPageRoute(
-                      fullscreenDialog: true,
-                      builder: (context) => IncomingCallScreen(
-                        callId: state.callId,
-                        contactId: state.callerId,
-                        contactName: state.callerName,
-                        contactType: state.contactType,
-                        phoneNumber: '', // Not provided in call event
-                        callType: state.callType,
-                        agoraToken: state.agoraToken,
-                        agoraAppId: state.agoraAppId,
-                        channelName: state.channelName,
-                        avatarUrl: state.callerAvatar,
-                      ),
-                    ),
-                  );
-                }
-              },
+            // Listen to both FCM (background) and CallBloc (foreground) for incoming calls
+            return MultiBlocListener(
+              listeners: [
+                // Listen to FCM notifications (background/locked phone)
+                BlocListener<FcmBloc, FcmState>(
+                  listener: (context, state) {
+                    if (state is FcmIncomingCallNotification) {
+                      print('🔔 [APP] FCM call notification received, triggering CallBloc');
+                      // Trigger CallBloc to handle the incoming call
+                      context.read<CallBloc>().add(
+                        IncomingCallEvent(
+                          callId: state.callData['callId'] ?? '',
+                          callerId: state.callData['callerId'] ?? '',
+                          callerName: state.callData['callerName'] ?? 'Unknown',
+                          callerType: state.callData['callerType'] ?? 'user',
+                          callType: state.isVideo ? 'video' : 'voice',
+                          channelName: state.callData['channelName'] ?? '',
+                          agoraToken: state.callData['agoraToken'] ?? '',
+                          agoraAppId: state.callData['agoraAppId'] ?? '',
+                          callerAvatar: state.callData['callerAvatar'],
+                        ),
+                      );
+                    } else if (state is FcmCallAccepted) {
+                      print('✅ [APP] Call accepted from notification, joining channel');
+                      final callBloc = context.read<CallBloc>();
+                      
+                      // First trigger incoming call to show UI
+                      callBloc.add(
+                        IncomingCallEvent(
+                          callId: state.callData['callId'] ?? '',
+                          callerId: state.callData['callerId'] ?? '',
+                          callerName: state.callData['callerName'] ?? 'Unknown',
+                          callerType: state.callData['callerType'] ?? 'user',
+                          callType: state.isVideo ? 'video' : 'voice',
+                          channelName: state.callData['channelName'] ?? '',
+                          agoraToken: state.callData['agoraToken'] ?? '',
+                          agoraAppId: state.callData['agoraAppId'] ?? '',
+                          callerAvatar: state.callData['callerAvatar'],
+                        ),
+                      );
+                      
+                      // Then immediately accept to join the channel
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        callBloc.add(
+                          AcceptCallEvent(
+                            callId: state.callData['callId'] ?? '',
+                            contactId: state.callData['callerId'] ?? '',
+                            channelName: state.callData['channelName'],
+                            agoraToken: state.callData['agoraToken'],
+                            agoraAppId: state.callData['agoraAppId'],
+                            isVideo: state.isVideo,
+                          ),
+                        );
+                      });
+                      
+                      // Cancel the notification (already done in CallBloc, but belt-and-suspenders)
+                      final fcmService = getIt<FcmService>();
+                      fcmService.cancelCallNotification(state.callData['callId'] ?? '');
+                    } else if (state is FcmCallDeclined) {
+                      print('❌ [APP] Call declined from notification');
+                      final callBloc = context.read<CallBloc>();
+                      
+                      // Decline the call
+                      callBloc.add(
+                        DeclineCallEvent(
+                          callId: state.callData['callId'] ?? '',
+                        ),
+                      );
+                      
+                      // Cancel the notification
+                      final fcmService = getIt<FcmService>();
+                      fcmService.cancelCallNotification(state.callData['callId'] ?? '');
+                    } else if (state is FcmNavigateToChat) {
+                      print('💬 [APP] Navigating to chat: ${state.conversationId}');
+                      // Navigate to chat screen (WhatsApp-like behavior)
+                      _rootNavigatorKey.currentState?.push(
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            contactId: state.senderId,
+                            contactName: state.senderName,
+                            contactType: state.senderType == 'admin' 
+                                ? ContactType.admin 
+                                : ContactType.user,
+                            conversationId: state.conversationId,
+                            avatarUrl: null,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+
+                // Listen to CallBloc (foreground Socket.IO or triggered by FCM)
+                BlocListener<CallBloc, CallState>(
+                  listener: (context, state) {
+                    if (state is CallIncoming) {
+                      print('📞 [APP] Showing incoming call screen');
+                      _rootNavigatorKey.currentState?.push(
+                        MaterialPageRoute(
+                          fullscreenDialog: true,
+                          builder: (context) => IncomingCallScreen(
+                            callId: state.callId,
+                            contactId: state.callerId,
+                            contactName: state.callerName,
+                            contactType: state.contactType,
+                            phoneNumber: '', // Not provided in call event
+                            callType: state.callType,
+                            agoraToken: state.agoraToken,
+                            agoraAppId: state.agoraAppId,
+                            channelName: state.channelName,
+                            avatarUrl: state.callerAvatar,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
               child: OfflineIndicator(child: child!),
             );
           },

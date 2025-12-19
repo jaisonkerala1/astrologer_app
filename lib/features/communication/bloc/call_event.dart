@@ -68,14 +68,22 @@ class IncomingCallEvent extends CallEvent {
 class AcceptCallEvent extends CallEvent {
   final String callId;
   final String contactId;
+  final String? channelName;
+  final String? agoraToken;
+  final String? agoraAppId;
+  final bool isVideo;
 
   const AcceptCallEvent({
     required this.callId,
     required this.contactId,
+    this.channelName,
+    this.agoraToken,
+    this.agoraAppId,
+    this.isVideo = false,
   });
 
   @override
-  List<Object?> get props => [callId, contactId];
+  List<Object?> get props => [callId, contactId, channelName, agoraToken, agoraAppId, isVideo];
 }
 
 /// Event when user rejects the call
@@ -120,6 +128,18 @@ class EndCallEvent extends CallEvent {
 
   @override
   List<Object?> get props => [callId, contactId, duration, reason];
+}
+
+/// Event when user declines the call (simpler version of RejectCallEvent for notifications)
+class DeclineCallEvent extends CallEvent {
+  final String callId;
+
+  const DeclineCallEvent({
+    required this.callId,
+  });
+
+  @override
+  List<Object?> get props => [callId];
 }
 
 /// Event to dismiss call (after rejected/ended)
