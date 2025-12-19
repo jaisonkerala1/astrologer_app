@@ -90,3 +90,4 @@ astrologer_app_backup.apk
 backend/firebase-service-account.json
 backend/firebase-service-account.*.json
 dashboard_fcm_patch.txt
+!backend/firebase-service-account.example.json
