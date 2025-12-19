@@ -107,7 +107,6 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
       maxPoolSize: 10,
       bufferCommands: false,
-      bufferMaxEntries: 0,
     });
     
     console.log('Connected to MongoDB successfully');
