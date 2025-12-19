@@ -86,3 +86,7 @@ astrologer_app_backup.apk
 .env.development.local
 .env.test.local
 .env.production.local
+# Firebase Admin (local only)
+backend/firebase-service-account.json
+backend/firebase-service-account.*.json
+dashboard_fcm_patch.txt
