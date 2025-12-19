@@ -1,4 +1,5 @@
 const { messaging } = require('../config/firebase');
+const mongoose = require('mongoose');
 
 class FcmService {
   /**
@@ -13,6 +14,22 @@ class FcmService {
       if (!messaging) {
         console.log('⚠️ [FCM] Firebase messaging not initialized, skipping notification');
         return { success: false, reason: 'fcm_not_initialized' };
+      }
+
+      // Admin is a web dashboard user (not a Mongo ObjectId) → don't attempt FCM
+      if (userType === 'admin' || userId === 'admin') {
+        return { success: false, reason: 'skip_admin' };
+      }
+
+      // Only support these user types for FCM right now
+      if (userType !== 'astrologer' && userType !== 'user') {
+        return { success: false, reason: 'unsupported_user_type' };
+      }
+
+      // Avoid CastError spam when userId isn't a valid ObjectId
+      if (!mongoose.isValidObjectId(userId)) {
+        console.log(`⚠️ [FCM] Invalid userId for FCM (${userType}): ${userId}`);
+        return { success: false, reason: 'invalid_user_id' };
       }
 
       // Get user's FCM tokens
@@ -136,4 +153,6 @@ class FcmService {
 }
 
 module.exports = FcmService;
+
+
 

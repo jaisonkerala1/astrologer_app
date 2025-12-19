@@ -11,8 +11,19 @@ const User = require('../models/User');
 router.post('/register', authMiddleware, async (req, res) => {
   try {
     const { fcmToken, platform } = req.body;
-    const userId = req.user.id || req.user.userId || req.user._id;
-    const userType = req.user.userType || req.user.type || 'user';
+    // Our auth middleware (astrologer app) sets: req.user = { astrologerId, sessionId }
+    // Other auth flows may set: req.user = { id/userId/_id, userType/type/role }
+    const userId =
+      req.user?.astrologerId ||
+      req.user?.id ||
+      req.user?.userId ||
+      req.user?._id;
+
+    const userType =
+      req.user?.userType ||
+      req.user?.type ||
+      req.user?.role ||
+      (req.user?.astrologerId ? 'astrologer' : 'user');
     
     if (!fcmToken) {
       return res.status(400).json({
@@ -85,8 +96,17 @@ router.post('/register', authMiddleware, async (req, res) => {
 router.post('/unregister', authMiddleware, async (req, res) => {
   try {
     const { fcmToken } = req.body;
-    const userId = req.user.id || req.user.userId || req.user._id;
-    const userType = req.user.userType || req.user.type || 'user';
+    const userId =
+      req.user?.astrologerId ||
+      req.user?.id ||
+      req.user?.userId ||
+      req.user?._id;
+
+    const userType =
+      req.user?.userType ||
+      req.user?.type ||
+      req.user?.role ||
+      (req.user?.astrologerId ? 'astrologer' : 'user');
     
     if (!fcmToken) {
       return res.status(400).json({
@@ -123,8 +143,17 @@ router.post('/unregister', authMiddleware, async (req, res) => {
  */
 router.get('/tokens', authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id || req.user.userId || req.user._id;
-    const userType = req.user.userType || req.user.type || 'user';
+    const userId =
+      req.user?.astrologerId ||
+      req.user?.id ||
+      req.user?.userId ||
+      req.user?._id;
+
+    const userType =
+      req.user?.userType ||
+      req.user?.type ||
+      req.user?.role ||
+      (req.user?.astrologerId ? 'astrologer' : 'user');
     
     const Model = userType === 'astrologer' ? Astrologer : User;
     const user = await Model.findById(userId).select('fcmTokens');
@@ -151,4 +180,6 @@ router.get('/tokens', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+
+
 
