@@ -27,9 +27,16 @@ function getUserContext(socket, fallback = {}) {
 }
 
 function roomFor(type, id) {
-  if (!type || !id) return null;
+  if (!type) return null;
   const prefix = ROOM_PREFIX[type.toUpperCase()];
   if (!prefix) return null;
+  
+  // Special case: admin room is just 'admin:' with no ID suffix
+  if (type.toLowerCase() === 'admin') {
+    return prefix; // Returns 'admin:'
+  }
+  
+  if (!id) return null;
   return `${prefix}${id}`;
 }
 
@@ -197,21 +204,21 @@ module.exports = (io, socket) => {
         return;
       }
       
-      // Notify caller
-      const callerRoom = roomFor(
-        call.callerType === 'admin' ? 'admin' : 'astrologer',
-        call.callerId
-      );
+      // Notify caller using roomFor (handles admin room correctly)
+      const callerRoom = roomFor(call.callerType, call.callerId);
       
-      io.to(callerRoom).emit(CALL.ACCEPT, {
-        callId: call._id.toString(),
-        contactId: socket.userId || socket.user?._id,
-        agoraToken: call.agoraToken,
-        channelName: call.channelName,
-        agoraAppId: AGORA_APP_ID
-      });
-      
-      console.log(`✅ [CALL] Accept notification sent to caller room: ${callerRoom}`);
+      if (callerRoom) {
+        io.to(callerRoom).emit(CALL.ACCEPT, {
+          callId: call._id.toString(),
+          contactId: socket.userId || socket.user?._id,
+          agoraToken: call.agoraToken,
+          channelName: call.channelName,
+          agoraAppId: AGORA_APP_ID
+        });
+        console.log(`✅ [CALL] Accept notification sent to ${call.callerType} room: ${callerRoom}`);
+      } else {
+        console.error(`❌ [CALL] Cannot determine caller room`);
+      }
       
     } catch (error) {
       console.error('❌ [CALL] Error accepting call:', error);
@@ -226,16 +233,19 @@ module.exports = (io, socket) => {
       
       console.log(`❌ [CALL] Call ${callId} rejected by ${socket.userId || socket.user?._id}`);
       
-      // If contactId is empty, derive it from the call record
-      if (!contactId || contactId === '') {
-        const call = await Call.findById(callId);
-        if (call) {
-          contactId = call.callerId;
-          console.log(`🔍 [CALL] Derived contactId from call record: ${contactId}`);
-        } else {
-          console.error(`❌ [CALL] Cannot find call ${callId} to derive contactId`);
-        }
+      // Fetch call record to get caller info
+      const call = await Call.findById(callId);
+      if (!call) {
+        console.error(`❌ [CALL] Cannot find call ${callId}`);
+        socket.emit('error', { message: 'Call not found for rejection' });
+        return;
       }
+      
+      // Derive contactId and type from call record (contactId is the CALLER who needs notification)
+      const derivedContactId = call.callerId;
+      const derivedContactType = call.callerType;
+      
+      console.log(`🔍 [CALL] Derived from call record - contactId: ${derivedContactId}, type: ${derivedContactType}`);
       
       // Update call status
       await Call.findByIdAndUpdate(callId, {
@@ -246,25 +256,18 @@ module.exports = (io, socket) => {
         endedByType: socket.userType || socket.user?.role
       });
       
-      // Notify caller (if we have contactId)
-      if (contactId) {
-        const callerRoom = roomFor(
-          contactId === 'admin' || (typeof contactId === 'string' && contactId.startsWith('admin')) ? 'admin' : 'astrologer',
-          contactId
-        );
-        
-        if (callerRoom) {
-          io.to(callerRoom).emit(CALL.REJECT, {
-            callId,
-            contactId: socket.userId || socket.user?._id,
-            reason
-          });
-          console.log(`📴 [CALL] Reject notification sent to caller room: ${callerRoom}`);
-        } else {
-          console.error(`❌ [CALL] Cannot determine caller room for contactId: ${contactId}`);
-        }
+      // Notify caller using derived info
+      const callerRoom = roomFor(derivedContactType, derivedContactId);
+      
+      if (callerRoom) {
+        io.to(callerRoom).emit(CALL.REJECT, {
+          callId,
+          contactId: socket.userId || socket.user?._id,
+          reason
+        });
+        console.log(`📴 [CALL] Reject notification sent to ${derivedContactType} room: ${callerRoom}`);
       } else {
-        console.error(`❌ [CALL] No contactId available, cannot notify caller`);
+        console.error(`❌ [CALL] Cannot determine caller room for type: ${derivedContactType}, id: ${derivedContactId}`);
       }
       
     } catch (error) {
@@ -278,6 +281,13 @@ module.exports = (io, socket) => {
     try {
       const { callId, contactId } = data;
       
+      // Fetch call record to determine the other party
+      const call = await Call.findById(callId);
+      if (!call) {
+        console.error(`❌ [CALL] Cannot find call ${callId}`);
+        return;
+      }
+      
       // Update call status
       await Call.findByIdAndUpdate(callId, {
         status: 'connected',
@@ -286,16 +296,21 @@ module.exports = (io, socket) => {
       
       console.log(`🔗 [CALL] Call ${callId} connected`);
       
-      // Notify other party
-      const contactRoom = roomFor(
-        contactId && contactId.startsWith('admin') ? 'admin' : 'astrologer',
-        contactId
-      );
+      // Determine the OTHER party
+      const currentUserId = socket.userId || socket.user?._id;
+      const otherPartyId = (currentUserId === call.callerId) ? call.recipientId : call.callerId;
+      const otherPartyType = (currentUserId === call.callerId) ? call.recipientType : call.callerType;
       
-      io.to(contactRoom).emit(CALL.CONNECTED, {
-        callId,
-        contactId: socket.userId || socket.user?._id
-      });
+      // Notify other party
+      const otherPartyRoom = roomFor(otherPartyType, otherPartyId);
+      
+      if (otherPartyRoom) {
+        io.to(otherPartyRoom).emit(CALL.CONNECTED, {
+          callId,
+          contactId: currentUserId
+        });
+        console.log(`🔗 [CALL] Connected notification sent to ${otherPartyType} room: ${otherPartyRoom}`);
+      }
       
     } catch (error) {
       console.error('❌ [CALL] Error updating call status:', error);
@@ -307,7 +322,14 @@ module.exports = (io, socket) => {
     try {
       const { callId, contactId, duration = 0, reason = 'completed' } = data;
       
-      console.log(`📴 [CALL] Call ${callId} ended (duration: ${duration}s)`);
+      console.log(`📴 [CALL] Call ${callId} ended by ${socket.userId || socket.user?._id} (duration: ${duration}s)`);
+      
+      // Fetch call record to determine the other party
+      const call = await Call.findById(callId);
+      if (!call) {
+        console.error(`❌ [CALL] Cannot find call ${callId}`);
+        return;
+      }
       
       // Update call record
       await Call.findByIdAndUpdate(callId, {
@@ -319,18 +341,25 @@ module.exports = (io, socket) => {
         endedByType: socket.userType || socket.user?.role
       });
       
+      // Determine the OTHER party (the one who didn't end the call)
+      const currentUserId = socket.userId || socket.user?._id;
+      const otherPartyId = (currentUserId === call.callerId) ? call.recipientId : call.callerId;
+      const otherPartyType = (currentUserId === call.callerId) ? call.recipientType : call.callerType;
+      
+      console.log(`🔍 [CALL] Notifying other party - type: ${otherPartyType}, id: ${otherPartyId}`);
+      
       // Notify other party
-      if (contactId) {
-        const contactRoom = roomFor(
-          contactId && contactId.startsWith('admin') ? 'admin' : 'astrologer',
-          contactId
-        );
-        
-        io.to(contactRoom).emit(CALL.END, {
+      const otherPartyRoom = roomFor(otherPartyType, otherPartyId);
+      
+      if (otherPartyRoom) {
+        io.to(otherPartyRoom).emit(CALL.END, {
           callId,
           duration,
           reason
         });
+        console.log(`📴 [CALL] End notification sent to ${otherPartyType} room: ${otherPartyRoom}`);
+      } else {
+        console.error(`❌ [CALL] Cannot determine room for type: ${otherPartyType}, id: ${otherPartyId}`);
       }
       
       console.log(`✅ [CALL] Call ${callId} ended successfully`);
