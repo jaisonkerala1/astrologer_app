@@ -222,9 +222,20 @@ module.exports = (io, socket) => {
   // Reject a call
   socket.on(CALL.REJECT, async (data) => {
     try {
-      const { callId, contactId, reason = 'declined' } = data;
+      let { callId, contactId, reason = 'declined' } = data;
       
       console.log(`❌ [CALL] Call ${callId} rejected by ${socket.userId || socket.user?._id}`);
+      
+      // If contactId is empty, derive it from the call record
+      if (!contactId || contactId === '') {
+        const call = await Call.findById(callId);
+        if (call) {
+          contactId = call.callerId;
+          console.log(`🔍 [CALL] Derived contactId from call record: ${contactId}`);
+        } else {
+          console.error(`❌ [CALL] Cannot find call ${callId} to derive contactId`);
+        }
+      }
       
       // Update call status
       await Call.findByIdAndUpdate(callId, {
@@ -235,19 +246,26 @@ module.exports = (io, socket) => {
         endedByType: socket.userType || socket.user?.role
       });
       
-      // Notify caller
-      const callerRoom = roomFor(
-        contactId && contactId.startsWith('admin') ? 'admin' : 'astrologer',
-        contactId
-      );
-      
-      io.to(callerRoom).emit(CALL.REJECT, {
-        callId,
-        contactId: socket.userId || socket.user?._id,
-        reason
-      });
-      
-      console.log(`📴 [CALL] Reject notification sent to caller`);
+      // Notify caller (if we have contactId)
+      if (contactId) {
+        const callerRoom = roomFor(
+          contactId === 'admin' || (typeof contactId === 'string' && contactId.startsWith('admin')) ? 'admin' : 'astrologer',
+          contactId
+        );
+        
+        if (callerRoom) {
+          io.to(callerRoom).emit(CALL.REJECT, {
+            callId,
+            contactId: socket.userId || socket.user?._id,
+            reason
+          });
+          console.log(`📴 [CALL] Reject notification sent to caller room: ${callerRoom}`);
+        } else {
+          console.error(`❌ [CALL] Cannot determine caller room for contactId: ${contactId}`);
+        }
+      } else {
+        console.error(`❌ [CALL] No contactId available, cannot notify caller`);
+      }
       
     } catch (error) {
       console.error('❌ [CALL] Error rejecting call:', error);
