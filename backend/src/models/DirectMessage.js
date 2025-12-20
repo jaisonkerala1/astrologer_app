@@ -39,7 +39,7 @@ const directMessageSchema = new mongoose.Schema({
   messageType: { 
     type: String, 
     default: 'text', 
-    enum: ['text', 'image', 'audio', 'video', 'file', 'location'] 
+    enum: ['text', 'image', 'audio', 'video', 'file', 'location', 'call_log'] 
   },
   mediaUrl: String,
   mediaSize: Number,
@@ -61,6 +61,20 @@ const directMessageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'DirectMessage'
   },
+  // Call log specific fields
+  callType: {
+    type: String,
+    enum: ['voice', 'video']
+  },
+  callStatus: {
+    type: String,
+    enum: ['completed', 'missed', 'declined', 'cancelled']
+  },
+  callDuration: Number, // in seconds
+  callId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Call'
+  },
   isDeleted: {
     type: Boolean,
     default: false
@@ -75,6 +89,8 @@ directMessageSchema.index({ conversationId: 1, timestamp: -1 });
 directMessageSchema.index({ senderId: 1, recipientId: 1 });
 
 module.exports = mongoose.model('DirectMessage', directMessageSchema);
+
+
 
 
 

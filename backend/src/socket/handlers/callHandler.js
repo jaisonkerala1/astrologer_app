@@ -5,6 +5,7 @@
 
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 const Call = require('../../models/Call');
+const DirectMessage = require('../../models/DirectMessage');
 const { CALL, ROOM_PREFIX } = require('../events');
 const FcmService = require('../../services/fcmService');
 
@@ -64,6 +65,63 @@ function generateAgoraToken(channelName, uid = 0) {
   );
   
   return token;
+}
+
+/**
+ * Create call log message in chat history
+ */
+async function createCallLogMessage(io, call, status, duration = 0) {
+  try {
+    // Determine direction from admin's perspective
+    const isOutgoing = call.callerType === 'admin';
+    
+    // Create conversation ID (consistent format)
+    const conversationId = call.callerType === 'admin' 
+      ? `admin_${call.recipientId}`
+      : `admin_${call.callerId}`;
+    
+    // Create call log message
+    const callLogMessage = await DirectMessage.create({
+      conversationId,
+      senderId: call.callerId,
+      senderType: call.callerType,
+      senderName: call.callerName,
+      senderAvatar: call.callerAvatar,
+      recipientId: call.recipientId,
+      recipientType: call.recipientType,
+      content: `${call.callType === 'video' ? 'Video' : 'Voice'} call ${status}`,
+      messageType: 'call_log',
+      callType: call.callType,
+      callStatus: status,
+      callDuration: duration,
+      callId: call._id,
+      timestamp: new Date()
+    });
+    
+    console.log(`📋 [CALL LOG] Created ${status} call log for conversation ${conversationId}`);
+    
+    // Emit to both parties so it appears in their chat history
+    const callerRoom = roomFor(call.callerType, call.callerId);
+    const recipientRoom = roomFor(call.recipientType, call.recipientId);
+    
+    const messagePayload = {
+      ...callLogMessage.toObject(),
+      _id: callLogMessage._id.toString(),
+      callId: callLogMessage.callId?.toString()
+    };
+    
+    if (callerRoom) {
+      io.to(callerRoom).emit('message', messagePayload);
+    }
+    if (recipientRoom) {
+      io.to(recipientRoom).emit('message', messagePayload);
+    }
+    
+    console.log(`📤 [CALL LOG] Sent to rooms: ${callerRoom}, ${recipientRoom}`);
+    
+  } catch (error) {
+    console.error('❌ [CALL LOG] Failed to create call log message:', error);
+  }
 }
 
 module.exports = (io, socket) => {
@@ -256,6 +314,9 @@ module.exports = (io, socket) => {
         endedByType: socket.userType || socket.user?.role
       });
       
+      // Create call log message (declined)
+      await createCallLogMessage(io, call, 'declined', 0);
+      
       // Notify caller using derived info
       const callerRoom = roomFor(derivedContactType, derivedContactId);
       
@@ -340,6 +401,12 @@ module.exports = (io, socket) => {
         endedBy: socket.userId || socket.user?._id,
         endedByType: socket.userType || socket.user?.role
       });
+      
+      // Determine call status for log (completed if duration > 0, cancelled otherwise)
+      const callStatus = duration > 0 ? 'completed' : 'cancelled';
+      
+      // Create call log message
+      await createCallLogMessage(io, call, callStatus, duration);
       
       // Determine the OTHER party (the one who didn't end the call)
       const currentUserId = socket.userId || socket.user?._id;
