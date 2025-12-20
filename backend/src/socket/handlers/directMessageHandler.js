@@ -26,9 +26,10 @@ function getUserContext(socket, fallback = {}) {
 function personalRoomFor(userType, userId) {
   if (!userType || !userId) return null;
   const type = String(userType).toLowerCase();
-  // Admins always listen on the shared "admin:" room
-  if (type === 'admin') {
-    return ROOM_PREFIX.ADMIN; // admin:
+  // Must match src/socket/index.js auto-join logic:
+  // Admin joins "admin:" (no suffix)
+  if (type === 'admin' && String(userId) === 'admin') {
+    return ROOM_PREFIX.ADMIN;
   }
   const prefix = ROOM_PREFIX[String(userType).toUpperCase()];
   if (!prefix) return null;
@@ -178,9 +179,9 @@ module.exports = (io, socket) => {
         { upsert: true }
       );
       
-      // Broadcast to everyone in the conversation room
+      // Broadcast to others in the conversation room (excluding sender to avoid echo)
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
-      io.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
+      socket.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
         conversationId,
         senderId: senderCtx.id,
@@ -197,6 +198,27 @@ module.exports = (io, socket) => {
         thumbnailUrl,
         timestamp: message.timestamp,
         status: 'delivered',
+        replyToId
+      });
+      
+      // Send acknowledgment to sender with full message data
+      socket.emit(DIRECT_MESSAGE.RECEIVED, {
+        _id: message._id,
+        conversationId,
+        senderId: senderCtx.id,
+        senderType: senderCtx.type,
+        senderName: senderCtx.name,
+        senderAvatar: senderCtx.avatar,
+        recipientId,
+        recipientType,
+        content,
+        messageType,
+        mediaUrl,
+        mediaSize,
+        mediaDuration,
+        thumbnailUrl,
+        timestamp: message.timestamp,
+        status: 'sent', // 'sent' for sender, 'delivered' for recipient
         replyToId
       });
       
