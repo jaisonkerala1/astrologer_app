@@ -418,21 +418,21 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               )
             else
-              CircleAvatar(
-                backgroundColor: themeService.primaryColor,
+            CircleAvatar(
+              backgroundColor: themeService.primaryColor,
                 backgroundImage: widget.avatarUrl != null
                     ? NetworkImage(widget.avatarUrl!)
                     : null,
                 child: widget.avatarUrl == null
                     ? Text(
-                        widget.contactName.split(' ').map((e) => e[0]).join(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
+                widget.contactName.split(' ').map((e) => e[0]).join(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
                       )
                     : null,
-              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -456,13 +456,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     )
                   else
-                    Text(
+                  Text(
                       _isOnline ? 'Online now' : 'Offline',
-                      style: TextStyle(
+                    style: TextStyle(
                         color: _isOnline ? themeService.successColor : themeService.textSecondary,
-                        fontSize: 12,
-                      ),
+                      fontSize: 12,
                     ),
+                  ),
                 ],
               ),
             ),
@@ -471,32 +471,32 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           // Don't show call buttons for admin (admin will initiate)
           if (widget.contactType != ContactType.admin) ...[
-            // Voice Call Button (Instagram-style)
-            Container(
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: () => _makeCall(),
-                icon: const Icon(Icons.phone_rounded, color: Color(0xFF10B981)),
-                tooltip: 'Voice Call',
-              ),
+          // Voice Call Button (Instagram-style)
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            // Video Call Button (Instagram-style)
-            Container(
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: () => _makeVideoCall(),
-                icon: const Icon(Icons.videocam_rounded, color: Color(0xFF8B5CF6)),
-                tooltip: 'Video Call',
-              ),
+            child: IconButton(
+              onPressed: () => _makeCall(),
+              icon: const Icon(Icons.phone_rounded, color: Color(0xFF10B981)),
+              tooltip: 'Voice Call',
             ),
+          ),
+          // Video Call Button (Instagram-style)
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B5CF6).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: () => _makeVideoCall(),
+              icon: const Icon(Icons.videocam_rounded, color: Color(0xFF8B5CF6)),
+              tooltip: 'Video Call',
+            ),
+          ),
           ],
           // More Options
           IconButton(
@@ -541,14 +541,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       )
                     : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          return _buildMessageBubble(message, themeService);
-                        },
-                      ),
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return _buildMessageBubble(message, themeService);
+              },
+            ),
           ),
           // Message Input (WhatsApp-inspired)
           Container(
@@ -770,6 +770,12 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageBubble(Message message, ThemeService themeService) {
+    // Render call log message (WhatsApp style)
+    if (message.messageType == 'call_log') {
+      return _buildCallLogMessage(message, themeService);
+    }
+    
+    // Regular text/media messages
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -795,23 +801,23 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               )
             else
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: themeService.primaryColor,
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: themeService.primaryColor,
                 backgroundImage: widget.avatarUrl != null
                     ? NetworkImage(widget.avatarUrl!)
                     : null,
                 child: widget.avatarUrl == null
                     ? Text(
-                        widget.contactName.split(' ').map((e) => e[0]).join(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                widget.contactName.split(' ').map((e) => e[0]).join(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
                       )
                     : null,
-              ),
+            ),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -854,15 +860,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
+                  Text(
                         message.formattedTime,
-                        style: TextStyle(
+                    style: TextStyle(
                           color: message.isMe
-                              ? Colors.white.withOpacity(0.7)
-                              : themeService.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
+                          ? Colors.white.withOpacity(0.7)
+                          : themeService.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
                       if (message.isMe) ...[
                         const SizedBox(width: 4),
                         Icon(
@@ -895,6 +901,126 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  /// Build call log message (WhatsApp style)
+  Widget _buildCallLogMessage(Message message, ThemeService themeService) {
+    final isVideo = message.callType == 'video';
+    final isCompleted = message.callStatus == 'completed';
+    final isMissed = message.callStatus == 'missed';
+    final isDeclined = message.callStatus == 'declined';
+    final isCancelled = message.callStatus == 'cancelled';
+    
+    // Determine icon and color
+    IconData callIcon = Icons.call;
+    Color iconColor = Colors.grey;
+    String statusText = '';
+    
+    if (isVideo) {
+      callIcon = Icons.videocam;
+    }
+    
+    if (isMissed) {
+      callIcon = Icons.call_missed;
+      iconColor = Colors.red;
+      statusText = message.isMe ? 'No answer' : 'Missed';
+    } else if (isDeclined) {
+      callIcon = Icons.call_end;
+      iconColor = Colors.red;
+      statusText = 'Declined';
+    } else if (isCancelled) {
+      callIcon = Icons.call_end;
+      iconColor = Colors.grey;
+      statusText = 'Cancelled';
+    } else if (isCompleted) {
+      callIcon = message.isMe ? Icons.call_made : Icons.call_received;
+      iconColor = Colors.green;
+      statusText = message.isMe ? 'Outgoing' : 'Incoming';
+    }
+    
+    String? durationText;
+    if (isCompleted && message.callDuration != null && message.callDuration! > 0) {
+      final minutes = message.callDuration! ~/ 60;
+      final seconds = message.callDuration! % 60;
+      durationText = '$minutes:${seconds.toString().padLeft(2, '0')}';
+    }
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: themeService.surfaceColor.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: themeService.borderColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            callIcon,
+            color: iconColor,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${isVideo ? 'Video' : 'Voice'} Call',
+                  style: TextStyle(
+                    color: themeService.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        color: themeService.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (durationText != null) ...[
+                      Text(
+                        ' • ',
+                        style: TextStyle(
+                          color: themeService.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        durationText,
+                        style: TextStyle(
+                          color: themeService.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            message.formattedTime,
+            style: TextStyle(
+              color: themeService.textHint,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
@@ -933,7 +1059,7 @@ class _ChatScreenState extends State<ChatScreen> {
       
       setState(() {
         _messages.add(tempMessage);
-      });
+        });
       
       _messageController.clear();
       _scrollToBottom();

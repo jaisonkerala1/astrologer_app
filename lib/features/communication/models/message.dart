@@ -7,13 +7,19 @@ class Message extends Equatable {
   final String senderId;
   final String senderType; // 'user', 'astrologer', 'admin'
   final String content;
-  final String messageType; // 'text', 'image', 'audio', 'file'
+  final String messageType; // 'text', 'image', 'audio', 'file', 'call_log'
   final String? mediaUrl;
   final DateTime timestamp;
   final bool isMe; // Is this message from current user?
   final String status; // 'sent', 'delivered', 'read', 'failed'
   final DateTime? readAt;
   final String? replyToId;
+  
+  // Call log specific fields
+  final String? callType; // 'voice', 'video'
+  final String? callStatus; // 'completed', 'missed', 'declined', 'cancelled'
+  final int? callDuration; // in seconds
+  final String? callId;
 
   const Message({
     required this.id,
@@ -28,6 +34,10 @@ class Message extends Equatable {
     this.status = 'sent',
     this.readAt,
     this.replyToId,
+    this.callType,
+    this.callStatus,
+    this.callDuration,
+    this.callId,
   });
 
   @override
@@ -44,6 +54,10 @@ class Message extends Equatable {
         status,
         readAt,
         replyToId,
+        callType,
+        callStatus,
+        callDuration,
+        callId,
       ];
 
   /// From JSON
@@ -66,6 +80,10 @@ class Message extends Equatable {
       status: json['status'] ?? 'sent',
       readAt: json['readAt'] != null ? DateTime.parse(json['readAt']) : null,
       replyToId: json['replyToId'],
+      callType: json['callType'],
+      callStatus: json['callStatus'],
+      callDuration: json['callDuration'],
+      callId: json['callId'],
     );
   }
 
@@ -83,6 +101,10 @@ class Message extends Equatable {
       'status': status,
       'readAt': readAt?.toIso8601String(),
       'replyToId': replyToId,
+      if (callType != null) 'callType': callType,
+      if (callStatus != null) 'callStatus': callStatus,
+      if (callDuration != null) 'callDuration': callDuration,
+      if (callId != null) 'callId': callId,
     };
   }
 
@@ -100,6 +122,10 @@ class Message extends Equatable {
     String? status,
     DateTime? readAt,
     String? replyToId,
+    String? callType,
+    String? callStatus,
+    int? callDuration,
+    String? callId,
   }) {
     return Message(
       id: id ?? this.id,
@@ -114,6 +140,10 @@ class Message extends Equatable {
       status: status ?? this.status,
       readAt: readAt ?? this.readAt,
       replyToId: replyToId ?? this.replyToId,
+      callType: callType ?? this.callType,
+      callStatus: callStatus ?? this.callStatus,
+      callDuration: callDuration ?? this.callDuration,
+      callId: callId ?? this.callId,
     );
   }
 
