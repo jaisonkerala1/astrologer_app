@@ -111,10 +111,10 @@ async function createCallLogMessage(io, call, status, duration = 0) {
     };
     
     if (callerRoom) {
-      io.to(callerRoom).emit('message', messagePayload);
+      io.to(callerRoom).emit('dm:message_received', messagePayload);
     }
     if (recipientRoom) {
-      io.to(recipientRoom).emit('message', messagePayload);
+      io.to(recipientRoom).emit('dm:message_received', messagePayload);
     }
     
     console.log(`📤 [CALL LOG] Sent to rooms: ${callerRoom}, ${recipientRoom}`);
