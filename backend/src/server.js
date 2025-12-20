@@ -16,13 +16,18 @@ const httpServer = http.createServer(app);
 // Initialize Socket.IO
 let io;
 try {
+  console.log('🔌 [SOCKET.IO] Starting initialization...');
   const { initSocketIO } = require('./socket');
+  console.log('🔌 [SOCKET.IO] Module loaded, calling initSocketIO...');
   io = initSocketIO(httpServer);
   // Make io accessible to routes via app.get('io')
   app.set('io', io);
   console.log('✅ Socket.IO initialized');
 } catch (error) {
   console.error('❌ Failed to initialize Socket.IO:', error.message);
+  console.error('📍 Error stack:', error.stack);
+  console.error('📍 Error name:', error.name);
+  if (error.code) console.error('📍 Error code:', error.code);
 }
 
 // Security middleware

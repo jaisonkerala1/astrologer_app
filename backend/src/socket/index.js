@@ -3,20 +3,31 @@
  * Initializes Socket.IO server with all handlers
  */
 
+console.log('📦 [SOCKET.IO] Loading socket.io module...');
 const { Server } = require('socket.io');
+console.log('📦 [SOCKET.IO] Loading socketAuth...');
 const { socketAuth, optionalSocketAuth } = require('./socketAuth');
+console.log('📦 [SOCKET.IO] Loading liveHandler...');
 const initLiveHandler = require('./handlers/liveHandler');
+console.log('📦 [SOCKET.IO] Loading discussionHandler...');
 const { initDiscussionHandler } = require('./handlers/discussionHandler');
+console.log('📦 [SOCKET.IO] Loading serviceRequestHandler...');
 const { initServiceRequestHandler } = require('./handlers/serviceRequestHandler');
+console.log('📦 [SOCKET.IO] Loading directMessageHandler...');
 const directMessageHandler = require('./handlers/directMessageHandler');
+console.log('📦 [SOCKET.IO] Loading callHandler...');
 const callHandler = require('./handlers/callHandler');
+console.log('📦 [SOCKET.IO] Loading roomManager...');
 const roomManager = require('./roomManager');
+console.log('📦 [SOCKET.IO] Loading EVENTS...');
 const EVENTS = require('./events');
+console.log('✅ [SOCKET.IO] All modules loaded successfully');
 
 /**
  * Initialize Socket.IO with HTTP server
  */
 function initSocketIO(httpServer) {
+  console.log('🔧 [SOCKET.IO] Creating Server instance...');
   const io = new Server(httpServer, {
     cors: {
       origin: function(origin, callback) {
@@ -34,9 +45,11 @@ function initSocketIO(httpServer) {
   console.log('🔌 [SOCKET.IO] Initializing...');
 
   // Apply authentication middleware
+  console.log('🔧 [SOCKET.IO] Applying auth middleware...');
   io.use(optionalSocketAuth);
 
   // Connection handler
+  console.log('🔧 [SOCKET.IO] Setting up connection handler...');
   io.on(EVENTS.CONNECTION, (socket) => {
     console.log(`🔌 [SOCKET] New connection: ${socket.user.name} (${socket.id})`);
 
@@ -45,24 +58,24 @@ function initSocketIO(httpServer) {
     const userType = socket.userType || socket.user?.role || 'astrologer';
     
     if (userId) {
-      if (userType === 'admin') {
-        // Admins should always join the shared admin room for broadcasts
-        socket.join(EVENTS.ROOM_PREFIX.ADMIN); // "admin:"
-        // Also join a unique admin room (useful if future features need it)
-        socket.join(`${EVENTS.ROOM_PREFIX.ADMIN}${userId}`);
-        console.log(`✅ [SOCKET] Admin joined rooms: ${EVENTS.ROOM_PREFIX.ADMIN} and ${EVENTS.ROOM_PREFIX.ADMIN}${userId}`);
-      } else {
-        const personalRoom = `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
-        socket.join(personalRoom);
-        console.log(`✅ [SOCKET] Auto-joined ${userType} to personal room: ${personalRoom}`);
-      }
+      // For admin, join to admin: room (no ID suffix needed)
+      const personalRoom = userId === 'admin' 
+        ? EVENTS.ROOM_PREFIX.ADMIN 
+        : `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
+      socket.join(personalRoom);
+      console.log(`✅ [SOCKET] Auto-joined ${userType} to personal room: ${personalRoom}`);
     }
 
     // Initialize feature handlers
+    console.log('🔧 [SOCKET.IO] Initializing liveHandler...');
     initLiveHandler(io, socket);
+    console.log('🔧 [SOCKET.IO] Initializing discussionHandler...');
     initDiscussionHandler(socket, io, roomManager);
+    console.log('🔧 [SOCKET.IO] Initializing serviceRequestHandler...');
     initServiceRequestHandler(socket, io, roomManager);
+    console.log('🔧 [SOCKET.IO] Initializing directMessageHandler...');
     directMessageHandler(io, socket);
+    console.log('🔧 [SOCKET.IO] Initializing callHandler...');
     callHandler(io, socket);
 
     // Send connection success
