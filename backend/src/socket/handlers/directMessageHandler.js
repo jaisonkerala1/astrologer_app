@@ -23,6 +23,19 @@ function getUserContext(socket, fallback = {}) {
   };
 }
 
+function personalRoomFor(userType, userId) {
+  if (!userType || !userId) return null;
+  const type = String(userType).toLowerCase();
+  // Must match src/socket/index.js auto-join logic:
+  // Admin joins "admin:" (no suffix)
+  if (type === 'admin' && String(userId) === 'admin') {
+    return ROOM_PREFIX.ADMIN;
+  }
+  const prefix = ROOM_PREFIX[String(userType).toUpperCase()];
+  if (!prefix) return null;
+  return `${prefix}${userId}`;
+}
+
 async function ensureConversation(conversationId, participants = []) {
   if (!conversationId) return null;
 
@@ -189,16 +202,19 @@ module.exports = (io, socket) => {
       });
       
       // Also emit to recipient's personal room (Socket.IO for foreground)
-      const recipientRoom = `${ROOM_PREFIX[recipientType.toUpperCase()]}${recipientId}`;
-      io.to(recipientRoom).emit('dm:new_message', {
-        conversationId,
-        senderId: senderCtx.id,
-        senderType: senderCtx.type,
-        senderName: senderCtx.name,
-        senderAvatar: senderCtx.avatar,
-        content: content.substring(0, 100), // Preview
-        timestamp: message.timestamp
-      });
+      const recipientRoom = personalRoomFor(recipientType, recipientId);
+      if (recipientRoom) {
+        io.to(recipientRoom).emit('dm:new_message', {
+          _id: message._id,
+          conversationId,
+          senderId: senderCtx.id,
+          senderType: senderCtx.type,
+          senderName: senderCtx.name,
+          senderAvatar: senderCtx.avatar,
+          content: content.substring(0, 100), // Preview
+          timestamp: message.timestamp
+        });
+      }
       
       console.log(`✅ [DM] Message delivered to room: ${conversationId}`);
       
