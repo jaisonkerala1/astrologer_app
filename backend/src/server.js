@@ -81,6 +81,31 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    socketio: io ? 'connected' : 'not initialized',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Astrologer App API',
+    version: '1.0.0',
+    socketio: 'enabled',
+    endpoints: {
+      health: '/health',
+      api: '/api/*',
+      socket: '/socket.io/'
+    }
+  });
+});
+
 // Serve static files with CORS headers
 app.use('/uploads', (req, res, next) => {
   // Set CORS headers for static files
