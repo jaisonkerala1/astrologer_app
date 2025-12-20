@@ -26,10 +26,9 @@ function getUserContext(socket, fallback = {}) {
 function personalRoomFor(userType, userId) {
   if (!userType || !userId) return null;
   const type = String(userType).toLowerCase();
-  // Must match src/socket/index.js auto-join logic:
-  // Admin joins "admin:" (no suffix)
-  if (type === 'admin' && String(userId) === 'admin') {
-    return ROOM_PREFIX.ADMIN;
+  // Admins always listen on the shared "admin:" room
+  if (type === 'admin') {
+    return ROOM_PREFIX.ADMIN; // admin:
   }
   const prefix = ROOM_PREFIX[String(userType).toUpperCase()];
   if (!prefix) return null;

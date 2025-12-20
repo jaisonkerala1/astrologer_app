@@ -45,12 +45,17 @@ function initSocketIO(httpServer) {
     const userType = socket.userType || socket.user?.role || 'astrologer';
     
     if (userId) {
-      // For admin, join to admin: room (no ID suffix needed)
-      const personalRoom = userId === 'admin' 
-        ? EVENTS.ROOM_PREFIX.ADMIN 
-        : `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
-      socket.join(personalRoom);
-      console.log(`✅ [SOCKET] Auto-joined ${userType} to personal room: ${personalRoom}`);
+      if (userType === 'admin') {
+        // Admins should always join the shared admin room for broadcasts
+        socket.join(EVENTS.ROOM_PREFIX.ADMIN); // "admin:"
+        // Also join a unique admin room (useful if future features need it)
+        socket.join(`${EVENTS.ROOM_PREFIX.ADMIN}${userId}`);
+        console.log(`✅ [SOCKET] Admin joined rooms: ${EVENTS.ROOM_PREFIX.ADMIN} and ${EVENTS.ROOM_PREFIX.ADMIN}${userId}`);
+      } else {
+        const personalRoom = `${EVENTS.ROOM_PREFIX[userType.toUpperCase()]}${userId}`;
+        socket.join(personalRoom);
+        console.log(`✅ [SOCKET] Auto-joined ${userType} to personal room: ${personalRoom}`);
+      }
     }
 
     // Initialize feature handlers

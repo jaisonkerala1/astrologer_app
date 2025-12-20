@@ -23,6 +23,8 @@ import '../features/communication/bloc/call_state.dart';
 import '../features/communication/bloc/call_event.dart';
 import '../features/communication/screens/incoming_call_screen.dart';
 import '../features/communication/screens/chat_screen.dart';
+import '../features/communication/screens/voice_call_screen.dart';
+import '../features/communication/screens/video_call_screen.dart';
 import '../features/communication/models/communication_item.dart';
 import '../core/services/fcm_service.dart';
 import '../features/heal/bloc/heal_bloc.dart';
@@ -214,41 +216,60 @@ class _AstrologerAppState extends State<AstrologerApp> {
                         ),
                       );
                     } else if (state is FcmCallAccepted) {
-                      print('✅ [APP] Call accepted from notification, joining channel');
-                      final callBloc = context.read<CallBloc>();
+                      print('✅ [APP] Call accepted from notification button, going directly to call screen');
                       
-                      // First trigger incoming call to show UI
-                      callBloc.add(
-                        IncomingCallEvent(
-                          callId: state.callData['callId'] ?? '',
-                          callerId: state.callData['callerId'] ?? '',
-                          callerName: state.callData['callerName'] ?? 'Unknown',
-                          callerType: state.callData['callerType'] ?? 'user',
-                          callType: state.isVideo ? 'video' : 'voice',
-                          channelName: state.callData['channelName'] ?? '',
-                          agoraToken: state.callData['agoraToken'] ?? '',
-                          agoraAppId: state.callData['agoraAppId'] ?? '',
-                          callerAvatar: state.callData['callerAvatar'],
-                        ),
-                      );
+                      // User pressed Accept button in notification → Skip IncomingCallScreen, go directly to call
+                      final callData = state.callData;
+                      final isVideo = state.isVideo;
                       
-                      // Then immediately accept to join the channel
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        callBloc.add(
-                          AcceptCallEvent(
-                            callId: state.callData['callId'] ?? '',
-                            contactId: state.callData['callerId'] ?? '',
-                            channelName: state.callData['channelName'],
-                            agoraToken: state.callData['agoraToken'],
-                            agoraAppId: state.callData['agoraAppId'],
-                            isVideo: state.isVideo,
+                      // Navigate directly to Voice/VideoCallScreen
+                      if (isVideo) {
+                        _rootNavigatorKey.currentState?.push(
+                          MaterialPageRoute(
+                            builder: (context) => VideoCallScreen(
+                              contactId: callData['callerId'] ?? '',
+                              contactName: callData['callerName'] ?? 'Unknown',
+                              contactType: callData['callerType'] == 'admin' 
+                                  ? ContactType.admin 
+                                  : ContactType.user,
+                              isIncoming: true,
+                              callId: callData['callId'] ?? '',
+                              channelName: callData['channelName'] ?? '',
+                              token: callData['agoraToken'] ?? '',
+                              avatarUrl: callData['callerAvatar'],
+                            ),
                           ),
                         );
-                      });
+                      } else {
+                        _rootNavigatorKey.currentState?.push(
+                          MaterialPageRoute(
+                            builder: (context) => VoiceCallScreen(
+                              callId: callData['callId'] ?? '',
+                              contactId: callData['callerId'] ?? '',
+                              contactName: callData['callerName'] ?? 'Unknown',
+                              contactType: callData['callerType'] == 'admin' 
+                                  ? ContactType.admin 
+                                  : ContactType.user,
+                              channelName: callData['channelName'] ?? '',
+                              token: callData['agoraToken'] ?? '',
+                              agoraAppId: callData['agoraAppId'] ?? '6358473261094f98be1fea84042b1fcf',
+                              avatarUrl: callData['callerAvatar'],
+                            ),
+                          ),
+                        );
+                      }
                       
-                      // Cancel the notification (already done in CallBloc, but belt-and-suspenders)
-                      final fcmService = getIt<FcmService>();
-                      fcmService.cancelCallNotification(state.callData['callId'] ?? '');
+                      // Trigger CallBloc to accept in the background (for Socket.IO sync)
+                      context.read<CallBloc>().add(
+                        AcceptCallEvent(
+                          callId: callData['callId'] ?? '',
+                          contactId: callData['callerId'] ?? '',
+                          channelName: callData['channelName'],
+                          agoraToken: callData['agoraToken'],
+                          agoraAppId: callData['agoraAppId'],
+                          isVideo: isVideo,
+                        ),
+                      );
                     } else if (state is FcmCallDeclined) {
                       print('❌ [APP] Call declined from notification');
                       final callBloc = context.read<CallBloc>();

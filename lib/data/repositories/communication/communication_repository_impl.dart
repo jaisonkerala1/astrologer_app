@@ -462,7 +462,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
   /// Generate realistic dummy messages with diverse scenarios
   List<CommunicationItem> _generateDummyMessages(String userId) {
     final now = DateTime.now();
-
+    
     return [
       // Admin Support - always first
       CommunicationItem(

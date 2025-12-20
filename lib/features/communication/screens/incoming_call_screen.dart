@@ -9,6 +9,7 @@ import '../../../core/di/service_locator.dart';
 import '../models/communication_item.dart';
 import '../bloc/call_bloc.dart';
 import '../bloc/call_event.dart';
+import '../bloc/call_state.dart';
 import 'video_call_screen.dart';
 import 'voice_call_screen.dart';
 
@@ -141,9 +142,32 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return Scaffold(
+    return BlocListener<CallBloc, CallState>(
+      listener: (context, state) {
+        if (!mounted) return;
+        if (_isEnded) return;
+
+        // If the caller cancels (e.g. admin ends before answer), CallBloc will transition
+        // to CallEnded/CallIdle. Close this screen immediately (WhatsApp-like UX).
+        if (state is CallEnded || state is CallIdle) {
+          print('📞 [INCOMING CALL] Remote end detected via CallBloc ($state). Closing screen.');
+          setState(() {
+            _isRinging = false;
+            _isConnected = false;
+            _isEnded = true;
+          });
+          _pulseController.stop();
+
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted && Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          });
+        }
+      },
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return Scaffold(
           backgroundColor: Colors.black,
           body: SafeArea(
             child: SlideTransition(
@@ -339,8 +363,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           ),
         ),
       ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

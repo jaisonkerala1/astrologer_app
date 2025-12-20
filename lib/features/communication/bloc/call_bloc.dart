@@ -257,17 +257,18 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     EndCallEvent event,
     Emitter<CallState> emit,
   ) async {
-    print('📴 [CallBloc] Ending call: ${event.callId}');
+    print('📴 [CallBloc] Ending call: ${event.callId} (current state: ${state.runtimeType})');
 
-    // Cancel notification
+    // Cancel notification (critical for incoming calls ended by other party)
     try {
       final fcmService = getIt<FcmService>();
       await fcmService.cancelCallNotification(event.callId);
+      print('✅ [CallBloc] Notification cancelled for call: ${event.callId}');
     } catch (e) {
       print('⚠️ [CallBloc] Failed to cancel notification: $e');
     }
 
-    // Emit end via Socket.IO
+    // Emit end via Socket.IO ONLY if we're ending it from our side
     if (event.contactId != null) {
       socketService.endCall(
         callId: event.callId,
@@ -276,7 +277,14 @@ class CallBloc extends Bloc<CallEvent, CallState> {
       );
     }
 
-    // Emit ended state
+    // If call was incoming (not answered yet), just go to idle immediately
+    if (state is CallIncoming) {
+      print('📴 [CallBloc] Call ended while still ringing, going to idle');
+      emit(const CallIdle());
+      return;
+    }
+
+    // Otherwise, show ended state briefly
     emit(CallEnded(
       reason: event.reason,
       duration: event.duration,

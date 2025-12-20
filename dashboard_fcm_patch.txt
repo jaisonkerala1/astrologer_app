@@ -1,0 +1,27 @@
+Add these imports after line 21 (after auth imports):
+
+import '../../../core/di/service_locator.dart';
+import '../../../core/fcm/fcm_bloc.dart';
+import '../../../core/fcm/fcm_event.dart';
+
+Add this code after line 171 (after "print('✅ [DASHBOARD] User loaded...")"):
+
+        // Register FCM token with backend after user is loaded
+        if (_currentUser?.id != null) {
+          try {
+            final fcmBloc = getIt<FcmBloc>();
+            fcmBloc.add(RegisterFcmTokenEvent(
+              userId: _currentUser!.id,
+              userType: 'astrologer',
+            ));
+            print('📱 [DASHBOARD] Triggered FCM token registration');
+          } catch (e) {
+            print('❌ [DASHBOARD] Failed to trigger FCM registration: $e');
+          }
+        }
+
+
+
+
+
+
