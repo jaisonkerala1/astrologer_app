@@ -179,9 +179,10 @@ module.exports = (io, socket) => {
         { upsert: true }
       );
       
-      // Broadcast to others in the conversation room (excluding sender to avoid echo)
+      // Broadcast to everyone in the conversation room (including sender)
+      // Frontend will determine if message is "own" based on senderType
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
-      socket.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
+      io.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
         conversationId,
         senderId: senderCtx.id,
@@ -197,28 +198,7 @@ module.exports = (io, socket) => {
         mediaDuration,
         thumbnailUrl,
         timestamp: message.timestamp,
-        status: 'delivered',
-        replyToId
-      });
-      
-      // Send acknowledgment to sender with full message data
-      socket.emit(DIRECT_MESSAGE.RECEIVED, {
-        _id: message._id,
-        conversationId,
-        senderId: senderCtx.id,
-        senderType: senderCtx.type,
-        senderName: senderCtx.name,
-        senderAvatar: senderCtx.avatar,
-        recipientId,
-        recipientType,
-        content,
-        messageType,
-        mediaUrl,
-        mediaSize,
-        mediaDuration,
-        thumbnailUrl,
-        timestamp: message.timestamp,
-        status: 'sent', // 'sent' for sender, 'delivered' for recipient
+        status: 'sent',
         replyToId
       });
       
