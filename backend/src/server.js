@@ -192,6 +192,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/consultation', require('./routes/consultation'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/communications', require('./routes/communications'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/seed', require('./routes/seed'));
 app.use('/api/migration', require('./routes/migration'));
