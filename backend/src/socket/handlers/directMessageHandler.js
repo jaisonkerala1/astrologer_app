@@ -36,7 +36,7 @@ function personalRoomFor(userType, userId) {
   return `${prefix}${userId}`;
 }
 
-async function ensureConversation(conversationId, participants = []) {
+async function ensureConversation(conversationId, participants = [], allowSingleParticipant = false) {
   if (!conversationId) return null;
 
   const unique = [];
@@ -48,13 +48,15 @@ async function ensureConversation(conversationId, participants = []) {
     }
   }
   
-  // Prevent self-conversations (conversation with only one unique participant)
-  if (unique.length < 2) {
+  let convo = await DirectConversation.findOne({ conversationId });
+  
+  // If conversation doesn't exist, require 2+ participants to create it
+  if (!convo && unique.length < 2) {
     console.error(`❌ [DM] Blocked conversation creation: insufficient participants (${unique.length}) for ${conversationId}`);
     return null;
   }
-
-  let convo = await DirectConversation.findOne({ conversationId });
+  
+  // If conversation exists, allow adding participants (even if only 1 in array)
   if (!convo) {
     convo = await DirectConversation.create({
       conversationId,
@@ -91,7 +93,8 @@ module.exports = (io, socket) => {
       
       console.log(`✅ [DM] ${ctx.type} ${ctx.id} joined conversation: ${conversationId}`);
       
-      // Ensure conversation exists and includes this participant
+      // Add participant to existing conversation (if it exists)
+      // Don't create conversation here - it will be created when first message is sent with both participants
       await ensureConversation(conversationId, [
         {
           id: ctx.id,
@@ -99,7 +102,7 @@ module.exports = (io, socket) => {
           name: ctx.name,
           avatar: ctx.avatar,
         },
-      ]);
+      ], true); // allowSingleParticipant = true when joining
       
       // Emit success
       socket.emit('dm:joined', { conversationId, success: true });
