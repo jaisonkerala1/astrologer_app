@@ -74,24 +74,37 @@ const optionalSocketAuth = async (socket, next) => {
 
     // Check if it's astrologer JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log(`🔐 [SOCKET AUTH] Token decoded successfully for astrologer: ${decoded.astrologerId}`);
+    
     const astrologer = await Astrologer.findById(decoded.astrologerId);
     
-    if (astrologer && astrologer.activeSession?.sessionId === decoded.sessionId) {
-      socket.user = {
-        id: astrologer._id.toString(),
-        astrologerId: astrologer._id.toString(),
-        name: astrologer.name,
-        profileImage: astrologer.profileImage,
-        role: 'astrologer',
-        isAnonymous: false,
-      };
-      socket.userId = astrologer._id.toString();
-      socket.userType = 'astrologer';
-    } else {
+    if (!astrologer) {
+      console.warn(`⚠️ [SOCKET AUTH] Astrologer not found: ${decoded.astrologerId}`);
       socket.user = { id: `anon_${socket.id}`, name: 'Anonymous', isAnonymous: true };
+      return next();
     }
+    
+    if (!astrologer.activeSession || astrologer.activeSession.sessionId !== decoded.sessionId) {
+      console.warn(`⚠️ [SOCKET AUTH] Session mismatch for ${astrologer.name}: expected ${decoded.sessionId}, got ${astrologer.activeSession?.sessionId}`);
+      socket.user = { id: `anon_${socket.id}`, name: 'Anonymous', isAnonymous: true };
+      return next();
+    }
+    
+    // Successfully authenticated as astrologer
+    socket.user = {
+      id: astrologer._id.toString(),
+      astrologerId: astrologer._id.toString(),
+      name: astrologer.name,
+      profileImage: astrologer.profileImage,
+      role: 'astrologer',
+      isAnonymous: false,
+    };
+    socket.userId = astrologer._id.toString();
+    socket.userType = 'astrologer';
+    console.log(`✅ [SOCKET AUTH] Astrologer authenticated: ${astrologer.name} (${socket.userId})`);
     next();
   } catch (error) {
+    console.error(`❌ [SOCKET AUTH] Authentication failed: ${error.message}`);
     socket.user = { id: `anon_${socket.id}`, name: 'Anonymous', isAnonymous: true };
     next();
   }
