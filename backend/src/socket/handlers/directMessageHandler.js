@@ -116,6 +116,31 @@ module.exports = (io, socket) => {
       const { conversationId } = data;
       const ctx = getUserContext(socket, { id: data.userId, type: data.userType });
       if (!conversationId) throw new Error('conversationId is required');
+
+      // 🔒 SECURITY: prevent joining conversations you don't belong to
+      // This is critical to avoid "admin message goes to all users" scenarios.
+      const existing = await DirectConversation.findOne({ conversationId }).lean();
+      if (existing?.participants?.length) {
+        const isParticipant = existing.participants.some(
+          (p) => String(p.id) === String(ctx.id) && String(p.type) === String(ctx.type)
+        );
+        if (!isParticipant && String(ctx.type).toLowerCase() !== 'admin') {
+          console.error(`❌ [DM] Blocked join: ${ctx.type}(${ctx.id}) not a participant of ${conversationId}`);
+          socket.emit('error', { message: 'Not allowed to join this conversation', error: 'DM_JOIN_FORBIDDEN' });
+          return;
+        }
+      } else {
+        // If conversation doesn't exist yet, only allow safe patterns
+        const type = String(ctx.type || '').toLowerCase();
+        if (type === 'astrologer' && conversationId.startsWith('admin_')) {
+          const expected = `admin_${ctx.id}`;
+          if (conversationId !== expected) {
+            console.error(`❌ [DM] Blocked join: astrologer(${ctx.id}) attempted to join ${conversationId} (expected ${expected})`);
+            socket.emit('error', { message: 'Not allowed to join this conversation', error: 'DM_JOIN_FORBIDDEN' });
+            return;
+          }
+        }
+      }
       
       // Join the room
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
@@ -161,7 +186,7 @@ module.exports = (io, socket) => {
   // Send a direct message
   socket.on(DIRECT_MESSAGE.SEND, async (data) => {
     try {
-      const {
+      let {
         conversationId,
         recipientId,
         recipientType,
@@ -177,6 +202,26 @@ module.exports = (io, socket) => {
       if (!recipientId || !recipientType) throw new Error('recipientId and recipientType are required');
 
       const senderCtx = getUserContext(socket, { id: data.userId, type: data.userType });
+
+      // ✅ Canonicalize admin-support conversation IDs to prevent cross-user leakage
+      // Admin ↔ Astrologer should ALWAYS use conversationId = `admin_<astrologerId>`
+      const rType = String(recipientType).toLowerCase();
+      const sType = String(senderCtx.type).toLowerCase();
+
+      if (rType === 'admin') {
+        recipientId = 'admin'; // enforce
+        recipientType = 'admin';
+        if (sType === 'astrologer') {
+          conversationId = `admin_${senderCtx.id}`;
+        }
+      }
+      if (sType === 'admin' && rType === 'astrologer') {
+        conversationId = `admin_${recipientId}`;
+      }
+
+      // Ensure sender is in the canonical conversation room (avoids missed delivery)
+      const canonicalRoom = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
+      socket.join(canonicalRoom);
       
       // Debug: Log the exact values being used BEFORE validation
       console.log(`🔍 [DM DEBUG] senderCtx.id="${senderCtx.id}", senderCtx.type="${senderCtx.type}", recipientId="${recipientId}", recipientType="${recipientType}", conversationId="${conversationId}"`);
@@ -317,9 +362,9 @@ module.exports = (io, socket) => {
           senderType: senderCtx.type,
           senderName: senderCtx.name,
           senderAvatar: senderCtx.avatar,
-          content: content.substring(0, 100), // Preview
-          timestamp: message.timestamp
-        });
+        content: content.substring(0, 100), // Preview
+        timestamp: message.timestamp
+      });
       }
       
       console.log(`✅ [DM] Message delivered to room: ${conversationId}`);
