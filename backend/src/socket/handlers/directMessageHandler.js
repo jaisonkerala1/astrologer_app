@@ -273,8 +273,13 @@ module.exports = (io, socket) => {
           String(targetCtx.type || s.user?.role || s.userType) ===
             String(senderCtx.type);
 
+        console.log(`🔍 [DM BROADCAST] Socket ${s.id}: isSenderSocket=${isSenderSocket}, isSameUser=${isSameUser}, isSameUserAndType=${isSameUserAndType}, targetUserId=${targetUserId}, targetType=${targetCtx.type}`);
+
         if (!isSenderSocket && !isSameUserAndType) {
+          console.log(`✉️ [DM BROADCAST] Emitting to socket ${s.id} (${targetCtx.name})`);
           s.emit(DIRECT_MESSAGE.RECEIVED, deliveredPayload);
+        } else {
+          console.log(`⏭️ [DM BROADCAST] Skipping socket ${s.id} (sender or same user)`);
         }
       });
 
