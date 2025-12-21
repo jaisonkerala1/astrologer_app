@@ -26,6 +26,53 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
     required this.apiService,
     required this.storageService,
   });
+ 
+  /// De-duplicate communications by conversationId (preferred) or contactType+contactId.
+  /// This prevents cases like "Admin Support" showing twice (cache + realtime insert).
+  List<CommunicationItem> _dedupe(List<CommunicationItem> items) {
+    final Map<String, CommunicationItem> byKey = {};
+ 
+    for (final item in items) {
+      final convoId = item.conversationId?.toString() ?? '';
+      final key = convoId.isNotEmpty
+          ? 'c:$convoId'
+          : (item.contactType == ContactType.admin
+              ? 't:admin:admin'
+              : 't:${item.contactType.name}:${item.contactId}');
+ 
+      final existing = byKey[key];
+      if (existing == null) {
+        byKey[key] = item;
+        continue;
+      }
+ 
+      // Keep the newest item; preserve the highest unread count
+      final newer = item.timestamp.isAfter(existing.timestamp) ? item : existing;
+      final older = identical(newer, item) ? existing : item;
+ 
+      byKey[key] = CommunicationItem(
+        id: newer.id,
+        type: newer.type,
+        contactName: newer.contactName.isNotEmpty ? newer.contactName : older.contactName,
+        contactId: newer.contactId.isNotEmpty ? newer.contactId : older.contactId,
+        contactType: newer.contactType,
+        avatar: newer.avatar.isNotEmpty ? newer.avatar : older.avatar,
+        timestamp: newer.timestamp,
+        preview: newer.preview.isNotEmpty ? newer.preview : older.preview,
+        unreadCount: newer.unreadCount > older.unreadCount ? newer.unreadCount : older.unreadCount,
+        isOnline: newer.isOnline || older.isOnline,
+        status: newer.status,
+        duration: newer.duration ?? older.duration,
+        chargedAmount: newer.chargedAmount ?? older.chargedAmount,
+        sessionId: newer.sessionId ?? older.sessionId,
+        conversationId: (newer.conversationId?.isNotEmpty ?? false) ? newer.conversationId : older.conversationId,
+      );
+    }
+ 
+    final deduped = byKey.values.toList();
+    deduped.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return deduped;
+  }
 
   // ============================================================================
   // INSTANT DATA (Instagram/WhatsApp-style instant load)
@@ -42,7 +89,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
     
     if (allData.isNotEmpty) {
       print('⚡ [CommRepo] Returning ${allData.length} items from memory cache');
-      return allData;
+      return _dedupe(allData);
     }
     
     // 2. Try to load from persistent storage (still fast, survives restart!)
@@ -58,7 +105,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
         _localVideoCalls.addAll(items.where((i) => i.type == CommunicationType.videoCall));
         
         print('⚡ [CommRepo] Loaded ${items.length} items from persistent cache (survived restart!)');
-        return items;
+        return _dedupe(items);
       }
     } catch (e) {
       print('⚠️ [CommRepo] Error loading from persistent cache: $e');
@@ -66,11 +113,11 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
     
     // 3. If no persistent cache, generate dummy data
     print('ℹ️ [CommRepo] No cached data, using dummy data');
-    return [
+    return _dedupe([
       ..._generateDummyMessages('dummy_astrologer_id'),
       ..._generateDummyCalls('dummy_astrologer_id'),
       ..._generateDummyVideoCalls('dummy_astrologer_id'),
-    ];
+    ]);
   }
 
   // ============================================================================
@@ -86,7 +133,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
       // Try cache first for quick load
       final cached = await getCachedCommunications();
       if (cached != null && cached.isNotEmpty) {
-        return [..._localMessages, ..._localCalls, ..._localVideoCalls, ...cached];
+        return _dedupe([..._localMessages, ..._localCalls, ..._localVideoCalls, ...cached]);
       }
 
       final astrologerId = await _getAstrologerId();
@@ -109,7 +156,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
         print('💾 [CommRepo] Saved ${items.length} items to persistent cache');
         
         // Merge with local items
-        return [..._localMessages, ..._localCalls, ..._localVideoCalls, ...items];
+        return _dedupe([..._localMessages, ..._localCalls, ..._localVideoCalls, ...items]);
       } else {
         throw Exception(response.data['message'] ?? 'Failed to load communications');
       }
@@ -119,7 +166,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
       // Fallback to cache on error
       final cached = await getCachedCommunications();
       if (cached != null && cached.isNotEmpty) {
-        return [..._localMessages, ..._localCalls, ..._localVideoCalls, ...cached];
+        return _dedupe([..._localMessages, ..._localCalls, ..._localVideoCalls, ...cached]);
       }
       
       // Generate dummy data (world-class, production-quality)
@@ -131,8 +178,7 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
       // Combine and sort by timestamp
       final allItems = [..._localMessages, ..._localCalls, ..._localVideoCalls, ...dummyMessages, ...dummyCalls, ...dummyVideoCalls];
       allItems.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
-      return allItems;
+      return _dedupe(allItems);
     }
   }
 
@@ -391,8 +437,9 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
   @override
   Future<void> cacheCommunications(List<CommunicationItem> items) async {
     try {
+      final deduped = _dedupe(items);
       final jsonString = jsonEncode(
-        items.map((item) => item.toJson()).toList(),
+        deduped.map((item) => item.toJson()).toList(),
       );
       await storageService.setString('communications_cache', jsonString);
       await storageService.setString(

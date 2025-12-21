@@ -124,10 +124,57 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
       );
     }
 
+    // Final safety: de-dupe list (prevents double "Admin Support" rows)
+    final deduped = _dedupeCommunications(updated);
+
     emit(currentState.copyWith(
-      allCommunications: updated,
+      allCommunications: deduped,
       unreadMessagesCount: currentState.unreadMessagesCount + 1,
     ));
+  }
+
+  List<CommunicationItem> _dedupeCommunications(List<CommunicationItem> items) {
+    final Map<String, CommunicationItem> byKey = {};
+
+    for (final item in items) {
+      final convoId = item.conversationId?.toString() ?? '';
+      final key = convoId.isNotEmpty
+          ? 'c:$convoId'
+          : (item.contactType == ContactType.admin
+              ? 't:admin:admin'
+              : 't:${item.contactType.name}:${item.contactId}');
+
+      final existing = byKey[key];
+      if (existing == null) {
+        byKey[key] = item;
+        continue;
+      }
+
+      final newer = item.timestamp.isAfter(existing.timestamp) ? item : existing;
+      final older = identical(newer, item) ? existing : item;
+
+      byKey[key] = CommunicationItem(
+        id: newer.id,
+        type: newer.type,
+        contactName: newer.contactName.isNotEmpty ? newer.contactName : older.contactName,
+        contactId: newer.contactId.isNotEmpty ? newer.contactId : older.contactId,
+        contactType: newer.contactType,
+        avatar: newer.avatar.isNotEmpty ? newer.avatar : older.avatar,
+        timestamp: newer.timestamp,
+        preview: newer.preview.isNotEmpty ? newer.preview : older.preview,
+        unreadCount: newer.unreadCount > older.unreadCount ? newer.unreadCount : older.unreadCount,
+        isOnline: newer.isOnline || older.isOnline,
+        status: newer.status,
+        duration: newer.duration ?? older.duration,
+        chargedAmount: newer.chargedAmount ?? older.chargedAmount,
+        sessionId: newer.sessionId ?? older.sessionId,
+        conversationId: (newer.conversationId?.isNotEmpty ?? false) ? newer.conversationId : older.conversationId,
+      );
+    }
+
+    final deduped = byKey.values.toList();
+    deduped.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return deduped;
   }
 
   @override
