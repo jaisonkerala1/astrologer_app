@@ -139,12 +139,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String? _resolveConversationId() {
+    // Always use provided conversationId if available
     if (widget.conversationId != null && widget.conversationId!.isNotEmpty) {
       return widget.conversationId!;
     }
 
-    // Admin Support conversation must match admin dashboard format:
-    // admin_<astrologerId>
+    // ONLY resolve admin_<astrologerId> when explicitly opening admin support
+    // This prevents auto-joining admin room for other chats
     if (widget.contactType == ContactType.admin) {
       if (_currentUserId != null && _currentUserId!.isNotEmpty) {
         return 'admin_$_currentUserId';
@@ -152,8 +153,9 @@ class _ChatScreenState extends State<ChatScreen> {
       return null; // can't resolve yet
     }
 
-    // Default (existing behavior): admin_<contactId>
-    return 'admin_${widget.contactId}';
+    // For non-admin chats, require conversationId to be provided
+    // Don't default to admin_ prefix - that was causing the bug
+    return null; // Must be provided by parent screen
   }
 
   /// Load messages from backend via Socket.IO
@@ -255,31 +257,44 @@ class _ChatScreenState extends State<ChatScreen> {
       
       final conversationId = _resolveConversationId();
       if (conversationId == null) {
-        print('⚠️ [CHAT] Cannot join yet - conversationId unresolved');
+        print('⚠️ [CHAT] Cannot join - conversationId is required but not provided');
+        print('⚠️ [CHAT] contactType: ${widget.contactType}, contactId: ${widget.contactId}, providedConversationId: ${widget.conversationId}');
         return;
       }
       _activeConversationId = conversationId;
       
-      print('✅ [CHAT] Socket connected! Joining conversation: $conversationId');
+      print('✅ [CHAT] Socket connected! Joining conversation: $conversationId (contactType: ${widget.contactType})');
       
-      // Join conversation room
+      // Join conversation room ONLY for the specific conversation we're viewing
       _socketService.joinDirectConversation(
         conversationId: conversationId,
         userId: _currentUserId ?? '',
         userType: 'astrologer',
       );
       
-      // Listen for incoming messages
+      // Cancel any existing subscriptions to prevent duplicates
+      _messageSubscription?.cancel();
+      _typingSubscription?.cancel();
+      
+      // Listen for incoming messages (register once per screen)
       _messageSubscription = _socketService.dmMessageReceivedStream.listen((data) {
+        if (!mounted) return; // Prevent setState after dispose
+        
         try {
           final message = Message.fromJson(data, currentUserId: _currentUserId);
           
-          // Ignore duplicates or own echo
-          if (message.senderId == _currentUserId) return;
-          if (_messages.any((m) => m.id == message.id)) return;
+          // Only process messages from THIS conversation
+          if (message.conversationId != conversationId) {
+            return; // Ignore messages from other conversations
+          }
+          
+          // Ignore duplicates
+          if (_messages.any((m) => m.id == message.id)) {
+            return;
+          }
 
-          // Only add if from this conversation
-          if (message.conversationId == conversationId) {
+          // Add message (frontend will determine if it's "own" based on senderId)
+          if (mounted) {
             setState(() {
               _messages.add(message);
             });
@@ -289,17 +304,21 @@ class _ChatScreenState extends State<ChatScreen> {
             _markMessageAsRead(message.id);
           }
         } catch (e) {
-          print('❌ Error parsing message: $e');
+          print('❌ Error processing incoming message: $e');
         }
       });
       
       // Listen for typing indicators
       _typingSubscription = _socketService.dmTypingStream.listen((data) {
+        if (!mounted) return; // Prevent setState after dispose
+        
+        // Only show typing for THIS conversation
         if (data['conversationId'] == conversationId && data['userId'] != _currentUserId) {
-          // Show typing indicator (optional)
-          setState(() {
-            _isTyping = true;
-          });
+          if (mounted) {
+            setState(() {
+              _isTyping = true;
+            });
+          }
           
           // Hide after 3 seconds
           Future.delayed(const Duration(seconds: 3), () {
@@ -321,8 +340,11 @@ class _ChatScreenState extends State<ChatScreen> {
   /// Send typing indicator
   void _sendTypingIndicator() {
     try {
+      final conversationId = _resolveConversationId();
+      if (conversationId == null) return; // Can't send typing without conversationId
+      
       _socketService.sendDirectMessageTyping(
-        conversationId: _resolveConversationId() ?? (widget.conversationId ?? 'admin_${widget.contactId}'),
+        conversationId: conversationId,
         userId: _currentUserId ?? '',
       );
     } catch (e) {
@@ -333,8 +355,11 @@ class _ChatScreenState extends State<ChatScreen> {
   /// Mark message as read
   Future<void> _markMessageAsRead(String messageId) async {
     try {
+      final conversationId = _resolveConversationId();
+      if (conversationId == null) return; // Can't mark read without conversationId
+      
       _socketService.markDirectMessagesAsRead(
-        conversationId: widget.conversationId ?? 'admin_${widget.contactId}',
+        conversationId: conversationId,
         messageIds: [messageId],
       );
     } catch (e) {
@@ -1031,7 +1056,19 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     
     try {
-      final conversationId = _resolveConversationId() ?? (widget.conversationId ?? 'admin_${widget.contactId}');
+      final conversationId = _resolveConversationId();
+      if (conversationId == null) {
+        print('❌ [CHAT] Cannot send message - conversationId is required');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot send message: Invalid conversation'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       final recipientId = widget.contactType == ContactType.admin ? 'admin' : widget.contactId;
       final recipientType = widget.contactType == ContactType.admin ? 'admin' : widget.contactType.name;

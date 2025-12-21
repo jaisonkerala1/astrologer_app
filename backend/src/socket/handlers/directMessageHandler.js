@@ -164,9 +164,11 @@ module.exports = (io, socket) => {
       console.log(`🔍 [DM DEBUG] senderCtx.id="${senderCtx.id}", senderCtx.type="${senderCtx.type}", recipientId="${recipientId}", recipientType="${recipientType}", conversationId="${conversationId}"`);
       
       // Prevent self-conversations (sender cannot send to themselves)
-      // Only block if BOTH id and type match
+      // EXCEPTION: Admin support is always allowed (astrologer → admin)
       const isSelfConversation = String(senderCtx.id) === String(recipientId) && String(senderCtx.type) === String(recipientType);
-      if (isSelfConversation) {
+      const isAdminSupport = String(recipientType).toLowerCase() === 'admin' && String(senderCtx.type).toLowerCase() !== 'admin';
+      
+      if (isSelfConversation && !isAdminSupport) {
         console.error(`❌ [DM] Blocked self-conversation: ${senderCtx.type}(${senderCtx.id}) cannot send to themselves`);
         socket.emit('error', { message: 'Cannot send message to yourself', error: 'SELF_CONVERSATION_BLOCKED' });
         return;
