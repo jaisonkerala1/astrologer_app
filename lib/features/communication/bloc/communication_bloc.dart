@@ -46,16 +46,17 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
     final tsString = data['timestamp']?.toString();
     final timestamp = tsString != null ? DateTime.tryParse(tsString) ?? DateTime.now() : DateTime.now();
     
-    // 🔒 IMPORTANT: Ignore messages from yourself (your own acknowledgments)
-    // This prevents "jaison" appearing in your own communication list
-    final recipientId = (data['recipientId'] ?? '').toString();
-    final recipientType = (data['recipientType'] ?? '').toString();
-    
-    // Skip if YOU are the sender (your own message acknowledgment)
-    // For astrologers: Don't add conversations where you're messaging yourself
-    if (senderType == 'astrologer' && recipientType != 'admin') {
-      // This is your own message acknowledgment, not an incoming message
-      print('⏭️ [CommunicationBloc] Skipping own message acknowledgment from $senderId');
+    // 🔒 IMPORTANT: Skip your OWN message acknowledgments
+    // When YOU send a message, the backend sends back an acknowledgment with:
+    // - senderType: 'astrologer' (you)
+    // - senderName: 'jaison' (you)
+    // We should NOT create a contact entry for yourself!
+    // 
+    // Only process messages FROM admin/users (not from yourself as astrologer)
+    if (senderType == 'astrologer') {
+      // This is YOUR own message acknowledgment - skip it
+      // We don't want "jaison" appearing in your own contact list
+      print('⏭️ [CommunicationBloc] Skipping own astrologer message (not incoming): $senderId → $senderName');
       return;
     }
 
