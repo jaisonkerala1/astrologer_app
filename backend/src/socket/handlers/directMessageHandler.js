@@ -203,14 +203,14 @@ module.exports = (io, socket) => {
         { upsert: true }
       );
       
-      // Broadcast to others in the conversation room (EXCLUDING sender)
-      // Send acknowledgment to sender separately with 'sent' status
+      // Broadcast to other PARTICIPANTS only (skip ALL sockets belonging to the sender user)
+      // This prevents the sender from receiving their own message back on duplicate connections.
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
-      
-      console.log(`📡 [DM] Broadcasting to room "${roomName}" (excluding sender ${senderCtx.id})`);
-      
-      // Send to others in the room (recipients) - .to() excludes the sender
-      socket.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
+      console.log(`📡 [DM] Broadcasting to room "${roomName}" (excluding all sockets of ${senderCtx.id})`);
+
+      // Emit manually to each socket in the room except sockets owned by the sender user
+      const socketsInRoom = await io.in(roomName).fetchSockets();
+      const deliveredPayload = {
         _id: message._id,
         conversationId,
         senderId: senderCtx.id,
@@ -228,11 +228,21 @@ module.exports = (io, socket) => {
         timestamp: message.timestamp,
         status: 'delivered',
         replyToId
+      };
+
+      socketsInRoom.forEach((s) => {
+        const targetCtx = getUserContext(s, {});
+        const sameUser =
+          String(targetCtx.id) === String(senderCtx.id) &&
+          String(targetCtx.type) === String(senderCtx.type);
+        if (!sameUser) {
+          s.emit(DIRECT_MESSAGE.RECEIVED, deliveredPayload);
+        }
       });
-      
-      console.log(`✅ [DM] Message delivered to room: ${conversationId}`);
-      
-      // Send acknowledgment to sender (so they see their own message)
+
+      console.log(`✅ [DM] Message delivered to room (excluding sender sockets): ${conversationId}`);
+
+      // Send acknowledgment to sender (so they see their own message once)
       console.log(`📤 [DM] Sending acknowledgment to sender ${senderCtx.id}`);
       socket.emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
