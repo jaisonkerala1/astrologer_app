@@ -148,8 +148,13 @@ module.exports = (io, socket) => {
 
       const senderCtx = getUserContext(socket, { id: data.userId, type: data.userType });
       
+      // Debug: Log the exact values being used BEFORE validation
+      console.log(`🔍 [DM DEBUG] senderCtx.id="${senderCtx.id}", senderCtx.type="${senderCtx.type}", recipientId="${recipientId}", recipientType="${recipientType}", conversationId="${conversationId}"`);
+      
       // Prevent self-conversations (sender cannot send to themselves)
-      if (String(senderCtx.id) === String(recipientId) && senderCtx.type === recipientType) {
+      // Only block if BOTH id and type match
+      const isSelfConversation = String(senderCtx.id) === String(recipientId) && String(senderCtx.type) === String(recipientType);
+      if (isSelfConversation) {
         console.error(`❌ [DM] Blocked self-conversation: ${senderCtx.type}(${senderCtx.id}) cannot send to themselves`);
         socket.emit('error', { message: 'Cannot send message to yourself', error: 'SELF_CONVERSATION_BLOCKED' });
         return;
@@ -158,9 +163,6 @@ module.exports = (io, socket) => {
       console.log(
         `📤 [DM] Message from ${senderCtx.type}(${senderCtx.id}) to ${recipientType}(${recipientId}) in conversation ${conversationId}: ${content?.substring(0, 50)}`
       );
-      
-      // Debug: Log the exact values being used
-      console.log(`🔍 [DM DEBUG] senderCtx.id="${senderCtx.id}", recipientId="${recipientId}", conversationId="${conversationId}"`);
 
       // Ensure conversation exists with both participants
       await ensureConversation(conversationId, [
@@ -201,10 +203,33 @@ module.exports = (io, socket) => {
         { upsert: true }
       );
       
-      // Broadcast to everyone in the conversation room (including sender)
-      // Frontend will determine if message is "own" based on senderType
+      // Broadcast to everyone in the conversation room (EXCLUDING sender to prevent echo)
+      // Send acknowledgment to sender separately with 'sent' status
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
-      io.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
+      
+      // Send to others in the room (recipients)
+      socket.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
+        _id: message._id,
+        conversationId,
+        senderId: senderCtx.id,
+        senderType: senderCtx.type,
+        senderName: senderCtx.name,
+        senderAvatar: senderCtx.avatar,
+        recipientId,
+        recipientType,
+        content,
+        messageType,
+        mediaUrl,
+        mediaSize,
+        mediaDuration,
+        thumbnailUrl,
+        timestamp: message.timestamp,
+        status: 'delivered',
+        replyToId
+      });
+      
+      // Send acknowledgment to sender (so they see their own message)
+      socket.emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
         conversationId,
         senderId: senderCtx.id,
