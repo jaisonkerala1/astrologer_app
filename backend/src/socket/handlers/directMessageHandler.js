@@ -42,7 +42,16 @@ async function ensureConversation(conversationId, participants = []) {
   const unique = [];
   for (const p of participants) {
     if (!p?.id) continue;
-    if (!unique.some((u) => u.id === p.id)) unique.push(p);
+    // Prevent duplicate participants (same id and type)
+    if (!unique.some((u) => u.id === p.id && u.type === p.type)) {
+      unique.push(p);
+    }
+  }
+  
+  // Prevent self-conversations (conversation with only one unique participant)
+  if (unique.length < 2) {
+    console.error(`❌ [DM] Blocked conversation creation: insufficient participants (${unique.length}) for ${conversationId}`);
+    return null;
   }
 
   let convo = await DirectConversation.findOne({ conversationId });
@@ -136,9 +145,19 @@ module.exports = (io, socket) => {
 
       const senderCtx = getUserContext(socket, { id: data.userId, type: data.userType });
       
+      // Prevent self-conversations (sender cannot send to themselves)
+      if (String(senderCtx.id) === String(recipientId) && senderCtx.type === recipientType) {
+        console.error(`❌ [DM] Blocked self-conversation: ${senderCtx.type}(${senderCtx.id}) cannot send to themselves`);
+        socket.emit('error', { message: 'Cannot send message to yourself', error: 'SELF_CONVERSATION_BLOCKED' });
+        return;
+      }
+      
       console.log(
-        `📤 [DM] Message from ${senderCtx.type}(${senderCtx.id}) to ${recipientType}(${recipientId}): ${content?.substring(0, 50)}`
+        `📤 [DM] Message from ${senderCtx.type}(${senderCtx.id}) to ${recipientType}(${recipientId}) in conversation ${conversationId}: ${content?.substring(0, 50)}`
       );
+      
+      // Debug: Log the exact values being used
+      console.log(`🔍 [DM DEBUG] senderCtx.id="${senderCtx.id}", recipientId="${recipientId}", conversationId="${conversationId}"`);
 
       // Ensure conversation exists with both participants
       await ensureConversation(conversationId, [
