@@ -79,6 +79,18 @@ async function ensureConversation(conversationId, participants = [], allowSingle
   return convo;
 }
 
+// Extract a stable user identifier from a socket (best-effort)
+function socketUserKey(s) {
+  return String(
+    s.userId ||
+      s.user?._id ||
+      s.user?.id ||
+      s.user?.userId ||
+      s.data?.userId ||
+      ''
+  );
+}
+
 module.exports = (io, socket) => {
   // Join a conversation room
   socket.on(DIRECT_MESSAGE.JOIN, async (data) => {
@@ -232,10 +244,16 @@ module.exports = (io, socket) => {
 
       socketsInRoom.forEach((s) => {
         const targetCtx = getUserContext(s, {});
-        const sameUser =
-          String(targetCtx.id) === String(senderCtx.id) &&
-          String(targetCtx.type) === String(senderCtx.type);
-        if (!sameUser) {
+        const targetUserId = socketUserKey(s);
+        const isSenderSocket = s.id === socket.id;
+        const isSameUser =
+          targetUserId && String(targetUserId) === String(senderCtx.id);
+        const isSameUserAndType =
+          isSameUser &&
+          String(targetCtx.type || s.user?.role || s.userType) ===
+            String(senderCtx.type);
+
+        if (!isSenderSocket && !isSameUserAndType) {
           s.emit(DIRECT_MESSAGE.RECEIVED, deliveredPayload);
         }
       });
