@@ -200,27 +200,114 @@ class _AstrologerAppState extends State<AstrologerApp> {
                 BlocListener<FcmBloc, FcmState>(
                   listener: (context, state) {
                     if (state is FcmIncomingCallNotification) {
-                      print('🔔 [APP] FCM call notification received, triggering CallBloc');
-                      // Trigger CallBloc to handle the incoming call
-                      context.read<CallBloc>().add(
-                        IncomingCallEvent(
-                          callId: state.callData['callId'] ?? '',
-                          callerId: state.callData['callerId'] ?? '',
-                          callerName: state.callData['callerName'] ?? 'Unknown',
-                          callerType: state.callData['callerType'] ?? 'user',
-                          callType: state.isVideo ? 'video' : 'voice',
-                          channelName: state.callData['channelName'] ?? '',
-                          agoraToken: state.callData['agoraToken'] ?? '',
-                          agoraAppId: state.callData['agoraAppId'] ?? '',
-                          callerAvatar: state.callData['callerAvatar'],
-                        ),
-                      );
+                      print('🔔 [APP] FCM call notification received');
+                      
+                      // Check if this is a tap (no action) or accept/decline
+                      final action = state.callData['action'] as String?;
+                      final callData = state.callData;
+                      final isVideo = state.isVideo;
+
+                      // Note: We only dispatch IncomingCallEvent when user taps the notification body.
+                      // If user presses ACCEPT from notification, we DO NOT emit CallIncoming (prevents
+                      // the IncomingCallScreen from appearing again on top of the active call UI).
+                      
+                      if (action == 'accept') {
+                        // User pressed Accept → go directly to call screen
+                        print('✅ [APP] Call accepted from notification button, going directly to call screen');
+                        // IMPORTANT: Accept only via AcceptCallEvent (it marks as handled internally)
+                        // Do NOT separately dispatch MarkCallHandledEvent to avoid race conditions
+                        context.read<CallBloc>().add(
+                          AcceptCallEvent(
+                            callId: callData['callId'] ?? '',
+                            contactId: callData['callerId'] ?? '',
+                            channelName: callData['channelName'],
+                            agoraToken: callData['agoraToken'],
+                            agoraAppId: callData['agoraAppId'],
+                            isVideo: isVideo,
+                          ),
+                        );
+                        
+                        if (isVideo) {
+                          _rootNavigatorKey.currentState?.push(
+                            MaterialPageRoute(
+                              builder: (context) => VideoCallScreen(
+                                contactId: callData['callerId'] ?? '',
+                                contactName: callData['callerName'] ?? 'Unknown',
+                                contactType: callData['callerType'] == 'admin' 
+                                    ? ContactType.admin 
+                                    : ContactType.user,
+                                isIncoming: true,
+                                callId: callData['callId'] ?? '',
+                                channelName: callData['channelName'] ?? '',
+                                token: callData['agoraToken'] ?? '',
+                                avatarUrl: callData['callerAvatar'],
+                              ),
+                            ),
+                          );
+                        } else {
+                          _rootNavigatorKey.currentState?.push(
+                            MaterialPageRoute(
+                              builder: (context) => VoiceCallScreen(
+                                callId: callData['callId'] ?? '',
+                                contactId: callData['callerId'] ?? '',
+                                contactName: callData['callerName'] ?? 'Unknown',
+                                contactType: callData['callerType'] == 'admin'
+                                    ? ContactType.admin
+                                    : ContactType.user,
+                                channelName: callData['channelName'] ?? '',
+                                token: callData['agoraToken'] ?? '',
+                                agoraAppId: callData['agoraAppId'] ?? '',
+                                avatarUrl: callData['callerAvatar'],
+                              ),
+                            ),
+                          );
+                        }
+                      } else if (action == 'decline') {
+                        // User pressed Decline → end call via CallBloc
+                        print('❌ [APP] Call declined from notification');
+                        // DeclineCallEvent marks as handled internally
+                        context.read<CallBloc>().add(
+                          DeclineCallEvent(callId: callData['callId'] ?? ''),
+                        );
+                      } else {
+                        // User tapped notification body -> let CallBloc show IncomingCallScreen
+                        context.read<CallBloc>().add(
+                          IncomingCallEvent(
+                            callId: callData['callId'] ?? '',
+                            callerId: callData['callerId'] ?? '',
+                            callerName: callData['callerName'] ?? 'Unknown',
+                            callerType: callData['callerType'] ?? 'user',
+                            callType: isVideo ? 'video' : 'voice',
+                            channelName: callData['channelName'] ?? '',
+                            agoraToken: callData['agoraToken'] ?? '',
+                            agoraAppId: callData['agoraAppId'] ?? '',
+                            callerAvatar: callData['callerAvatar'],
+                          ),
+                        );
+
+                        // User tapped notification body → show IncomingCallScreen
+                        print('👆 [APP] Notification tapped, showing IncomingCallScreen');
+                        // Navigation is handled by CallBloc listener (single source of truth).
+                      }
                     } else if (state is FcmCallAccepted) {
                       print('✅ [APP] Call accepted from notification button, going directly to call screen');
                       
                       // User pressed Accept button in notification → Skip IncomingCallScreen, go directly to call
                       final callData = state.callData;
                       final isVideo = state.isVideo;
+                      
+                      // Trigger CallBloc to accept in the background (for Socket.IO sync)
+                      // AcceptCallEvent marks the call as handled internally
+                      context.read<CallBloc>().add(
+                        AcceptCallEvent(
+                          callId: callData['callId'] ?? '',
+                          contactId: callData['callerId'] ?? '',
+                          channelName: callData['channelName'],
+                          agoraToken: callData['agoraToken'],
+                          agoraAppId: callData['agoraAppId'],
+                          isVideo: isVideo,
+                        ),
+                      );
                       
                       // Navigate directly to Voice/VideoCallScreen
                       if (isVideo) {
@@ -258,23 +345,11 @@ class _AstrologerAppState extends State<AstrologerApp> {
                           ),
                         );
                       }
-                      
-                      // Trigger CallBloc to accept in the background (for Socket.IO sync)
-                      context.read<CallBloc>().add(
-                        AcceptCallEvent(
-                          callId: callData['callId'] ?? '',
-                          contactId: callData['callerId'] ?? '',
-                          channelName: callData['channelName'],
-                          agoraToken: callData['agoraToken'],
-                          agoraAppId: callData['agoraAppId'],
-                          isVideo: isVideo,
-                        ),
-                      );
                     } else if (state is FcmCallDeclined) {
                       print('❌ [APP] Call declined from notification');
                       final callBloc = context.read<CallBloc>();
                       
-                      // Decline the call
+                      // Decline the call (DeclineCallEvent marks as handled internally)
                       callBloc.add(
                         DeclineCallEvent(
                           callId: state.callData['callId'] ?? '',

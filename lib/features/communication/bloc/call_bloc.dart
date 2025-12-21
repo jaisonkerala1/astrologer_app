@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/di/service_locator.dart';
@@ -16,12 +17,20 @@ class CallBloc extends Bloc<CallEvent, CallState> {
   StreamSubscription? _callEndedSubscription;
   Timer? _connectRetryTimer;
   int _connectRetries = 0;
+  // CallIds that have been acted upon locally (accepted/declined/ended) so we
+  // can ignore late/duplicate incoming events (e.g. accept from notification
+  // before Socket.IO "incoming" arrives).
+  final Set<String> _handledCallIds = <String>{};
 
   CallBloc({required this.socketService}) : super(const CallIdle()) {
-    on<IncomingCallEvent>(_onIncomingCall);
-    on<AcceptCallEvent>(_onAcceptCall);
-    on<RejectCallEvent>(_onRejectCall);
-    on<DeclineCallEvent>(_onDeclineCall);
+    // Use sequential() transformer to process events one at a time
+    // This ensures AcceptCallEvent is fully processed (including adding to _handledCallIds)
+    // before any subsequent IncomingCallEvent can be processed
+    on<IncomingCallEvent>(_onIncomingCall, transformer: sequential());
+    on<AcceptCallEvent>(_onAcceptCall, transformer: sequential());
+    on<RejectCallEvent>(_onRejectCall, transformer: sequential());
+    on<DeclineCallEvent>(_onDeclineCall, transformer: sequential());
+    on<MarkCallHandledEvent>(_onMarkCallHandled, transformer: sequential());
     on<CallConnectedEvent>(_onCallConnected);
     on<EndCallEvent>(_onEndCall);
     on<DismissCallEvent>(_onDismissCall);
@@ -113,14 +122,25 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     Emitter<CallState> emit,
   ) async {
     print('📞 [CallBloc] Processing incoming call from ${event.callerName}');
+
+    if (_handledCallIds.contains(event.callId)) {
+      print('⏭️ [CallBloc] Ignoring incoming call ${event.callId} (already handled locally)');
+      return;
+    }
     
     // Deduplicate: if already showing this exact call, ignore duplicate
     if (state is CallIncoming) {
       final currentCall = state as CallIncoming;
       if (currentCall.callId == event.callId) {
-        print('⚠️ [CallBloc] Ignoring duplicate call: ${event.callId}');
+        print('! [CallBloc] Ignoring duplicate call: ${event.callId}');
         return;
       }
+    }
+    
+    // Double-check right before emitting (race condition protection)
+    if (_handledCallIds.contains(event.callId)) {
+      print('⏭️ [CallBloc] Call ${event.callId} was handled while processing (race condition avoided)');
+      return;
     }
     
     emit(CallIncoming(
@@ -137,11 +157,21 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     ));
   }
 
+  Future<void> _onMarkCallHandled(
+    MarkCallHandledEvent event,
+    Emitter<CallState> emit,
+  ) async {
+    if (event.callId.isEmpty) return;
+    _handledCallIds.add(event.callId);
+    print('🧷 [CallBloc] Marked call as handled: ${event.callId}');
+  }
+
   Future<void> _onAcceptCall(
     AcceptCallEvent event,
     Emitter<CallState> emit,
   ) async {
     print('✅ [CallBloc] Accepting call: ${event.callId}');
+    _handledCallIds.add(event.callId);
 
     // Cancel notification
     try {
@@ -151,14 +181,15 @@ class CallBloc extends Bloc<CallEvent, CallState> {
       print('⚠️ [CallBloc] Failed to cancel notification: $e');
     }
 
+    // Always emit accept via Socket.IO.
+    // IMPORTANT: Accept can come from notification before CallIncoming state is set.
+    socketService.acceptCall(
+      callId: event.callId,
+      contactId: event.contactId,
+    );
+
     if (state is CallIncoming) {
       final incomingState = state as CallIncoming;
-      
-      // Emit accept via Socket.IO
-      socketService.acceptCall(
-        callId: event.callId,
-        contactId: event.contactId,
-      );
 
       // Transition to connecting state
       emit(CallConnecting(
@@ -172,6 +203,8 @@ class CallBloc extends Bloc<CallEvent, CallState> {
         channelName: incomingState.channelName,
         uid: incomingState.uid,
       ));
+    } else {
+      print('⚠️ [CallBloc] Accept received while not in CallIncoming (${state.runtimeType}). Sent accept to backend anyway.');
     }
   }
 
@@ -180,6 +213,7 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     Emitter<CallState> emit,
   ) async {
     print('❌ [CallBloc] Rejecting call: ${event.callId}');
+    _handledCallIds.add(event.callId);
 
     // Cancel notification
     try {
@@ -209,6 +243,7 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     Emitter<CallState> emit,
   ) async {
     print('❌ [CallBloc] Declining call from notification: ${event.callId}');
+    _handledCallIds.add(event.callId);
 
     // Cancel notification
     try {
@@ -258,6 +293,7 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     Emitter<CallState> emit,
   ) async {
     print('📴 [CallBloc] Ending call: ${event.callId} (current state: ${state.runtimeType})');
+    _handledCallIds.add(event.callId);
 
     // Cancel notification (critical for incoming calls ended by other party)
     try {
@@ -293,6 +329,9 @@ class CallBloc extends Bloc<CallEvent, CallState> {
     // Auto-dismiss after 2 seconds
     await Future.delayed(const Duration(seconds: 2));
     emit(const CallIdle());
+
+    // Clear handled call after UI settles (so future calls work)
+    _handledCallIds.remove(event.callId);
   }
 
   Future<void> _onDismissCall(

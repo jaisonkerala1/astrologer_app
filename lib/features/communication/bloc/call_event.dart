@@ -142,6 +142,17 @@ class DeclineCallEvent extends CallEvent {
   List<Object?> get props => [callId];
 }
 
+/// Internal event: mark a callId as already handled locally (accepted/declined/etc.)
+/// Used to ignore late Socket.IO incoming events after notification actions.
+class MarkCallHandledEvent extends CallEvent {
+  final String callId;
+
+  const MarkCallHandledEvent({required this.callId});
+
+  @override
+  List<Object?> get props => [callId];
+}
+
 /// Event to dismiss call (after rejected/ended)
 class DismissCallEvent extends CallEvent {
   const DismissCallEvent();

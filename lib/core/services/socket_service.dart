@@ -200,6 +200,11 @@ class SocketService {
   final _errorController = StreamController<String>.broadcast();
   Stream<String> get errorStream => _errorController.stream;
 
+  // Pending call emits (used when user accepts/rejects from notification
+  // before Socket.IO has connected/authenticated).
+  // Key format: "<event>:<callId>"
+  final Map<String, Map<String, dynamic>> _pendingCallEmits = {};
+
   /// Get WebSocket URL from API base URL
   String get _socketUrl {
     final baseUrl = ApiConstants.baseUrl;
@@ -280,6 +285,7 @@ class SocketService {
       // Ask server for ack/user immediately; this also helps detect anonymous sockets.
       // (Server emits 'connected' automatically, but this helps in case of timing issues.)
       _socket!.emit('get_stats');
+      _flushPendingCallEmits(reason: 'onConnect');
     });
 
     _socket!.onDisconnect((_) {
@@ -301,6 +307,7 @@ class SocketService {
     _socket!.onReconnect((_) {
       debugPrint('✅ [SOCKET] Reconnected');
       _updateState(SocketConnectionState.connected);
+      _flushPendingCallEmits(reason: 'onReconnect');
     });
 
     _socket!.on('connected', (data) {
@@ -315,6 +322,11 @@ class SocketService {
       // Use print (not debugPrint) so it always shows in logs
       print('✅ [SOCKET] Server acknowledged connection: $data');
       print('🔐 [SOCKET] Authenticated: $isAuthenticated, user: $_serverUser');
+
+      // If we're authenticated now, flush any queued call actions (accept/reject/end)
+      if (isAuthenticated) {
+        _flushPendingCallEmits(reason: 'server_ack_connected');
+      }
 
       // If server treated us as anonymous, reconnect with fresh token
       if (!isAuthenticated && _authReconnectAttempts < _maxAuthReconnectAttempts) {
@@ -517,6 +529,47 @@ class SocketService {
       print('🔑 [SOCKET] Agora token received: $data');
       _callTokenController.add(Map<String, dynamic>.from(data));
     });
+  }
+
+  void _queueCallEmit(String eventName, Map<String, dynamic> payload) {
+    final callId = (payload['callId'] ?? '').toString();
+    final key = '$eventName:$callId';
+    _pendingCallEmits[key] = payload;
+    debugPrint('⏳ [SOCKET] Queued call emit ($key) because socket not connected');
+
+    // Kick off a connect attempt if needed
+    if (_currentState == SocketConnectionState.disconnected ||
+        _currentState == SocketConnectionState.error) {
+      // ignore: discarded_futures
+      connect();
+    }
+  }
+
+  void _emitCallOrQueue(String eventName, Map<String, dynamic> payload) {
+    if (!isConnected) {
+      _queueCallEmit(eventName, payload);
+      return;
+    }
+    _socket!.emit(eventName, payload);
+    debugPrint('✅ [SOCKET] Emitted $eventName: ${payload['callId'] ?? ''}');
+  }
+
+  void _flushPendingCallEmits({required String reason}) {
+    if (!isConnected) return;
+    if (_pendingCallEmits.isEmpty) return;
+
+    debugPrint('🚚 [SOCKET] Flushing ${_pendingCallEmits.length} queued call emits ($reason)');
+    final entries = List<MapEntry<String, Map<String, dynamic>>>.from(_pendingCallEmits.entries);
+    _pendingCallEmits.clear();
+
+    for (final entry in entries) {
+      final key = entry.key;
+      final idx = key.indexOf(':');
+      final eventName = idx > 0 ? key.substring(0, idx) : key;
+      final payload = entry.value;
+      _socket!.emit(eventName, payload);
+      debugPrint('✅ [SOCKET] Flushed $key');
+    }
   }
 
   void _updateState(SocketConnectionState state) {
@@ -935,14 +988,11 @@ class SocketService {
     required String callId,
     required String contactId,
   }) {
-    if (!isConnected) return;
-
-    _socket!.emit(CallSocketEvents.accept, {
+    _emitCallOrQueue(CallSocketEvents.accept, {
       'callId': callId,
       'contactId': contactId,
     });
-
-    debugPrint('✅ [SOCKET] Accepting call: $callId');
+    debugPrint('✅ [SOCKET] Accepting call requested: $callId (connected=$isConnected)');
   }
 
   /// Reject an incoming call
@@ -951,15 +1001,12 @@ class SocketService {
     required String contactId,
     String reason = 'declined',
   }) {
-    if (!isConnected) return;
-
-    _socket!.emit(CallSocketEvents.reject, {
+    _emitCallOrQueue(CallSocketEvents.reject, {
       'callId': callId,
       'contactId': contactId,
       'reason': reason,
     });
-
-    debugPrint('❌ [SOCKET] Rejecting call: $callId');
+    debugPrint('❌ [SOCKET] Rejecting call requested: $callId (connected=$isConnected)');
   }
 
   /// Notify call connected
@@ -967,14 +1014,11 @@ class SocketService {
     required String callId,
     required String contactId,
   }) {
-    if (!isConnected) return;
-
-    _socket!.emit(CallSocketEvents.connected, {
+    _emitCallOrQueue(CallSocketEvents.connected, {
       'callId': callId,
       'contactId': contactId,
     });
-
-    debugPrint('🔗 [SOCKET] Call connected: $callId');
+    debugPrint('🔗 [SOCKET] Call connected notify requested: $callId (connected=$isConnected)');
   }
 
   /// End a call
@@ -983,15 +1027,12 @@ class SocketService {
     required String contactId,
     int? duration,
   }) {
-    if (!isConnected) return;
-
-    _socket!.emit(CallSocketEvents.end, {
+    _emitCallOrQueue(CallSocketEvents.end, {
       'callId': callId,
       'contactId': contactId,
       if (duration != null) 'duration': duration,
     });
-
-    debugPrint('📴 [SOCKET] Ending call: $callId');
+    debugPrint('📴 [SOCKET] Ending call requested: $callId (connected=$isConnected)');
   }
 
   /// Request Agora token for a call

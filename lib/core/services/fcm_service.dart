@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:astrologer_app/core/constants/api_constants.dart';
 import 'storage_service.dart';
@@ -19,11 +20,22 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   
   final notificationType = message.data['type'] as String?;
   
-  // For calls, show full-screen notification with Accept/Decline actions
-  if (notificationType == 'call' || notificationType == 'video_call') {
-    await showIncomingCallNotification(message);
+  // IMPORTANT:
+  // Calls are handled by native Android FirebaseMessagingService (MyFirebaseMessagingService)
+  // to show WhatsApp-style CallStyle notifications. If we also show a Flutter local notification
+  // from the Dart background isolate, Android will show TWO notifications.
+  //
+  // So for call-related events, we skip Dart-side notifications entirely.
+  if (notificationType == 'call' ||
+      notificationType == 'voice_call' ||
+      notificationType == 'video_call' ||
+      notificationType == 'call_cancel' ||
+      notificationType == 'call_end') {
+    print('📞 [FCM Background] Skipping Dart notification (native CallStyle handles calls)');
+    return;
   }
-  // Messages are handled by default FCM
+
+  // Messages are handled by default FCM (notification payload)
 }
 
 /// Top-level helper to show incoming call notification (works on locked screen)
@@ -33,6 +45,23 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
   if (!Platform.isAndroid) return;
   
   try {
+    // Try native Android CallStyle (Android 12+) via platform channel.
+    // If it fails (e.g., background isolate or older OS), we fall back to Flutter notification.
+    const MethodChannel channel =
+        MethodChannel('com.example.astrologer_app/call_notifications');
+    try {
+      await channel.invokeMethod('showCallStyleNotification', {
+        'callerName': message.data['callerName'] ?? 'Unknown',
+        'callId': message.data['callId'] ?? '',
+        'isVideo': (message.data['type'] == 'video_call'),
+      });
+      // If native call style succeeds, return early.
+      print('✅ [FCM Background] Native CallStyle notification shown (Android 12+)');
+      return;
+    } catch (e) {
+      print('ℹ️ [FCM Background] Falling back to Flutter notification: $e');
+    }
+    
     final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     
     // Initialize with minimal settings for background isolate
@@ -60,10 +89,34 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
     
     print('📞 [FCM Background] Showing incoming ${isVideo ? 'video' : 'voice'} call from $callerName');
     
-    // High-priority heads-up notification with actions
+    // Delete old channel and create new one in background handler too
+    try {
+      final androidPlugin = flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        await androidPlugin.deleteNotificationChannel('calls');
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'calls_v2',
+            'Calls',
+            description: 'Incoming voice and video calls',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+            enableLights: true,
+            showBadge: true,
+          ),
+        );
+      }
+    } catch (e) {
+      print('⚠️ [FCM Background] Channel setup: $e');
+    }
+    
+    // High-priority heads-up notification with actions - WhatsApp style
     // This will show on locked screen on most Android versions
     final androidDetails = AndroidNotificationDetails(
-      'calls',
+      'calls_v2',
       'Calls',
       channelDescription: 'Incoming voice and video calls',
       importance: Importance.max,
@@ -75,16 +128,17 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
       playSound: true,
       enableVibration: true,
       enableLights: true,
-      // WhatsApp-like accent color
+      // WhatsApp green accent color - applied to notification accent
       color: const Color(0xFF25D366),
       colorized: true,
       visibility: NotificationVisibility.public, // Show on lock screen
-      showWhen: true,
+      showWhen: false, // Hide timestamp for cleaner look
       when: DateTime.now().millisecondsSinceEpoch,
       usesChronometer: false,
       timeoutAfter: 45000, // Auto-dismiss after 45 seconds
       // Use a monochrome small icon like WhatsApp
       icon: '@drawable/ic_stat_call',
+      // WhatsApp-style action buttons (icons are already green/red)
       actions: <AndroidNotificationAction>[
         const AndroidNotificationAction(
           'CALL_ACCEPT',
@@ -101,10 +155,11 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
       ],
     );
     
+    // Show notification with WhatsApp-style layout
     await flutterLocalNotificationsPlugin.show(
       callId.hashCode,
       'Incoming ${isVideo ? 'Video' : 'Voice'} Call',
-      callerName,
+      callerName, // This becomes the subtitle in BigTextStyle
       NotificationDetails(android: androidDetails),
       payload: payloadJson,
     );
@@ -122,6 +177,9 @@ class FcmService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final StorageService _storage = StorageService();
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  static const MethodChannel _callChannel =
+      MethodChannel('com.example.astrologer_app/call_notifications');
+  static bool _callChannelHandlerSet = false;
 
   // Streams for different notification types (CallBloc/MessageBloc can subscribe)
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
@@ -142,6 +200,38 @@ class FcmService {
 
       // Initialize local notifications with channels
       await _initializeLocalNotifications();
+
+       // Listen for native call intent actions (accept/decline/tap)
+       if (!_callChannelHandlerSet) {
+         _callChannel.setMethodCallHandler((call) async {
+           if (call.method == 'call_intent') {
+             final args = call.arguments as Map?;
+             final action = args?['action'] as String? ?? 'tap';
+             final callId = args?['callId'] as String? ?? '';
+             
+             print('📞 [FCM] Received call intent: action=$action, callId=$callId');
+             
+             // Cancel notification immediately when user interacts with it
+             if (callId.isNotEmpty) {
+               await cancelCallNotification(callId);
+             }
+             
+             _callController.add({
+               'type': 'call',
+               'action': action,
+               'callId': callId,
+              'callerName': args?['callerName'] as String? ?? '',
+              'callerId': args?['callerId'] as String? ?? '',
+              'callerType': args?['callerType'] as String? ?? '',
+              'channelName': args?['channelName'] as String? ?? '',
+              'agoraToken': args?['agoraToken'] as String? ?? '',
+              'agoraAppId': args?['agoraAppId'] as String? ?? '',
+              'isVideo': args?['isVideo'] as bool? ?? false,
+             });
+           }
+         });
+         _callChannelHandlerSet = true;
+       }
 
       // Register background message handler
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -229,23 +319,36 @@ class FcmService {
 
     // Create Android notification channels with sound, vibration, and wake-up
     if (Platform.isAndroid) {
-      // Calls channel (HIGH importance, max priority)
-      await _localNotifications
+      final androidPlugin = _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(
-            const AndroidNotificationChannel(
-              'calls',
-              'Calls',
-              description: 'Incoming voice and video calls',
-              importance: Importance.max,
-              playSound: true,
-              enableVibration: true,
-              enableLights: true,
-              showBadge: true,
-              // Use default sound
-            ),
-          );
+              AndroidFlutterLocalNotificationsPlugin>();
+      
+      if (androidPlugin != null) {
+        // Delete old channel if it exists (to force recreation with new settings)
+        try {
+          await androidPlugin.deleteNotificationChannel('calls');
+          print('🗑️ [FCM] Deleted old calls channel');
+        } catch (e) {
+          print('⚠️ [FCM] Could not delete calls channel (may not exist): $e');
+        }
+        
+        // Calls channel (HIGH importance, max priority) - WhatsApp style
+        // Using versioned channel ID to force recreation
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'calls_v2',
+            'Calls',
+            description: 'Incoming voice and video calls',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+            enableLights: true,
+            showBadge: true,
+            // Use default sound
+          ),
+        );
+        print('✅ [FCM] Created calls_v2 channel with WhatsApp-style settings');
+      }
 
       // Messages channel (HIGH importance)
       await _localNotifications
@@ -452,8 +555,23 @@ class FcmService {
   /// Cancel a call notification by ID
   Future<void> cancelCallNotification(String callId) async {
     try {
+      // 1) Cancel FlutterLocalNotifications (fallback/legacy notifications)
       await _localNotifications.cancel(callId.hashCode);
-      print('🔕 [FCM] Cancelled call notification for $callId');
+
+      // 2) Cancel native CallStyle notification (shown via NotificationManager)
+      // This is required for the WhatsApp-style notification shown by MyFirebaseMessagingService.
+      if (Platform.isAndroid) {
+        try {
+          await _callChannel.invokeMethod('cancelCallNotification', {
+            'callId': callId,
+          });
+        } catch (e) {
+          // If channel isn't ready (e.g., app terminated), native cancel may fail silently.
+          print('⚠️ [FCM] Native cancelCallNotification failed: $e');
+        }
+      }
+
+      print('🔕 [FCM] Cancelled call notification(s) for $callId');
     } catch (e) {
       print('❌ [FCM] Error cancelling notification: $e');
     }
