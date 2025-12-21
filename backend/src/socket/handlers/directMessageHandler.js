@@ -12,8 +12,26 @@ const FcmService = require('../../services/fcmService');
 function getUserContext(socket, fallback = {}) {
   const user = socket.user || {};
   const isAnon = user.isAnonymous || user.role === 'guest';
-  const role = isAnon ? 'admin' : (socket.userType || user.role || fallback.type || 'admin');
-  const id = isAnon ? 'admin' : (socket.userId || user._id || user.id || fallback.id || 'admin');
+  
+  // Priority: socket.userType (set by optionalSocketAuth) > user.role > fallback
+  // If all fail and not anonymous, something is wrong - DON'T default to 'admin'
+  let role = socket.userType || user.role || fallback.type;
+  if (!role && !isAnon) {
+    console.error('⚠️ [DM] getUserContext: No role found for non-anonymous user!', {
+      socketUserId: socket.userId,
+      socketUserType: socket.userType,
+      userRole: user.role,
+      userId: user.id,
+      isAnon
+    });
+    role = 'unknown'; // Don't default to admin for authenticated users
+  }
+  if (isAnon) role = 'admin'; // Anonymous users go to admin support
+  if (!role) role = 'admin'; // Final fallback only if completely unidentified
+  
+  let id = socket.userId || user._id || user.id || fallback.id;
+  if (isAnon) id = 'admin';
+  if (!id) id = 'admin'; // Final fallback
 
   return {
     id,
