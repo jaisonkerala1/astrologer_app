@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' show Color;
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -66,7 +67,7 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
       'Calls',
       channelDescription: 'Incoming voice and video calls',
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       category: AndroidNotificationCategory.call,
       fullScreenIntent: true,
       ongoing: true,
@@ -74,21 +75,26 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
       playSound: true,
       enableVibration: true,
       enableLights: true,
+      // WhatsApp-like accent color
+      color: const Color(0xFF25D366),
+      colorized: true,
       visibility: NotificationVisibility.public, // Show on lock screen
       showWhen: true,
       when: DateTime.now().millisecondsSinceEpoch,
       usesChronometer: false,
-      timeoutAfter: 30000, // Auto-dismiss after 30 seconds
+      timeoutAfter: 45000, // Auto-dismiss after 45 seconds
+      // Use a monochrome small icon like WhatsApp
+      icon: '@drawable/ic_stat_call',
       actions: <AndroidNotificationAction>[
         const AndroidNotificationAction(
           'CALL_ACCEPT',
-          'Accept',
+          'ACCEPT',
           icon: DrawableResourceAndroidBitmap('@drawable/ic_call_accept'),
           showsUserInterface: true,
         ),
         const AndroidNotificationAction(
           'CALL_DECLINE',
-          'Decline',
+          'DECLINE',
           icon: DrawableResourceAndroidBitmap('@drawable/ic_call_decline'),
           cancelNotification: true,
         ),
