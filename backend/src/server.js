@@ -33,6 +33,10 @@ try {
 // Security middleware
 app.use(helmet());
 
+// Trust proxy for Railway/Render/Heroku deployments
+// Required for express-rate-limit to correctly identify users behind proxies
+app.set('trust proxy', 1);
+
 // Rate limiting - Increased limits for mobile app usage
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
