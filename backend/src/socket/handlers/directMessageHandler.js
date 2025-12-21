@@ -203,11 +203,13 @@ module.exports = (io, socket) => {
         { upsert: true }
       );
       
-      // Broadcast to everyone in the conversation room (EXCLUDING sender to prevent echo)
+      // Broadcast to others in the conversation room (EXCLUDING sender)
       // Send acknowledgment to sender separately with 'sent' status
       const roomName = `${ROOM_PREFIX.CONVERSATION}${conversationId}`;
       
-      // Send to others in the room (recipients)
+      console.log(`📡 [DM] Broadcasting to room "${roomName}" (excluding sender ${senderCtx.id})`);
+      
+      // Send to others in the room (recipients) - .to() excludes the sender
       socket.to(roomName).emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
         conversationId,
@@ -228,7 +230,10 @@ module.exports = (io, socket) => {
         replyToId
       });
       
+      console.log(`✅ [DM] Message delivered to room: ${conversationId}`);
+      
       // Send acknowledgment to sender (so they see their own message)
+      console.log(`📤 [DM] Sending acknowledgment to sender ${senderCtx.id}`);
       socket.emit(DIRECT_MESSAGE.RECEIVED, {
         _id: message._id,
         conversationId,
