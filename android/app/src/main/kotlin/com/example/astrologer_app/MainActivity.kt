@@ -19,6 +19,13 @@ class MainActivity : FlutterActivity() {
         private const val CHANNEL_ID = "calls_native"
         private const val CHANNEL_NAME = "Calls (Native)"
         private const val METHOD_CHANNEL = "com.example.astrologer_app/call_notifications"
+
+        // Cold-start reliability:
+        // If the app is force-stopped, the notification tap/accept/decline intent can arrive
+        // before Flutter registers its MethodChannel handler. We store the intent payload here
+        // and allow Flutter to fetch it after initialization.
+        @Volatile
+        private var pendingCallIntent: Map<String, Any?>? = null
     }
 
     private var callChannel: MethodChannel? = null
@@ -52,6 +59,13 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     }
 
+                    "getPendingCallIntent" -> {
+                        // Return once, then consume it.
+                        val pending = pendingCallIntent
+                        pendingCallIntent = null
+                        result.success(pending)
+                    }
+
                     else -> result.notImplemented()
                 }
             }
@@ -63,6 +77,9 @@ class MainActivity : FlutterActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // Replace any previous pending call intent with the newest one.
+        // (Avoid stale call actions being consumed later.)
+        // Note: deliverCallIntentToFlutter() will store again if it's a call intent.
         deliverCallIntentToFlutter(intent)
     }
 
@@ -148,29 +165,49 @@ class MainActivity : FlutterActivity() {
         if (intent == null) return
         val action = intent.getStringExtra("call_action") ?: return
         val callId = intent.getStringExtra("call_id") ?: ""
+
+        // WhatsApp-style: stop ringing immediately on any user interaction.
+        // (Tap body / Accept / Decline)
+        try {
+            val stopIntent = Intent(this, CallRingtoneService::class.java).apply {
+                this.action = "STOP"
+                putExtra("call_id", callId)
+            }
+            startService(stopIntent)
+        } catch (_: Exception) {
+            // ignore
+        }
         
         // Cancel notification immediately when user interacts with it
         if (callId.isNotEmpty()) {
             cancelCallNotification(callId)
         }
-        
+
+        // Build payload and store it for cold start reliability (WhatsApp-style).
+        val payload: Map<String, Any?> = mapOf(
+            "action" to action,
+            "callId" to callId,
+            "callerName" to (intent.getStringExtra("caller_name") ?: ""),
+            "isVideo" to (intent.getBooleanExtra("call_is_video", false)),
+            "callerId" to (intent.getStringExtra("caller_id") ?: ""),
+            "callerType" to (intent.getStringExtra("caller_type") ?: ""),
+            "channelName" to (intent.getStringExtra("channel_name") ?: ""),
+            "agoraToken" to (intent.getStringExtra("agora_token") ?: ""),
+            "agoraAppId" to (intent.getStringExtra("agora_app_id") ?: ""),
+            // Used to prevent stale calls being processed on next launch.
+            "receivedAtMs" to System.currentTimeMillis()
+        )
+
+        pendingCallIntent = payload
+
+        // Try immediate delivery (works when Flutter is already running).
+        // If the channel isn't ready yet, Flutter will fetch pendingCallIntent later.
         try {
-            callChannel?.invokeMethod(
-                "call_intent",
-                mapOf(
-                    "action" to action,
-                    "callId" to callId,
-                    "callerName" to (intent.getStringExtra("caller_name") ?: ""),
-                    "isVideo" to (intent.getBooleanExtra("call_is_video", false)),
-                    "callerId" to (intent.getStringExtra("caller_id") ?: ""),
-                    "callerType" to (intent.getStringExtra("caller_type") ?: ""),
-                    "channelName" to (intent.getStringExtra("channel_name") ?: ""),
-                    "agoraToken" to (intent.getStringExtra("agora_token") ?: ""),
-                    "agoraAppId" to (intent.getStringExtra("agora_app_id") ?: "")
-                )
-            )
+            callChannel?.invokeMethod("call_intent", payload)
+            // Delivered successfully, consume immediately.
+            pendingCallIntent = null
         } catch (_: Exception) {
-            // Channel may not be ready yet
+            // Channel may not be ready yet - keep pendingCallIntent for later.
         }
         
         // Clear the intent extras so they don't trigger again
@@ -179,9 +216,24 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun cancelCallNotification(callId: String) {
+        android.util.Log.d("MainActivity", "🔕 cancelCallNotification called for: $callId")
+        // Also stop the ringtone foreground service so the ongoing notification disappears
+        // when the user accepts/rejects from the in-app full-screen UI.
+        try {
+            val stopIntent = Intent(this, CallRingtoneService::class.java).apply {
+                action = "STOP"
+                putExtra("call_id", callId)
+            }
+            startService(stopIntent)
+            android.util.Log.d("MainActivity", "✅ Sent STOP intent to CallRingtoneService")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "❌ Failed to stop ringtone service: $e")
+        }
+
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(callId.hashCode())
+        android.util.Log.d("MainActivity", "✅ Cancelled notification ID: ${callId.hashCode()}")
     }
 
     private fun createCallChannel() {
@@ -200,6 +252,8 @@ class MainActivity : FlutterActivity() {
                     enableLights(true)
                     lightColor = Color.parseColor("#25D366")
                     lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    // IMPORTANT: silent channel so we don't get a one-shot notification sound.
+                    setSound(null, null)
                 }
                 notificationManager.createNotificationChannel(channel)
             }

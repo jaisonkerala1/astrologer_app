@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -22,15 +23,72 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val type = message.data["type"] ?: return
         when (type) {
             "call", "voice_call", "video_call" -> {
+                // If the app is already open/visible, do NOT show the heads-up CallStyle notification.
+                // Flutter/Socket already handles showing the in-app incoming call UI.
+                val isInForeground = MainApplication.isAppInForeground()
+                android.util.Log.d("FCM", "📞 Call FCM received. App foreground: $isInForeground")
+                if (isInForeground) {
+                    android.util.Log.d("FCM", "✅ App in foreground - skipping native notification (Flutter handles it)")
+                    return
+                }
                 val callerName = message.data["callerName"] ?: "Incoming call"
                 val callId = message.data["callId"] ?: "call"
                 val isVideo = type == "video_call"
-                showCallStyleNotification(callerName, callId, isVideo, message.data)
+                android.util.Log.d("FCM", "📱 App in background - starting ringtone service")
+                // WhatsApp-style ringing: start foreground ringtone service (Android 12+).
+                startRingtoneService(callerName, callId, isVideo, message.data)
             }
             "call_cancel", "call_end" -> {
                 val callId = message.data["callId"] ?: "call"
+                android.util.Log.d("FCM", "📴 Call cancel/end - stopping ringtone service")
+                stopRingtoneService(callId)
                 cancelCallNotification(callId)
             }
+        }
+    }
+
+    private fun startRingtoneService(
+        callerName: String,
+        callId: String,
+        isVideo: Boolean,
+        data: Map<String, String>
+    ) {
+        // Android 12+ only
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+        val serviceIntent = Intent(this, CallRingtoneService::class.java).apply {
+            action = "START"
+            putExtra("call_id", callId)
+            putExtra("caller_name", callerName)
+            putExtra("call_is_video", isVideo)
+            putExtra("caller_id", data["callerId"] ?: "")
+            putExtra("caller_type", data["callerType"] ?: "")
+            putExtra("channel_name", data["channelName"] ?: "")
+            putExtra("agora_token", data["agoraToken"] ?: "")
+            putExtra("agora_app_id", data["agoraAppId"] ?: "")
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (_: Exception) {
+            // If service start fails for any reason, fall back to just showing notification.
+            showCallStyleNotification(callerName, callId, isVideo, data)
+        }
+    }
+
+    private fun stopRingtoneService(callId: String) {
+        val stopIntent = Intent(this, CallRingtoneService::class.java).apply {
+            action = "STOP"
+            putExtra("call_id", callId)
+        }
+        try {
+            startService(stopIntent)
+        } catch (_: Exception) {
+            // ignore
         }
     }
 
@@ -157,6 +215,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     enableLights(true)
                     lightColor = Color.parseColor("#25D366")
                     lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    // IMPORTANT: silent channel so we don't get a one-shot notification sound.
+                    setSound(null, null)
                 }
                 notificationManager.createNotificationChannel(channel)
             }

@@ -186,9 +186,71 @@ class FcmService {
   final _callController = StreamController<Map<String, dynamic>>.broadcast();
   final _videoCallController = StreamController<Map<String, dynamic>>.broadcast();
 
+  // Boot orchestration:
+  // During cold start, SplashScreen may still be navigating (pushReplacement to Dashboard).
+  // If we emit call events before the base route is settled, the call UI can be pushed
+  // and then immediately disposed by Splash navigation, breaking Agora init.
+  bool _isBootstrapping = true;
+
+  // Cold start reliability: if a notification is processed before FcmBloc subscribes,
+  // buffer it and re-emit on first subscription.
+  Map<String, dynamic>? _pendingCallEvent;
+  Map<String, dynamic>? _pendingVideoCallEvent;
+
   Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
-  Stream<Map<String, dynamic>> get callStream => _callController.stream;
-  Stream<Map<String, dynamic>> get videoCallStream => _videoCallController.stream;
+
+  Stream<Map<String, dynamic>> get callStream {
+    // IMPORTANT:
+    // Do NOT auto-flush pending call events while bootstrapping (Splash running),
+    // otherwise call UI can be pushed and then disposed by Splash navigation.
+    if (!_isBootstrapping) {
+      final pending = _pendingCallEvent;
+      if (pending != null) {
+        _pendingCallEvent = null;
+        Future.microtask(() {
+          if (!_callController.isClosed) _callController.add(pending);
+        });
+      }
+    }
+    return _callController.stream;
+  }
+
+  Stream<Map<String, dynamic>> get videoCallStream {
+    // Same rule as callStream: don't flush during bootstrapping.
+    if (!_isBootstrapping) {
+      final pending = _pendingVideoCallEvent;
+      if (pending != null) {
+        _pendingVideoCallEvent = null;
+        Future.microtask(() {
+          if (!_videoCallController.isClosed) _videoCallController.add(pending);
+        });
+      }
+    }
+    return _videoCallController.stream;
+  }
+
+  /// Called by SplashScreen after it navigates to Dashboard.
+  /// Flushes any buffered call intents safely after the base route is stable.
+  void markBootstrapped() {
+    if (!_isBootstrapping) return;
+    _isBootstrapping = false;
+
+    // If something was buffered while bootstrapping, emit it now.
+    final callPending = _pendingCallEvent;
+    final videoPending = _pendingVideoCallEvent;
+    if (callPending != null) {
+      _pendingCallEvent = null;
+      Future.microtask(() {
+        if (!_callController.isClosed) _callController.add(callPending);
+      });
+    }
+    if (videoPending != null) {
+      _pendingVideoCallEvent = null;
+      Future.microtask(() {
+        if (!_videoCallController.isClosed) _videoCallController.add(videoPending);
+      });
+    }
+  }
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
@@ -201,37 +263,20 @@ class FcmService {
       // Initialize local notifications with channels
       await _initializeLocalNotifications();
 
-       // Listen for native call intent actions (accept/decline/tap)
-       if (!_callChannelHandlerSet) {
-         _callChannel.setMethodCallHandler((call) async {
-           if (call.method == 'call_intent') {
-             final args = call.arguments as Map?;
-             final action = args?['action'] as String? ?? 'tap';
-             final callId = args?['callId'] as String? ?? '';
-             
-             print('📞 [FCM] Received call intent: action=$action, callId=$callId');
-             
-             // Cancel notification immediately when user interacts with it
-             if (callId.isNotEmpty) {
-               await cancelCallNotification(callId);
-             }
-             
-             _callController.add({
-               'type': 'call',
-               'action': action,
-               'callId': callId,
-              'callerName': args?['callerName'] as String? ?? '',
-              'callerId': args?['callerId'] as String? ?? '',
-              'callerType': args?['callerType'] as String? ?? '',
-              'channelName': args?['channelName'] as String? ?? '',
-              'agoraToken': args?['agoraToken'] as String? ?? '',
-              'agoraAppId': args?['agoraAppId'] as String? ?? '',
-              'isVideo': args?['isVideo'] as bool? ?? false,
-             });
-           }
-         });
-         _callChannelHandlerSet = true;
-       }
+      // Listen for native call intent actions (accept/decline/tap)
+      if (!_callChannelHandlerSet) {
+        _callChannel.setMethodCallHandler((call) async {
+          if (call.method == 'call_intent') {
+            final args = call.arguments as Map?;
+            if (args == null) return;
+
+            // Normalize to Map<String, dynamic>
+            final data = Map<String, dynamic>.from(args);
+            await processCallIntent(data);
+          }
+        });
+        _callChannelHandlerSet = true;
+      }
 
       // Register background message handler
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -289,6 +334,94 @@ class FcmService {
       }
     } catch (e) {
       print('❌ [FCM] Initialization error: $e');
+    }
+  }
+
+  /// WhatsApp-style cold-start reliability:
+  /// If the app was force-stopped, native Android may have stored a pending call intent
+  /// that couldn't be delivered over the MethodChannel yet. SplashScreen will call this
+  /// after startup to fetch it.
+  Future<Map<String, dynamic>?> getPendingCallIntent() async {
+    if (!Platform.isAndroid) return null;
+
+    try {
+      final result = await _callChannel.invokeMethod('getPendingCallIntent');
+      if (result is! Map) return null;
+
+      final data = Map<String, dynamic>.from(result);
+
+      // Stale protection (avoid processing an old call on next launch)
+      final receivedAtMs = data['receivedAtMs'];
+      if (receivedAtMs is num) {
+        final ageMs = DateTime.now().millisecondsSinceEpoch - receivedAtMs.toInt();
+        if (ageMs > 60 * 1000) {
+          print('⏭️ [FCM] Ignoring stale pending call intent (ageMs=$ageMs)');
+          return null;
+        }
+      }
+
+      print('📞 [FCM] Retrieved pending call intent from native');
+      return data;
+    } catch (e) {
+      // No pending intent (or channel not ready yet)
+      print('ℹ️ [FCM] No pending call intent: $e');
+      return null;
+    }
+  }
+
+  /// Process call intent from any source (native notification tap/accept/decline).
+  /// This funnels into the same FcmBloc -> app.dart routing you already use.
+  Future<void> processCallIntent(Map<String, dynamic> data) async {
+    final action = (data['action'] as String?) ?? 'tap';
+    final callId = (data['callId'] as String?) ?? '';
+    final isVideo = data['isVideo'] == true;
+
+    print('📞 [FCM] Received call intent: action=$action, callId=$callId, isVideo=$isVideo');
+
+    // Cancel notification immediately when user interacts with it
+    if (callId.isNotEmpty) {
+      await cancelCallNotification(callId);
+    }
+
+    // Normalize type so FcmBloc can correctly classify voice vs video.
+    final normalizedType = isVideo ? 'video_call' : 'call';
+    // Keep any extra fields (future proof) but ensure our normalized keys win.
+    final normalized = <String, dynamic>{
+      ...data,
+      'type': normalizedType,
+      'action': action,
+      'callId': callId,
+      'callerName': data['callerName'] ?? '',
+      'callerId': data['callerId'] ?? '',
+      'callerType': data['callerType'] ?? '',
+      'channelName': data['channelName'] ?? '',
+      'agoraToken': data['agoraToken'] ?? '',
+      'agoraAppId': data['agoraAppId'] ?? '',
+      'isVideo': isVideo,
+    };
+
+    // If we're still bootstrapping, always buffer so Splash navigation doesn't dispose call UI.
+    if (_isBootstrapping) {
+      if (isVideo) {
+        _pendingVideoCallEvent = normalized;
+      } else {
+        _pendingCallEvent = normalized;
+      }
+      return;
+    }
+
+    if (isVideo) {
+      if (_videoCallController.hasListener) {
+        _videoCallController.add(normalized);
+      } else {
+        _pendingVideoCallEvent = normalized;
+      }
+    } else {
+      if (_callController.hasListener) {
+        _callController.add(normalized);
+      } else {
+        _pendingCallEvent = normalized;
+      }
     }
   }
 
@@ -398,13 +531,11 @@ class FcmService {
     // Handle background message taps
     FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessageTap);
 
-    // Handle messages that opened the app from terminated state
-    _firebaseMessaging.getInitialMessage().then((message) {
-      if (message != null) {
-        print('🔔 [FCM] App opened from terminated state');
-        _handleBackgroundMessageTap(message);
-      }
-    });
+    // NOTE: We DON'T process getInitialMessage() here anymore
+    // SplashScreen now handles initial messages to ensure proper navigation order:
+    // Dashboard loads FIRST, then ChatScreen is pushed on top
+    // This prevents the race condition where ChatScreen appears then gets replaced by Dashboard
+    print('🔔 [FCM] Message handlers setup complete (initial message handled by SplashScreen)');
   }
 
   /// Handle messages received while app is in foreground
@@ -575,6 +706,13 @@ class FcmService {
     } catch (e) {
       print('❌ [FCM] Error cancelling notification: $e');
     }
+  }
+
+  /// Manually emit a message notification to the message stream
+  /// Used by SplashScreen to process initial messages after Dashboard loads
+  void emitMessageNotification(RemoteMessage message) {
+    print('💬 [FCM] Manually emitting message notification');
+    _handleBackgroundMessageTap(message);
   }
 
   /// Send FCM token to backend (call this after login)

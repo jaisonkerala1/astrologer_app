@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/auth/bloc/auth_bloc.dart';
@@ -7,6 +8,7 @@ import '../features/auth/bloc/auth_event.dart';
 import '../features/auth/bloc/auth_state.dart';
 import '../core/services/api_service.dart';
 import '../core/services/storage_service.dart';
+import '../core/services/fcm_service.dart';
 import '../core/di/service_locator.dart';
 import '../core/constants/api_constants.dart';
 import '../features/dashboard/bloc/dashboard_bloc.dart';
@@ -159,9 +161,47 @@ class _SplashScreenState extends State<SplashScreen> {
             print('❌ [SPLASH] Widget not mounted, aborting');
             return;
           }
+
+          // WhatsApp-style cold start orchestration:
+          // 1) If there is a pending CALL intent from native (force-stopped), handle it first.
+          // 2) Else, if there is a MESSAGE initialMessage, open chat directly.
+          final fcmService = getIt<FcmService>();
+
+          print('📞 [SPLASH] Checking for pending call intent...');
+          final pendingCallIntent = await fcmService.getPendingCallIntent();
+          if (pendingCallIntent != null) {
+            print('📞 [SPLASH] Pending call intent detected - routing to call UI');
+            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+            // Mark boot complete before emitting to avoid Splash -> Dashboard disposing call UI.
+            Future.microtask(() {
+              fcmService.markBootstrapped();
+              fcmService.processCallIntent(pendingCallIntent);
+            });
+            return;
+          }
+
+          // Check if app was opened from FCM notification (chat/message)
+          // WhatsApp-style: Go directly to chat, but have Dashboard in the stack
+          print('🔔 [SPLASH] Checking for FCM initial message...');
+          final fcmInitialMessage = await FirebaseMessaging.instance.getInitialMessage();
+
+          if (fcmInitialMessage != null) {
+            final notificationType = fcmInitialMessage.data['type'] as String?;
+            if (notificationType == 'message' || notificationType == 'chat') {
+              print('💬 [SPLASH] Message notification detected - going directly to chat (WhatsApp-style)');
+              // Navigate to Dashboard first (silently builds navigation stack)
+              Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+              // Immediately emit to FCM - ChatScreen will push on top in same frame
+              fcmService.markBootstrapped();
+              fcmService.emitMessageNotification(fcmInitialMessage);
+              return;
+            }
+          }
           
+          // Normal flow: just go to Dashboard
           print('🧭 [SPLASH] Navigating to DASHBOARD');
           Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          fcmService.markBootstrapped();
           print('✅ [SPLASH] Navigation command sent to DASHBOARD');
         } else {
           print('❌ [SPLASH] Token INVALID - Server returned error');
@@ -179,9 +219,46 @@ class _SplashScreenState extends State<SplashScreen> {
           print('⚠️ [SPLASH] Network error, allowing offline dashboard access');
           
           if (!mounted) return;
+
+          // WhatsApp-style cold start orchestration (offline):
+          // 1) Pending CALL intent first
+          // 2) Else MESSAGE initialMessage
+          final fcmService = getIt<FcmService>();
+
+          print('📞 [SPLASH] Checking for pending call intent (offline mode)...');
+          final pendingCallIntent = await fcmService.getPendingCallIntent();
+          if (pendingCallIntent != null) {
+            print('📞 [SPLASH] Pending call intent detected (offline) - routing to call UI');
+            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+            Future.microtask(() {
+              fcmService.markBootstrapped();
+              fcmService.processCallIntent(pendingCallIntent);
+            });
+            return;
+          }
+
+          // Check for FCM initial message even in offline mode
+          // WhatsApp-style: Go directly to chat, but have Dashboard in the stack
+          print('🔔 [SPLASH] Checking for FCM initial message (offline mode)...');
+          final fcmInitialMessage = await FirebaseMessaging.instance.getInitialMessage();
+
+          if (fcmInitialMessage != null) {
+            final notificationType = fcmInitialMessage.data['type'] as String?;
+            if (notificationType == 'message' || notificationType == 'chat') {
+              print('💬 [SPLASH] Message notification detected (offline) - going directly to chat');
+              // Navigate to Dashboard first (silently builds navigation stack)
+              Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+              // Immediately emit to FCM - ChatScreen will push on top in same frame
+              fcmService.markBootstrapped();
+              fcmService.emitMessageNotification(fcmInitialMessage);
+              return;
+            }
+          }
           
+          // Normal flow: just go to Dashboard
           print('🧭 [SPLASH] Navigating to DASHBOARD (offline mode)');
           Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          fcmService.markBootstrapped();
           print('✅ [SPLASH] Navigation command sent to DASHBOARD (offline)');
         }
       }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/services/socket_service.dart';
@@ -77,6 +78,30 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     _socketService = getIt<SocketService>();
     
     _setupAnimations();
+    _startRingtone();
+  }
+  
+  void _startRingtone() {
+    try {
+      print('🔊 [INCOMING CALL] Starting ringtone');
+      FlutterRingtonePlayer().play(
+        android: AndroidSounds.ringtone,
+        ios: IosSounds.bell,
+        looping: true,
+        volume: 1.0,
+      );
+    } catch (e) {
+      print('❌ [INCOMING CALL] Failed to play ringtone: $e');
+    }
+  }
+  
+  void _stopRingtone() {
+    try {
+      print('🔇 [INCOMING CALL] Stopping ringtone');
+      FlutterRingtonePlayer().stop();
+    } catch (e) {
+      print('❌ [INCOMING CALL] Failed to stop ringtone: $e');
+    }
   }
 
   void _setupAnimations() {
@@ -151,6 +176,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
         // to CallEnded/CallIdle. Close this screen immediately (WhatsApp-like UX).
         if (state is CallEnded || state is CallIdle) {
           print('📞 [INCOMING CALL] Remote end detected via CallBloc ($state). Closing screen.');
+          _stopRingtone();
           setState(() {
             _isRinging = false;
             _isConnected = false;
@@ -635,6 +661,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   void _acceptCall() {
     print('✅ [INCOMING CALL] Call accepted');
+    _stopRingtone();
 
     // Notify backend via BLoC
     context.read<CallBloc>().add(AcceptCallEvent(
@@ -681,6 +708,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   void _declineCall() {
     print('❌ [INCOMING CALL] Call declined');
+    _stopRingtone();
     if (_isEnded) {
       print('📞 [INCOMING CALL] Call already ended, ignoring');
       return;

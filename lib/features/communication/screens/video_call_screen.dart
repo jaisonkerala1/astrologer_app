@@ -47,6 +47,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   
   // Agora engine
   RtcEngine? _agoraEngine;
+  bool _isDisposing = false;
   int? _remoteUid;
   bool _isJoined = false;
   
@@ -75,6 +76,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
   @override
   void dispose() {
+    _isDisposing = true;
     _durationTimer?.cancel();
     _leaveChannel();
     _restoreSystemUI();
@@ -118,33 +120,37 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       
       // Request camera and microphone permissions
       await [Permission.camera, Permission.microphone].request();
+      if (!mounted || _isDisposing) return;
       
       print('🎥 [VIDEO] Creating Agora engine with APP_ID: 6358473261094f98be1fea84042b1fcf');
       
       // Create Agora engine
-      _agoraEngine = createAgoraRtcEngine();
+      final engine = createAgoraRtcEngine();
+      _agoraEngine = engine;
       
       print('🎥 [VIDEO] Initializing RTC engine...');
-      await _agoraEngine!.initialize(const RtcEngineContext(
+      await engine.initialize(const RtcEngineContext(
         appId: '6358473261094f98be1fea84042b1fcf',
       ));
+      if (!mounted || _isDisposing) return;
       
       print('🎥 [VIDEO] ✅ Engine initialized successfully');
       
       // Register event handlers
-      _agoraEngine!.registerEventHandler(
+      engine.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (RtcConnection connection, int elapsed) async {
             print('🎥 [VIDEO] Joined channel: ${connection.channelId}');
             
             // Enable speaker AFTER joining
             try {
-              await _agoraEngine!.setEnableSpeakerphone(true);
+              await engine.setEnableSpeakerphone(true);
               print('🎥 [VIDEO] ✅ Speaker enabled');
             } catch (e) {
               print('⚠️ [VIDEO] Could not enable speaker: $e');
             }
             
+            if (!mounted || _isDisposing) return;
             setState(() {
               _isJoined = true;
               _isCallConnected = true;
@@ -155,12 +161,14 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
             print('🎥 [VIDEO] Remote user joined: $remoteUid');
+            if (!mounted || _isDisposing) return;
             setState(() {
               _remoteUid = remoteUid;
             });
           },
           onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
             print('🎥 [VIDEO] Remote user left: $remoteUid');
+            if (!mounted || _isDisposing) return;
             setState(() {
               _remoteUid = null;
             });
@@ -172,15 +180,17 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       );
       
       // Enable video
-      await _agoraEngine!.enableVideo();
+      await engine.enableVideo();
+      if (!mounted || _isDisposing) return;
       
       // Start local preview
-      await _agoraEngine!.startPreview();
+      await engine.startPreview();
+      if (!mounted || _isDisposing) return;
       
       print('🎥 [VIDEO] Joining channel: ${widget.channelName}');
       
       // Join channel
-      await _agoraEngine!.joinChannel(
+      await engine.joinChannel(
         token: widget.token,
         channelId: widget.channelName,
         uid: 0,
@@ -193,11 +203,13 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           publishMicrophoneTrack: true,
         ),
       );
+      if (!mounted || _isDisposing) return;
       
       print('🎥 [VIDEO] ✅ Join channel request sent');
       
     } catch (e) {
       print('❌ [VIDEO] Error initializing Agora: $e');
+      if (!mounted || _isDisposing) return;
       setState(() {
         _callStatus = 'Failed to connect';
       });
