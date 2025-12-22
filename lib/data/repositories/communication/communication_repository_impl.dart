@@ -130,10 +130,25 @@ class CommunicationRepositoryImpl extends BaseRepository implements Communicatio
     int limit = 50,
   }) async {
     try {
-      // Try cache first for quick load
-      final cached = await getCachedCommunications();
-      if (cached != null && cached.isNotEmpty) {
-        return _dedupe([..._localMessages, ..._localCalls, ..._localVideoCalls, ...cached]);
+      // 🚀 PROFESSIONAL FIX: Detect fresh install by checking cache timestamp
+      final cacheTimestamp = storageService.getStringSync('communications_cache_timestamp');
+      final isFreshInstall = cacheTimestamp == null || cacheTimestamp.isEmpty;
+      
+      if (isFreshInstall) {
+        print('📱 [CommRepo] Fresh install detected - forcing API fetch (skipping cache)');
+        // Force API fetch on fresh install
+      } else {
+        // Try cache first for quick load (existing installs)
+        final cached = await getCachedCommunications();
+        if (cached != null && cached.isNotEmpty) {
+          final cacheAge = DateTime.now().difference(DateTime.parse(cacheTimestamp));
+          if (cacheAge.inMinutes < 5) {
+            print('⚡ [CommRepo] Using ${cached.length} items from recent cache (age: ${cacheAge.inMinutes}min)');
+            return _dedupe([..._localMessages, ..._localCalls, ..._localVideoCalls, ...cached]);
+          } else {
+            print('⏰ [CommRepo] Cache expired (${cacheAge.inMinutes}min old), fetching fresh data');
+          }
+        }
       }
 
       final astrologerId = await _getAstrologerId();

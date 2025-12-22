@@ -102,6 +102,7 @@ class SocketService {
   Map<String, dynamic>? _serverUser; // from server 'connected' ack
   int _authReconnectAttempts = 0;
   static const int _maxAuthReconnectAttempts = 2;
+  bool _isAuthenticated = false;
   
   // Connection state stream
   final _connectionStateController = StreamController<SocketConnectionState>.broadcast();
@@ -589,6 +590,10 @@ class SocketService {
     // Backends may mark role or isAdmin; for astrologers role='astrologer'
     return true;
   }
+
+  /// 🚀 PROFESSIONAL FIX: Check if Socket is truly ready to handle events
+  /// Both connected AND authenticated (not anonymous)
+  bool get isReady => isConnected && isAuthenticated;
 
   // ==================== LIVE STREAMING METHODS ====================
 

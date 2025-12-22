@@ -73,6 +73,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
   
   // Services
   final LiveStreamService _liveService = LiveStreamService();
+  
+  // 🚀 PROFESSIONAL FIX: Store BLoC reference to avoid context access during dispose
+  LiveBloc? _liveBloc;
 
   @override
   void initState() {
@@ -157,7 +160,8 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
 
           // Dispatch to BLoC (throttled by timer to avoid excessive updates)
           if (_audioUpdateTimer == null || !_audioUpdateTimer!.isActive) {
-            context.read<LiveBloc>().add(AudioLevelUpdatedEvent(normalizedLevel));
+            // 🚀 PROFESSIONAL FIX: Use stored BLoC reference instead of context
+            _liveBloc?.add(AudioLevelUpdatedEvent(normalizedLevel));
             
             // Throttle updates to ~20 times per second
             _audioUpdateTimer = Timer(const Duration(milliseconds: 50), () {});
@@ -176,15 +180,9 @@ class _LivePreparationScreenState extends State<LivePreparationScreen>
     _audioUpdateTimer = null;
     _lastAudioLevel = 0.0;
     
-    // Reset audio level to 0 - use try-catch since context may be unavailable during dispose
-    if (mounted) {
-      try {
-      context.read<LiveBloc>().add(const AudioLevelUpdatedEvent(0.0));
-      } catch (e) {
-        // Context may be unavailable during dispose or logout - this is expected
-        debugPrint('📷 [CAMERA] Could not reset audio level: $e');
-      }
-    }
+    // 🚀 PROFESSIONAL FIX: Use stored BLoC reference instead of accessing context
+    // This prevents "Looking up a deactivated widget's ancestor" errors during dispose
+    _liveBloc?.add(const AudioLevelUpdatedEvent(0.0));
   }
 
   double _computeAudioLevel(List<int> samples) {

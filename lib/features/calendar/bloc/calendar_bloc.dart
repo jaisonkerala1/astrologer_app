@@ -154,13 +154,10 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
-      var availabilities = await repository.getAvailability(event.astrologerId);
+      print('📅 [CalendarBloc] Loading availability from API');
+      final availabilities = await repository.getAvailability(event.astrologerId);
       
-      // TODO: Remove this when backend is ready - Generate sample data for demo
-      if (availabilities.isEmpty) {
-        print('📅 [CalendarBloc] Generating sample availability (backend not ready)');
-        availabilities = _generateSampleAvailability(event.astrologerId);
-      }
+      print('✅ [CalendarBloc] Loaded ${availabilities.length} availability slots from API');
 
       if (state is CalendarLoadedState) {
         final currentState = state as CalendarLoadedState;
@@ -175,68 +172,34 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         ));
       }
     } catch (e) {
-      // Don't emit error state if availability fails - backend not implemented yet
-      // Just log the error and generate sample data
-      print('⚠️ [CalendarBloc] Failed to load availability (backend not implemented): $e');
-      
-      // Generate sample data
-      final sampleAvailabilities = _generateSampleAvailability(event.astrologerId);
-      
-      if (state is! CalendarLoadedState) {
-        emit(CalendarLoadedState(
-          selectedDate: DateTime.now(),
-          consultations: [],
-          availabilities: sampleAvailabilities,
-          holidays: [],
-          timeSlots: [],
-        ));
-      }
+      print('❌ [CalendarBloc] Failed to load availability: $e');
+      emit(CalendarErrorState('Failed to load availability: ${e.toString()}'));
     }
-  }
-  
-  List<AvailabilityModel> _generateSampleAvailability(String astrologerId) {
-    // Generate sample availability for Monday to Friday
-    final availability = <AvailabilityModel>[];
-    for (int day = 1; day <= 5; day++) {
-      availability.add(AvailabilityModel(
-        id: 'local_avail_$day',
-        astrologerId: astrologerId,
-        dayOfWeek: day,
-        startTime: '09:00',
-        endTime: '18:00',
-        isActive: true,
-        breaks: [
-          BreakTime(
-            startTime: '13:00',
-            endTime: '14:00',
-            reason: 'Lunch Break',
-          ),
-        ],
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ));
-    }
-    return availability;
   }
 
   Future<void> _onCreateAvailability(
     CreateAvailabilityEvent event,
     Emitter<CalendarState> emit,
   ) async {
-    // TODO: Call repository when backend is ready
-    // For now, do optimistic local update since backend not implemented
-    
-    if (state is CalendarLoadedState) {
-      final currentState = state as CalendarLoadedState;
-      final updatedAvailabilities = List.of(currentState.availabilities)
-        ..add(event.availability);
-
-      emit(currentState.copyWith(
-        availabilities: updatedAvailabilities,
-        successMessage: 'Availability created successfully',
-      ));
+    try {
+      print('📅 [CalendarBloc] Creating availability via API');
+      final createdAvailability = await repository.createAvailability(event.availability);
       
-      print('✅ [CalendarBloc] Availability created locally (backend not ready): ${event.availability.dayName}');
+      // Refresh the full list from API after creation
+      final availabilities = await repository.getAvailability(createdAvailability.astrologerId);
+      
+      print('✅ [CalendarBloc] Availability created and list refreshed: ${createdAvailability.dayName}');
+      
+      if (state is CalendarLoadedState) {
+        final currentState = state as CalendarLoadedState;
+        emit(currentState.copyWith(
+          availabilities: availabilities,
+          successMessage: 'Availability created successfully',
+        ));
+      }
+    } catch (e) {
+      print('❌ [CalendarBloc] Failed to create availability: $e');
+      emit(CalendarErrorState('Failed to create availability: ${e.toString()}'));
     }
   }
 
@@ -244,21 +207,25 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     UpdateAvailabilityEvent event,
     Emitter<CalendarState> emit,
   ) async {
-    // TODO: Call repository when backend is ready
-    // For now, do optimistic local update since backend not implemented
-
-    if (state is CalendarLoadedState) {
-      final currentState = state as CalendarLoadedState;
-      final updatedAvailabilities = currentState.availabilities.map((a) {
-        return a.id == event.id ? event.availability : a;
-      }).toList();
-
-      emit(currentState.copyWith(
-        availabilities: updatedAvailabilities,
-        successMessage: 'Availability updated successfully',
-      ));
+    try {
+      print('📅 [CalendarBloc] Updating availability via API');
+      final updatedAvailability = await repository.updateAvailability(event.id, event.availability);
       
-      print('✅ [CalendarBloc] Availability updated locally (backend not ready): ${event.availability.dayName}');
+      // Refresh the full list from API after update
+      final availabilities = await repository.getAvailability(updatedAvailability.astrologerId);
+      
+      print('✅ [CalendarBloc] Availability updated and list refreshed: ${updatedAvailability.dayName}');
+      
+      if (state is CalendarLoadedState) {
+        final currentState = state as CalendarLoadedState;
+        emit(currentState.copyWith(
+          availabilities: availabilities,
+          successMessage: 'Availability updated successfully',
+        ));
+      }
+    } catch (e) {
+      print('❌ [CalendarBloc] Failed to update availability: $e');
+      emit(CalendarErrorState('Failed to update availability: ${e.toString()}'));
     }
   }
 
@@ -266,21 +233,26 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     DeleteAvailabilityEvent event,
     Emitter<CalendarState> emit,
   ) async {
-    // TODO: Call repository when backend is ready
-    // For now, do optimistic local update since backend not implemented
-
-    if (state is CalendarLoadedState) {
-      final currentState = state as CalendarLoadedState;
-      final updatedAvailabilities = currentState.availabilities
-          .where((a) => a.id != event.id)
-          .toList();
-
-      emit(currentState.copyWith(
-        availabilities: updatedAvailabilities,
-        successMessage: 'Availability deleted successfully',
-      ));
+    try {
+      print('📅 [CalendarBloc] Deleting availability via API');
+      await repository.deleteAvailability(event.id);
       
-      print('✅ [CalendarBloc] Availability deleted locally (backend not ready): ${event.id}');
+      // Refresh the full list from API after deletion
+      if (state is CalendarLoadedState) {
+        final currentState = state as CalendarLoadedState;
+        final astrologerId = currentState.availabilities.firstWhere((a) => a.id == event.id).astrologerId;
+        final availabilities = await repository.getAvailability(astrologerId);
+        
+        print('✅ [CalendarBloc] Availability deleted and list refreshed');
+        
+        emit(currentState.copyWith(
+          availabilities: availabilities,
+          successMessage: 'Availability deleted successfully',
+        ));
+      }
+    } catch (e) {
+      print('❌ [CalendarBloc] Failed to delete availability: $e');
+      emit(CalendarErrorState('Failed to delete availability: ${e.toString()}'));
     }
   }
 
@@ -293,13 +265,10 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
-      var holidays = await repository.getHolidays(event.astrologerId);
+      print('📅 [CalendarBloc] Loading holidays from API');
+      final holidays = await repository.getHolidays(event.astrologerId);
       
-      // TODO: Remove this when backend is ready - Generate sample data for demo
-      if (holidays.isEmpty) {
-        print('📅 [CalendarBloc] Generating sample holidays (backend not ready)');
-        holidays = _generateSampleHolidays(event.astrologerId);
-      }
+      print('✅ [CalendarBloc] Loaded ${holidays.length} holidays from API');
 
       if (state is CalendarLoadedState) {
         final currentState = state as CalendarLoadedState;
@@ -314,87 +283,34 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         ));
       }
     } catch (e) {
-      // Don't emit error state if holidays fail - backend not implemented yet
-      // Just log the error and generate sample data
-      print('⚠️ [CalendarBloc] Failed to load holidays (backend not implemented): $e');
-      
-      // Generate sample data
-      final sampleHolidays = _generateSampleHolidays(event.astrologerId);
-      
-      if (state is! CalendarLoadedState) {
-        emit(CalendarLoadedState(
-          selectedDate: DateTime.now(),
-          consultations: [],
-          availabilities: [],
-          holidays: sampleHolidays,
-          timeSlots: [],
-        ));
-      }
+      print('❌ [CalendarBloc] Failed to load holidays: $e');
+      emit(CalendarErrorState('Failed to load holidays: ${e.toString()}'));
     }
-  }
-  
-  List<HolidayModel> _generateSampleHolidays(String astrologerId) {
-    // Generate sample holidays
-    final holidays = <HolidayModel>[];
-    holidays.addAll([
-      HolidayModel(
-        id: 'local_holiday_1',
-        astrologerId: astrologerId,
-        date: DateTime(2025, 1, 26), // Republic Day
-        reason: 'Republic Day',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-      HolidayModel(
-        id: 'local_holiday_2',
-        astrologerId: astrologerId,
-        date: DateTime(2025, 3, 8), // Holi
-        reason: 'Holi',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-      HolidayModel(
-        id: 'local_holiday_3',
-        astrologerId: astrologerId,
-        date: DateTime(2025, 8, 15), // Independence Day
-        reason: 'Independence Day',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-      HolidayModel(
-        id: 'local_holiday_4',
-        astrologerId: astrologerId,
-        date: DateTime(2025, 10, 2), // Gandhi Jayanti
-        reason: 'Gandhi Jayanti',
-        isRecurring: true,
-        recurringPattern: 'yearly',
-        createdAt: DateTime.now(),
-      ),
-    ]);
-    return holidays;
   }
 
   Future<void> _onCreateHoliday(
     CreateHolidayEvent event,
     Emitter<CalendarState> emit,
   ) async {
-    // TODO: Call repository when backend is ready
-    // For now, do optimistic local update since backend not implemented
-    
-    if (state is CalendarLoadedState) {
-      final currentState = state as CalendarLoadedState;
-      final updatedHolidays = List.of(currentState.holidays)
-        ..add(event.holiday);
-
-      emit(currentState.copyWith(
-        holidays: updatedHolidays,
-        successMessage: 'Holiday created successfully',
-      ));
+    try {
+      print('📅 [CalendarBloc] Creating holiday via API');
+      final createdHoliday = await repository.createHoliday(event.holiday);
       
-      print('✅ [CalendarBloc] Holiday created locally (backend not ready): ${event.holiday.reason}');
+      // Refresh the full list from API after creation
+      final holidays = await repository.getHolidays(createdHoliday.astrologerId);
+      
+      print('✅ [CalendarBloc] Holiday created and list refreshed: ${createdHoliday.reason}');
+      
+      if (state is CalendarLoadedState) {
+        final currentState = state as CalendarLoadedState;
+        emit(currentState.copyWith(
+          holidays: holidays,
+          successMessage: 'Holiday created successfully',
+        ));
+      }
+    } catch (e) {
+      print('❌ [CalendarBloc] Failed to create holiday: $e');
+      emit(CalendarErrorState('Failed to create holiday: ${e.toString()}'));
     }
   }
 
@@ -402,21 +318,25 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     UpdateHolidayEvent event,
     Emitter<CalendarState> emit,
   ) async {
-    // TODO: Call repository when backend is ready
-    // For now, do optimistic local update since backend not implemented
-
-    if (state is CalendarLoadedState) {
-      final currentState = state as CalendarLoadedState;
-      final updatedHolidays = currentState.holidays.map((h) {
-        return h.id == event.id ? event.holiday : h;
-      }).toList();
-
-      emit(currentState.copyWith(
-        holidays: updatedHolidays,
-        successMessage: 'Holiday updated successfully',
-      ));
+    try {
+      print('📅 [CalendarBloc] Updating holiday via API');
+      final updatedHoliday = await repository.updateHoliday(event.id, event.holiday);
       
-      print('✅ [CalendarBloc] Holiday updated locally (backend not ready): ${event.holiday.reason}');
+      // Refresh the full list from API after update
+      final holidays = await repository.getHolidays(updatedHoliday.astrologerId);
+      
+      print('✅ [CalendarBloc] Holiday updated and list refreshed: ${updatedHoliday.reason}');
+      
+      if (state is CalendarLoadedState) {
+        final currentState = state as CalendarLoadedState;
+        emit(currentState.copyWith(
+          holidays: holidays,
+          successMessage: 'Holiday updated successfully',
+        ));
+      }
+    } catch (e) {
+      print('❌ [CalendarBloc] Failed to update holiday: $e');
+      emit(CalendarErrorState('Failed to update holiday: ${e.toString()}'));
     }
   }
 
@@ -424,20 +344,26 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     DeleteHolidayEvent event,
     Emitter<CalendarState> emit,
   ) async {
-    // TODO: Call repository when backend is ready
-    // For now, do optimistic local update since backend not implemented
-
-    if (state is CalendarLoadedState) {
-      final currentState = state as CalendarLoadedState;
-      final updatedHolidays =
-          currentState.holidays.where((h) => h.id != event.id).toList();
-
-      emit(currentState.copyWith(
-        holidays: updatedHolidays,
-        successMessage: 'Holiday deleted successfully',
-      ));
+    try {
+      print('📅 [CalendarBloc] Deleting holiday via API');
+      await repository.deleteHoliday(event.id);
       
-      print('✅ [CalendarBloc] Holiday deleted locally (backend not ready): ${event.id}');
+      // Refresh the full list from API after deletion
+      if (state is CalendarLoadedState) {
+        final currentState = state as CalendarLoadedState;
+        final astrologerId = currentState.holidays.firstWhere((h) => h.id == event.id).astrologerId;
+        final holidays = await repository.getHolidays(astrologerId);
+        
+        print('✅ [CalendarBloc] Holiday deleted and list refreshed');
+        
+        emit(currentState.copyWith(
+          holidays: holidays,
+          successMessage: 'Holiday deleted successfully',
+        ));
+      }
+    } catch (e) {
+      print('❌ [CalendarBloc] Failed to delete holiday: $e');
+      emit(CalendarErrorState('Failed to delete holiday: ${e.toString()}'));
     }
   }
 
@@ -450,7 +376,10 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     try {
+      print('📅 [CalendarBloc] Loading time slots from API');
       final timeSlots = await repository.getAvailableTimeSlots(event.date);
+      
+      print('✅ [CalendarBloc] Loaded ${timeSlots.length} time slots from API');
 
       if (state is CalendarLoadedState) {
         final currentState = state as CalendarLoadedState;
@@ -465,14 +394,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         ));
       }
     } catch (e) {
-      // Don't emit error state if timeslots fail - backend not implemented yet
-      // Just log the error and keep the current state
-      print('⚠️ [CalendarBloc] Failed to load time slots (backend not implemented): $e');
-      
-      // Keep current state if we have one
-      if (state is CalendarLoadedState) {
-        // State is already loaded, just skip updating time slots
-        return;
+      print('❌ [CalendarBloc] Failed to load time slots: $e');
+      // For time slots, keep current state but log the error
+      // Time slots may fail if availability is not set yet - this is expected
+      if (state is! CalendarLoadedState) {
+        emit(CalendarErrorState('Failed to load time slots: ${e.toString()}'));
       }
     }
   }
