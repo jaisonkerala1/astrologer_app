@@ -196,6 +196,21 @@ app.use('/api/communications', require('./routes/communications'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/seed', require('./routes/seed'));
 app.use('/api/migration', require('./routes/migration'));
+// Calendar routes (Astrologer app) - availability, holidays, time slots
+try {
+  const calendarRoutes = require('./routes/calendar');
+  app.use('/api/calendar', calendarRoutes);
+  console.log('✅ Calendar routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load calendar routes:', error.message);
+  app.use('/api/calendar', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Calendar routes failed to load',
+      error: error.message
+    });
+  });
+}
 
 // Admin routes
 try {
@@ -208,6 +223,21 @@ try {
     res.status(500).json({
       success: false,
       message: 'Admin routes failed to load',
+      error: error.message
+    });
+  });
+}
+// Admin Calendar routes (Admin dashboard integration)
+try {
+  const adminCalendarRoutes = require('./routes/adminCalendar');
+  app.use('/api/admin/calendar', adminCalendarRoutes);
+  console.log('✅ Admin calendar routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load admin calendar routes:', error.message);
+  app.use('/api/admin/calendar', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Admin calendar routes failed to load',
       error: error.message
     });
   });
