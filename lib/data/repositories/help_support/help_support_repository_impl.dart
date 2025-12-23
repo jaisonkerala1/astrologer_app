@@ -159,7 +159,7 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
     print('🔍 [HelpSupportRepo] Current _localTickets count: ${_localTickets.length}');
     
     try {
-      final response = await apiService.get('/api/help-support/tickets', queryParameters: {'userId': userId});
+      final response = await apiService.get('/api/support/tickets', queryParameters: {'userId': userId});
       if (response.data['success'] == true) {
         final List<dynamic> data = response.data['data'] ?? [];
         final apiTickets = data.map((json) => SupportTicket.fromJson(json)).toList();
@@ -199,7 +199,7 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
     }
     
     try {
-      final response = await apiService.get('/api/help-support/tickets/$id');
+      final response = await apiService.get('/api/support/tickets/$id');
       if (response.data['success'] == true) {
         return SupportTicket.fromJson(response.data['data']);
       }
@@ -224,7 +224,7 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
   }) async {
     try {
       final userId = await _getUserId();
-      final response = await apiService.post('/api/help-support/tickets', data: {
+      final response = await apiService.post('/api/support/tickets', data: {
         'title': title,
         'description': description,
         'category': category,
@@ -273,7 +273,7 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
     try {
       final userId = await _getUserId();
       final userName = await _getUserName();
-      final response = await apiService.post('/api/help-support/tickets/$ticketId/messages', data: {
+      final response = await apiService.post('/api/support/tickets/$ticketId/messages', data: {
         'message': message,
         'senderId': userId,
         'senderName': userName,
@@ -324,7 +324,7 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
   @override
   Future<void> closeTicket(String id) async {
     try {
-      final response = await apiService.patch('/api/help-support/tickets/$id/close');
+      final response = await apiService.patch('/api/support/tickets/$id/close');
       if (response.data['success'] != true) {
         throw Exception('Failed to close ticket');
       }
