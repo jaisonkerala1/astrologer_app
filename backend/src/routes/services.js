@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
+const ApprovalRequest = require('../models/ApprovalRequest');
+const Astrologer = require('../models/Astrologer');
 const auth = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 
@@ -188,6 +190,16 @@ router.post('/', auth, serviceLimiter, async (req, res) => {
       });
     }
     
+    // Check if astrologer is approved
+    const astrologer = await Astrologer.findById(req.user.astrologerId);
+    if (!astrologer || !astrologer.isApproved) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account must be approved before creating services'
+      });
+    }
+
+    // Create service with isActive = false by default (requires admin approval)
     const service = new Service({
       name,
       description,
@@ -200,7 +212,7 @@ router.post('/', auth, serviceLimiter, async (req, res) => {
       benefits: benefits || [],
       imageUrl,
       images: images || [],
-      isActive: isActive !== undefined ? isActive : true,
+      isActive: false, // Services require admin approval before going live
       availability: availability || {
         availableDays: [1, 2, 3, 4, 5], // Mon-Fri default
         startTime: '09:00',
@@ -212,10 +224,32 @@ router.post('/', auth, serviceLimiter, async (req, res) => {
     });
     
     await service.save();
+
+    // Create approval request for the service
+    const approvalRequest = new ApprovalRequest({
+      astrologerId: req.user.astrologerId,
+      astrologerName: astrologer.name,
+      astrologerEmail: astrologer.email,
+      astrologerPhone: astrologer.phone,
+      astrologerAvatar: astrologer.profilePicture,
+      requestType: 'service_approval',
+      status: 'pending',
+      serviceId: service._id,
+      serviceName: service.name,
+      submittedAt: new Date(),
+      astrologerData: {
+        experience: astrologer.experience,
+        specializations: astrologer.specializations || [],
+        consultationsCount: 0, // Will be calculated if needed
+        rating: 0 // Will be calculated if needed
+      }
+    });
+
+    await approvalRequest.save();
     
     res.status(201).json({
       success: true,
-      message: 'Service created successfully',
+      message: 'Service created successfully and submitted for admin approval',
       data: {
         id: service._id.toString(),
         name: service.name,
@@ -224,6 +258,7 @@ router.post('/', auth, serviceLimiter, async (req, res) => {
         price: service.price,
         duration: service.duration,
         isActive: service.isActive,
+        approvalRequestId: approvalRequest._id.toString(),
         createdAt: service.createdAt.toISOString()
       }
     });

@@ -5,6 +5,10 @@ const auth = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const Astrologer = require('../models/Astrologer');
+const ApprovalRequest = require('../models/ApprovalRequest');
+const Review = require('../models/Review');
+const Consultation = require('../models/Consultation');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -69,6 +73,188 @@ router.put('/rate', auth, profileController.updateRate);
 // @desc    Update bio, awards, and certificates fields
 // @access  Private
 router.put('/bio', auth, profileController.updateBioFields);
+
+// @route   POST /api/profile/verification/request
+// @desc    Request verification badge
+// @access  Private
+router.post('/verification/request', auth, async (req, res) => {
+  try {
+    const { astrologerId } = req.user;
+
+    const astrologer = await Astrologer.findById(astrologerId);
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Astrologer not found'
+      });
+    }
+
+    // Check if already verified
+    if (astrologer.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Astrologer is already verified'
+      });
+    }
+
+    // Check if there's already a pending request
+    const existingRequest = await ApprovalRequest.findOne({
+      astrologerId,
+      requestType: 'verification_badge',
+      status: 'pending'
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have a pending verification request'
+      });
+    }
+
+    // Validation requirements
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const monthsSinceSignup = (new Date() - new Date(astrologer.createdAt)) / (1000 * 60 * 60 * 24 * 30);
+
+    // Get astrologer stats
+    const [consultationsCount, reviewStats] = await Promise.all([
+      Consultation.countDocuments({ astrologerId }),
+      Review.aggregate([
+        { $match: { astrologerId } },
+        {
+          $group: {
+            _id: null,
+            avgRating: { $avg: '$rating' },
+            totalReviews: { $sum: 1 }
+          }
+        }
+      ])
+    ]);
+
+    const ratingData = reviewStats[0] || { avgRating: 0, totalReviews: 0 };
+    const avgRating = ratingData.avgRating || 0;
+
+    // Check requirements
+    const requirements = {
+      experience: monthsSinceSignup >= 6,
+      rating: avgRating >= 4.5,
+      consultations: consultationsCount >= 50,
+      profileComplete: !!(astrologer.bio && astrologer.bio.trim() && 
+                         astrologer.awards && astrologer.awards.trim() && 
+                         astrologer.certificates && astrologer.certificates.trim())
+    };
+
+    const allMet = Object.values(requirements).every(v => v === true);
+
+    if (!allMet) {
+      const missing = [];
+      if (!requirements.experience) missing.push('At least 6 months on platform');
+      if (!requirements.rating) missing.push('Average rating of 4.5 or higher');
+      if (!requirements.consultations) missing.push('At least 50 completed consultations');
+      if (!requirements.profileComplete) missing.push('Complete profile (bio, awards, certificates)');
+
+      return res.status(400).json({
+        success: false,
+        message: 'Verification requirements not met',
+        requirements: {
+          ...requirements,
+          missing
+        },
+        current: {
+          monthsOnPlatform: Math.round(monthsSinceSignup * 10) / 10,
+          avgRating: Math.round(avgRating * 10) / 10,
+          consultationsCount,
+          profileComplete: requirements.profileComplete
+        }
+      });
+    }
+
+    // Create approval request
+    const approvalRequest = new ApprovalRequest({
+      astrologerId,
+      astrologerName: astrologer.name,
+      astrologerEmail: astrologer.email,
+      astrologerPhone: astrologer.phone,
+      astrologerAvatar: astrologer.profilePicture,
+      requestType: 'verification_badge',
+      status: 'pending',
+      submittedAt: new Date(),
+      astrologerData: {
+        experience: astrologer.experience,
+        specializations: astrologer.specializations || [],
+        consultationsCount,
+        rating: Math.round(avgRating * 10) / 10
+      }
+    });
+
+    await approvalRequest.save();
+
+    // Update astrologer verification status
+    astrologer.verificationStatus = 'pending';
+    astrologer.verificationSubmittedAt = new Date();
+    await astrologer.save();
+
+    res.status(201).json({
+      success: true,
+      data: approvalRequest,
+      message: 'Verification request submitted successfully'
+    });
+  } catch (error) {
+    console.error('Verification request error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit verification request',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/profile/verification/status
+// @desc    Get verification status
+// @access  Private
+router.get('/verification/status', auth, async (req, res) => {
+  try {
+    const { astrologerId } = req.user;
+
+    const astrologer = await Astrologer.findById(astrologerId).select(
+      'isVerified verificationStatus verificationSubmittedAt verificationApprovedAt verificationRejectionReason'
+    );
+
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Astrologer not found'
+      });
+    }
+
+    // Get latest approval request if exists
+    const latestRequest = await ApprovalRequest.findOne({
+      astrologerId,
+      requestType: 'verification_badge'
+    })
+      .sort({ submittedAt: -1 })
+      .select('status submittedAt reviewedAt rejectionReason notes');
+
+    res.json({
+      success: true,
+      data: {
+        isVerified: astrologer.isVerified,
+        verificationStatus: astrologer.verificationStatus,
+        verificationSubmittedAt: astrologer.verificationSubmittedAt,
+        verificationApprovedAt: astrologer.verificationApprovedAt,
+        verificationRejectionReason: astrologer.verificationRejectionReason,
+        latestRequest: latestRequest || null
+      }
+    });
+  } catch (error) {
+    console.error('Get verification status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get verification status',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;
 

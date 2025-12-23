@@ -148,6 +148,30 @@ const astrologerSchema = new mongoose.Schema({
       message: 'Certificates description must be 500 characters or less'
     }
   },
+  // Verification badge fields
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected'],
+    default: 'none'
+  },
+  verificationSubmittedAt: {
+    type: Date,
+    default: null
+  },
+  verificationApprovedAt: {
+    type: Date,
+    default: null
+  },
+  verificationRejectionReason: {
+    type: String,
+    default: null,
+    trim: true,
+    maxlength: 500
+  },
   // FCM tokens for push notifications (multiple devices support)
   fcmTokens: [{
     token: String,

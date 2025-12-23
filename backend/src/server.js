@@ -291,6 +291,22 @@ try {
   });
 }
 
+// Admin Approval Requests routes
+try {
+  const adminApprovalsRoutes = require('./routes/adminApprovals');
+  app.use('/api/admin/approvals', adminApprovalsRoutes);
+  console.log('✅ Admin approval requests routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load admin approval requests routes:', error.message);
+  app.use('/api/admin/approvals', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Admin approval requests routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Help Articles & FAQ routes
 try {
   const helpSupportRoutes = require('./routes/helpSupport');
