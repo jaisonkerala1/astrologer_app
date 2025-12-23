@@ -490,20 +490,55 @@ class _AvailabilityDialogState extends State<_AvailabilityDialog> {
     );
   }
 
-  void _saveAvailability() {
-    final availability = AvailabilityModel(
-      id: widget.availability?.id ?? 'avail_${DateTime.now().millisecondsSinceEpoch}',
-      astrologerId: 'current_astrologer',
-      dayOfWeek: _selectedDay,
-      startTime: _startTime,
-      endTime: _endTime,
-      isActive: true,
-      breaks: _breaks,
-      createdAt: widget.availability?.createdAt ?? DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    
-    widget.onSave(availability);
-    Navigator.pop(context);
+  Future<void> _saveAvailability() async {
+    try {
+      // Get astrologer ID from storage
+      final storageService = StorageService();
+      final userData = await storageService.getUserData();
+      if (userData == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to get user data. Please login again.')),
+          );
+        }
+        return;
+      }
+
+      final userDataMap = jsonDecode(userData);
+      final astrologerId = (userDataMap['id'] ?? userDataMap['_id']) as String?;
+      
+      if (astrologerId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to get astrologer ID. Please login again.')),
+          );
+        }
+        return;
+      }
+
+      final availability = AvailabilityModel(
+        id: widget.availability?.id ?? 'avail_${DateTime.now().millisecondsSinceEpoch}',
+        astrologerId: astrologerId,
+        dayOfWeek: _selectedDay,
+        startTime: _startTime,
+        endTime: _endTime,
+        isActive: true,
+        breaks: _breaks,
+        createdAt: widget.availability?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      widget.onSave(availability);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      print('❌ [AvailabilityWidget] Error saving availability: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving availability: $e')),
+        );
+      }
+    }
   }
 }

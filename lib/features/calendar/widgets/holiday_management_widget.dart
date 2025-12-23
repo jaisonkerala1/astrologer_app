@@ -524,7 +524,7 @@ class _HolidayDialogState extends State<_HolidayDialog> {
     }
   }
 
-  void _saveHoliday() {
+  Future<void> _saveHoliday() async {
     if (_reason.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a reason')),
@@ -532,17 +532,52 @@ class _HolidayDialogState extends State<_HolidayDialog> {
       return;
     }
     
-    final holiday = HolidayModel(
-      id: widget.holiday?.id ?? 'holiday_${DateTime.now().millisecondsSinceEpoch}',
-      astrologerId: 'current_astrologer',
-      date: _selectedDate,
-      reason: _reason,
-      isRecurring: _isRecurring,
-      recurringPattern: _isRecurring ? _recurringPattern : null,
-      createdAt: widget.holiday?.createdAt ?? DateTime.now(),
-    );
-    
-    widget.onSave(holiday);
-    Navigator.pop(context);
+    try {
+      // Get astrologer ID from storage
+      final storageService = StorageService();
+      final userData = await storageService.getUserData();
+      if (userData == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to get user data. Please login again.')),
+          );
+        }
+        return;
+      }
+
+      final userDataMap = jsonDecode(userData);
+      final astrologerId = (userDataMap['id'] ?? userDataMap['_id']) as String?;
+      
+      if (astrologerId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to get astrologer ID. Please login again.')),
+          );
+        }
+        return;
+      }
+
+      final holiday = HolidayModel(
+        id: widget.holiday?.id ?? 'holiday_${DateTime.now().millisecondsSinceEpoch}',
+        astrologerId: astrologerId,
+        date: _selectedDate,
+        reason: _reason,
+        isRecurring: _isRecurring,
+        recurringPattern: _isRecurring ? _recurringPattern : null,
+        createdAt: widget.holiday?.createdAt ?? DateTime.now(),
+      );
+      
+      widget.onSave(holiday);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      print('❌ [HolidayWidget] Error saving holiday: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving holiday: $e')),
+        );
+      }
+    }
   }
 }
