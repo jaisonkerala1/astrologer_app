@@ -130,8 +130,8 @@ Future<void> showIncomingCallNotification(RemoteMessage message) async {
       playSound: true,
       enableVibration: true,
       enableLights: true,
-      // WhatsApp green accent color - applied to notification accent
-      color: const Color(0xFF25D366),
+      // Professional dark slate background - matches app theme
+      color: const Color(0xFF0F172A),
       colorized: true,
       visibility: NotificationVisibility.public, // Show on lock screen
       showWhen: false, // Hide timestamp for cleaner look
@@ -852,7 +852,7 @@ class FcmService {
       if (response.statusCode == 200 && response.data['success'] == true) {
         print('✅ [FCM] Token registered successfully');
         print('📡 [FCM] Response: ${response.data['message']}');
-        return true;
+      return true;
       } else {
         print('⚠️ [FCM] Registration failed: ${response.data}');
         return false;

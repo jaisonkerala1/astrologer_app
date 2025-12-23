@@ -152,7 +152,7 @@ class MainActivity : FlutterActivity() {
             .setCategory(Notification.CATEGORY_CALL)
             .setFullScreenIntent(acceptPendingIntent, true)
             .setStyle(callStyle)
-            .setColor(Color.parseColor("#25D366")) // WhatsApp green accent
+            .setColor(Color.parseColor("#0F172A")) // Professional dark slate
             .setColorized(true)
             .setAutoCancel(false)
             .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
