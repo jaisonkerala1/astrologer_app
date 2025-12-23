@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../auth/models/astrologer_model.dart';
-import '../screens/verification_upload_flow_screen.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
+import 'verification_requirements_dialog.dart';
 
 /// Verification status card shown in profile
 class VerificationStatusCard extends StatelessWidget {
@@ -17,6 +20,35 @@ class VerificationStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (state is VerificationRequirementsNotMet) {
+          // Show requirements dialog
+          showDialog(
+            context: context,
+            builder: (context) => VerificationRequirementsDialog(
+              message: state.message,
+              requirements: state.requirements,
+              current: state.current,
+              themeService: themeService,
+            ),
+          );
+        } else if (state is VerificationRequestSuccess) {
+          // Show success snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: _buildCard(context),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
     if (astrologer.isVerified) {
       return _buildVerifiedCard(context);
     } else {
@@ -105,14 +137,8 @@ class VerificationStatusCard extends StatelessWidget {
   Widget _buildGetVerifiedCard(BuildContext context) {
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VerificationUploadFlowScreen(
-              astrologer: astrologer,
-            ),
-          ),
-        );
+        // Request verification using BLoC
+        context.read<ProfileBloc>().add(RequestVerificationEvent());
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -245,15 +271,8 @@ class VerificationStatusCard extends StatelessWidget {
   Widget _buildRejectedCard(BuildContext context) {
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VerificationUploadFlowScreen(
-              astrologer: astrologer,
-              isResubmission: true,
-            ),
-          ),
-        );
+        // Request verification again using BLoC
+        context.read<ProfileBloc>().add(RequestVerificationEvent());
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(

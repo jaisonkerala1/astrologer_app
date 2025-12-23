@@ -95,7 +95,7 @@ class HealBloc extends Bloc<HealEvent, HealState> {
         final updatedServices = List.of(currentState.services)..add(newService);
         emit(currentState.copyWith(
           services: updatedServices,
-          successMessage: 'Service created successfully',
+          successMessage: 'Service created! It will be reviewed by admin before going live.',
         ));
       }
     } catch (e) {

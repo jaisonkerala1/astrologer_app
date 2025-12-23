@@ -62,3 +62,37 @@ class ProfileErrorState extends ProfileState {
   @override
   List<Object?> get props => [message];
 }
+
+class VerificationRequestSuccess extends ProfileState {
+  final String message;
+  final AstrologerModel? updatedAstrologer;
+  
+  const VerificationRequestSuccess(this.message, {this.updatedAstrologer});
+  
+  @override
+  List<Object?> get props => [message, updatedAstrologer];
+}
+
+class VerificationRequirementsNotMet extends ProfileState {
+  final String message;
+  final Map<String, dynamic> requirements;
+  final Map<String, dynamic> current;
+  
+  const VerificationRequirementsNotMet({
+    required this.message,
+    required this.requirements,
+    required this.current,
+  });
+  
+  @override
+  List<Object?> get props => [message, requirements, current];
+}
+
+class VerificationStatusLoaded extends ProfileState {
+  final Map<String, dynamic> statusData;
+  
+  const VerificationStatusLoaded(this.statusData);
+  
+  @override
+  List<Object?> get props => [statusData];
+}

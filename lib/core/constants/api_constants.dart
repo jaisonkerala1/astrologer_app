@@ -23,6 +23,10 @@ class ApiConstants {
   static const String updateLanguages = '/api/profile/languages';
   static const String updateRate = '/api/profile/rate';
   
+  // Verification endpoints
+  static const String verificationRequest = '/api/profile/verification/request';
+  static const String verificationStatus = '/api/profile/verification/status';
+  
   // Chat endpoints
   static const String chatConversations = '/api/chat/conversations';
   static const String chatActiveConversation = '/api/chat/active';

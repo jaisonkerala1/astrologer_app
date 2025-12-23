@@ -196,11 +196,25 @@ class ServiceCardWidget extends StatelessWidget {
 
   Widget _buildStatusChip(ThemeService themeService, AppLocalizations l10n) {
     final isActive = service.isActive;
-    final color = isActive ? const Color(0xFF10B981) : const Color(0xFF6B7280);
+    
+    // Color scheme based on status
+    final Color color;
+    final IconData icon;
+    final String statusText;
+    
+    if (isActive) {
+      color = const Color(0xFF10B981); // Green for active
+      icon = Icons.check_circle;
+      statusText = l10n.active;
+    } else {
+      color = const Color(0xFFF59E0B); // Orange for pending approval
+      icon = Icons.hourglass_empty;
+      statusText = 'Pending Approval';
+    }
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
+      decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
@@ -209,13 +223,13 @@ class ServiceCardWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isActive ? Icons.check_circle : Icons.pause_circle,
+            icon,
             size: 12,
             color: color,
           ),
           const SizedBox(width: 4),
           Text(
-            isActive ? l10n.active : l10n.inactive,
+            statusText,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w500,

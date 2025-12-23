@@ -40,3 +40,7 @@ class UpdateRateEvent extends ProfileEvent {
   
   UpdateRateEvent(this.ratePerMinute);
 }
+
+class RequestVerificationEvent extends ProfileEvent {}
+
+class GetVerificationStatusEvent extends ProfileEvent {}

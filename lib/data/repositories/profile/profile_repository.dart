@@ -42,6 +42,12 @@ abstract class ProfileRepository {
 
   /// Clear profile cache
   Future<void> clearCache();
+  
+  /// Request verification badge
+  Future<Map<String, dynamic>> requestVerification();
+  
+  /// Get verification status
+  Future<Map<String, dynamic>> getVerificationStatus();
 }
 
 

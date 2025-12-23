@@ -14,6 +14,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<UpdateSpecializationsEvent>(_onUpdateSpecializations);
     on<UpdateLanguagesEvent>(_onUpdateLanguages);
     on<UpdateRateEvent>(_onUpdateRate);
+    on<RequestVerificationEvent>(_onRequestVerification);
+    on<GetVerificationStatusEvent>(_onGetVerificationStatus);
   }
 
   Future<void> _onLoadProfile(LoadProfileEvent event, Emitter<ProfileState> emit) async {
@@ -218,6 +220,81 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } catch (e) {
       print('❌ [ProfileBloc] Error updating rate: $e');
       emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onRequestVerification(RequestVerificationEvent event, Emitter<ProfileState> emit) async {
+    print('\n🔷 [ProfileBloc] ========== REQUEST VERIFICATION STARTED ==========');
+    
+    // Show loading while requesting
+    if (state is ProfileLoadedState) {
+      final currentState = state as ProfileLoadedState;
+      emit(ProfileUpdating('verification', currentState.astrologer));
+    } else {
+      emit(const ProfileLoading());
+    }
+    
+    try {
+      final result = await repository.requestVerification();
+      
+      if (result['success'] == true) {
+        print('✅ [ProfileBloc] Verification requested successfully');
+        
+        // Reload profile to get updated verification status
+        final updatedAstrologer = await repository.loadProfile();
+        
+        emit(VerificationRequestSuccess(
+          result['message'] ?? 'Verification request submitted successfully',
+          updatedAstrologer: updatedAstrologer,
+        ));
+        
+        // Then emit loaded state with the updated profile
+        emit(ProfileLoadedState(
+          updatedAstrologer,
+          successMessage: 'Verification request submitted! We\'ll review it within 24-48 hours.',
+        ));
+      } else {
+        // Requirements not met
+        print('⚠️ [ProfileBloc] Verification requirements not met');
+        emit(VerificationRequirementsNotMet(
+          message: result['message'] ?? 'Requirements not met',
+          requirements: result['requirements'] ?? {},
+          current: result['current'] ?? {},
+        ));
+        
+        // Return to loaded state after showing requirements
+        if (state is ProfileLoadedState) {
+          final currentState = state as ProfileLoadedState;
+          emit(ProfileLoadedState(currentState.astrologer));
+        }
+      }
+      
+      print('========== REQUEST VERIFICATION COMPLETED ==========\n');
+    } catch (e) {
+      print('❌ [ProfileBloc] Error requesting verification: $e');
+      emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+      print('========== REQUEST VERIFICATION FAILED ==========\n');
+    }
+  }
+
+  Future<void> _onGetVerificationStatus(GetVerificationStatusEvent event, Emitter<ProfileState> emit) async {
+    print('\n🔷 [ProfileBloc] ========== GET VERIFICATION STATUS STARTED ==========');
+    
+    try {
+      final result = await repository.getVerificationStatus();
+      
+      if (result['success'] == true) {
+        print('✅ [ProfileBloc] Verification status retrieved');
+        emit(VerificationStatusLoaded(result['data']));
+      } else {
+        throw Exception('Failed to get verification status');
+      }
+      
+      print('========== GET VERIFICATION STATUS COMPLETED ==========\n');
+    } catch (e) {
+      print('❌ [ProfileBloc] Error getting verification status: $e');
+      emit(ProfileErrorState(e.toString().replaceAll('Exception: ', '')));
+      print('========== GET VERIFICATION STATUS FAILED ==========\n');
     }
   }
 }

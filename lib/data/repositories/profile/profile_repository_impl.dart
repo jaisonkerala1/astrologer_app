@@ -297,5 +297,63 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
       print('Error clearing profile cache: $e');
     }
   }
+
+  // ============================================================================
+  // VERIFICATION BADGE REQUESTS
+  // ============================================================================
+
+  @override
+  Future<Map<String, dynamic>> requestVerification() async {
+    try {
+      print('🔷 [ProfileRepo] Requesting verification badge...');
+      final response = await apiService.post(ApiConstants.verificationRequest);
+
+      print('🔷 [ProfileRepo] Verification request response: ${response.statusCode}');
+      
+      if (response.statusCode == 201 && response.data['success'] == true) {
+        print('✅ [ProfileRepo] Verification request submitted successfully');
+        return {
+          'success': true,
+          'data': response.data['data'],
+          'message': response.data['message'],
+        };
+      } else if (response.statusCode == 400) {
+        // Requirements not met
+        print('⚠️ [ProfileRepo] Verification requirements not met');
+        return {
+          'success': false,
+          'message': response.data['message'],
+          'requirements': response.data['requirements'],
+          'current': response.data['current'],
+        };
+      } else {
+        throw Exception('Failed to request verification: ${response.data['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      print('❌ [ProfileRepo] Error requesting verification: $e');
+      throw Exception(handleError(e));
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getVerificationStatus() async {
+    try {
+      print('🔷 [ProfileRepo] Getting verification status...');
+      final response = await apiService.get(ApiConstants.verificationStatus);
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        print('✅ [ProfileRepo] Verification status retrieved');
+        return {
+          'success': true,
+          'data': response.data['data'],
+        };
+      } else {
+        throw Exception('Failed to get verification status: ${response.data['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      print('❌ [ProfileRepo] Error getting verification status: $e');
+      throw Exception(handleError(e));
+    }
+  }
 }
 
