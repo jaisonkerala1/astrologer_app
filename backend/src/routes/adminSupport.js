@@ -3,7 +3,7 @@ const router = express.Router();
 const SupportTicket = require('../models/SupportTicket');
 const TicketMessage = require('../models/TicketMessage');
 const Astrologer = require('../models/Astrologer');
-const { adminAuth } = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
 // ============================================================================
 // ADMIN TICKET MANAGEMENT ROUTES

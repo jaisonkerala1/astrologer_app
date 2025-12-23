@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const HelpArticle = require('../models/HelpArticle');
 const FAQ = require('../models/FAQ');
-const { auth } = require('../middleware/auth');
-const { adminAuth } = require('../middleware/auth');
+const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
 // ============================================================================
 // HELP ARTICLES - USER ENDPOINTS
