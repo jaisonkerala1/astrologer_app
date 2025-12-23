@@ -243,6 +243,54 @@ try {
   });
 }
 
+// Support Ticket routes (User-facing)
+try {
+  const supportRoutes = require('./routes/support');
+  app.use('/api/support', supportRoutes);
+  console.log('✅ Support ticket routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load support ticket routes:', error.message);
+  app.use('/api/support', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Support ticket routes failed to load',
+      error: error.message
+    });
+  });
+}
+
+// Admin Support routes (Admin ticket management)
+try {
+  const adminSupportRoutes = require('./routes/adminSupport');
+  app.use('/api/admin/support', adminSupportRoutes);
+  console.log('✅ Admin support routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load admin support routes:', error.message);
+  app.use('/api/admin/support', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Admin support routes failed to load',
+      error: error.message
+    });
+  });
+}
+
+// Help Articles & FAQ routes
+try {
+  const helpSupportRoutes = require('./routes/helpSupport');
+  app.use('/api/support', helpSupportRoutes);
+  console.log('✅ Help articles and FAQ routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load help articles routes:', error.message);
+  app.use('/api/support/help', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Help articles routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Live streaming routes
 try {
   const liveRoutes = require('./routes/live');
