@@ -43,34 +43,99 @@ function getPeriodDates(period = '7d') {
  * Helper: Build match filter for communications involving astrologers
  * Includes: admin↔astrologer AND user↔astrologer
  * Excludes: astrologer↔astrologer, admin↔admin
+ * @param {Date} startDate - Start date for filtering
+ * @param {Date} endDate - End date for filtering
+ * @param {string} type - Communication type filter
  */
-function getAstrologerInvolvedMatch(startDate, endDate) {
+function getAstrologerInvolvedMatch(startDate, endDate, type = 'all') {
   return {
-    $or: [
-      // Admin to astrologer
-      { senderType: 'admin', recipientType: 'astrologer' },
-      { recipientType: 'admin', senderType: 'astrologer' },
-      // User to astrologer
-      { senderType: 'user', recipientType: 'astrologer' },
-      { recipientType: 'user', senderType: 'astrologer' },
-    ],
+    ...getCommunicationTypeFilter(type),
     timestamp: { $gte: startDate, $lte: endDate },
     messageType: { $ne: 'call_log' }, // Exclude call log messages
     isDeleted: { $ne: true },
   };
 }
 
-function getAstrologerInvolvedCallMatch(startDate, endDate) {
+/**
+ * Helper: Build match filter for calls involving astrologers
+ * @param {Date} startDate - Start date for filtering
+ * @param {Date} endDate - End date for filtering
+ * @param {string} type - Communication type filter
+ */
+function getAstrologerInvolvedCallMatch(startDate, endDate, type = 'all') {
+  return {
+    ...getCallCommunicationTypeFilter(type),
+    startedAt: { $gte: startDate, $lte: endDate },
+  };
+}
+
+/**
+ * Helper: Get communication type filter based on 'type' parameter
+ * @param {string} type - 'all', 'admin-astrologer', 'customer-astrologer'
+ * @returns {object} MongoDB filter for $or condition
+ */
+function getCommunicationTypeFilter(type = 'all') {
+  if (type === 'admin-astrologer') {
+    return {
+      $or: [
+        { senderType: 'admin', recipientType: 'astrologer' },
+        { recipientType: 'admin', senderType: 'astrologer' },
+      ],
+    };
+  }
+  
+  if (type === 'customer-astrologer') {
+    return {
+      $or: [
+        { senderType: 'user', recipientType: 'astrologer' },
+        { recipientType: 'user', senderType: 'astrologer' },
+      ],
+    };
+  }
+  
+  // Default: 'all' - both admin and customer
   return {
     $or: [
-      // Admin to astrologer
+      { senderType: 'admin', recipientType: 'astrologer' },
+      { recipientType: 'admin', senderType: 'astrologer' },
+      { senderType: 'user', recipientType: 'astrologer' },
+      { recipientType: 'user', senderType: 'astrologer' },
+    ],
+  };
+}
+
+/**
+ * Helper: Get call type filter (maps senderType to callerType)
+ * @param {string} type - 'all', 'admin-astrologer', 'customer-astrologer'
+ * @returns {object} MongoDB filter for calls
+ */
+function getCallCommunicationTypeFilter(type = 'all') {
+  if (type === 'admin-astrologer') {
+    return {
+      $or: [
+        { callerType: 'admin', recipientType: 'astrologer' },
+        { recipientType: 'admin', callerType: 'astrologer' },
+      ],
+    };
+  }
+  
+  if (type === 'customer-astrologer') {
+    return {
+      $or: [
+        { callerType: 'user', recipientType: 'astrologer' },
+        { recipientType: 'user', callerType: 'astrologer' },
+      ],
+    };
+  }
+  
+  // Default: 'all' - both admin and customer
+  return {
+    $or: [
       { callerType: 'admin', recipientType: 'astrologer' },
       { recipientType: 'admin', callerType: 'astrologer' },
-      // User to astrologer
       { callerType: 'user', recipientType: 'astrologer' },
       { recipientType: 'user', callerType: 'astrologer' },
     ],
-    startedAt: { $gte: startDate, $lte: endDate },
   };
 }
 
@@ -138,14 +203,14 @@ function fillMissingHours(peakHours) {
  */
 router.get('/stats', adminAuth, async (req, res) => {
   try {
-    const { period = '7d' } = req.query;
+    const { period = '7d', type = 'all' } = req.query;
     const { startDate, endDate } = getPeriodDates(period);
 
-    console.log(`📊 [COMM-ANALYTICS] Stats requested for period: ${period} (${startDate.toISOString()} to ${endDate.toISOString()})`);
+    console.log(`📊 [COMM-ANALYTICS] Stats requested for period: ${period}, type: ${type} (${startDate.toISOString()} to ${endDate.toISOString()})`);
 
     // Build match filters
-    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate);
-    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate);
+    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate, type);
+    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate, type);
 
     // Parallel queries for performance
     const [
@@ -262,13 +327,13 @@ router.get('/stats', adminAuth, async (req, res) => {
  */
 router.get('/trends', adminAuth, async (req, res) => {
   try {
-    const { period = '7d' } = req.query;
+    const { period = '7d', type = 'all' } = req.query;
     const { startDate, endDate } = getPeriodDates(period);
 
-    console.log(`📊 [COMM-ANALYTICS] Trends requested for period: ${period}`);
+    console.log(`📊 [COMM-ANALYTICS] Trends requested for period: ${period}, type: ${type}`);
 
-    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate);
-    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate);
+    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate, type);
+    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate, type);
 
     // Aggregate messages by date
     const messageTrends = await DirectMessage.aggregate([
@@ -371,13 +436,13 @@ router.get('/trends', adminAuth, async (req, res) => {
  */
 router.get('/astrologers', adminAuth, async (req, res) => {
   try {
-    const { period = '7d' } = req.query;
+    const { period = '7d', type = 'all' } = req.query;
     const { startDate, endDate } = getPeriodDates(period);
 
-    console.log(`📊 [COMM-ANALYTICS] Astrologer stats requested for period: ${period}`);
+    console.log(`📊 [COMM-ANALYTICS] Astrologer stats requested for period: ${period}, type: ${type}`);
 
-    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate);
-    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate);
+    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate, type);
+    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate, type);
 
     // Aggregate messages by astrologer
     const messageStats = await DirectMessage.aggregate([
@@ -502,12 +567,12 @@ router.get('/astrologers', adminAuth, async (req, res) => {
  */
 router.get('/call-duration', adminAuth, async (req, res) => {
   try {
-    const { period = '7d' } = req.query;
+    const { period = '7d', type = 'all' } = req.query;
     const { startDate, endDate } = getPeriodDates(period);
 
-    console.log(`📊 [COMM-ANALYTICS] Call duration stats requested for period: ${period}`);
+    console.log(`📊 [COMM-ANALYTICS] Call duration stats requested for period: ${period}, type: ${type}`);
 
-    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate);
+    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate, type);
 
     // Aggregate call duration by astrologer and call type
     const durationStats = await Call.aggregate([
@@ -601,13 +666,13 @@ router.get('/call-duration', adminAuth, async (req, res) => {
  */
 router.get('/peak-hours', adminAuth, async (req, res) => {
   try {
-    const { period = '7d' } = req.query;
+    const { period = '7d', type = 'all' } = req.query;
     const { startDate, endDate } = getPeriodDates(period);
 
-    console.log(`📊 [COMM-ANALYTICS] Peak hours requested for period: ${period}`);
+    console.log(`📊 [COMM-ANALYTICS] Peak hours requested for period: ${period}, type: ${type}`);
 
-    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate);
-    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate);
+    const messageMatch = getAstrologerInvolvedMatch(startDate, endDate, type);
+    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate, type);
 
     // Aggregate messages by hour
     const messageHours = await DirectMessage.aggregate([
@@ -700,12 +765,12 @@ router.get('/peak-hours', adminAuth, async (req, res) => {
  */
 router.get('/success-rates', adminAuth, async (req, res) => {
   try {
-    const { period = '7d' } = req.query;
+    const { period = '7d', type = 'all' } = req.query;
     const { startDate, endDate } = getPeriodDates(period);
 
-    console.log(`📊 [COMM-ANALYTICS] Success rates requested for period: ${period}`);
+    console.log(`📊 [COMM-ANALYTICS] Success rates requested for period: ${period}, type: ${type}`);
 
-    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate);
+    const callMatch = getAstrologerInvolvedCallMatch(startDate, endDate, type);
 
     // Aggregate calls by date and status/endReason
     const callStats = await Call.aggregate([
