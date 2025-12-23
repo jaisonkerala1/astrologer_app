@@ -1,6 +1,6 @@
-const SupportTicket = require('../models/SupportTicket');
-const TicketMessage = require('../models/TicketMessage');
-const Astrologer = require('../models/Astrologer');
+const SupportTicket = require('../../models/SupportTicket');
+const TicketMessage = require('../../models/TicketMessage');
+const Astrologer = require('../../models/Astrologer');
 
 /**
  * Support Ticket Socket.IO Handler
