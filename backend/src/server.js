@@ -278,11 +278,11 @@ try {
 // Help Articles & FAQ routes
 try {
   const helpSupportRoutes = require('./routes/helpSupport');
-  app.use('/api/support', helpSupportRoutes);
+  app.use('/api/help-support', helpSupportRoutes);
   console.log('✅ Help articles and FAQ routes loaded');
 } catch (error) {
   console.error('❌ Failed to load help articles routes:', error.message);
-  app.use('/api/support/help', (req, res) => {
+  app.use('/api/help-support', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Help articles routes failed to load',
