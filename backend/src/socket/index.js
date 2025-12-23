@@ -18,7 +18,14 @@ const directMessageHandler = require('./handlers/directMessageHandler');
 console.log('📦 [SOCKET.IO] Loading callHandler...');
 const callHandler = require('./handlers/callHandler');
 console.log('📦 [SOCKET.IO] Loading supportTicketHandler...');
-const { initSupportTicketHandler } = require('./handlers/supportTicketHandler');
+const {
+  initSupportTicketHandler,
+  broadcastTicketMessage,
+  broadcastTicketStatusChange,
+  broadcastTicketAssigned,
+  broadcastNewTicket,
+  broadcastTicketPriorityChange,
+} = require('./handlers/supportTicketHandler');
 console.log('📦 [SOCKET.IO] Loading roomManager...');
 const roomManager = require('./roomManager');
 console.log('📦 [SOCKET.IO] Loading EVENTS...');
