@@ -5,8 +5,10 @@ const supportTicketSchema = new mongoose.Schema(
     ticketNumber: {
       type: String,
       unique: true,
-      required: true,
-      index: true,
+      // IMPORTANT:
+      // ticketNumber is generated automatically in a pre('validate') hook.
+      // It must NOT fail required validation before hooks run.
+      required: false,
     },
     title: {
       type: String,
@@ -149,10 +151,10 @@ supportTicketSchema.index({ userId: 1, status: 1 });
 supportTicketSchema.index({ assignedTo: 1, status: 1 });
 supportTicketSchema.index({ createdAt: -1 });
 supportTicketSchema.index({ priority: -1, createdAt: -1 });
-supportTicketSchema.index({ ticketNumber: 1 });
+// ticketNumber already has `unique: true` which creates an index; avoid duplicate index warnings.
 
-// Generate ticket number before saving
-supportTicketSchema.pre('save', async function (next) {
+// Generate ticket number BEFORE validation so required checks don't fail.
+supportTicketSchema.pre('validate', async function (next) {
   if (this.isNew && !this.ticketNumber) {
     const date = new Date();
     const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
