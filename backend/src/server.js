@@ -275,6 +275,22 @@ try {
   });
 }
 
+// Admin Communication Analytics routes
+try {
+  const adminCommunicationsRoutes = require('./routes/adminCommunications');
+  app.use('/api/admin/communications', adminCommunicationsRoutes);
+  console.log('✅ Admin communication analytics routes loaded');
+} catch (error) {
+  console.error('❌ Failed to load admin communication analytics routes:', error.message);
+  app.use('/api/admin/communications', (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: 'Admin communication analytics routes failed to load',
+      error: error.message
+    });
+  });
+}
+
 // Help Articles & FAQ routes
 try {
   const helpSupportRoutes = require('./routes/helpSupport');
