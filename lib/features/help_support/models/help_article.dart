@@ -26,7 +26,7 @@ class HelpArticle extends Equatable {
 
   factory HelpArticle.fromJson(Map<String, dynamic> json) {
     return HelpArticle(
-      id: json['id'] ?? '',
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
       title: json['title'] ?? '',
       content: json['content'] ?? '',
       category: json['category'] ?? '',
@@ -88,7 +88,7 @@ class FAQItem extends Equatable {
 
   factory FAQItem.fromJson(Map<String, dynamic> json) {
     return FAQItem(
-      id: json['id'] ?? '',
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
       question: json['question'] ?? '',
       answer: json['answer'] ?? '',
       category: json['category'] ?? '',
@@ -173,14 +173,28 @@ class SupportTicket extends Equatable {
   });
 
   factory SupportTicket.fromJson(Map<String, dynamic> json) {
+    List<String> parseAttachments(dynamic raw) {
+      if (raw is List) {
+        return raw
+            .map((e) {
+              if (e is String) return e;
+              if (e is Map && e['url'] != null) return e['url'].toString();
+              return e.toString();
+            })
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+      return const [];
+    }
+
     return SupportTicket(
-      id: json['id'] ?? '',
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       category: json['category'] ?? '',
       priority: json['priority'] ?? 'medium',
       status: json['status'] ?? 'open',
-      userId: json['userId'] ?? '',
+      userId: (json['userId'] ?? json['user'] ?? '').toString(),
       assignedTo: json['assignedTo'],
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -188,7 +202,7 @@ class SupportTicket extends Equatable {
               ?.map((msg) => TicketMessage.fromJson(msg))
               .toList() ??
           [],
-      attachments: List<String>.from(json['attachments'] ?? []),
+      attachments: parseAttachments(json['attachments']),
     );
   }
 
@@ -249,15 +263,29 @@ class TicketMessage extends Equatable {
   });
 
   factory TicketMessage.fromJson(Map<String, dynamic> json) {
+    List<String> parseAttachments(dynamic raw) {
+      if (raw is List) {
+        return raw
+            .map((e) {
+              if (e is String) return e;
+              if (e is Map && e['url'] != null) return e['url'].toString();
+              return e.toString();
+            })
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+      return const [];
+    }
+
     return TicketMessage(
-      id: json['id'] ?? '',
-      ticketId: json['ticketId'] ?? '',
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      ticketId: (json['ticketId'] ?? json['ticket'] ?? '').toString(),
       message: json['message'] ?? '',
       senderId: json['senderId'] ?? '',
       senderName: json['senderName'] ?? '',
       senderType: json['senderType'] ?? 'user',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      attachments: List<String>.from(json['attachments'] ?? []),
+      attachments: parseAttachments(json['attachments']),
     );
   }
 

@@ -22,8 +22,20 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
     try {
       final response = await apiService.get('/api/help-support/articles');
       if (response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        return data.map((json) => HelpArticle.fromJson(json)).toList();
+        final dynamic payload = response.data['data'];
+        // Backend shape: { success:true, data:{ articles:[...], pagination:{...} } }
+        final dynamic rawArticles =
+            payload is Map<String, dynamic> ? payload['articles'] : payload;
+
+        if (rawArticles is List) {
+          return rawArticles
+              .map((json) => HelpArticle.fromJson(Map<String, dynamic>.from(json)))
+              .toList();
+        }
+
+        print('⚠️ [HelpSupportRepo] Unexpected /articles payload type: ${rawArticles.runtimeType}');
+        print('⚠️ [HelpSupportRepo] /articles payload value: $rawArticles');
+        return [];
       }
       throw Exception('Failed to load help articles');
     } catch (e) {
@@ -37,8 +49,19 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
     try {
       final response = await apiService.get('/api/help-support/articles', queryParameters: {'category': category});
       if (response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        return data.map((json) => HelpArticle.fromJson(json)).toList();
+        final dynamic payload = response.data['data'];
+        final dynamic rawArticles =
+            payload is Map<String, dynamic> ? payload['articles'] : payload;
+
+        if (rawArticles is List) {
+          return rawArticles
+              .map((json) => HelpArticle.fromJson(Map<String, dynamic>.from(json)))
+              .toList();
+        }
+
+        print('⚠️ [HelpSupportRepo] Unexpected /articles?category payload type: ${rawArticles.runtimeType}');
+        print('⚠️ [HelpSupportRepo] /articles?category payload value: $rawArticles');
+        return [];
       }
       throw Exception('Failed to load help articles');
     } catch (e) {
@@ -142,7 +165,11 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
   @override
   Future<void> markFAQHelpful(String id, bool isHelpful) async {
     try {
-      final response = await apiService.post('/api/help-support/faq/$id/feedback', data: {'helpful': isHelpful});
+      // Backend endpoint: POST /api/help-support/faq/:id/helpful body { isHelpful: true/false }
+      final response = await apiService.post(
+        '/api/help-support/faq/$id/helpful',
+        data: {'isHelpful': isHelpful},
+      );
       if (response.data['success'] != true) {
         throw Exception('Failed to submit feedback');
       }
@@ -161,8 +188,20 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
     try {
       final response = await apiService.get('/api/support/tickets', queryParameters: {'userId': userId});
       if (response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        final apiTickets = data.map((json) => SupportTicket.fromJson(json)).toList();
+        // Backend shape: { success:true, data:{ tickets:[...], pagination:{...}, stats:{...} } }
+        final dynamic payload = response.data['data'];
+        final dynamic rawTickets =
+            payload is Map<String, dynamic> ? payload['tickets'] : payload;
+
+        if (rawTickets is! List) {
+          throw Exception('Unexpected tickets payload type: ${rawTickets.runtimeType}');
+        }
+
+        final apiTickets = rawTickets
+            .map((json) => SupportTicket.fromJson(Map<String, dynamic>.from(json)))
+            .toList()
+            .cast<SupportTicket>();
+
         print('✅ [HelpSupportRepo] Got ${apiTickets.length} tickets from API');
         print('🔍 [HelpSupportRepo] Merging with ${_localTickets.length} local tickets');
         // Merge with locally created tickets
@@ -232,7 +271,10 @@ class HelpSupportRepositoryImpl extends BaseRepository implements HelpSupportRep
         'userId': userId,
       });
       if (response.data['success'] == true) {
-        return SupportTicket.fromJson(response.data['data']);
+        final Map<String, dynamic> ticketJson =
+            Map<String, dynamic>.from(response.data['data'] ?? {});
+        print('✅ [HelpSupportRepo] createTicket success=true. ticket keys=${ticketJson.keys.toList()}');
+        return SupportTicket.fromJson(ticketJson);
       }
       throw Exception('Failed to create support ticket');
     } catch (e) {

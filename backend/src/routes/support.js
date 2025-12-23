@@ -103,7 +103,10 @@ router.post('/tickets', auth, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Support ticket created successfully',
-      data: ticket,
+      data: {
+        ...ticket.toObject(),
+        id: ticket._id,
+      },
     });
   } catch (error) {
     console.error('❌ [SUPPORT] Error creating ticket:', error);
