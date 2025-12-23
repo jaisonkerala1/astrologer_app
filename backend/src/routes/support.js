@@ -52,13 +52,20 @@ const upload = multer({
 router.post('/tickets', auth, async (req, res) => {
   try {
     const { title, description, category, priority, attachments } = req.body;
-    const astrologerId = req.astrologerId;
+    const astrologerId = String(req.user?.astrologerId || req.astrologerId || '');
 
     // Validate required fields
     if (!title || !description || !category) {
       return res.status(400).json({
         success: false,
         message: 'Title, description, and category are required',
+      });
+    }
+
+    if (!astrologerId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - astrologerId missing from token',
       });
     }
 
@@ -115,8 +122,15 @@ router.post('/tickets', auth, async (req, res) => {
  */
 router.get('/tickets', auth, async (req, res) => {
   try {
-    const astrologerId = req.astrologerId;
+    const astrologerId = String(req.user?.astrologerId || req.astrologerId || '');
     const { status, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+
+    if (!astrologerId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - astrologerId missing from token',
+      });
+    }
 
     const filter = { userId: astrologerId };
     if (status) {
@@ -196,7 +210,14 @@ router.get('/tickets', auth, async (req, res) => {
 router.get('/tickets/:ticketId', auth, async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const astrologerId = req.astrologerId;
+    const astrologerId = String(req.user?.astrologerId || req.astrologerId || '');
+
+    if (!astrologerId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - astrologerId missing from token',
+      });
+    }
 
     const ticket = await SupportTicket.findById(ticketId).lean();
 
@@ -256,12 +277,19 @@ router.post('/tickets/:ticketId/messages', auth, async (req, res) => {
   try {
     const { ticketId } = req.params;
     const { message, attachments } = req.body;
-    const astrologerId = req.astrologerId;
+    const astrologerId = String(req.user?.astrologerId || req.astrologerId || '');
 
     if (!message || message.trim().length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Message is required',
+      });
+    }
+
+    if (!astrologerId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - astrologerId missing from token',
       });
     }
 
@@ -350,7 +378,14 @@ router.post('/tickets/:ticketId/messages', auth, async (req, res) => {
 router.patch('/tickets/:ticketId/close', auth, async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const astrologerId = req.astrologerId;
+    const astrologerId = String(req.user?.astrologerId || req.astrologerId || '');
+
+    if (!astrologerId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - astrologerId missing from token',
+      });
+    }
 
     const ticket = await SupportTicket.findById(ticketId);
 
