@@ -48,7 +48,15 @@ function initSocketIO(httpServer) {
     },
     pingTimeout: 60000,
     pingInterval: 25000,
-    transports: ['websocket', 'polling'],
+    // Use polling first, then upgrade to websocket if available
+    // This ensures Railway's proxy doesn't block initial connections
+    transports: ['polling', 'websocket'],
+    // Allow upgrades for better performance once connected
+    allowUpgrades: true,
+    // Increase max HTTP buffer size for Railway
+    maxHttpBufferSize: 1e8,
+    // Add path for explicit routing
+    path: '/socket.io/',
   });
 
   console.log('🔌 [SOCKET.IO] Initializing...');

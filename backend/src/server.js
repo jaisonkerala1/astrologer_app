@@ -37,6 +37,14 @@ app.use(helmet());
 // Required for express-rate-limit to correctly identify users behind proxies
 app.set('trust proxy', 1);
 
+// WebSocket upgrade support for Railway
+// This ensures Railway's edge proxy properly handles WebSocket upgrades
+httpServer.on('upgrade', (request, socket, head) => {
+  console.log('🔌 [SERVER] WebSocket upgrade request received');
+  console.log('🔌 [SERVER] Path:', request.url);
+  console.log('🔌 [SERVER] Headers:', request.headers);
+});
+
 // Rate limiting - Increased limits for mobile app usage
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
