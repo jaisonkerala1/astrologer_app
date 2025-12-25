@@ -68,7 +68,8 @@ function initSocketIO(httpServer) {
   // Connection handler
   console.log('🔧 [SOCKET.IO] Setting up connection handler...');
   io.on(EVENTS.CONNECTION, (socket) => {
-    console.log(`🔌 [SOCKET] New connection: ${socket.user.name} (${socket.id})`);
+    console.log(`🔌 [SOCKET] ✅ New connection established: ${socket.user?.name || 'Unknown'} (${socket.id})`);
+    console.log(`🔌 [SOCKET] User type: ${socket.userType || 'unknown'}, User ID: ${socket.userId || 'unknown'}`);
 
     // Auto-join user to their personal room for notifications
     const userId = socket.userId || socket.user?._id || socket.user?.id;

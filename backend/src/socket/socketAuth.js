@@ -105,6 +105,7 @@ const optionalSocketAuth = async (socket, next) => {
     next();
   } catch (error) {
     console.error(`❌ [SOCKET AUTH] Authentication failed: ${error.message}`);
+    console.error(`❌ [SOCKET AUTH] Error stack: ${error.stack}`);
     socket.user = { id: `anon_${socket.id}`, name: 'Anonymous', isAnonymous: true };
     next();
   }
