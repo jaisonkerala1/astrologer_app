@@ -189,3 +189,6 @@ approvalRequestSchema.statics.getByAstrologer = function(astrologerId, requestTy
 
 module.exports = mongoose.model('ApprovalRequest', approvalRequestSchema);
 
+
+
+

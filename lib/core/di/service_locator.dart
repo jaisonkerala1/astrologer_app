@@ -46,6 +46,8 @@ import '../../features/reviews/repository/reviews_repository.dart';
 import '../../features/reviews/bloc/reviews_bloc.dart';
 import '../../features/heal/bloc/discussion_bloc.dart';
 import '../../features/heal/services/discussion_api_service.dart';
+import '../../core/bloc/wakelock/wakelock_bloc.dart';
+import '../../core/services/wakelock_service.dart';
 
 /// Service Locator for Dependency Injection
 /// Using GetIt for service registration and retrieval
@@ -290,10 +292,15 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
+  // Wakelock BLoC (Singleton - shared across all screens)
+  getIt.registerLazySingleton<WakelockBloc>(
+    () => WakelockBloc(wakelockService: WakelockService()),
+  );
+
   print('✅ Service Locator: All dependencies registered successfully');
   print('   - Core Services: API, Storage, Socket (Real-time), FCM (Push Notifications)');
   print('   - 14 Repositories/Services: Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, Notifications, Clients, Discussion');
-  print('   - 16 BLoCs: FCM, Call, Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients, Discussion');
+  print('   - 17 BLoCs: FCM, Call, Auth, Dashboard, Consultations, Profile, Reviews, Calendar, Earnings, Communication, Heal, HelpSupport, Live, LiveComment, Notifications, Clients, Discussion, Wakelock');
 }
 
 /// Reset service locator (useful for testing)

@@ -11,6 +11,8 @@ import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../core/bloc/wakelock/wakelock_bloc.dart';
+import '../../../core/bloc/wakelock/wakelock_event.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
 import '../models/live_comment_model.dart';
@@ -46,6 +48,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
   late final LiveStreamService _liveService;
   late final AgoraService _agoraService;
   late final LiveCommentBloc _commentBloc;
+  late final WakelockBloc _wakelockBloc;
   
   // Agora state
   bool _isAgoraInitialized = false;
@@ -125,6 +128,7 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _liveService = LiveStreamService(); // Get the singleton instance
     _agoraService = AgoraService(); // Get Agora singleton
     _socketService = getIt<SocketService>(); // Get socket service
+    _wakelockBloc = getIt<WakelockBloc>(); // Get wakelock BLoC
     _commentBloc = LiveCommentBloc(
       socketService: _socketService,
       liveRepository: getIt<LiveRepository>(),
@@ -136,6 +140,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _startCommentSimulation();
     _setupNetworkMonitoring(); // Monitor network connectivity
     _connectSocket(); // Connect to socket for real-time updates
+    // Enable wakelock when starting live stream
+    _wakelockBloc.add(const EnableWakelockEvent());
   }
 
   @override
@@ -150,6 +156,8 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
     _likesCountSubscription?.cancel(); // Cancel likes socket subscription
     _giftSubscription?.cancel(); // Cancel gift socket subscription
     _commentBloc.close(); // Close comment BLoC
+    // Disable wakelock when leaving live stream screen
+    _wakelockBloc.add(const DisableWakelockEvent());
     // Don't dispose Agora here - it's handled in _confirmEndStream
     _pulseController.dispose();
     _fadeController.dispose();
@@ -173,6 +181,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       debugPrint('📱 [LIVE] App went to background/locked - Stopping broadcast immediately');
       _backgroundTime = DateTime.now();
       
+      // Pause wakelock to save battery
+      _wakelockBloc.add(const AppPausedEvent());
+      
       // Immediately stop Agora broadcast to prevent frozen stream
       _agoraService.stopBroadcasting().then((_) {
         debugPrint('⏸️ [LIVE] Agora broadcast paused');
@@ -184,6 +195,9 @@ class _LiveStreamingScreenState extends State<LiveStreamingScreen>
       // App came to foreground or screen unlocked
       debugPrint('📱 [LIVE] App resumed from background/unlocked');
       _cancelBackgroundTimer();
+      
+      // Resume wakelock if stream is still active
+      _wakelockBloc.add(const AppResumedEvent(shouldReEnable: true));
       
       // Check if we were in background too long
       if (_backgroundTime != null) {

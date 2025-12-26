@@ -37,6 +37,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        // Use default v2 embedding plugin registration.
         super.configureFlutterEngine(flutterEngine)
 
         callChannel = MethodChannel(

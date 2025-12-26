@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import '../../../shared/theme/services/theme_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../core/bloc/wakelock/wakelock_bloc.dart';
+import '../../../core/bloc/wakelock/wakelock_event.dart';
 import '../../../data/repositories/live/live_repository.dart';
 import '../models/live_stream_model.dart';
 import '../models/live_comment_model.dart';
@@ -44,7 +46,7 @@ class LiveStreamViewerScreen extends StatefulWidget {
 }
 
 class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -71,6 +73,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   final AgoraService _agoraService = AgoraService();
   late final SocketService _socketService;
   late final LiveCommentBloc _commentBloc;
+  late final WakelockBloc _wakelockBloc;
   final ScrollController _commentsScrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
   
@@ -100,7 +103,9 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _socketService = getIt<SocketService>();
+    _wakelockBloc = getIt<WakelockBloc>();
     _commentBloc = LiveCommentBloc(
       socketService: _socketService,
       liveRepository: getIt<LiveRepository>(),
@@ -112,6 +117,8 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     // Gift simulation removed - using real-time socket gifts now
     _initializeLeaderboard();
     _connectSocket();
+    // Enable wakelock when viewing live stream
+    _wakelockBloc.add(const EnableWakelockEvent());
   }
   
   void _initializeLeaderboard() {
@@ -458,6 +465,7 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _fadeController.dispose();
     _slideController.dispose();
     _commentsScrollController.dispose();
@@ -471,6 +479,9 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     _giftSubscription?.cancel(); // Cancel gift socket subscription
     _commentBloc.close(); // Close comment BLoC
     
+    // Disable wakelock when leaving viewer screen
+    _wakelockBloc.add(const DisableWakelockEvent());
+    
     // Leave socket room
     _leaveSocketRoom();
     
@@ -482,6 +493,17 @@ class _LiveStreamViewerScreenState extends State<LiveStreamViewerScreen>
     // Keeping this as a safety fallback
     _restoreSystemUI();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // App went to background - pause wakelock to save battery
+      _wakelockBloc.add(const AppPausedEvent());
+    } else if (state == AppLifecycleState.resumed) {
+      // App came to foreground - resume wakelock if stream is still active
+      _wakelockBloc.add(const AppResumedEvent(shouldReEnable: true));
+    }
   }
   
   /// Clean exit handler - ensures all streams are stopped before navigation
