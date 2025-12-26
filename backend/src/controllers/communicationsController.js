@@ -203,21 +203,27 @@ async function getAllCommunications(req, res) {
 
     // Get calls where astrologer is involved (both admin-to-astrologer and user-to-astrologer)
     // Only include completed calls (ended, missed, rejected, cancelled)
-    const calls = await Call.find({
-      $or: [
-        { callerId: astrologerId, callerType: 'astrologer' },
-        { recipientId: astrologerId, recipientType: 'astrologer' }
-      ],
-      status: { $in: ['ended', 'missed', 'rejected', 'cancelled', 'failed'] }
-    })
-      .sort({ startedAt: -1, createdAt: -1 })
-      .limit(queryLimit)
-      .lean();
+    // Wrap in try-catch to ensure messages are returned even if calls query fails
+    try {
+      const calls = await Call.find({
+        $or: [
+          { callerId: astrologerId, callerType: 'astrologer' },
+          { recipientId: astrologerId, recipientType: 'astrologer' }
+        ],
+        status: { $in: ['ended', 'missed', 'rejected', 'cancelled', 'failed'] }
+      })
+        .sort({ startedAt: -1, createdAt: -1 })
+        .limit(queryLimit)
+        .lean();
 
-    // Convert calls to CommunicationItems
-    for (const call of calls) {
-      const callItem = buildCallItem(astrologerId, call);
-      if (callItem) items.push(callItem);
+      // Convert calls to CommunicationItems
+      for (const call of calls) {
+        const callItem = buildCallItem(astrologerId, call);
+        if (callItem) items.push(callItem);
+      }
+    } catch (callError) {
+      // Log error but don't fail the entire request - messages are more important
+      console.error('⚠️ [COMM] Failed to load calls (messages will still be returned):', callError.message);
     }
 
     // Sort all items by timestamp (newest first)
@@ -225,6 +231,9 @@ async function getAllCommunications(req, res) {
 
     // Apply pagination after merging
     const paginatedItems = items.slice(skip, skip + limit);
+
+    // Debug logging
+    console.log(`📊 [COMM] getAllCommunications: ${items.length} total items (${items.filter(i => i.type === 'message').length} messages, ${items.filter(i => i.type === 'voiceCall' || i.type === 'videoCall').length} calls), returning ${paginatedItems.length} items for page ${page}`);
 
     return res.status(200).json({ success: true, data: paginatedItems });
   } catch (error) {
