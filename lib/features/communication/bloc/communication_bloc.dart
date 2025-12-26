@@ -12,6 +12,7 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
   final CommunicationRepository repository;
   final SocketService socketService;
   StreamSubscription<Map<String, dynamic>>? _dmSub;
+  StreamSubscription<Map<String, dynamic>>? _callEndedSub;
 
   CommunicationBloc({required this.repository, required this.socketService})
       : super(const CommunicationInitial()) {
@@ -29,6 +30,16 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
 
     // Listen globally for direct messages (admin/user -> astrologer)
     _dmSub = socketService.dmGlobalStream.listen(_handleIncomingDm);
+    
+    // Listen for call ended events to update communication list in real-time
+    _callEndedSub = socketService.callEndedStream.listen(_handleCallEnded);
+  }
+
+  // Handle call ended to refresh communication list (WhatsApp-style real-time)
+  void _handleCallEnded(Map<String, dynamic> data) {
+    print('📴 [CommunicationBloc] Call ended event received, refreshing communication list');
+    // Refresh the communication list to show the new call history
+    add(const RefreshCommunicationsEvent());
   }
 
   // Handle incoming DM to update list + unread counts
@@ -419,6 +430,13 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
     } catch (e) {
       print('Error clearing cache: $e');
     }
+  }
+
+  @override
+  Future<void> close() {
+    _dmSub?.cancel();
+    _callEndedSub?.cancel();
+    return super.close();
   }
 }
 
