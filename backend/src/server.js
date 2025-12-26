@@ -81,12 +81,18 @@ app.use(cors({
     
     // Allow vercel.app domains
     if (origin.includes('vercel.app')) {
+      console.log(`✅ [CORS] Allowing Vercel origin: ${origin}`);
       return callback(null, true);
     }
     
+    // Log blocked origins for debugging
+    console.log(`⚠️ [CORS] Blocked origin: ${origin}`);
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key', 'x-admin-key'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 // Body parsing middleware
