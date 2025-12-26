@@ -148,12 +148,22 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
     final Map<String, CommunicationItem> byKey = {};
 
     for (final item in items) {
-      final convoId = item.conversationId?.toString() ?? '';
-      final key = convoId.isNotEmpty
-          ? 'c:$convoId'
-          : (item.contactType == ContactType.admin
-              ? 't:admin:admin'
-              : 't:${item.contactType.name}:${item.contactId}');
+      // Calls should NOT be deduplicated by contact - each call is a separate history item
+      // Messages should be deduplicated by conversation to show latest message per contact
+      String key;
+      
+      if (item.type == CommunicationType.voiceCall || item.type == CommunicationType.videoCall) {
+        // For calls: use unique ID so each call appears as separate history item
+        key = 'call:${item.id}';
+      } else {
+        // For messages: use conversation ID or contact info (existing logic)
+        final convoId = item.conversationId?.toString() ?? '';
+        key = convoId.isNotEmpty
+            ? 'c:$convoId'
+            : (item.contactType == ContactType.admin
+                ? 't:admin:admin'
+                : 't:${item.contactType.name}:${item.contactId}');
+      }
 
       final existing = byKey[key];
       if (existing == null) {
@@ -161,6 +171,8 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
         continue;
       }
 
+      // If we reach here, it means we have a duplicate message (same conversation)
+      // Keep the newer one and merge some fields from the older one
       final newer = item.timestamp.isAfter(existing.timestamp) ? item : existing;
       final older = identical(newer, item) ? existing : item;
 
