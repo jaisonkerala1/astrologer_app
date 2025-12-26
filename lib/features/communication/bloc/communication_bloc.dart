@@ -188,12 +188,6 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
     return deduped;
   }
 
-  @override
-  Future<void> close() {
-    _dmSub?.cancel();
-    return super.close();
-  }
-
   // ============================================================================
   // LOAD COMMUNICATIONS (Instagram/WhatsApp-style instant load)
   // ============================================================================
