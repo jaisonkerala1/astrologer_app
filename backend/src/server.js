@@ -30,32 +30,11 @@ try {
   if (error.code) console.error('📍 Error code:', error.code);
 }
 
-// Security middleware
-app.use(helmet());
-
 // Trust proxy for Railway/Render/Heroku deployments
 // Required for express-rate-limit to correctly identify users behind proxies
 app.set('trust proxy', 1);
 
-// Note: Socket.IO handles WebSocket upgrades automatically
-// No custom upgrade handler needed - Socket.IO attaches its own handler internally
-
-// Rate limiting - Increased limits for mobile app usage
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 200, // 200 requests per minute (much more lenient for mobile apps)
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Skip rate limiting for certain paths that are called frequently
-  skip: (req) => {
-    const skipPaths = ['/api/live/active', '/health', '/api/dashboard/stats'];
-    return skipPaths.some(path => req.path.startsWith(path));
-  }
-});
-app.use(limiter);
-
-// CORS configuration
+// CORS configuration - MUST come before helmet and other middleware
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
@@ -80,7 +59,7 @@ app.use(cors({
     }
     
     // Allow vercel.app domains
-    if (origin.includes('vercel.app')) {
+    if (origin && origin.includes('vercel.app')) {
       console.log(`✅ [CORS] Allowing Vercel origin: ${origin}`);
       return callback(null, true);
     }
@@ -92,8 +71,36 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key', 'x-admin-key'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Explicit OPTIONS handler for all routes
+app.options('*', cors());
+
+// Security middleware - comes AFTER CORS
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Note: Socket.IO handles WebSocket upgrades automatically
+// No custom upgrade handler needed - Socket.IO attaches its own handler internally
+
+// Rate limiting - Increased limits for mobile app usage
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 200, // 200 requests per minute (much more lenient for mobile apps)
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for certain paths that are called frequently
+  skip: (req) => {
+    const skipPaths = ['/api/live/active', '/health', '/api/dashboard/stats'];
+    return skipPaths.some(path => req.path.startsWith(path));
+  }
+});
+app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
