@@ -37,8 +37,9 @@ class ModernProfileHeader extends StatelessWidget {
               else
                 _buildAvatar(),
 
-              // Online Status Indicator
-              if (astrologer?.isOnline == true)
+              // Online Status Indicator - Only show on profile picture if NOT verified
+              // If verified, show it after the name instead
+              if (astrologer?.isOnline == true && astrologer?.isVerified != true)
                 Positioned(
                   bottom: 8,
                   right: 8,
@@ -67,16 +68,44 @@ class ModernProfileHeader extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Name
-          Text(
-            astrologer?.name ?? 'Loading...',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: themeService.textPrimary,
-              letterSpacing: -0.3,
-            ),
-            textAlign: TextAlign.center,
+          // Name with Online Status (if verified)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  astrologer?.name ?? 'Loading...',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: themeService.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Online Status Indicator - Show after name if verified
+              if (astrologer?.isVerified == true && astrologer?.isOnline == true) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
 
           const SizedBox(height: 4),

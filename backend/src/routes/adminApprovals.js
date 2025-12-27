@@ -55,7 +55,8 @@ router.get('/', async (req, res) => {
         .skip(skip)
         .limit(parseInt(limit))
         .populate('astrologerId', 'name email profilePicture specializations experience')
-        .populate('serviceId', 'name price category description'),
+        .populate('serviceId', 'name price category description')
+        .lean(), // Convert to plain object - includes all fields including verificationDocuments
       ApprovalRequest.countDocuments(query)
     ]);
 
@@ -171,7 +172,8 @@ router.get('/:id', async (req, res) => {
   try {
     const request = await ApprovalRequest.findById(req.params.id)
       .populate('astrologerId', 'name email phone profilePicture specializations experience bio awards certificates')
-      .populate('serviceId', 'name price category description imageUrl');
+      .populate('serviceId', 'name price category description imageUrl')
+      .lean(); // Convert to plain object - includes all fields including verificationDocuments
 
     if (!request) {
       return res.status(404).json({
@@ -181,10 +183,11 @@ router.get('/:id', async (req, res) => {
     }
 
     // Get additional astrologer stats
+    const astrologerId = request.astrologerId?._id || request.astrologerId;
     const [consultationsCount, reviewStats] = await Promise.all([
-      Consultation.countDocuments({ astrologerId: request.astrologerId }),
+      Consultation.countDocuments({ astrologerId }),
       Review.aggregate([
-        { $match: { astrologerId: request.astrologerId } },
+        { $match: { astrologerId } },
         {
           $group: {
             _id: null,
@@ -198,11 +201,13 @@ router.get('/:id', async (req, res) => {
     const ratingData = reviewStats[0] || { avgRating: 0, totalReviews: 0 };
 
     // Enhance request with current astrologer data
-    const requestObj = request.toObject();
-    requestObj.astrologerData = {
-      ...requestObj.astrologerData,
-      consultationsCount,
-      rating: Math.round((ratingData.avgRating || 0) * 10) / 10
+    const requestObj = {
+      ...request,
+      astrologerData: {
+        ...request.astrologerData,
+        consultationsCount,
+        rating: Math.round((ratingData.avgRating || 0) * 10) / 10
+      }
     };
 
     res.json({
@@ -354,6 +359,7 @@ router.post('/:id/reject', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 

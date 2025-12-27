@@ -26,6 +26,7 @@ class ApiConstants {
   // Verification endpoints
   static const String verificationRequest = '/api/profile/verification/request';
   static const String verificationStatus = '/api/profile/verification/status';
+  static const String verificationUploadDocuments = '/api/profile/verification/upload-documents';
   
   // Chat endpoints
   static const String chatConversations = '/api/chat/conversations';

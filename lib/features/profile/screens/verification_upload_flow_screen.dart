@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../auth/models/astrologer_model.dart';
@@ -53,6 +54,14 @@ class _VerificationUploadFlowScreenState
   }
 
   void _goToNextPage() {
+    // IMPORTANT: "Submit for Review / Skip & Submit" is shown on the Storefront page (index 3).
+    // Previously we only submitted on the last page, but the last page doesn't use this navigation.
+    // So the request never fired -> no backend logs.
+    if (_currentPage == _totalPages - 2) {
+      _submitDocuments();
+      return;
+    }
+
     if (_currentPage < _totalPages - 1) {
       _pageController.animateToPage(
         _currentPage + 1,
@@ -146,8 +155,10 @@ class _VerificationUploadFlowScreenState
 
       // Call backend API
       final apiService = getIt<ApiService>();
+      print('🟣 [VerificationFlow] Uploading documents to ${ApiConstants.verificationUploadDocuments} '
+          '(idProof=${_idProofImage != null}, certificate=${_certificateImage != null}, storefront=${_storefrontImage != null})');
       final response = await apiService.post(
-        '/profile/verification/upload-documents',
+        ApiConstants.verificationUploadDocuments,
         data: formData,
       );
 
