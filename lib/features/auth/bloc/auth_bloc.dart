@@ -12,6 +12,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
   final ApiService _apiService = ApiService(); // Still needed for unauthorized stream
   StreamSubscription<String>? _unauthorizedSubscription;
+  StreamSubscription<Map<String, dynamic>>? _suspendedSubscription;
 
   AuthBloc({required this.repository}) : super(AuthInitial()) {
     on<CheckPhoneExistsEvent>(_onCheckPhoneExists);
@@ -25,6 +26,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<DeleteAccountEvent>(_onDeleteAccount);
     on<InitializeAuthEvent>(_onInitializeAuth);
     on<AuthUnauthorizedEvent>(_onUnauthorized);
+    on<AuthSuspendedEvent>(_onSuspendedFromApi);
     
     // Initialize storage service
     _initializeStorage();
@@ -40,6 +42,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _unauthorizedSubscription = _apiService.unauthorizedStream.listen((message) {
       add(AuthUnauthorizedEvent(message));
     });
+
+    _suspendedSubscription?.cancel();
+    _suspendedSubscription = _apiService.suspendedStream.listen((data) {
+      final reason = (data['reason'] as String?) ?? 'Contact support for more information';
+      final suspendedAtRaw = data['suspendedAt'];
+      DateTime? suspendedAt;
+      if (suspendedAtRaw is String) {
+        suspendedAt = DateTime.tryParse(suspendedAtRaw);
+      }
+      add(AuthSuspendedEvent(reason: reason, suspendedAt: suspendedAt));
+    });
   }
 
   Future<void> _onUnauthorized(AuthUnauthorizedEvent event, Emitter<AuthState> emit) async {
@@ -54,6 +67,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await repository.clearAuthData();
     print('⚠️ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (from unauthorized event)');
     emit(AuthUnauthenticatedState());
+  }
+
+  Future<void> _onSuspendedFromApi(AuthSuspendedEvent event, Emitter<AuthState> emit) async {
+    print('');
+    print('╔═══════════════════════════════════════════════════════╗');
+    print('║      ⛔ AUTH BLOC: SUSPENDED EVENT                   ║');
+    print('╠═══════════════════════════════════════════════════════╣');
+    print('║ Reason: ${event.reason}');
+    print('║ Timestamp: ${DateTime.now()}');
+    print('╚═══════════════════════════════════════════════════════╝');
+    print('');
+    await repository.clearAuthData();
+    print('⛔ [AUTH_BLOC] EMITTING: AuthSuspendedState (from suspended event)');
+    emit(AuthSuspendedState(reason: event.reason, suspendedAt: event.suspendedAt));
   }
 
   Future<void> _onCheckPhoneExists(CheckPhoneExistsEvent event, Emitter<AuthState> emit) async {
@@ -404,6 +431,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   @override
   Future<void> close() {
     _unauthorizedSubscription?.cancel();
+    _suspendedSubscription?.cancel();
     return super.close();
   }
 }

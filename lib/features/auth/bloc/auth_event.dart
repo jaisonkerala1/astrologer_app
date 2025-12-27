@@ -72,6 +72,16 @@ class AuthUnauthorizedEvent extends AuthEvent {
   AuthUnauthorizedEvent(this.message);
 }
 
+class AuthSuspendedEvent extends AuthEvent {
+  final String reason;
+  final DateTime? suspendedAt;
+
+  AuthSuspendedEvent({
+    required this.reason,
+    this.suspendedAt,
+  });
+}
+
 class InitializeAuthEvent extends AuthEvent {}
 
 

@@ -37,6 +37,11 @@ class AstrologerModel extends Equatable {
   final bool isApproved;
   final DateTime? approvedAt;
   final String? approvedBy;
+  
+  // Suspension status
+  final bool isSuspended;
+  final DateTime? suspendedAt;
+  final String? suspensionReason;
 
   AstrologerModel({
     required this.id,
@@ -69,6 +74,9 @@ class AstrologerModel extends Equatable {
     this.isApproved = false,
     this.approvedAt,
     this.approvedBy,
+    this.isSuspended = false,
+    this.suspendedAt,
+    this.suspensionReason,
   });
 
   factory AstrologerModel.fromJson(Map<String, dynamic> json) {
@@ -103,6 +111,9 @@ class AstrologerModel extends Equatable {
       isApproved: json['isApproved'] ?? false,
       approvedAt: _parseDateTime(json['approvedAt']),
       approvedBy: json['approvedBy'],
+      isSuspended: json['isSuspended'] ?? false,
+      suspendedAt: _parseDateTime(json['suspendedAt']),
+      suspensionReason: json['suspensionReason'],
     );
   }
 
@@ -138,6 +149,10 @@ class AstrologerModel extends Equatable {
       'isApproved': isApproved,
       'approvedAt': approvedAt?.toIso8601String(),
       'approvedBy': approvedBy,
+      'isSuspended': isSuspended,
+      'suspendedAt': suspendedAt?.toIso8601String(),
+      'suspensionReason': suspensionReason,
+      '_id': id,
     };
   }
 
@@ -172,6 +187,9 @@ class AstrologerModel extends Equatable {
     bool? isApproved,
     DateTime? approvedAt,
     String? approvedBy,
+    bool? isSuspended,
+    DateTime? suspendedAt,
+    String? suspensionReason,
   }) {
     return AstrologerModel(
       id: id ?? this.id,
@@ -204,6 +222,9 @@ class AstrologerModel extends Equatable {
       isApproved: isApproved ?? this.isApproved,
       approvedAt: approvedAt ?? this.approvedAt,
       approvedBy: approvedBy ?? this.approvedBy,
+      isSuspended: isSuspended ?? this.isSuspended,
+      suspendedAt: suspendedAt ?? this.suspendedAt,
+      suspensionReason: suspensionReason ?? this.suspensionReason,
     );
   }
   
@@ -255,6 +276,9 @@ class AstrologerModel extends Equatable {
     isApproved,
     approvedAt,
     approvedBy,
+    isSuspended,
+    suspendedAt,
+    suspensionReason,
   ];
 }
 

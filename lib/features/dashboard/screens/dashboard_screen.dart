@@ -18,6 +18,7 @@ import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
 import '../../auth/bloc/auth_bloc.dart';
+import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/fcm/fcm_bloc.dart';
@@ -84,6 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final StorageService _storageService = StorageService();
   late PageController _pageController;
   DashboardStatsModel? _currentStats;
+  bool _authDialogShowing = false;
 
   @override
   void initState() {
@@ -488,7 +490,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        return Scaffold(
+        return BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (!mounted) return;
+
+            if (state is AuthUnauthenticatedState || state is AuthLoggedOutState) {
+              // Session expired or logged out: leave dashboard immediately.
+              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+              return;
+            }
+
+            if (state is AuthSuspendedState) {
+              _showAuthBlockedDialog(
+                title: 'Account Suspended',
+                message: state.reason,
+                isSuspended: true,
+              );
+              return;
+            }
+          },
+          child: Scaffold(
           backgroundColor: themeService.backgroundColor,
           body: Stack(
             children: [
@@ -571,9 +592,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             },
           ),
+          ),
         );
       },
     );
+  }
+
+  void _showAuthBlockedDialog({
+    required String title,
+    required String message,
+    required bool isSuspended,
+  }) {
+    if (_authDialogShowing) return;
+    _authDialogShowing = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final themeService = Provider.of<ThemeService>(dialogContext, listen: false);
+        return AlertDialog(
+          backgroundColor: themeService.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(
+                isSuspended ? Icons.block : Icons.lock_outline,
+                color: isSuspended ? Colors.red.shade600 : themeService.primaryColor,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: themeService.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message.isNotEmpty ? message : 'Please login again to continue.',
+            style: TextStyle(color: themeService.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _authDialogShowing = false;
+                // Force logout locally and move to login (prevents showing cached tabs).
+                context.read<AuthBloc>().add(LogoutEvent());
+                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+              },
+              child: const Text('Login'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(() {
+      _authDialogShowing = false;
+    });
   }
 
   Widget _buildDashboardContent() {
@@ -675,11 +754,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
+                      Builder(
+                        builder: (context) {
+                          final msg = state.message.toLowerCase();
+                          final isAuthError = msg.contains('unauthorized') ||
+                              msg.contains('login again') ||
+                              msg.contains('token') ||
+                              msg.contains('suspend');
+
+                          if (isAuthError) {
+                            return ElevatedButton(
+                              onPressed: () {
+                                // Clear local auth and return to login (avoid infinite retry loops).
+                                context.read<AuthBloc>().add(LogoutEvent());
+                                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                              },
+                              child: const Text('Login'),
+                            );
+                          }
+
+                          return ElevatedButton(
+                            onPressed: () {
+                              context.read<DashboardBloc>().add(LoadDashboardStatsEvent());
+                            },
+                            child: const Text('Retry'),
+                          );
                         },
-                        child: const Text('Retry'),
                       ),
                     ],
                   ),

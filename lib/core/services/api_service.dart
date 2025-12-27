@@ -12,9 +12,11 @@ class ApiService {
 
   late Dio _dio;
   final _unauthorizedController = StreamController<String>.broadcast();
+  final _suspendedController = StreamController<Map<String, dynamic>>.broadcast();
   bool _hasNotifiedUnauthorized = false;
 
   Stream<String> get unauthorizedStream => _unauthorizedController.stream;
+  Stream<Map<String, dynamic>> get suspendedStream => _suspendedController.stream;
 
   Future<void> initialize() async {
     print('🔧 [API_SERVICE] Initializing...');
@@ -39,6 +41,28 @@ class ApiService {
               ? (error.response?.data['message'] as String?)
               : null;
           _notifyUnauthorized(message);
+        }
+        if (error.response?.statusCode == 403) {
+          // Treat 403 with "suspended" payload as a global suspended event.
+          // This prevents infinite retry loops inside dashboards and cached tabs.
+          try {
+            final data = error.response?.data;
+            if (data is Map<String, dynamic>) {
+              final message = (data['message'] as String?) ?? '';
+              final reason = (data['reason'] as String?) ?? '';
+              final suspendedAt = data['suspendedAt'];
+              final combined = ('$message $reason').toLowerCase();
+              if (combined.contains('suspend')) {
+                _suspendedController.add({
+                  'message': message.isNotEmpty ? message : 'Your account has been suspended',
+                  'reason': reason.isNotEmpty ? reason : 'Contact support for more information',
+                  'suspendedAt': suspendedAt,
+                });
+              }
+            }
+          } catch (_) {
+            // ignore
+          }
         }
         handler.next(error);
       },
@@ -73,6 +97,11 @@ class ApiService {
       final response = await _dio.get(path, queryParameters: queryParameters);
       return response;
     } on DioException catch (e) {
+      // IMPORTANT: For suspended accounts, backend returns 403 with reason.
+      // Return the response so repositories/BLoCs can handle it gracefully.
+      if (e.type == DioExceptionType.badResponse && e.response?.statusCode == 403 && e.response != null) {
+        return e.response!;
+      }
       throw _handleError(e);
     }
   }
@@ -244,6 +273,9 @@ class ApiService {
   void dispose() {
     if (!_unauthorizedController.isClosed) {
       _unauthorizedController.close();
+    }
+    if (!_suspendedController.isClosed) {
+      _suspendedController.close();
     }
   }
 }
