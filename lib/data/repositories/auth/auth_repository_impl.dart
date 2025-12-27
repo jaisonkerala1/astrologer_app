@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/constants/api_constants.dart';
@@ -7,6 +8,20 @@ import '../../../features/auth/models/astrologer_model.dart';
 import '../../../features/auth/models/auth_response_model.dart';
 import '../base_repository.dart';
 import 'auth_repository.dart';
+
+/// Custom exception for suspended accounts
+class SuspendedAccountException implements Exception {
+  final String reason;
+  final String? suspendedAt;
+  
+  SuspendedAccountException({
+    required this.reason,
+    this.suspendedAt,
+  });
+  
+  @override
+  String toString() => reason;
+}
 
 /// Implementation of AuthRepository
 /// Handles authentication data operations using ApiService and StorageService
@@ -64,6 +79,12 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         throw Exception('Failed to send OTP');
       }
     } catch (e) {
+      // Check if it's a suspended account error (403)
+      if (e is DioException && e.response?.statusCode == 403) {
+        final reason = e.response?.data['reason'] ?? 'Your account has been suspended';
+        final suspendedAt = e.response?.data['suspendedAt'];
+        throw SuspendedAccountException(reason: reason, suspendedAt: suspendedAt);
+      }
       throw Exception(handleError(e));
     }
   }
@@ -120,6 +141,12 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         throw Exception('Failed to verify OTP');
       }
     } catch (e) {
+      // Check if it's a suspended account error (403)
+      if (e is DioException && e.response?.statusCode == 403) {
+        final reason = e.response?.data['reason'] ?? 'Your account has been suspended';
+        final suspendedAt = e.response?.data['suspendedAt'];
+        throw SuspendedAccountException(reason: reason, suspendedAt: suspendedAt);
+      }
       if (e.toString().contains('404')) {
         throw Exception('Account not found. Please sign up first.');
       }

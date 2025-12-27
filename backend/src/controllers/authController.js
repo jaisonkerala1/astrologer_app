@@ -110,6 +110,17 @@ const sendOTP = async (req, res) => {
       });
     }
 
+    // Check if astrologer exists and is suspended
+    const existingAstrologer = await Astrologer.findOne({ phone });
+    if (existingAstrologer?.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been suspended. Cannot send OTP.',
+        reason: existingAstrologer.suspensionReason || 'Contact support for more information',
+        suspendedAt: existingAstrologer.suspendedAt
+      });
+    }
+
     // Check if this is a test phone number
     const isTestNumber = isTestPhoneNumber(phone);
     
@@ -203,6 +214,16 @@ const verifyOTP = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Account not found. Please sign up first.'
+      });
+    }
+
+    // Check if account is suspended
+    if (astrologer.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been suspended',
+        reason: astrologer.suspensionReason || 'Contact support for more information',
+        suspendedAt: astrologer.suspendedAt
       });
     }
 

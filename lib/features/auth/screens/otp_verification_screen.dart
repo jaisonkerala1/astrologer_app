@@ -198,6 +198,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                   MaterialPageRoute(builder: (context) => const DashboardScreen()),
                   (route) => false,
                 );
+              } else if (state is AuthSuspendedState) {
+                setState(() => _isLoading = false);
+                _showSuspendedDialog(state.reason, state.suspendedAt);
               } else if (state is AuthErrorState) {
                 setState(() => _isLoading = false);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -647,5 +650,112 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
         ],
       ),
     );
+  }
+
+  void _showSuspendedDialog(String reason, DateTime? suspendedAt) {
+    final themeService = Provider.of<ThemeService>(context, listen: false);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeService.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.block, color: Colors.red.shade600, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Account Suspended',
+                style: TextStyle(
+                  color: themeService.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your account has been suspended and you cannot access the app at this time.',
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reason:',
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    reason,
+                    style: TextStyle(
+                      color: Colors.red.shade900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (suspendedAt != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Suspended on: ${_formatDate(suspendedAt)}',
+                style: TextStyle(
+                  color: themeService.textHint,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              'Please contact support if you believe this is an error or if you have any questions.',
+              style: TextStyle(
+                color: themeService.textSecondary,
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Go back to login screen
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: themeService.textSecondary,
+            ),
+            child: const Text('Go Back'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

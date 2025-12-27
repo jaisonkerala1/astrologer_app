@@ -128,6 +128,14 @@ class ApiService {
         return e.response!;
       }
 
+      // IMPORTANT: For suspended accounts, backend returns 403 with reason.
+      // Return the response so the repository can extract the suspension details.
+      if (e.type == DioExceptionType.badResponse &&
+          e.response != null &&
+          e.response?.statusCode == 403) {
+        return e.response!;
+      }
+
       throw _handleError(e);
     }
   }

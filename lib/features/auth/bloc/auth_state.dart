@@ -100,6 +100,19 @@ class AuthWaitingForApproval extends AuthState {
   List<Object?> get props => [astrologer, token, sessionId];
 }
 
+class AuthSuspendedState extends AuthState {
+  final String reason;
+  final DateTime? suspendedAt;
+  
+  const AuthSuspendedState({
+    required this.reason,
+    this.suspendedAt,
+  });
+  
+  @override
+  List<Object?> get props => [reason, suspendedAt];
+}
+
 
 
 

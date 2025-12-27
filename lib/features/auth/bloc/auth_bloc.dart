@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/auth/auth_repository.dart';
+import '../../../data/repositories/auth/auth_repository_impl.dart';
 import '../../../core/services/api_service.dart';
 import '../models/astrologer_model.dart';
 import 'auth_event.dart';
@@ -84,7 +85,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ));
     } catch (e) {
       print('Send OTP API Error: $e');
-      emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
+      // Check if it's a suspended account error
+      if (e is SuspendedAccountException) {
+        print('⛔ [AUTH_BLOC] Account suspended - cannot send OTP');
+        emit(AuthSuspendedState(
+          reason: e.reason,
+          suspendedAt: e.suspendedAt != null ? DateTime.tryParse(e.suspendedAt!) : null,
+        ));
+      } else {
+        emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
+      }
     }
   }
 
@@ -131,7 +141,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       print('Verify OTP API Error: $e');
-      emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
+      // Check if it's a suspended account error
+      if (e is SuspendedAccountException) {
+        print('⛔ [AUTH_BLOC] Account suspended - login blocked');
+        emit(AuthSuspendedState(
+          reason: e.reason,
+          suspendedAt: e.suspendedAt != null ? DateTime.tryParse(e.suspendedAt!) : null,
+        ));
+      } else {
+        emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
+      }
     }
   }
 
