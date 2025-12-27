@@ -22,6 +22,16 @@ const auth = async (req, res, next) => {
       });
     }
 
+    // Check if account is suspended
+    if (astrologer.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been suspended',
+        reason: astrologer.suspensionReason || 'Contact support for more information',
+        suspendedAt: astrologer.suspendedAt
+      });
+    }
+
     if (!astrologer.activeSession || astrologer.activeSession.sessionId !== decoded.sessionId) {
       return res.status(401).json({
         success: false,

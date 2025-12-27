@@ -296,9 +296,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         
         print('✅ [AUTH_BLOC] Token valid, user authenticated');
         print('👤 [AUTH_BLOC] User: ${astrologer.name}');
-        print('✅ [AUTH_BLOC] Checking approval status...');
+        print('✅ [AUTH_BLOC] Checking account status...');
+        print('   isSuspended: ${astrologer.isSuspended}');
         print('   isApproved: ${astrologer.isApproved}');
         
+        // Check if account is suspended (highest priority)
+        if (astrologer.isSuspended) {
+          print('⛔ [AUTH_BLOC] Account is suspended - logging out');
+          await repository.clearAuthData();
+          print('⛔ [AUTH_BLOC] EMITTING: AuthSuspendedState');
+          emit(AuthSuspendedState(
+            reason: astrologer.suspensionReason ?? 'Contact support for more information',
+            suspendedAt: astrologer.suspendedAt,
+          ));
+          return;
+        }
+        
+        // Check if account is not approved yet
         if (!astrologer.isApproved) {
           print('⏳ [AUTH_BLOC] EMITTING: AuthWaitingForApproval (account pending approval)');
           emit(AuthWaitingForApproval(
@@ -316,6 +330,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       } catch (e) {
         print('❌ [AUTH_BLOC] Token validation failed: $e');
+        
+        // Check if it's a suspended account error
+        if (e is SuspendedAccountException) {
+          print('⛔ [AUTH_BLOC] Account suspended during token validation');
+          await repository.clearAuthData();
+          print('⛔ [AUTH_BLOC] EMITTING: AuthSuspendedState');
+          emit(AuthSuspendedState(
+            reason: e.reason,
+            suspendedAt: e.suspendedAt != null ? DateTime.tryParse(e.suspendedAt!) : null,
+          ));
+          return;
+        }
+        
         await repository.clearAuthData();
         print('❌ [AUTH_BLOC] EMITTING: AuthUnauthenticatedState (token validation failed)');
         emit(AuthUnauthenticatedState());

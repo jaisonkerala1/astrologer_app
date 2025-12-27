@@ -16,6 +16,7 @@ import '../../dashboard/screens/dashboard_screen.dart';
 import '../../dashboard/bloc/dashboard_bloc.dart';
 import '../../profile/bloc/profile_bloc.dart';
 import 'signup_screen.dart';
+import 'approval_waiting_screen.dart';
 
 /// Modern, world-class OTP verification screen
 /// Following 2024-2025 UI/UX trends
@@ -190,6 +191,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
+                );
+              } else if (state is AuthWaitingForApproval) {
+                setState(() => _isLoading = false);
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ApprovalWaitingScreen(astrologer: state.astrologer),
+                  ),
+                  (route) => false,
                 );
               } else if (state is AuthSuccessState) {
                 setState(() => _isLoading = false);

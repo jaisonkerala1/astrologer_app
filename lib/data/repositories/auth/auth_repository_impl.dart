@@ -239,10 +239,19 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       if (response.statusCode == 200 && response.data['success'] == true) {
         final serverUserData = response.data['data'];
         return AstrologerModel.fromJson(serverUserData);
+      } else if (response.statusCode == 403) {
+        // Account suspended - throw SuspendedAccountException
+        final reason = response.data['reason'] ?? 'Your account has been suspended';
+        final suspendedAt = response.data['suspendedAt'];
+        throw SuspendedAccountException(reason: reason, suspendedAt: suspendedAt);
       } else {
         throw Exception('Failed to load profile');
       }
     } catch (e) {
+      // Re-throw SuspendedAccountException as-is
+      if (e is SuspendedAccountException) {
+        rethrow;
+      }
       throw Exception(handleError(e));
     }
   }

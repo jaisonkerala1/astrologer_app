@@ -46,6 +46,9 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
               builder: (context) => ApprovalWaitingScreen(astrologer: state.astrologer),
             ),
           );
+        } else if (state is AuthSuspendedState) {
+          // User is suspended, show dialog and navigate to login
+          _showSuspendedDialog(context, state.reason, state.suspendedAt);
         } else if (state is AuthUnauthenticatedState) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -102,6 +105,106 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showSuspendedDialog(BuildContext context, String reason, DateTime? suspendedAt) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.block, color: Colors.red.shade600, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Account Suspended',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your account has been suspended and you cannot access the app at this time.',
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reason:',
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    reason,
+                    style: TextStyle(
+                      color: Colors.red.shade900,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (suspendedAt != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Suspended on: ${suspendedAt.day}/${suspendedAt.month}/${suspendedAt.year}',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Text(
+              'Please contact support if you believe this is an error or if you have any questions.',
+              style: TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
