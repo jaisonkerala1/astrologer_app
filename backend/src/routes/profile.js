@@ -209,6 +209,110 @@ router.post('/verification/request', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/profile/verification/upload-documents
+// @desc    Upload verification documents (ID proof, certificate, storefront)
+// @access  Private
+router.post('/verification/upload-documents', auth, upload.fields([
+  { name: 'idProof', maxCount: 1 },
+  { name: 'certificate', maxCount: 1 },
+  { name: 'storefront', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { astrologerId } = req.user;
+
+    // Find or create pending verification request
+    let approvalRequest = await ApprovalRequest.findOne({
+      astrologerId,
+      requestType: 'verification_badge',
+      status: 'pending'
+    });
+
+    // If no pending request, create one (skip requirements for now since documents are being uploaded)
+    if (!approvalRequest) {
+      const astrologer = await Astrologer.findById(astrologerId);
+      if (!astrologer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Astrologer not found'
+        });
+      }
+
+      // Get basic stats
+      const [consultationsCount, reviewStats] = await Promise.all([
+        Consultation.countDocuments({ astrologerId }),
+        Review.aggregate([
+          { $match: { astrologerId } },
+          {
+            $group: {
+              _id: null,
+              avgRating: { $avg: '$rating' },
+              totalReviews: { $sum: 1 }
+            }
+          }
+        ])
+      ]);
+
+      const ratingData = reviewStats[0] || { avgRating: 0, totalReviews: 0 };
+      const avgRating = ratingData.avgRating || 0;
+
+      approvalRequest = new ApprovalRequest({
+        astrologerId,
+        astrologerName: astrologer.name,
+        astrologerEmail: astrologer.email,
+        astrologerPhone: astrologer.phone,
+        astrologerAvatar: astrologer.profilePicture,
+        requestType: 'verification_badge',
+        status: 'pending',
+        submittedAt: new Date(),
+        astrologerData: {
+          experience: astrologer.experience,
+          specializations: astrologer.specializations || [],
+          consultationsCount,
+          rating: Math.round(avgRating * 10) / 10
+        }
+      });
+
+      // Update astrologer verification status
+      astrologer.verificationStatus = 'pending';
+      astrologer.verificationSubmittedAt = new Date();
+      await astrologer.save();
+    }
+
+    // Update documents
+    if (!approvalRequest.verificationDocuments) {
+      approvalRequest.verificationDocuments = {};
+    }
+
+    if (req.files.idProof) {
+      approvalRequest.verificationDocuments.idProof = `/uploads/${req.files.idProof[0].filename}`;
+    }
+    if (req.files.certificate) {
+      approvalRequest.verificationDocuments.certificate = `/uploads/${req.files.certificate[0].filename}`;
+    }
+    if (req.files.storefront) {
+      approvalRequest.verificationDocuments.storefront = `/uploads/${req.files.storefront[0].filename}`;
+    }
+
+    await approvalRequest.save();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        approvalRequestId: approvalRequest._id,
+        verificationDocuments: approvalRequest.verificationDocuments
+      },
+      message: 'Verification documents uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Verification document upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload verification documents',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/profile/verification/status
 // @desc    Get verification status
 // @access  Private

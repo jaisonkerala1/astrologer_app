@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
@@ -78,9 +79,55 @@ class ApiService {
 
   Future<Response> post(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
+      // #region agent log
+      try {
+        File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+          '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"A","location":"lib/core/services/api_service.dart:post","message":"ApiService.post enter","data":{"path":path,"hasData":data!=null,"hasQuery":queryParameters!=null},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {}
+      // #endregion
       final response = await _dio.post(path, data: data, queryParameters: queryParameters);
       return response;
     } on DioException catch (e) {
+      // #region agent log
+      try {
+        File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+          '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"A","location":"lib/core/services/api_service.dart:post","message":"ApiService.post DioException","data":{"path":path,"type":e.type.name,"statusCode":e.response?.statusCode},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {}
+      // #endregion
+
+      // #region agent log
+      // Ensure debug folder exists and log to the expected file (older logs may fail if .cursor doesn't exist)
+      try {
+        Directory(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor').createSync(recursive: true);
+        File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+          '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"A","location":"lib/core/services/api_service.dart:post","message":"ApiService.post DioException (dir ensured)","data":{"path":path,"type":e.type.name,"statusCode":e.response?.statusCode},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {}
+      // #endregion
+
+      // IMPORTANT: For verification request, backend uses 400 to return "requirements not met".
+      // Dio throws on 400 by default; we need to return the response so the repository can handle it.
+      if (path == ApiConstants.verificationRequest &&
+          e.type == DioExceptionType.badResponse &&
+          e.response != null &&
+          e.response?.statusCode == 400) {
+        // #region agent log
+        try {
+          Directory(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor').createSync(recursive: true);
+          File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+            '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"A","location":"lib/core/services/api_service.dart:post","message":"ApiService.post returning 400 response for verification request","data":{"path":path,"statusCode":e.response?.statusCode},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+            mode: FileMode.append,
+          );
+        } catch (_) {}
+        // #endregion
+        return e.response!;
+      }
+
       throw _handleError(e);
     }
   }

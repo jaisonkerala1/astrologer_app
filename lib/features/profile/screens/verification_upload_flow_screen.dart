@@ -1,7 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 import '../../../shared/theme/services/theme_service.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/di/service_locator.dart';
 import '../../auth/models/astrologer_model.dart';
 import 'slides/verification_welcome_slide.dart';
 import 'slides/verification_id_proof_slide.dart';
@@ -102,20 +106,86 @@ class _VerificationUploadFlowScreenState
       _isSubmitting = true;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Prepare multipart form data
+      final formData = FormData();
+      
+      // Add ID proof (required)
+      formData.files.add(MapEntry(
+        'idProof',
+        await MultipartFile.fromFile(
+          _idProofImage!.path,
+          filename: 'id_proof.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      ));
+      
+      // Add certificate (optional)
+      if (_certificateImage != null) {
+        formData.files.add(MapEntry(
+          'certificate',
+          await MultipartFile.fromFile(
+            _certificateImage!.path,
+            filename: 'certificate.jpg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        ));
+      }
+      
+      // Add storefront (optional)
+      if (_storefrontImage != null) {
+        formData.files.add(MapEntry(
+          'storefront',
+          await MultipartFile.fromFile(
+            _storefrontImage!.path,
+            filename: 'storefront.jpg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        ));
+      }
 
-    if (mounted) {
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      // Go to final celebration page
-      _pageController.animateToPage(
-        _totalPages - 1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+      // Call backend API
+      final apiService = getIt<ApiService>();
+      final response = await apiService.post(
+        '/profile/verification/upload-documents',
+        data: formData,
       );
+
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        if (response.data['success'] == true) {
+          // Go to final celebration page
+          _pageController.animateToPage(
+            _totalPages - 1,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          // Show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.data['message'] ?? 'Upload failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${error.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

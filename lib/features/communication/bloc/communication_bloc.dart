@@ -157,12 +157,12 @@ class CommunicationBloc extends Bloc<CommunicationEvent, CommunicationState> {
         key = 'call:${item.id}';
       } else {
         // For messages: use conversation ID or contact info (existing logic)
-        final convoId = item.conversationId?.toString() ?? '';
+      final convoId = item.conversationId?.toString() ?? '';
         key = convoId.isNotEmpty
-            ? 'c:$convoId'
-            : (item.contactType == ContactType.admin
-                ? 't:admin:admin'
-                : 't:${item.contactType.name}:${item.contactId}');
+          ? 'c:$convoId'
+          : (item.contactType == ContactType.admin
+              ? 't:admin:admin'
+              : 't:${item.contactType.name}:${item.contactId}');
       }
 
       final existing = byKey[key];

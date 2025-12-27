@@ -306,9 +306,25 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
   Future<Map<String, dynamic>> requestVerification() async {
     try {
       print('🔷 [ProfileRepo] Requesting verification badge...');
+      // #region agent log
+      try {
+        File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+          '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"A","location":"lib/data/repositories/profile/profile_repository_impl.dart:requestVerification","message":"requestVerification before apiService.post","data":{"endpoint":ApiConstants.verificationRequest},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {}
+      // #endregion
       final response = await apiService.post(ApiConstants.verificationRequest);
 
       print('🔷 [ProfileRepo] Verification request response: ${response.statusCode}');
+      // #region agent log
+      try {
+        File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+          '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"B","location":"lib/data/repositories/profile/profile_repository_impl.dart:requestVerification","message":"requestVerification got response","data":{"statusCode":response.statusCode,"success":(response.data is Map && (response.data["success"]==true))},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {}
+      // #endregion
       
       if (response.statusCode == 201 && response.data['success'] == true) {
         print('✅ [ProfileRepo] Verification request submitted successfully');
@@ -320,6 +336,14 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
       } else if (response.statusCode == 400) {
         // Requirements not met
         print('⚠️ [ProfileRepo] Verification requirements not met');
+        // #region agent log
+        try {
+          File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+            '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"C","location":"lib/data/repositories/profile/profile_repository_impl.dart:requestVerification","message":"requestVerification branch 400 requirements-not-met","data":{"message":(response.data is Map ? response.data["message"] : null)},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+            mode: FileMode.append,
+          );
+        } catch (_) {}
+        // #endregion
         return {
           'success': false,
           'message': response.data['message'],
@@ -331,6 +355,14 @@ class ProfileRepositoryImpl extends BaseRepository implements ProfileRepository 
       }
     } catch (e) {
       print('❌ [ProfileRepo] Error requesting verification: $e');
+      // #region agent log
+      try {
+        File(r'c:\Users\jaiso\Desktop\astrologer_app\.cursor\debug.log').writeAsStringSync(
+          '${jsonEncode({"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"A","location":"lib/data/repositories/profile/profile_repository_impl.dart:requestVerification","message":"requestVerification caught exception","data":{"errorType":e.runtimeType.toString(),"errorText":e.toString()},"timestamp":DateTime.now().millisecondsSinceEpoch})}\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {}
+      // #endregion
       throw Exception(handleError(e));
     }
   }

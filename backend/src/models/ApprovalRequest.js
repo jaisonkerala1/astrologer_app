@@ -116,6 +116,22 @@ const approvalRequestSchema = new mongoose.Schema({
       max: 5,
       default: 0
     }
+  },
+  
+  // Verification documents (for verification_badge requests)
+  verificationDocuments: {
+    idProof: {
+      type: String,
+      default: null
+    },
+    certificate: {
+      type: String,
+      default: null
+    },
+    storefront: {
+      type: String,
+      default: null
+    }
   }
 }, {
   timestamps: true

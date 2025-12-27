@@ -6,6 +6,7 @@ import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
 import 'verification_requirements_dialog.dart';
+import '../screens/verification_upload_flow_screen.dart';
 
 /// Verification status card shown in profile
 class VerificationStatusCard extends StatelessWidget {
@@ -137,8 +138,19 @@ class VerificationStatusCard extends StatelessWidget {
   Widget _buildGetVerifiedCard(BuildContext context) {
     return InkWell(
       onTap: () {
-        // Request verification using BLoC
-        context.read<ProfileBloc>().add(RequestVerificationEvent());
+        // TEMPORARY BYPASS: Go directly to upload flow (skip requirements check)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerificationUploadFlowScreen(
+              astrologer: astrologer,
+              isResubmission: false,
+            ),
+          ),
+        );
+        
+        // ORIGINAL CODE (commented out for now):
+        // context.read<ProfileBloc>().add(RequestVerificationEvent());
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -271,8 +283,19 @@ class VerificationStatusCard extends StatelessWidget {
   Widget _buildRejectedCard(BuildContext context) {
     return InkWell(
       onTap: () {
-        // Request verification again using BLoC
-        context.read<ProfileBloc>().add(RequestVerificationEvent());
+        // TEMPORARY BYPASS: Go directly to upload flow (skip requirements check)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerificationUploadFlowScreen(
+              astrologer: astrologer,
+              isResubmission: true,
+            ),
+          ),
+        );
+        
+        // ORIGINAL CODE (commented out for now):
+        // context.read<ProfileBloc>().add(RequestVerificationEvent());
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(

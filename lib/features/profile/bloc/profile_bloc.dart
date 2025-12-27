@@ -226,10 +226,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   Future<void> _onRequestVerification(RequestVerificationEvent event, Emitter<ProfileState> emit) async {
     print('\n🔷 [ProfileBloc] ========== REQUEST VERIFICATION STARTED ==========');
     
-    // Show loading while requesting
+    // Store current astrologer BEFORE emitting any states
+    AstrologerModel? currentAstrologer;
     if (state is ProfileLoadedState) {
-      final currentState = state as ProfileLoadedState;
-      emit(ProfileUpdating('verification', currentState.astrologer));
+      currentAstrologer = (state as ProfileLoadedState).astrologer;
+      emit(ProfileUpdating('verification', currentAstrologer));
+    } else if (state is ProfileUpdating) {
+      currentAstrologer = (state as ProfileUpdating).currentAstrologer;
     } else {
       emit(const ProfileLoading());
     }
@@ -262,10 +265,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           current: result['current'] ?? {},
         ));
         
-        // Return to loaded state after showing requirements
-        if (state is ProfileLoadedState) {
-          final currentState = state as ProfileLoadedState;
-          emit(ProfileLoadedState(currentState.astrologer));
+        // ALWAYS return to loaded state after showing requirements, using stored astrologer
+        if (currentAstrologer != null) {
+          emit(ProfileLoadedState(currentAstrologer));
+        } else {
+          // Fallback: reload profile if we somehow lost the astrologer
+          final freshProfile = await repository.loadProfile();
+          emit(ProfileLoadedState(freshProfile));
         }
       }
       
