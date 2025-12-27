@@ -26,9 +26,9 @@ const normalizeAstrologer = (astrologerDoc) => {
     bio: astro.bio || '',
     awards: astro.awards || '',
     certificates: astro.certificates || '',
-    lastSeen: astro.lastSeen || null,
-    createdAt: astro.createdAt || null,
-    updatedAt: astro.updatedAt || null,
+    lastSeen: astro.lastSeen ? new Date(astro.lastSeen).toISOString() : null,
+    createdAt: astro.createdAt ? new Date(astro.createdAt).toISOString() : null,
+    updatedAt: astro.updatedAt ? new Date(astro.updatedAt).toISOString() : null,
     // Admin approval fields
     isApproved: astro.isApproved ?? false,
     approvedAt: astro.approvedAt || null,
@@ -45,6 +45,12 @@ const normalizeAstrologer = (astrologerDoc) => {
           lastSeenAt: astro.activeSession.lastSeenAt || null,
         }
       : null,
+    // Verification badge fields
+    isVerified: astro.isVerified ?? false,
+    verificationStatus: astro.verificationStatus || 'none',
+    verificationSubmittedAt: astro.verificationSubmittedAt ? new Date(astro.verificationSubmittedAt).toISOString() : null,
+    verificationApprovedAt: astro.verificationApprovedAt ? new Date(astro.verificationApprovedAt).toISOString() : null,
+    verificationRejectionReason: astro.verificationRejectionReason || null,
   };
 };
 
@@ -96,6 +102,12 @@ const sanitizeAstrologer = (astrologer) => {
           lastSeenAt: astroObj.activeSession.lastSeenAt || null,
         }
       : null,
+    // Verification badge fields
+    isVerified: astroObj.isVerified ?? false,
+    verificationStatus: astroObj.verificationStatus || 'none',
+    verificationSubmittedAt: astroObj.verificationSubmittedAt ? new Date(astroObj.verificationSubmittedAt).toISOString() : null,
+    verificationApprovedAt: astroObj.verificationApprovedAt ? new Date(astroObj.verificationApprovedAt).toISOString() : null,
+    verificationRejectionReason: astroObj.verificationRejectionReason || null,
   };
 };
 

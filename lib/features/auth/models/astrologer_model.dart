@@ -79,13 +79,13 @@ class AstrologerModel extends Equatable {
       bio: json['bio'] ?? '',
       awards: json['awards'] ?? '',
       certificates: json['certificates'] ?? '',
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: _parseDateTime(json['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDateTime(json['updatedAt']) ?? DateTime.now(),
       sessionId: json['sessionId'] ?? json['activeSession']?['sessionId'],
       isVerified: json['isVerified'] ?? false,
       verificationStatus: json['verificationStatus'] ?? 'none',
-      verificationSubmittedAt: json['verificationSubmittedAt'] != null ? DateTime.parse(json['verificationSubmittedAt']) : null,
-      verificationApprovedAt: json['verificationApprovedAt'] != null ? DateTime.parse(json['verificationApprovedAt']) : null,
+      verificationSubmittedAt: _parseDateTime(json['verificationSubmittedAt']),
+      verificationApprovedAt: _parseDateTime(json['verificationApprovedAt']),
       verificationRejectionReason: json['verificationRejectionReason'],
       termsAccepted: json['termsAccepted'] ?? false,
       termsAcceptedAt: json['termsAcceptedAt'] != null ? DateTime.parse(json['termsAcceptedAt']) : null,
@@ -187,6 +187,22 @@ class AstrologerModel extends Equatable {
     );
   }
   
+  /// Helper method to safely parse DateTime from JSON
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    try {
+      if (value is String) {
+        return DateTime.parse(value);
+      } else if (value is DateTime) {
+        return value;
+      }
+      return null;
+    } catch (e) {
+      print('⚠️ [AstrologerModel] Error parsing date: $value - $e');
+      return null;
+    }
+  }
+
   @override
   List<Object?> get props => [
     id,
