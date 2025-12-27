@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Consultation = require('../models/Consultation');
 const Service = require('../models/Service');
 const ServiceRequest = require('../models/ServiceRequest');
+const ApprovalRequest = require('../models/ApprovalRequest');
 const Review = require('../models/Review');
 const LiveStream = require('../models/LiveStream');
 const Discussion = require('../models/Discussion');
@@ -1120,6 +1121,100 @@ router.delete('/services/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete service',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Approve Service
+ * PATCH /api/admin/services/:id/approve
+ */
+router.patch('/services/:id/approve', async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      });
+    }
+
+    // Activate the service
+    service.isActive = true;
+    await service.save();
+
+    // Update related approval request if exists
+    await ApprovalRequest.findOneAndUpdate(
+      { serviceId: service._id, requestType: 'service_approval', status: 'pending' },
+      { 
+        $set: { 
+          status: 'approved',
+          approvedAt: new Date(),
+          approvedBy: 'admin'
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      data: service,
+      message: 'Service approved and activated successfully'
+    });
+  } catch (error) {
+    console.error('Approve service error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve service',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Reject Service
+ * PATCH /api/admin/services/:id/reject
+ */
+router.patch('/services/:id/reject', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const service = await Service.findById(req.params.id);
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      });
+    }
+
+    // Deactivate the service
+    service.isActive = false;
+    await service.save();
+
+    // Update related approval request if exists
+    await ApprovalRequest.findOneAndUpdate(
+      { serviceId: service._id, requestType: 'service_approval', status: 'pending' },
+      { 
+        $set: { 
+          status: 'rejected',
+          rejectedAt: new Date(),
+          rejectedBy: 'admin',
+          rejectionReason: reason || 'Service rejected by admin'
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      data: service,
+      message: 'Service rejected successfully'
+    });
+  } catch (error) {
+    console.error('Reject service error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject service',
       error: error.message
     });
   }
