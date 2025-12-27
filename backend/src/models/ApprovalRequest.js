@@ -35,7 +35,7 @@ const approvalRequestSchema = new mongoose.Schema({
   requestType: {
     type: String,
     required: true,
-    enum: ['verification_badge', 'service_approval'],
+    enum: ['onboarding', 'verification_badge', 'service_approval'],
     index: true
   },
   
@@ -103,6 +103,22 @@ const approvalRequestSchema = new mongoose.Schema({
       type: String,
       trim: true
     }],
+    languages: [{
+      type: String,
+      trim: true
+    }],
+    bio: {
+      type: String,
+      default: ''
+    },
+    awards: {
+      type: String,
+      default: ''
+    },
+    certificates: {
+      type: String,
+      default: ''
+    },
     consultationsCount: {
       type: Number,
       required: true,
@@ -146,6 +162,7 @@ approvalRequestSchema.index({ astrologerId: 1, requestType: 1, status: 1 });
 // Virtual for formatted request type
 approvalRequestSchema.virtual('requestTypeDisplay').get(function() {
   const typeMap = {
+    'onboarding': 'Onboarding',
     'verification_badge': 'Verification Badge',
     'service_approval': 'Service Approval'
   };

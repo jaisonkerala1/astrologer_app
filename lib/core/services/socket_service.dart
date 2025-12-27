@@ -197,6 +197,10 @@ class SocketService {
   Stream<Map<String, dynamic>> get callEndedStream => _callEndedController.stream;
   Stream<Map<String, dynamic>> get callTokenStream => _callTokenController.stream;
 
+  // Onboarding approval event stream
+  final _onboardingApprovedController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get onboardingApprovedStream => _onboardingApprovedController.stream;
+
   // Error stream
   final _errorController = StreamController<String>.broadcast();
   Stream<String> get errorStream => _errorController.stream;
@@ -529,6 +533,18 @@ class SocketService {
     _socket!.on(CallSocketEvents.token, (data) {
       print('🔑 [SOCKET] Agora token received: $data');
       _callTokenController.add(Map<String, dynamic>.from(data));
+    });
+
+    // Onboarding approval events
+    _socket!.on('onboarding_approved', (data) {
+      print('✅ [SOCKET] Onboarding approved: $data');
+      _onboardingApprovedController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('onboarding_rejected', (data) {
+      print('❌ [SOCKET] Onboarding rejected: $data');
+      // Could add a separate stream for rejection if needed
+      _onboardingApprovedController.add(Map<String, dynamic>.from(data));
     });
   }
 
@@ -1121,6 +1137,7 @@ class SocketService {
     _callConnectedController.close();
     _callEndedController.close();
     _callTokenController.close();
+    _onboardingApprovedController.close();
     _errorController.close();
   }
 }

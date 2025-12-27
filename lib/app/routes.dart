@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/approval_waiting_screen.dart';
+import '../features/auth/models/astrologer_model.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/auth/bloc/auth_bloc.dart';
 import '../features/auth/bloc/auth_event.dart';
@@ -21,6 +23,7 @@ class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
+  static const String approvalWaiting = '/approval-waiting';
   static const String dashboard = '/dashboard';
   static const String consultationAnalytics = '/consultation-analytics';
   static const String liveStreams = '/live-streams';
@@ -38,6 +41,12 @@ class AppRoutes {
       case login:
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
+        );
+      case approvalWaiting:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final astrologer = args?['astrologer'];
+        return MaterialPageRoute(
+          builder: (_) => ApprovalWaitingScreen(astrologer: astrologer),
         );
       case dashboard:
         return MaterialPageRoute(
@@ -157,8 +166,25 @@ class _SplashScreenState extends State<SplashScreen> {
           print('✅ [SPLASH] Token VALID - User authenticated');
           print('👤 [SPLASH] User: ${response.data['data']['name']}');
           
+          // Check if account is approved
+          final isApproved = response.data['data']['isApproved'] ?? false;
+          print('🔐 [SPLASH] Account approval status: $isApproved');
+          
           if (!mounted) {
             print('❌ [SPLASH] Widget not mounted, aborting');
+            return;
+          }
+
+          // If not approved, navigate to approval waiting screen
+          if (!isApproved) {
+            print('⏳ [SPLASH] Account not approved - navigating to approval waiting screen');
+            final astrologerData = response.data['data'];
+            final astrologer = AstrologerModel.fromJson(astrologerData);
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.approvalWaiting,
+              arguments: {'astrologer': astrologer},
+            );
             return;
           }
 

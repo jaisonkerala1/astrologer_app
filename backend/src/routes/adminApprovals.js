@@ -252,7 +252,26 @@ router.post('/:id/approve', async (req, res) => {
     await request.approve('admin', notes);
 
     // Update related models based on request type
-    if (request.requestType === 'verification_badge') {
+    if (request.requestType === 'onboarding') {
+      // Update astrologer approval status
+      const astrologer = await Astrologer.findByIdAndUpdate(request.astrologerId, {
+        $set: {
+          isApproved: true,
+          approvedAt: new Date(),
+          approvedBy: 'admin'
+        }
+      }, { new: true });
+
+      // Emit Socket.IO event to notify astrologer
+      const io = req.app.get('io');
+      if (io && astrologer) {
+        io.to(`astrologer:${astrologer._id}`).emit('onboarding_approved', {
+          message: 'Your account has been approved! Welcome aboard.',
+          astrologerId: astrologer._id.toString(),
+          timestamp: Date.now()
+        });
+      }
+    } else if (request.requestType === 'verification_badge') {
       // Update astrologer verification status
       await Astrologer.findByIdAndUpdate(request.astrologerId, {
         $set: {
@@ -328,7 +347,20 @@ router.post('/:id/reject', async (req, res) => {
     await request.reject('admin', reason);
 
     // Update related models based on request type
-    if (request.requestType === 'verification_badge') {
+    if (request.requestType === 'onboarding') {
+      // For onboarding rejection, we don't update isApproved (it stays false)
+      // Just log the rejection reason in the approval request
+      // Optionally, we could emit a rejection event to notify the astrologer
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`astrologer:${request.astrologerId}`).emit('onboarding_rejected', {
+          message: 'Your account approval request has been rejected.',
+          reason: reason,
+          astrologerId: request.astrologerId.toString(),
+          timestamp: Date.now()
+        });
+      }
+    } else if (request.requestType === 'verification_badge') {
       // Update astrologer verification status
       await Astrologer.findByIdAndUpdate(request.astrologerId, {
         $set: {

@@ -32,6 +32,11 @@ class AstrologerModel extends Equatable {
   final int acceptedTermsVersion;
   final String? acceptanceIpAddress;
   final String? acceptanceDeviceInfo;
+  
+  // Onboarding approval status
+  final bool isApproved;
+  final DateTime? approvedAt;
+  final String? approvedBy;
 
   AstrologerModel({
     required this.id,
@@ -61,6 +66,9 @@ class AstrologerModel extends Equatable {
     this.acceptedTermsVersion = 0,
     this.acceptanceIpAddress,
     this.acceptanceDeviceInfo,
+    this.isApproved = false,
+    this.approvedAt,
+    this.approvedBy,
   });
 
   factory AstrologerModel.fromJson(Map<String, dynamic> json) {
@@ -92,6 +100,9 @@ class AstrologerModel extends Equatable {
       acceptedTermsVersion: json['acceptedTermsVersion'] ?? 0,
       acceptanceIpAddress: json['acceptanceIpAddress'],
       acceptanceDeviceInfo: json['acceptanceDeviceInfo'],
+      isApproved: json['isApproved'] ?? false,
+      approvedAt: _parseDateTime(json['approvedAt']),
+      approvedBy: json['approvedBy'],
     );
   }
 
@@ -124,6 +135,9 @@ class AstrologerModel extends Equatable {
       'acceptedTermsVersion': acceptedTermsVersion,
       'acceptanceIpAddress': acceptanceIpAddress,
       'acceptanceDeviceInfo': acceptanceDeviceInfo,
+      'isApproved': isApproved,
+      'approvedAt': approvedAt?.toIso8601String(),
+      'approvedBy': approvedBy,
     };
   }
 
@@ -155,6 +169,9 @@ class AstrologerModel extends Equatable {
     int? acceptedTermsVersion,
     String? acceptanceIpAddress,
     String? acceptanceDeviceInfo,
+    bool? isApproved,
+    DateTime? approvedAt,
+    String? approvedBy,
   }) {
     return AstrologerModel(
       id: id ?? this.id,
@@ -184,6 +201,9 @@ class AstrologerModel extends Equatable {
       acceptedTermsVersion: acceptedTermsVersion ?? this.acceptedTermsVersion,
       acceptanceIpAddress: acceptanceIpAddress ?? this.acceptanceIpAddress,
       acceptanceDeviceInfo: acceptanceDeviceInfo ?? this.acceptanceDeviceInfo,
+      isApproved: isApproved ?? this.isApproved,
+      approvedAt: approvedAt ?? this.approvedAt,
+      approvedBy: approvedBy ?? this.approvedBy,
     );
   }
   
@@ -232,6 +252,9 @@ class AstrologerModel extends Equatable {
     acceptedTermsVersion,
     acceptanceIpAddress,
     acceptanceDeviceInfo,
+    isApproved,
+    approvedAt,
+    approvedBy,
   ];
 }
 

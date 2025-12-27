@@ -6,6 +6,8 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'login_screen.dart';
+import 'approval_waiting_screen.dart';
+import '../../../app/routes.dart';
 
 class AuthGateScreen extends StatefulWidget {
   const AuthGateScreen({super.key});
@@ -31,10 +33,17 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccessState) {
-          // User is authenticated, navigate to dashboard
+          // User is authenticated and approved, navigate to dashboard
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const DashboardScreen(),
+            ),
+          );
+        } else if (state is AuthWaitingForApproval) {
+          // User is authenticated but not approved, navigate to approval waiting screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => ApprovalWaitingScreen(astrologer: state.astrologer),
             ),
           );
         } else if (state is AuthUnauthenticatedState) {

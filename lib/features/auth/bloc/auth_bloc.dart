@@ -111,13 +111,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('║ Timestamp: ${DateTime.now()}');
       print('╚═══════════════════════════════════════════════════════╝');
       print('');
-      print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from OTP verification)');
+      print('✅ [AUTH_BLOC] Checking approval status...');
+      print('   isApproved: ${astrologer.isApproved}');
       
-      emit(AuthSuccessState(
-        astrologer: astrologer,
-        token: token,
-        sessionId: sessionId,
-      ));
+      if (!astrologer.isApproved) {
+        print('⏳ [AUTH_BLOC] EMITTING: AuthWaitingForApproval (account pending approval)');
+        emit(AuthWaitingForApproval(
+          astrologer: astrologer,
+          token: token,
+          sessionId: sessionId,
+        ));
+      } else {
+        print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from OTP verification)');
+        emit(AuthSuccessState(
+          astrologer: astrologer,
+          token: token,
+          sessionId: sessionId,
+        ));
+      }
     } catch (e) {
       print('Verify OTP API Error: $e');
       emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
@@ -156,13 +167,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       print('║ Timestamp: ${DateTime.now()}');
       print('╚═══════════════════════════════════════════════════════╝');
       print('');
-      print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from signup)');
+      print('✅ [AUTH_BLOC] Checking approval status after signup...');
+      print('   isApproved: ${astrologer.isApproved}');
       
-      emit(AuthSuccessState(
-        astrologer: astrologer,
-        token: token,
-        sessionId: sessionId,
-      ));
+      if (!astrologer.isApproved) {
+        print('⏳ [AUTH_BLOC] EMITTING: AuthWaitingForApproval (new account pending approval)');
+        emit(AuthWaitingForApproval(
+          astrologer: astrologer,
+          token: token,
+          sessionId: sessionId,
+        ));
+      } else {
+        print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (from signup)');
+        emit(AuthSuccessState(
+          astrologer: astrologer,
+          token: token,
+          sessionId: sessionId,
+        ));
+      }
     } catch (e) {
       print('Signup API Error: $e');
       emit(AuthErrorState(e.toString().replaceAll('Exception: ', '')));
@@ -255,12 +277,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         
         print('✅ [AUTH_BLOC] Token valid, user authenticated');
         print('👤 [AUTH_BLOC] User: ${astrologer.name}');
-        print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (token validated)');
-        emit(AuthSuccessState(
-          astrologer: astrologer,
-          token: token,
-          sessionId: sessionId,
-        ));
+        print('✅ [AUTH_BLOC] Checking approval status...');
+        print('   isApproved: ${astrologer.isApproved}');
+        
+        if (!astrologer.isApproved) {
+          print('⏳ [AUTH_BLOC] EMITTING: AuthWaitingForApproval (account pending approval)');
+          emit(AuthWaitingForApproval(
+            astrologer: astrologer,
+            token: token,
+            sessionId: sessionId,
+          ));
+        } else {
+          print('✅ [AUTH_BLOC] EMITTING: AuthSuccessState (token validated)');
+          emit(AuthSuccessState(
+            astrologer: astrologer,
+            token: token,
+            sessionId: sessionId,
+          ));
+        }
       } catch (e) {
         print('❌ [AUTH_BLOC] Token validation failed: $e');
         await repository.clearAuthData();

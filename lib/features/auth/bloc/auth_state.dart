@@ -85,6 +85,21 @@ class AccountDeletedState extends AuthState {
   List<Object?> get props => [message];
 }
 
+class AuthWaitingForApproval extends AuthState {
+  final AstrologerModel astrologer;
+  final String token;
+  final String? sessionId;
+  
+  const AuthWaitingForApproval({
+    required this.astrologer,
+    required this.token,
+    this.sessionId,
+  });
+  
+  @override
+  List<Object?> get props => [astrologer, token, sessionId];
+}
+
 
 
 

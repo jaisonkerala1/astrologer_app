@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 const Astrologer = require('../models/Astrologer');
 const Otp = require('../models/Otp');
+const ApprovalRequest = require('../models/ApprovalRequest');
 const twilioService = require('../services/twilioService');
 const normalizeAstrologer = require('../utils/astrologerResponse');
 
@@ -305,6 +306,29 @@ const signup = async (req, res) => {
 
     // Save astrologer to MongoDB
     await astrologer.save();
+
+    // Create onboarding approval request
+    const approvalRequest = new ApprovalRequest({
+      astrologerId: astrologer._id,
+      astrologerName: astrologer.name,
+      astrologerEmail: astrologer.email,
+      astrologerPhone: astrologer.phone,
+      astrologerAvatar: astrologer.profilePicture,
+      requestType: 'onboarding',
+      status: 'pending',
+      submittedAt: new Date(),
+      astrologerData: {
+        experience: astrologer.experience,
+        specializations: astrologer.specializations || [],
+        languages: astrologer.languages || [],
+        bio: astrologer.bio || '',
+        awards: astrologer.awards || '',
+        certificates: astrologer.certificates || '',
+        consultationsCount: 0,
+        rating: 0
+      }
+    });
+    await approvalRequest.save();
 
     // Generate token
     const sessionId = crypto.randomUUID();
